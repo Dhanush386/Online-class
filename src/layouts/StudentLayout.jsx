@@ -19,6 +19,7 @@ export default function StudentLayout() {
     const [collapsed, setCollapsed] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+    const [showNotifications, setShowNotifications] = useState(false)
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -122,10 +123,35 @@ export default function StudentLayout() {
                         <button className="hide-mobile" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8, padding: '0.5rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
                             <Award size={18} color="#10b981" />
                         </button>
-                        <button className="hide-mobile" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8, padding: '0.5rem', color: 'var(--text-secondary)', cursor: 'pointer', position: 'relative' }}>
-                            <Bell size={18} />
-                            <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, background: '#10b981', borderRadius: '50%' }} />
-                        </button>
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => setShowNotifications(!showNotifications)}
+                                className="hide-mobile"
+                                style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8, padding: '0.5rem', color: 'var(--text-secondary)', cursor: 'pointer', position: 'relative' }}
+                            >
+                                <Bell size={18} />
+                                <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, background: '#10b981', borderRadius: '50%' }} />
+                            </button>
+
+                            {showNotifications && (
+                                <>
+                                    <div
+                                        onClick={() => setShowNotifications(false)}
+                                        style={{ position: 'fixed', inset: 0, zIndex: 45 }}
+                                    />
+                                    <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: 280, background: 'white', borderRadius: 12, boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--sidebar-border)', zIndex: 50, padding: '1rem', overflow: 'hidden' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</span>
+                                            <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>Mark all as read</span>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center', padding: '1rem 0' }}>
+                                            <Bell size={24} color="var(--text-muted)" style={{ margin: '0 auto', opacity: 0.2 }} />
+                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No new notifications</p>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)' }}>
                             <div style={{ width: 24, height: 24, background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'white' }}>
                                 {profile?.name?.[0]?.toUpperCase() || 'S'}
