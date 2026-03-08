@@ -89,25 +89,38 @@ export function AuthProvider({ children }) {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('*')
+                .select('id, name, email, role, status, current_session_id, access_expires_at')
                 .eq('id', userId)
                 .single()
 
-            if (error && error.code === 'PGRST116') {
-                // User not found in public.users, try to recover from auth metadata
-                const { data: { user } } = await supabase.auth.getUser()
-                if (user) {
-                    const name = user.user_metadata?.name || 'New User'
-                    const role = user.user_metadata?.role || 'student'
-                    const { data: newProfile, error: insertError } = await supabase
-                        .from('users')
-                        .insert({ id: user.id, name, email: user.email, role, current_session_id: browserSessionId })
-                        .select()
-                        .single()
+            if (error) {
+                console.error('Profile fetch error:', error.code, error.message, error.status)
 
-                    if (!insertError) {
-                        setProfile(newProfile)
-                        return
+                // 406 often means schema cache issue or "Accept" header mismatch (PostgREST)
+                if (error.status === 406) {
+                    console.warn('Supabase returned 406. This usually requires a Schema Cache refresh in Supabase Dashboard.')
+                }
+
+                if (error.code === 'PGRST116') {
+                    // User not found in public.users, try to recover from auth metadata
+                    const { data: { user } } = await supabase.auth.getUser()
+                    if (user) {
+                        // Profile not found - Create it
+                        const name = user.user_metadata?.name || 'New User'
+                        const role = localStorage.getItem('onboarding_role') || 'student' // Use onboarding_role if set, otherwise default
+                        const newProfile = { id: user.id, name, email: user.email, role, current_session_id: browserSessionId }
+
+                        console.log('Creating/Updating profile via upsert:', newProfile)
+                        const { error: upsertError } = await supabase
+                            .from('users')
+                            .upsert(newProfile, { onConflict: 'id' })
+
+                        if (!upsertError) {
+                            setProfile(newProfile)
+                            return
+                        } else {
+                            console.error('Profile upsert failed:', upsertError)
+                        }
                     }
                 }
             } else if (data) {
@@ -153,13 +166,22 @@ export function AuthProvider({ children }) {
         if (error) throw error
 
         if (data.user) {
-            await supabase.from('users').insert({
+            const profileData = {
                 id: data.user.id,
                 name,
                 email: email.toLowerCase(),
                 role,
                 status: role === 'student' ? 'pending' : 'approved'
-            })
+            }
+
+            console.log('Inserting profile data:', profileData)
+            const { error: profileError } = await supabase
+                .from('users')
+                .upsert(profileData, { onConflict: 'id' })
+
+            if (profileError) {
+                console.error('Initial profile creation failed:', profileError)
+            }
 
             // If organizer account created, remove the invite
             if (role === 'organizer') {

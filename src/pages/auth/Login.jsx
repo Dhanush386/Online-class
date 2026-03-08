@@ -28,9 +28,18 @@ export default function Login() {
         try {
             const { user: authUser } = await signIn(form)
             console.log('Sign in successful, fetching role for:', authUser.id)
-            const { data, error: roleError } = await supabase.from('users').select('role').eq('id', authUser.id).single()
+            const { data, error: roleError } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', authUser.id)
+                .single()
 
-            if (roleError) console.warn('Profile record not found, redirecting to default...')
+            if (roleError) {
+                console.warn('Role fetch error:', roleError.code, roleError.message, roleError.status)
+                if (roleError.status === 406) {
+                    console.error('Role fetch failed with 406. Schema cache might be outdated.')
+                }
+            }
 
             if (data?.role === 'organizer') navigate('/organizer')
             else navigate('/student')
