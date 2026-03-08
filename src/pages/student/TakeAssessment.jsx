@@ -23,7 +23,21 @@ export default function TakeAssessment() {
     const [currentIdx, setCurrentIdx] = useState(0)
     const [answers, setAnswers] = useState({}) // { questionId: selectedOption }
     const [isStarted, setIsStarted] = useState(false)
+    const [violationCount, setViolationCount] = useState(0)
+    const [isAutoSubmitted, setIsAutoSubmitted] = useState(false)
     const containerRef = useRef(null)
+
+    useEffect(() => {
+        if (violationCount >= 3 && isStarted && !submitted && !submitting && !isAutoSubmitted) {
+            handleAutoSubmit()
+        }
+    }, [violationCount, isStarted])
+
+    async function handleAutoSubmit() {
+        setIsAutoSubmitted(true)
+        alert('Security Violation: 3 violations detected. Your assessment is being automatically submitted.')
+        await handleSubmit(true)
+    }
 
     useEffect(() => {
         const handleSecurity = (e) => {
@@ -33,10 +47,27 @@ export default function TakeAssessment() {
         }
 
         const handleFullScreenChange = () => {
-            if (isStarted && !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-                // User exited fullscreen
-                alert('Security Violation: Fullscreen mode is required. Please reentry fullscreen or your attempt will be invalidated.')
-                enterFullScreen()
+            if (isStarted && !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement && !submitted) {
+                setViolationCount(prev => {
+                    const next = prev + 1
+                    if (next < 3) {
+                        alert(`Security Warning (${next}/3): Fullscreen mode is required. Please reentry fullscreen.`)
+                        enterFullScreen()
+                    }
+                    return next
+                })
+            }
+        }
+
+        const handleVisibilityChange = () => {
+            if (isStarted && document.hidden && !submitted) {
+                setViolationCount(prev => {
+                    const next = prev + 1
+                    if (next < 3) {
+                        alert(`Security Warning (${next}/3): You lost focus on the assessment window. Please stay on this page.`)
+                    }
+                    return next
+                })
             }
         }
 
@@ -49,6 +80,7 @@ export default function TakeAssessment() {
             document.addEventListener('webkitfullscreenchange', handleFullScreenChange)
             document.addEventListener('mozfullscreenchange', handleFullScreenChange)
             document.addEventListener('MSFullscreenChange', handleFullScreenChange)
+            document.addEventListener('visibilitychange', handleVisibilityChange)
         }
 
         return () => {
@@ -60,8 +92,9 @@ export default function TakeAssessment() {
             document.removeEventListener('webkitfullscreenchange', handleFullScreenChange)
             document.removeEventListener('mozfullscreenchange', handleFullScreenChange)
             document.removeEventListener('MSFullscreenChange', handleFullScreenChange)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
-    }, [isStarted])
+    }, [isStarted, submitted])
 
     const enterFullScreen = () => {
         const elem = document.documentElement
@@ -112,8 +145,8 @@ export default function TakeAssessment() {
         }
     }
 
-    async function handleSubmit() {
-        if (Object.keys(answers).length < questions.length) {
+    async function handleSubmit(isAuto = false) {
+        if (!isAuto && Object.keys(answers).length < questions.length) {
             if (!confirm('You haven\'t answered all questions. Submit anyway?')) return
         }
 
@@ -229,10 +262,17 @@ export default function TakeAssessment() {
                     </button>
                     <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{assessment?.title}</h1>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Question {currentIdx + 1} of {questions.length}</div>
-                    <div style={{ width: 120, height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ width: `${progress}%`, height: '100%', background: '#6366f1', transition: 'width 0.3s ease' }} />
+                <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    {violationCount > 0 && (
+                        <div style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 700, background: '#fef2f2', padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid #fee2e2' }}>
+                            Violations: {violationCount}/3
+                        </div>
+                    )}
+                    <div>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Question {currentIdx + 1} of {questions.length}</div>
+                        <div style={{ width: 120, height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ width: `${progress}%`, height: '100%', background: '#6366f1', transition: 'width 0.3s ease' }} />
+                        </div>
                     </div>
                 </div>
             </div>

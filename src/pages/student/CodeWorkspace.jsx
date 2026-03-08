@@ -38,6 +38,20 @@ export default function CodeWorkspace() {
     const isReadOnly = attemptCount >= MAX_ATTEMPTS
     const [timeStatus, setTimeStatus] = useState('open') // 'upcoming' | 'open' | 'closed'
     const [isStarted, setIsStarted] = useState(false)
+    const [violationCount, setViolationCount] = useState(0)
+    const [isAutoSubmitted, setIsAutoSubmitted] = useState(false)
+
+    useEffect(() => {
+        if (violationCount >= 3 && isStarted && !isAutoSubmitted && attemptCount < MAX_ATTEMPTS) {
+            handleAutoSubmit()
+        }
+    }, [violationCount, isStarted])
+
+    async function handleAutoSubmit() {
+        setIsAutoSubmitted(true)
+        alert('Security Violation: 3 violations detected. Your work is being automatically submitted.')
+        await handleSubmit()
+    }
 
     useEffect(() => {
         const handleSecurity = (e) => {
@@ -48,8 +62,26 @@ export default function CodeWorkspace() {
 
         const handleFullScreenChange = () => {
             if (isStarted && !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-                alert('Security Violation: Fullscreen mode is required. Please reentry fullscreen or your progress may be lost.')
-                enterFullScreen()
+                setViolationCount(prev => {
+                    const next = prev + 1
+                    if (next < 3) {
+                        alert(`Security Warning (${next}/3): Fullscreen mode is required. Please reentry fullscreen.`)
+                        enterFullScreen()
+                    }
+                    return next
+                })
+            }
+        }
+
+        const handleVisibilityChange = () => {
+            if (isStarted && document.hidden) {
+                setViolationCount(prev => {
+                    const next = prev + 1
+                    if (next < 3) {
+                        alert(`Security Warning (${next}/3): Focus lost. Please stay on the challenge window.`)
+                    }
+                    return next
+                })
             }
         }
 
@@ -62,6 +94,7 @@ export default function CodeWorkspace() {
             document.addEventListener('webkitfullscreenchange', handleFullScreenChange)
             document.addEventListener('mozfullscreenchange', handleFullScreenChange)
             document.addEventListener('MSFullscreenChange', handleFullScreenChange)
+            document.addEventListener('visibilitychange', handleVisibilityChange)
         }
 
         return () => {
@@ -73,6 +106,7 @@ export default function CodeWorkspace() {
             document.removeEventListener('webkitfullscreenchange', handleFullScreenChange)
             document.removeEventListener('mozfullscreenchange', handleFullScreenChange)
             document.removeEventListener('MSFullscreenChange', handleFullScreenChange)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
     }, [isStarted])
 
@@ -378,6 +412,11 @@ export default function CodeWorkspace() {
                             </span>
                         ) : (
                             <>
+                                {violationCount > 0 && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 700, color: '#ef4444', background: '#fef2f2', padding: '0.35rem 0.75rem', borderRadius: 8, border: '1px solid #fee2e2' }}>
+                                        Violations: {violationCount}/3
+                                    </span>
+                                )}
                                 <button onClick={runCode} disabled={running} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '0.4rem 0.8rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
                                     <Play size={14} /> Run
                                 </button>
