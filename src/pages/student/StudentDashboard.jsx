@@ -59,6 +59,34 @@ export default function StudentDashboard() {
 
     return (
         <div className="animate-fade-in">
+            <style>{`
+                .hexagon-container-mini {
+                    width: 44px;
+                    height: 50px;
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .hexagon-mini {
+                    width: 100%;
+                    height: 100%;
+                    background: currentColor;
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .hexagon-inner-mini {
+                    width: 85%;
+                    height: 85%;
+                    background: white;
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+            `}</style>
             <div style={{ marginBottom: '2rem' }}>
                 <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                     Hello, <span className="gradient-text" style={{ background: 'linear-gradient(135deg,#10b981,#6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{profile?.name?.split(' ')[0]}</span> 👋
@@ -172,15 +200,27 @@ export default function StudentDashboard() {
                         </h3>
                         <Link to="/student/achievements" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all →</Link>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', padding: '0.5rem 0' }}>
-                        <div style={{ width: 48, height: 48, background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }} title="Early Bird">
-                            <Rocket size={20} />
+                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', padding: '0.5rem 0' }}>
+                        <div className="hexagon-container-mini" style={{ color: '#6366f1' }} title="Early Bird">
+                            <div className="hexagon-mini">
+                                <div className="hexagon-inner-mini">
+                                    <Rocket size={16} />
+                                </div>
+                            </div>
                         </div>
-                        <div style={{ width: 48, height: 48, background: 'rgba(239,68,68,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }} title="Fast Learner">
-                            <Flame size={20} />
+                        <div className="hexagon-container-mini" style={{ color: '#ef4444' }} title="Fast Learner">
+                            <div className="hexagon-mini">
+                                <div className="hexagon-inner-mini">
+                                    <Flame size={16} />
+                                </div>
+                            </div>
                         </div>
-                        <div style={{ width: 48, height: 48, background: 'rgba(245,158,11,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }} title="Quiz Master">
-                            <Trophy size={20} />
+                        <div className="hexagon-container-mini" style={{ color: '#f59e0b' }} title="Quiz Master">
+                            <div className="hexagon-mini">
+                                <div className="hexagon-inner-mini">
+                                    <Trophy size={16} />
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1rem' }}>

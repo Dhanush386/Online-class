@@ -1,96 +1,266 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Award, Trophy, Star, Target, Zap, Shield, Rocket, Heart, Flame } from 'lucide-react'
+import { Award, Trophy, Star, Target, Zap, Shield, Rocket, Heart, Flame, Code, BookOpen, Database, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-const ALL_BADGES = [
-    { id: 'early_bird', title: 'Early Bird', description: 'Joined the platform in its early days.', icon: <Rocket size={24} />, color: '#6366f1', xp: 50 },
-    { id: 'fast_learner', title: 'Fast Learner', description: 'Completed first course within a week.', icon: <Flame size={24} />, color: '#ef4444', xp: 100 },
-    { id: 'quiz_master', title: 'Quiz Master', description: 'Scored 100% in any assessment.', icon: <Trophy size={24} />, color: '#f59e0b', xp: 150 },
-    { id: 'code_warrior', title: 'Code Warrior', description: 'Solved 5 coding challenges.', icon: <Target size={24} />, color: '#10b981', xp: 200 },
-    { id: 'bug_hunter', title: 'Bug Hunter', description: 'Found and reported a significant bug.', icon: <Shield size={24} />, color: '#64748b', xp: 300 },
-    { id: 'helpful_peer', title: 'Helpful Peer', description: 'Helped others in the discussion forum.', icon: <Heart size={24} />, color: '#ec4899', xp: 100 },
+const CATEGORIES = [
+    {
+        id: 'leaderboard',
+        name: 'Leaderboard',
+        badges: [
+            { id: 'iron_1', title: 'Iron Champion', subtitle: 'Rank - 1', color: '#64748b' },
+            { id: 'iron_2', title: 'Iron Master', subtitle: 'Rank - 2', color: '#64748b' },
+            { id: 'iron_3', title: 'Iron Prodigy', subtitle: 'Rank - 3', color: '#64748b' },
+            { id: 'iron_4', title: 'Iron Achiever', subtitle: 'Rank - 4', color: '#64748b' },
+            { id: 'iron_5', title: 'Iron Challenger', subtitle: 'Rank - 5', color: '#64748b' },
+        ]
+    },
+    {
+        id: 'problems',
+        name: 'Problem Solved',
+        badges: [
+            { id: 'probs_10', title: 'Problem Solver', subtitle: '10 problems solved', threshold: 10, color: '#6366f1' },
+            { id: 'probs_30', title: 'Logic Builder', subtitle: '30 problems solved', threshold: 30, color: '#6366f1' },
+            { id: 'probs_50', title: 'Code Challenger', subtitle: '50 problems solved', threshold: 50, color: '#6366f1' },
+            { id: 'probs_100', title: 'Algorithm Enthusiast', subtitle: '100 problems solved', threshold: 100, color: '#6b7280' },
+            { id: 'probs_150', title: 'Bug Buster', subtitle: '150 problems solved', threshold: 150, color: '#6b7280' },
+            { id: 'probs_200', title: 'Coding Prodigy', subtitle: '200 problems solved', threshold: 200, color: '#6b7280' },
+        ]
+    },
+    {
+        id: 'skills',
+        name: 'Skill Progress',
+        badges: [
+            { id: 'skill_html', title: 'HTML Master', subtitle: 'Complete HTML Course', color: '#f97316', icon: <Code size={20} /> },
+            { id: 'skill_bootstrap', title: 'Bootstrap Pro', subtitle: 'Complete Bootstrap Course', color: '#7c3aed', icon: 'B' },
+            { id: 'skill_sql', title: 'SQL Data Explorer', subtitle: 'Complete SQL Course', color: '#3b82f6', icon: <Database size={20} /> },
+            { id: 'skill_python', title: 'Python Programmer', subtitle: 'Complete Python Course', color: '#1e293b', icon: '🐍' },
+            { id: 'skill_js', title: 'JavaScript Developer', subtitle: 'Complete JS Course', color: '#eab308', icon: 'JS' },
+        ]
+    },
+    {
+        id: 'xp',
+        name: 'Total XP',
+        badges: [
+            { id: 'xp_500', title: 'XP Explorer', subtitle: 'Earn 500 XP points', threshold: 500, color: '#f59e0b' },
+            { id: 'xp_1000', title: 'XP Challenger', subtitle: 'Earn 1000 XP points', threshold: 1000, color: '#f59e0b' },
+            { id: 'xp_2500', title: 'XP Achiever', subtitle: 'Earn 2500 XP points', threshold: 2500, color: '#f59e0b' },
+            { id: 'xp_5000', title: 'XP Master', subtitle: 'Earn 5000 XP points', threshold: 5000, color: '#f59e0b' },
+            { id: 'xp_8000', title: 'XP Prodigy', subtitle: 'Earn 8000 XP points', threshold: 8000, color: '#f59e0b' },
+        ]
+    },
+    {
+        id: 'streak',
+        name: 'Streak',
+        badges: [
+            { id: 'streak_3', title: 'Streak - 3 Days', subtitle: '3-day learning streak', threshold: 3, color: '#f97316' },
+            { id: 'streak_7', title: 'Streaks- 7 Days', subtitle: '7-day learning streak', threshold: 7, color: '#f97316' },
+            { id: 'streak_14', title: 'Streak - 14 Days', subtitle: '14-day learning streak', threshold: 14, color: '#f97316' },
+            { id: 'streak_30', title: 'Streak - 30 Days', subtitle: '30-day learning streak', threshold: 30, color: '#f97316' },
+        ]
+    }
 ]
 
 export default function Achievements() {
     const { profile } = useAuth()
-    const [earnedBadges, setEarnedBadges] = useState(['early_bird', 'fast_learner', 'quiz_master']) // Mocking for now
-    const [totalXp, setTotalXp] = useState(0)
+    const [stats, setStats] = useState({ xp: 0, solved: 0, rank: 99, streak: 2 })
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // In a real app, fetch from a user_badges table
-        // For now, calculating XP based on mock earned badges
-        const xp = ALL_BADGES.filter(b => earnedBadges.includes(b.id)).reduce((sum, b) => sum + b.xp, 0)
-        setTotalXp(xp)
-    }, [earnedBadges])
+        async function loadStats() {
+            if (!profile?.id) return
+            try {
+                // Fetch submission stats for solved challenges
+                const { data: subs } = await supabase
+                    .from('coding_submissions')
+                    .select('score, status')
+                    .eq('student_id', profile.id)
+
+                const totalXp = subs?.filter(s => s.status === 'accepted').reduce((sum, s) => sum + (s.score || 0), 0) || 0
+                const solvedCount = subs?.filter(s => s.status === 'accepted').length || 0
+
+                setStats({
+                    xp: totalXp,
+                    solved: solvedCount,
+                    rank: 1, // Mock rank for now
+                    streak: 5 // Mock streak for now
+                })
+            } catch (err) {
+                console.error('Error loading stats:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadStats()
+    }, [profile])
+
+    const isUnlocked = (badge, categoryId) => {
+        if (categoryId === 'xp') return stats.xp >= badge.threshold
+        if (categoryId === 'problems') return stats.solved >= badge.threshold
+        if (categoryId === 'streak') return stats.streak >= badge.threshold
+        if (categoryId === 'leaderboard') return stats.rank <= parseInt(badge.id.split('_')[1])
+        if (categoryId === 'skills') return false // Needs course completion data
+        return false
+    }
+
+    if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }}></div></div>
 
     return (
-        <div className="animate-fade-in">
-            <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
+            <style>{`
+                .hexagon-container {
+                    width: 70px;
+                    height: 80px;
+                    position: relative;
+                    margin: 0 auto 1rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.3s ease;
+                }
+                .hexagon {
+                    width: 100%;
+                    height: 100%;
+                    background: #f1f5f9;
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #94a3b8;
+                    font-weight: 800;
+                    font-size: 0.9rem;
+                    position: relative;
+                }
+                .hexagon-inner {
+                    width: 88%;
+                    height: 88%;
+                    background: white;
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }
+                .badge-unlocked .hexagon {
+                    background: currentColor;
+                }
+                .badge-unlocked .hexagon-inner {
+                    background: white;
+                }
+                .badge-locked {
+                    filter: grayscale(1);
+                    opacity: 0.6;
+                }
+                .lock-overlay {
+                    position: absolute;
+                    bottom: 5px;
+                    right: 5px;
+                    background: white;
+                    border-radius: 50%;
+                    padding: 4px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 5;
+                    color: #64748b;
+                }
+                .badge-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                    gap: 1.5rem;
+                    margin-bottom: 3rem;
+                }
+                .badge-card {
+                    padding: 1.5rem 1rem;
+                    text-align: center;
+                    background: white;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+                    transition: transform 0.2s ease;
+                }
+                .badge-card:hover {
+                    transform: translateY(-4px);
+                }
+                .badge-title {
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    color: var(--text-primary);
+                    margin-bottom: 0.25rem;
+                    line-height: 1.2;
+                }
+                .badge-subtitle {
+                    font-size: 0.7rem;
+                    color: var(--text-muted);
+                }
+            `}</style>
+
+            <div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>My Achievements</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Track your badges, rank, and total XP earned.</p>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)' }}>Badges</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Showcase your achievements and progress</p>
                 </div>
-                <div style={{ padding: '0.75rem 1.25rem', background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: 12, color: 'white', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', opacity: 0.8 }}>Total XP</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{totalXp}</div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', borderRadius: 20 }}>All</button>
+                    <button className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', borderRadius: 20, background: 'none' }}>Collected</button>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-                {ALL_BADGES.map(badge => {
-                    const isEarned = earnedBadges.includes(badge.id)
-                    return (
-                        <div key={badge.id} className="glass-card" style={{
-                            padding: '1.5rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            textAlign: 'center',
-                            opacity: isEarned ? 1 : 0.5,
-                            filter: isEarned ? 'none' : 'grayscale(1)',
-                            position: 'relative',
-                            transition: 'all 0.3s ease',
-                            border: isEarned ? `1px solid ${badge.color}40` : '1px solid var(--sidebar-border)'
-                        }}>
-                            <div style={{
-                                width: 64, height: 64,
-                                background: isEarned ? `${badge.color}15` : '#f1f5f9',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: isEarned ? badge.color : '#94a3b8',
-                                marginBottom: '1rem',
-                                boxShadow: isEarned ? `0 10px 20px -5px ${badge.color}30` : 'none'
-                            }}>
-                                {badge.icon}
-                            </div>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{badge.title}</h3>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>{badge.description}</p>
-                            <div style={{ marginTop: '1.25rem', fontSize: '0.75rem', fontWeight: 700, color: badge.color, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <Star size={12} /> {badge.xp} XP
-                            </div>
-
-                            {!isEarned && (
-                                <div style={{ position: 'absolute', inset: 0, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(1px)' }}>
-                                    <span style={{ padding: '0.35rem 0.75rem', background: '#94a3b8', color: 'white', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700 }}>LOCKED</span>
+            {CATEGORIES.map(cat => (
+                <div key={cat.id} style={{ marginBottom: '2rem' }}>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>{cat.name}</h2>
+                    <div className="badge-grid">
+                        {cat.badges.map(badge => {
+                            const unlocked = isUnlocked(badge, cat.id)
+                            return (
+                                <div key={badge.id} className={`badge-card ${unlocked ? 'badge-unlocked' : 'badge-locked'}`} style={{ color: badge.color }}>
+                                    <div className="hexagon-container">
+                                        <div className="hexagon">
+                                            <div className="hexagon-inner">
+                                                {cat.id === 'leaderboard' ? (
+                                                    <div style={{ color: badge.color }}>
+                                                        <Trophy size={18} style={{ marginBottom: 2 }} />
+                                                        <div style={{ fontSize: '0.7rem', fontWeight: 800 }}>#{badge.id.split('_')[1]}</div>
+                                                    </div>
+                                                ) : cat.id === 'problems' ? (
+                                                    <div style={{ color: badge.color }}>
+                                                        <Code size={18} style={{ marginBottom: 2 }} />
+                                                        <div style={{ fontSize: '0.7rem', fontWeight: 800 }}>{badge.threshold}</div>
+                                                    </div>
+                                                ) : cat.id === 'xp' ? (
+                                                    <div style={{ color: badge.color }}>
+                                                        <div style={{ fontSize: '0.75rem', fontWeight: 800 }}>XP</div>
+                                                        <div style={{ fontSize: '0.65rem', fontWeight: 700 }}>{badge.threshold}</div>
+                                                    </div>
+                                                ) : cat.id === 'streak' ? (
+                                                    <div style={{ color: badge.color }}>
+                                                        <Flame size={18} style={{ marginBottom: 2 }} />
+                                                        <div style={{ fontSize: '0.75rem', fontWeight: 800 }}>{badge.threshold}</div>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ color: badge.color, fontSize: '0.9rem', fontWeight: 800 }}>
+                                                        {badge.icon}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {!unlocked && (
+                                            <div className="lock-overlay">
+                                                <Lock size={10} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="badge-title">{badge.title}</div>
+                                    <div className="badge-subtitle">{badge.subtitle}</div>
                                 </div>
-                            )}
-                        </div>
-                    )
-                })}
-            </div>
-
-            <div className="glass-card" style={{ marginTop: '2.5rem', padding: '2rem', textAlign: 'center' }}>
-                <Trophy size={48} color="#f59e0b" style={{ margin: '0 auto 1.5rem' }} />
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Global Leaderboard</h2>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', maxWidth: 500, margin: '0 auto 1.5rem' }}>See where you stand among thousands of other learners and climb to the top.</p>
-                <div style={{ padding: '1.5rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                    Leaderboard feature is coming soon! Keep earning XP to secure your spot.
+                            )
+                        })}
+                    </div>
                 </div>
-            </div>
+            ))}
         </div>
     )
 }
