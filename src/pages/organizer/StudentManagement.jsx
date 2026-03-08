@@ -1,0 +1,513 @@
+import { useEffect, useState } from 'react'
+import { supabase } from '../../lib/supabase'
+import { Users, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+
+export default function StudentManagement() {
+    const { profile } = useAuth()
+    const [students, setStudents] = useState([])
+    const [courses, setCourses] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [search, setSearch] = useState('')
+    const [expanded, setExpanded] = useState(null)
+    const [assigningTo, setAssigningTo] = useState(null)
+    const [selectedCourse, setSelectedCourse] = useState('')
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
+    const [tab, setTab] = useState('active')
+    const [invites, setInvites] = useState([])
+    const [organizers, setOrganizers] = useState([])
+    const [inviteEmail, setInviteEmail] = useState('')
+
+    useEffect(() => {
+        if (profile?.id) loadData()
+    }, [profile])
+
+    async function loadData() {
+        setLoading(true)
+        try {
+            // Fetch all users with role 'student'
+            const { data: allStudents } = await supabase
+                .from('users')
+                .select('*')
+                .eq('role', 'student')
+
+            // Fetch all enrollments
+            const { data: enrollments } = await supabase
+                .from('enrollments')
+                .select('*, courses(title)')
+
+            // Fetch all progress records
+            const { data: allProgress } = await supabase
+                .from('progress')
+                .select('*')
+
+            // Fetch all courses owned by this organizer
+            const { data: allCourses } = await supabase
+                .from('courses')
+                .select('*')
+                .eq('organizer_id', profile.id)
+
+            setCourses(allCourses || [])
+
+            // Group enrollments & progress by student ID
+            const enrollmentMap = {}
+                ; (enrollments || []).forEach(e => {
+                    if (!enrollmentMap[e.student_id]) enrollmentMap[e.student_id] = []
+
+                    // Find matching progress
+                    const prog = (allProgress || []).find(p => p.student_id === e.student_id && p.course_id === e.course_id)
+
+                    enrollmentMap[e.student_id].push({
+                        id: e.course_id,
+                        course: e.courses?.title,
+                        completion: prog?.completion_percentage || 0,
+                        time: prog?.time_spent_minutes || 0,
+                    })
+                })
+
+            // Combine students with their enrollments
+            const studentsWithData = (allStudents || []).map(s => ({
+                ...s,
+                enrollments: enrollmentMap[s.id] || []
+            }))
+
+            setStudents(studentsWithData)
+
+            // Fetch other organizers
+            const { data: allOrganizers } = await supabase
+                .from('users')
+                .select('*')
+                .eq('role', 'organizer')
+            setOrganizers(allOrganizers || [])
+
+            // Fetch invites
+            const { data: allInvites } = await supabase
+                .from('organizer_invites')
+                .select('*')
+            setInvites(allInvites || [])
+        } catch (err) {
+            console.error('Error loading student management data:', err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleAssignCourse(e) {
+        e.preventDefault()
+        if (!selectedCourse || !assigningTo) return
+
+        setSaving(true)
+        setError('')
+
+        try {
+            // 1. Create enrollment
+            const { error: enrollError } = await supabase
+                .from('enrollments')
+                .insert({
+                    student_id: assigningTo.id,
+                    course_id: selectedCourse
+                })
+
+            if (enrollError) {
+                if (enrollError.code === '23505') throw new Error('Student is already enrolled in this course')
+                throw enrollError
+            }
+
+            // 2. Create initial progress record
+            const { error: progressError } = await supabase.from('progress').insert({
+                student_id: assigningTo.id,
+                course_id: selectedCourse,
+                completion_percentage: 0,
+                time_spent_minutes: 0
+            })
+
+            if (progressError) console.error('Error creating progress:', progressError)
+
+            setAssigningTo(null)
+            setSelectedCourse('')
+            loadData()
+        } catch (err) {
+            setError(err.message || 'Failed to assign course')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    async function handleUpdateStatus(studentId, newStatus) {
+        setLoading(true)
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ status: newStatus })
+                .eq('id', studentId)
+
+            if (error) throw error
+            loadData()
+        } catch (err) {
+            console.error('Error updating status:', err)
+            setError(err.message || 'Failed to update student status')
+            setLoading(false)
+        }
+    }
+
+    async function handleInviteOrganizer(e) {
+        e.preventDefault()
+        if (!inviteEmail) return
+        setSaving(true)
+        setError('')
+        try {
+            const { error: inviteError } = await supabase
+                .from('organizer_invites')
+                .insert({ email: inviteEmail.toLowerCase(), invited_by: profile.id })
+
+            if (inviteError) {
+                if (inviteError.code === '23505') throw new Error('This email is already invited')
+                throw inviteError
+            }
+
+            setInviteEmail('')
+            loadData()
+        } catch (err) {
+            setError(err.message || 'Failed to send invite')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    async function handleRemoveInvite(email) {
+        try {
+            const { error } = await supabase
+                .from('organizer_invites')
+                .delete()
+                .eq('email', email)
+            if (error) throw error
+            loadData()
+        } catch (err) {
+            console.error('Error removing invite:', err)
+        }
+    }
+
+    const filtered = students.filter(s => {
+        const matchesSearch = s.name?.toLowerCase().includes(search.toLowerCase()) || s.email?.toLowerCase().includes(search.toLowerCase())
+        if (tab === 'active') return matchesSearch && s.status === 'approved'
+        return matchesSearch && s.status === 'pending'
+    })
+
+    function avgCompletion(enrollments) {
+        if (!enrollments?.length) return 0
+        return Math.round(enrollments.reduce((sum, e) => sum + e.completion, 0) / enrollments.length)
+    }
+
+    return (
+        <div className="animate-fade-in">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Student Management</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                        {students.length} registered student{students.length !== 1 ? 's' : ''}
+                    </p>
+                </div>
+                <div style={{ position: 'relative' }}>
+                    <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Search students..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        style={{ paddingLeft: '2.25rem', width: 240 }}
+                    />
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--card-border)' }}>
+                <button
+                    className={`nav-btn ${tab === 'active' ? 'active' : ''}`}
+                    onClick={() => setTab('active')}
+                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'active' ? '2px solid #6366f1' : '2px solid transparent', color: tab === 'active' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
+                >
+                    Active Students
+                </button>
+                <button
+                    className={`nav-btn ${tab === 'pending' ? 'active' : ''}`}
+                    onClick={() => setTab('pending')}
+                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'pending' ? '2px solid #f59e0b' : '2px solid transparent', color: tab === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                >
+                    Pending Approval
+                    {students.filter(s => s.status === 'pending').length > 0 && (
+                        <span style={{ background: '#f59e0b', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontSize: '0.7rem' }}>
+                            {students.filter(s => s.status === 'pending').length}
+                        </span>
+                    )}
+                </button>
+                <button
+                    className={`nav-btn ${tab === 'team' ? 'active' : ''}`}
+                    onClick={() => setTab('team')}
+                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'team' ? '2px solid #8b5cf6' : '2px solid transparent', color: tab === 'team' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
+                >
+                    Organizer Team
+                </button>
+            </div>
+
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ color: 'var(--text-muted)' }}>Loading data...</p>
+                </div>
+            ) : tab === 'team' ? (
+                <div className="animate-fade-in">
+                    <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Invite New Organizer</h3>
+                        <form onSubmit={handleInviteOrganizer} style={{ display: 'flex', gap: '0.75rem' }}>
+                            <div style={{ flex: 1, position: 'relative' }}>
+                                <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input
+                                    type="email"
+                                    className="form-input"
+                                    placeholder="organizer@example.com"
+                                    value={inviteEmail}
+                                    onChange={e => setInviteEmail(e.target.value)}
+                                    style={{ paddingLeft: '2.5rem' }}
+                                    required
+                                />
+                            </div>
+                            <button type="submit" className="btn-primary" disabled={saving} style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                                {saving ? 'Inviting...' : 'Invite'}
+                            </button>
+                        </form>
+                        {error && <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.5rem' }}>{error}</p>}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        {/* Current Organizers */}
+                        <div>
+                            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Users size={16} /> Current Organizers ({organizers.length})
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {organizers.map(org => (
+                                    <div key={org.id} className="glass-card" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{ width: 32, height: 32, background: 'var(--card-border)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>
+                                            {org.name?.[0]?.toUpperCase()}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{org.name} {org.id === profile.id && '(You)'}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{org.email}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Pending Invites */}
+                        <div>
+                            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Clock size={16} /> Pending Invites ({invites.length})
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {invites.length === 0 ? (
+                                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                        No pending invitations
+                                    </div>
+                                ) : (
+                                    invites.map(invite => (
+                                        <div key={invite.email} className="glass-card" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{invite.email}</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                    Invited {new Date(invite.created_at).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleRemoveInvite(invite.email)}
+                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7 }}
+                                                title="Revoke Invite"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
+                    <Users size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+                    <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No students found</p>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {filtered.map(student => {
+                        const avg = avgCompletion(student.enrollments)
+                        const isOpen = expanded === student.id
+                        return (
+                            <div key={student.id} className="glass-card" style={{ overflow: 'hidden' }}>
+                                {/* Row */}
+                                <div
+                                    className="stack-mobile"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', cursor: 'pointer' }}
+                                    onClick={() => setExpanded(isOpen ? null : student.id)}
+                                >
+                                    {/* Avatar + Main Info Group */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, width: '100%' }}>
+                                        {/* Avatar */}
+                                        <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
+                                            {student.name?.[0]?.toUpperCase() || '?'}
+                                        </div>
+                                        {/* Info */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{student.name}</div>
+                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{student.email}</div>
+                                        </div>
+                                    </div>
+
+                                    {tab === 'pending' ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: 'auto' }}>
+                                            <button
+                                                className="btn-primary"
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', background: 'linear-gradient(135deg,#10b981,#059669)' }}
+                                                onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'approved'); }}
+                                            >
+                                                <CheckCircle2 size={14} /> Approve
+                                            </button>
+                                            <button
+                                                className="btn-secondary"
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
+                                                onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'rejected'); }}
+                                            >
+                                                <XCircle size={14} /> Reject
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', width: window.innerWidth <= 768 ? '100%' : 'auto', justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', gap: '1.5rem' }}>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{student.enrollments?.length || 0}</div>
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Courses</div>
+                                                </div>
+                                                <div style={{ textAlign: 'center', minWidth: 60 }}>
+                                                    <div style={{ fontSize: '1rem', fontWeight: 700, color: avg > 70 ? '#10b981' : avg > 40 ? '#f59e0b' : '#f87171' }}>{avg}%</div>
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Progress</div>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ width: 100 }} className="hide-mobile">
+                                                <div className="progress-bar-track">
+                                                    <div className="progress-bar-fill" style={{ width: `${avg}%`, background: avg > 70 ? 'linear-gradient(90deg,#10b981,#059669)' : avg > 40 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)' }} />
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <button
+                                                    className="btn-secondary"
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setAssigningTo(student);
+                                                        setError('');
+                                                    }}
+                                                >
+                                                    <Plus size={14} /> Assign
+                                                </button>
+                                                {isOpen ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Expanded detail */}
+                                {isOpen && (
+                                    <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--card-border)' }}>
+                                        <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                                            {student.enrollments?.length > 0 ? (
+                                                student.enrollments.map((en, i) => (
+                                                    <div key={i} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                                            <BookOpen size={14} color="#818cf8" />
+                                                            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{en.course}</span>
+                                                        </div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+                                                            <span style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}><TrendingUp size={11} /> {en.completion}%</span>
+                                                            <span style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}><Clock size={11} /> {en.time} min</span>
+                                                        </div>
+                                                        <div className="progress-bar-track">
+                                                            <div className="progress-bar-fill" style={{ width: `${en.completion}%` }} />
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                                                    This student is not yet enrolled in any of your courses.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
+
+            {/* Assign Course Modal */}
+            {assigningTo && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                    <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 400, padding: '2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>Assign Course</h3>
+                            <button onClick={() => setAssigningTo(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Student</div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{assigningTo.name}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{assigningTo.email}</div>
+                        </div>
+
+                        {error && (
+                            <div style={{ padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <AlertCircle size={16} flexShrink={0} /> {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleAssignCourse}>
+                            <div className="form-group" style={{ marginBottom: '2rem' }}>
+                                <label className="form-label" style={{ marginBottom: '0.75rem' }}>Select Course</label>
+                                <div style={{ position: 'relative' }}>
+                                    <BookOpen size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                    <select
+                                        className="form-input"
+                                        value={selectedCourse}
+                                        onChange={(e) => setSelectedCourse(e.target.value)}
+                                        required
+                                        style={{ paddingLeft: '2.5rem', appearance: 'none' }}
+                                    >
+                                        <option value="">-- Choose a course --</option>
+                                        {courses.map(c => (
+                                            <option key={c.id} value={c.id}>{c.title}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn-secondary" onClick={() => setAssigningTo(null)} disabled={saving}>Cancel</button>
+                                <button type="submit" className="btn-primary" disabled={saving || !selectedCourse} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {saving ? <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : <Save size={16} />}
+                                    Assign
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+

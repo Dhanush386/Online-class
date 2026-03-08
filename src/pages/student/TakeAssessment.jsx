@@ -1,0 +1,241 @@
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
+import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle } from 'lucide-react'
+
+const MAX_ATTEMPTS = 2
+
+export default function TakeAssessment() {
+    const { assessmentId } = useParams()
+    const { profile } = useAuth()
+    const navigate = useNavigate()
+
+    const [assessment, setAssessment] = useState(null)
+    const [questions, setQuestions] = useState([])
+    const [attemptNumber, setAttemptNumber] = useState(1)
+    const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
+    const [submitted, setSubmitted] = useState(false)
+    const [result, setResult] = useState(null)
+    const [error, setError] = useState('')
+
+    const [currentIdx, setCurrentIdx] = useState(0)
+    const [answers, setAnswers] = useState({}) // { questionId: selectedOption }
+
+    useEffect(() => {
+        if (assessmentId) loadData()
+    }, [assessmentId])
+
+    async function loadData() {
+        setLoading(true)
+        try {
+            // Check attempt count first
+            const { data: existingSubs } = await supabase
+                .from('assessment_submissions')
+                .select('id')
+                .eq('assessment_id', assessmentId)
+                .eq('student_id', profile.id)
+
+            if ((existingSubs || []).length >= MAX_ATTEMPTS) {
+                navigate(`/student/assessments/${assessmentId}/review`, { replace: true })
+                return
+            }
+
+            setAttemptNumber((existingSubs || []).length + 1)
+
+            const [{ data: assess, error: aErr }, { data: qData, error: qErr }] = await Promise.all([
+                supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
+                supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true })
+            ])
+            if (aErr) throw aErr
+            if (qErr) throw qErr
+
+            setAssessment(assess)
+            setQuestions(qData || [])
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleSubmit() {
+        if (Object.keys(answers).length < questions.length) {
+            if (!confirm('You haven\'t answered all questions. Submit anyway?')) return
+        }
+
+        setSubmitting(true)
+        try {
+            let correctCount = 0
+            const submissionAnswers = questions.map(q => {
+                const selected = answers[q.id] || ''
+                const isCorrect = selected === q.correct_answer
+                if (isCorrect) correctCount++
+                return {
+                    question_id: q.id,
+                    selected_option: selected,
+                    is_correct: isCorrect
+                }
+            })
+
+            const { data, error: sErr } = await supabase
+                .from('assessment_submissions')
+                .insert({
+                    assessment_id: assessmentId,
+                    student_id: profile.id,
+                    score: correctCount,
+                    total_questions: questions.length,
+                    answers: submissionAnswers
+                })
+                .select()
+                .single()
+
+            if (sErr) throw sErr
+
+            setResult({
+                score: correctCount,
+                total: questions.length,
+                percentage: Math.round((correctCount / questions.length) * 100)
+            })
+            setSubmitted(true)
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setSubmitting(false)
+        }
+    }
+
+    if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading assessment...</div>
+    if (error && !assessment) return <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>Error: {error}</div>
+
+    if (submitted) {
+        return (
+            <div className="animate-fade-in" style={{ maxWidth: 600, margin: '4rem auto', textAlign: 'center' }}>
+                <div className="glass-card" style={{ padding: '3rem' }}>
+                    <div style={{ width: 80, height: 80, background: '#ecfdf5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#10b981' }}>
+                        <CheckCircle2 size={40} />
+                    </div>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Assessment Completed!</h1>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>You have successfully submitted your answers for <strong>{assessment?.title}</strong>.</p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                        <div style={{ padding: '1.5rem', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#6366f1' }}>{result.score} / {result.total}</div>
+                            <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Correct Answers</div>
+                        </div>
+                        <div style={{ padding: '1.5rem', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>{result.percentage}%</div>
+                            <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Final Score</div>
+                        </div>
+                    </div>
+
+                    <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                        Back to Course
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    const currentQ = questions[currentIdx]
+    const progress = Math.round(((currentIdx + 1) / questions.length) * 100)
+
+    return (
+        <div className="animate-fade-in" style={{ maxWidth: 800, margin: '0 auto' }}>
+            {/* Header */}
+            <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                    <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                        <ChevronLeft size={16} /> Quit Assessment
+                    </button>
+                    <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{assessment?.title}</h1>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Question {currentIdx + 1} of {questions.length}</div>
+                    <div style={{ width: 120, height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ width: `${progress}%`, height: '100%', background: '#6366f1', transition: 'width 0.3s ease' }} />
+                    </div>
+                </div>
+            </div>
+
+            {/* Question Card */}
+            <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '2rem' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2rem', lineHeight: 1.5 }}>
+                    {currentQ?.question_text}
+                </h2>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {currentQ?.options.map((opt, i) => {
+                        const isSelected = answers[currentQ.id] === opt
+                        return (
+                            <button
+                                key={i}
+                                onClick={() => setAnswers(p => ({ ...p, [currentQ.id]: opt }))}
+                                style={{
+                                    padding: '1.25rem 1.5rem',
+                                    borderRadius: 12,
+                                    border: `2px solid ${isSelected ? '#6366f1' : '#e2e8f0'}`,
+                                    background: isSelected ? '#6366f108' : 'white',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem',
+                                    transition: 'all 0.2s ease',
+                                    color: isSelected ? '#4f46e5' : 'var(--text-primary)',
+                                    fontWeight: isSelected ? 600 : 500
+                                }}
+                            >
+                                <div style={{
+                                    width: 24, height: 24,
+                                    borderRadius: '50%',
+                                    border: `2px solid ${isSelected ? '#6366f1' : '#cbd5e1'}`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: isSelected ? '#6366f1' : 'transparent',
+                                    color: 'white',
+                                    fontSize: '0.75rem',
+                                    flexShrink: 0
+                                }}>
+                                    {isSelected ? <CheckCircle2 size={14} /> : String.fromCharCode(65 + i)}
+                                </div>
+                                {opt}
+                            </button>
+                        )
+                    })}
+                </div>
+            </div>
+
+            {/* Navigation */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button
+                    onClick={() => setCurrentIdx(p => Math.max(0, p - 1))}
+                    disabled={currentIdx === 0}
+                    className="btn-secondary"
+                    style={{ gap: '0.5rem', opacity: currentIdx === 0 ? 0.5 : 1 }}
+                >
+                    <ChevronLeft size={18} /> Previous
+                </button>
+
+                {currentIdx === questions.length - 1 ? (
+                    <button
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="btn-primary"
+                        style={{ gap: '0.5rem', padding: '0.75rem 2rem' }}
+                    >
+                        {submitting ? 'Submitting...' : <><Send size={18} /> Finish Assessment</>}
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => setCurrentIdx(p => Math.min(questions.length - 1, p + 1))}
+                        className="btn-primary"
+                        style={{ gap: '0.5rem' }}
+                    >
+                        Next Question <ChevronRight size={18} />
+                    </button>
+                )}
+            </div>
+        </div>
+    )
+}
