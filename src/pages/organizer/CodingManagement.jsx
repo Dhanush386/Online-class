@@ -157,6 +157,8 @@ export default function CodingManagement() {
                 <div style={{ flex: 1, position: 'relative' }}>
                     <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input
+                        id="challenge-search"
+                        name="challenge-search"
                         type="text"
                         placeholder="Search challenges by title or course..."
                         style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: 12, border: '1px solid var(--card-border)', background: 'white', fontSize: '0.9rem' }}
@@ -244,7 +246,14 @@ export default function CodingManagement() {
                             }}>
                                 <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
                                     <label className="form-label">Course</label>
-                                    <select className="form-input" value={formData.course_id} onChange={e => setFormData(p => ({ ...p, course_id: e.target.value }))} required>
+                                    <select
+                                        id="course_id"
+                                        name="course_id"
+                                        className="form-input"
+                                        value={formData.course_id}
+                                        onChange={e => setFormData(p => ({ ...p, course_id: e.target.value }))}
+                                        required
+                                    >
                                         <option value="">Select Course</option>
                                         {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                                     </select>
@@ -270,6 +279,8 @@ export default function CodingManagement() {
                                 <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
                                     <label className="form-label">XP Reward</label>
                                     <input
+                                        id="xp_reward"
+                                        name="xp_reward"
                                         type="number"
                                         className="form-input"
                                         value={formData.xp_reward}
@@ -280,7 +291,16 @@ export default function CodingManagement() {
 
                             <div style={{ marginBottom: '1.25rem' }}>
                                 <label className="form-label">Challenge Title</label>
-                                <input type="text" className="form-input" placeholder="e.g. Reverse a String" value={formData.title} onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} required />
+                                <input
+                                    id="challenge-title"
+                                    name="challenge-title"
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="e.g. Reverse a String"
+                                    value={formData.title}
+                                    onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
+                                    required
+                                />
                             </div>
 
                             <div style={{ marginBottom: '1.25rem' }}>

@@ -82,6 +82,8 @@ export default function Login() {
                             <div style={{ position: 'relative' }}>
                                 <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
+                                    id="email"
+                                    name="email"
                                     type="email"
                                     className="form-input"
                                     placeholder="you@example.com"
@@ -98,6 +100,8 @@ export default function Login() {
                             <div style={{ position: 'relative' }}>
                                 <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
+                                    id="password"
+                                    name="password"
                                     type={showPassword ? 'text' : 'password'}
                                     className="form-input"
                                     placeholder="••••••••"

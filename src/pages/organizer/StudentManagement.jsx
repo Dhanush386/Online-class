@@ -247,12 +247,14 @@ export default function StudentManagement() {
                 <div style={{ position: 'relative' }}>
                     <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input
+                        id="student-search"
+                        name="student-search"
                         type="text"
-                        className="form-input"
-                        placeholder="Search students..."
+                        placeholder="Search students by name or email..."
                         value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        style={{ paddingLeft: '2.25rem', width: 240 }}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="form-input"
+                        style={{ paddingLeft: '2.5rem' }}
                     />
                 </div>
             </div>
@@ -299,6 +301,8 @@ export default function StudentManagement() {
                             <div style={{ flex: 1, position: 'relative' }}>
                                 <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
+                                    id="invite-email"
+                                    name="invite-email"
                                     type="email"
                                     className="form-input"
                                     placeholder="organizer@example.com"

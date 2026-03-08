@@ -197,6 +197,8 @@ export default function OrganizerAssessments() {
                             <div style={{ marginBottom: '1.25rem' }}>
                                 <label className="form-label">Course</label>
                                 <select
+                                    id="course_id"
+                                    name="course_id"
                                     className="form-input"
                                     value={formData.course_id}
                                     onChange={e => setFormData(p => ({ ...p, course_id: e.target.value }))}
@@ -210,6 +212,8 @@ export default function OrganizerAssessments() {
                             <div style={{ marginBottom: '1.25rem' }}>
                                 <label className="form-label">Assessment Title</label>
                                 <input
+                                    id="assessment-title"
+                                    name="assessment-title"
                                     type="text"
                                     className="form-input"
                                     placeholder="e.g. Week 1 Quiz: Introduction"
@@ -223,6 +227,8 @@ export default function OrganizerAssessments() {
                                 <div>
                                     <label className="form-label">Type</label>
                                     <select
+                                        id="assessment-type"
+                                        name="assessment-type"
                                         className="form-input"
                                         value={formData.type}
                                         onChange={e => setFormData(p => ({ ...p, type: e.target.value }))}
@@ -235,6 +241,8 @@ export default function OrganizerAssessments() {
                                 <div>
                                     <label className="form-label">Due Date (optional)</label>
                                     <input
+                                        id="due-date"
+                                        name="due-date"
                                         type="date"
                                         className="form-input"
                                         value={formData.due_date}

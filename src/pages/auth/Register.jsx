@@ -115,21 +115,51 @@ export default function Register() {
                             <label className="form-label">Full Name</label>
                             <div style={{ position: 'relative' }}>
                                 <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input type="text" className="form-input" placeholder="John Doe" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
+                                <input
+                                    id="name"
+                                    name="name"
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="John Doe"
+                                    value={form.name}
+                                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                                    style={{ paddingLeft: '2.5rem' }}
+                                    required
+                                />
                             </div>
                         </div>
                         <div>
                             <label className="form-label">Email Address</label>
                             <div style={{ position: 'relative' }}>
                                 <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input type="email" className="form-input" placeholder="you@example.com" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    className="form-input"
+                                    placeholder="you@example.com"
+                                    value={form.email}
+                                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                                    style={{ paddingLeft: '2.5rem' }}
+                                    required
+                                />
                             </div>
                         </div>
                         <div>
                             <label className="form-label">Password</label>
                             <div style={{ position: 'relative' }}>
                                 <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input type={showPassword ? 'text' : 'password'} className="form-input" placeholder="Min. 6 characters" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }} required />
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    className="form-input"
+                                    placeholder="Min. 6 characters"
+                                    value={form.password}
+                                    onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                                    style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
+                                    required
+                                />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
