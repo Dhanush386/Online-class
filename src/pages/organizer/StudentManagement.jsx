@@ -29,7 +29,7 @@ export default function StudentManagement() {
             // Fetch all users with role 'student'
             const { data: allStudents } = await supabase
                 .from('users')
-                .select('*')
+                .select('id, name, email, role, status, current_session_id, access_expires_at')
                 .eq('role', 'student')
 
             // Fetch all enrollments
@@ -45,7 +45,7 @@ export default function StudentManagement() {
             // Fetch all courses owned by this organizer
             const { data: allCourses } = await supabase
                 .from('courses')
-                .select('*')
+                .select('id, title, organizer_id')
                 .eq('organizer_id', profile.id)
 
             setCourses(allCourses || [])
