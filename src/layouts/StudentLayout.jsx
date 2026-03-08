@@ -20,6 +20,7 @@ export default function StudentLayout() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
     const [showNotifications, setShowNotifications] = useState(false)
+    const [unreadCount, setUnreadCount] = useState(1) // Simulate 1 unread notification
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -130,7 +131,7 @@ export default function StudentLayout() {
                                 style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8, padding: '0.5rem', color: 'var(--text-secondary)', cursor: 'pointer', position: 'relative' }}
                             >
                                 <Bell size={18} />
-                                <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, background: '#10b981', borderRadius: '50%' }} />
+                                {unreadCount > 0 && <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, background: '#10b981', borderRadius: '50%' }} />}
                             </button>
 
                             {showNotifications && (
@@ -142,11 +143,18 @@ export default function StudentLayout() {
                                     <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: 280, background: 'white', borderRadius: 12, boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--sidebar-border)', zIndex: 50, padding: '1rem', overflow: 'hidden' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                             <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</span>
-                                            <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>Mark all as read</span>
+                                            <button
+                                                onClick={() => setUnreadCount(0)}
+                                                style={{ border: 'none', background: 'none', fontSize: '0.7rem', color: '#10b981', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                                            >
+                                                Mark all as read
+                                            </button>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center', padding: '1rem 0' }}>
                                             <Bell size={24} color="var(--text-muted)" style={{ margin: '0 auto', opacity: 0.2 }} />
-                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No new notifications</p>
+                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                {unreadCount > 0 ? 'You have new notifications' : 'No new notifications'}
+                                            </p>
                                         </div>
                                     </div>
                                 </>
