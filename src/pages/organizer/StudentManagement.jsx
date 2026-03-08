@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail } from 'lucide-react'
+import { Users, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail, Trash2, Calendar } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function StudentManagement() {
@@ -148,6 +148,40 @@ export default function StudentManagement() {
             console.error('Error updating status:', err)
             setError(err.message || 'Failed to update student status')
             setLoading(false)
+        }
+    }
+
+    async function handleDeleteStudent(id) {
+        if (!confirm('Are you sure you want to completely remove this student? This will also remove their course enrollments and progress.')) return
+        setLoading(true)
+        try {
+            const { error } = await supabase
+                .from('users')
+                .delete()
+                .eq('id', id)
+            if (error) throw error
+            loadData()
+        } catch (err) {
+            console.error('Error deleting student:', err)
+            setError(err.message || 'Failed to delete student')
+            setLoading(false)
+        }
+    }
+
+    async function handleUpdateExpiry(studentId, expiryDate) {
+        setSaving(true)
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ access_expires_at: expiryDate ? new Date(expiryDate).toISOString() : null })
+                .eq('id', studentId)
+            if (error) throw error
+            loadData()
+        } catch (err) {
+            console.error('Error updating expiry:', err)
+            setError(err.message || 'Failed to update access expiry')
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -412,6 +446,17 @@ export default function StudentManagement() {
                                                 >
                                                     <Plus size={14} /> Assign
                                                 </button>
+                                                <button
+                                                    className="btn-secondary"
+                                                    style={{ padding: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteStudent(student.id);
+                                                    }}
+                                                    title="Remove Student"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
                                                 {isOpen ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
                                             </div>
                                         </div>
@@ -422,6 +467,39 @@ export default function StudentManagement() {
                                 {isOpen && (
                                     <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--card-border)' }}>
                                         <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                                            {/* Expiry Control */}
+                                            <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 10, border: '1px solid #fed7aa', gridColumn: '1 / -1', marginBottom: '0.5rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <Clock size={16} color="#f97316" />
+                                                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#9a3412' }}>Access Control</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <span style={{ fontSize: '0.75rem', color: '#9a3412' }}>Expires on:</span>
+                                                        <input
+                                                            type="datetime-local"
+                                                            className="form-input"
+                                                            style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', width: 'auto', background: 'white' }}
+                                                            value={student.access_expires_at ? new Date(new Date(student.access_expires_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                                                            onChange={(e) => handleUpdateExpiry(student.id, e.target.value)}
+                                                        />
+                                                        {student.access_expires_at && (
+                                                            <button
+                                                                onClick={() => handleUpdateExpiry(student.id, null)}
+                                                                style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                                                            >
+                                                                Clear Expire
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {student.access_expires_at && new Date(student.access_expires_at) < new Date() && (
+                                                    <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                        <AlertCircle size={12} /> Access has expired
+                                                    </p>
+                                                )}
+                                            </div>
+
                                             {student.enrollments?.length > 0 ? (
                                                 student.enrollments.map((en, i) => (
                                                     <div key={i} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>

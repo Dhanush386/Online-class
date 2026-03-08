@@ -37,9 +37,25 @@ export function AuthProvider({ children }) {
         return () => subscription.unsubscribe()
     }, [])
 
-    // Single session detection
+    const checkExpiry = (prof) => {
+        if (!prof || prof.role !== 'student' || !prof.access_expires_at) return false
+        const expiry = new Date(prof.access_expires_at)
+        if (expiry < new Date()) {
+            alert('Access Expired: Your account access period has ended. Please contact your organizer.')
+            signOut()
+            return true
+        }
+        return false
+    }
+
+    // Single session and Expiry detection
     useEffect(() => {
         if (!user || !profile) return
+
+        // Periodic expiry check
+        const expiryCheck = setInterval(() => {
+            checkExpiry(profile)
+        }, 30000)
 
         const channel = supabase
             .channel(`user-session-${user.id}`)
@@ -49,14 +65,19 @@ export function AuthProvider({ children }) {
                 table: 'users',
                 filter: `id=eq.${user.id}`
             }, (payload) => {
+                // Check session ID
                 if (payload.new.current_session_id && payload.new.current_session_id !== browserSessionId) {
                     alert('Session Invalidation: You have been logged out because another system logged in using your account.')
                     signOut()
+                    return
                 }
+                // Check expiry
+                checkExpiry(payload.new)
             })
             .subscribe()
 
         return () => {
+            clearInterval(expiryCheck)
             supabase.removeChannel(channel)
         }
     }, [user, profile, browserSessionId])
@@ -87,6 +108,9 @@ export function AuthProvider({ children }) {
                     }
                 }
             } else if (data) {
+                // Check if expired on load
+                if (checkExpiry(data)) return
+
                 // Update DB with current session ID if different
                 if (data.current_session_id !== browserSessionId) {
                     await supabase
