@@ -31,6 +31,7 @@ export default function CodingManagement() {
         course_id: '', language: 'python', difficulty: 'easy',
         starter_code: '', constraints: '', input_format: '', output_format: '',
         xp_reward: 15, open_time: '', close_time: '',
+        target_visual_url: '', allowed_assets: '',
         test_cases: [{ input: '', expected_output: '', is_hidden: false }]
     })
 
@@ -65,6 +66,7 @@ export default function CodingManagement() {
                 test_cases: formData.test_cases.filter(tc => tc.expected_output.trim() !== ''),
                 open_time: formData.open_time ? new Date(formData.open_time).toISOString() : null,
                 close_time: formData.close_time ? new Date(formData.close_time).toISOString() : null,
+                allowed_assets: formData.allowed_assets.split('\n').map(l => l.trim()).filter(Boolean)
             }
 
             if (editingId) {
@@ -113,6 +115,8 @@ export default function CodingManagement() {
             xp_reward: c.xp_reward || 15,
             open_time: toLocalInput(c.open_time),
             close_time: toLocalInput(c.close_time),
+            target_visual_url: c.target_visual_url || '',
+            allowed_assets: Array.isArray(c.allowed_assets) ? c.allowed_assets.join('\n') : '',
             test_cases: c.test_cases || [{ input: '', expected_output: '', is_hidden: false }]
         })
         setShowModal(true)
@@ -124,6 +128,7 @@ export default function CodingManagement() {
             course_id: '', language: 'python', difficulty: 'easy',
             starter_code: '', constraints: '', input_format: '', output_format: '',
             xp_reward: 15, open_time: '', close_time: '',
+            target_visual_url: '', allowed_assets: '',
             test_cases: [{ input: '', expected_output: '', is_hidden: false }]
         })
         setEditingId(null)
@@ -346,6 +351,29 @@ export default function CodingManagement() {
                                         return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.3rem' }}>⏱ {mins} min window</div> : null
                                     })()}
                                 </div>
+                            </div>
+
+                            <div style={{ marginBottom: '1.25rem' }}>
+                                <label className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Link to an image or video for the student to replicate"
+                                    value={formData.target_visual_url}
+                                    onChange={e => setFormData(p => ({ ...p, target_visual_url: e.target.value }))}
+                                />
+                                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Useful for HTML/CSS challenges where students need a visual goal.</p>
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                <textarea
+                                    className="form-input"
+                                    rows={3}
+                                    placeholder="List links (one per line) students can copy-paste (images, fonts, etc.)"
+                                    value={formData.allowed_assets}
+                                    onChange={e => setFormData(p => ({ ...p, allowed_assets: e.target.value }))}
+                                />
                             </div>
 
                             <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>

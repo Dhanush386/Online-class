@@ -88,7 +88,10 @@ export default function CodeWorkspace() {
         if (isStarted) {
             document.addEventListener('contextmenu', handleSecurity)
             document.addEventListener('copy', handleSecurity)
-            document.addEventListener('paste', handleSecurity)
+            // Only block paste for non-web challenges
+            if (challenge?.language !== 'html') {
+                document.addEventListener('paste', handleSecurity)
+            }
             document.addEventListener('cut', handleSecurity)
             document.addEventListener('fullscreenchange', handleFullScreenChange)
             document.addEventListener('webkitfullscreenchange', handleFullScreenChange)
@@ -420,6 +423,42 @@ export default function CodeWorkspace() {
                         <div style={{ marginBottom: '1.5rem' }}>
                             <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Constraints</h4>
                             <pre style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: 8, fontSize: '0.8rem', color: '#64748b', whiteSpace: 'pre-wrap' }}>{challenge.constraints}</pre>
+                        </div>
+                    )}
+
+                    {challenge.target_visual_url && (
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Reference Goal</h4>
+                            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                                {challenge.target_visual_url.match(/\.(mp4|webm|ogg)$/i) ? (
+                                    <video src={challenge.target_visual_url} controls style={{ width: '100%', display: 'block' }} />
+                                ) : (
+                                    <img src={challenge.target_visual_url} alt="Goal" style={{ width: '100%', display: 'block' }} />
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {challenge.allowed_assets && challenge.allowed_assets.length > 0 && (
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Assets & Links</h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {challenge.allowed_assets.map((asset, i) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', background: '#f1f5f9', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                                        <div style={{ flex: 1, fontSize: '0.75rem', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{asset}</div>
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(asset);
+                                                alert('Link copied to clipboard!');
+                                            }}
+                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: 4, cursor: 'pointer' }}
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            <p style={{ fontSize: '0.65rem', color: '#6366f1', marginTop: '0.5rem', fontWeight: 600 }}>Tip: Pasting is allowed for HTML challenges.</p>
                         </div>
                     )}
                 </div>
