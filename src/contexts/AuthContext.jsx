@@ -10,7 +10,10 @@ export function AuthProvider({ children }) {
     const [browserSessionId] = useState(() => {
         let id = localStorage.getItem('online_class_session_uuid')
         if (!id) {
-            id = crypto.randomUUID()
+            // Fallback for crypto.randomUUID if not available
+            id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
             localStorage.setItem('online_class_session_uuid', id)
         }
         return id
