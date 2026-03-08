@@ -7,6 +7,14 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
     const [profile, setProfile] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [browserSessionId] = useState(() => {
+        let id = localStorage.getItem('online_class_session_uuid')
+        if (!id) {
+            id = crypto.randomUUID()
+            localStorage.setItem('online_class_session_uuid', id)
+        }
+        return id
+    })
 
     useEffect(() => {
         // Get initial session
@@ -29,6 +37,30 @@ export function AuthProvider({ children }) {
         return () => subscription.unsubscribe()
     }, [])
 
+    // Single session detection
+    useEffect(() => {
+        if (!user || !profile) return
+
+        const channel = supabase
+            .channel(`user-session-${user.id}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'users',
+                filter: `id=eq.${user.id}`
+            }, (payload) => {
+                if (payload.new.current_session_id && payload.new.current_session_id !== browserSessionId) {
+                    alert('Session Invalidation: You have been logged out because another system logged in using your account.')
+                    signOut()
+                }
+            })
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [user, profile, browserSessionId])
+
     async function fetchProfile(userId) {
         try {
             const { data, error } = await supabase
@@ -45,7 +77,7 @@ export function AuthProvider({ children }) {
                     const role = user.user_metadata?.role || 'student'
                     const { data: newProfile, error: insertError } = await supabase
                         .from('users')
-                        .insert({ id: user.id, name, email: user.email, role })
+                        .insert({ id: user.id, name, email: user.email, role, current_session_id: browserSessionId })
                         .select()
                         .single()
 
@@ -53,6 +85,14 @@ export function AuthProvider({ children }) {
                         setProfile(newProfile)
                         return
                     }
+                }
+            } else if (data) {
+                // Update DB with current session ID if different
+                if (data.current_session_id !== browserSessionId) {
+                    await supabase
+                        .from('users')
+                        .update({ current_session_id: browserSessionId })
+                        .eq('id', userId)
                 }
             }
 
