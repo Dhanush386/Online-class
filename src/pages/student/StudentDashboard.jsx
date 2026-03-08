@@ -133,16 +133,19 @@ export default function StudentDashboard() {
                         </svg>
                     </div>
                     <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Course Completion</p>
-                    <div style={{ marginTop: '0.75rem' }}>
+                    <Link to="/student/courses" style={{ marginTop: '0.75rem', textDecoration: 'none' }}>
                         <span className="badge badge-success">{data.courses} Course{data.courses !== 1 ? 's' : ''} Enrolled</span>
-                    </div>
+                    </Link>
                 </div>
 
                 {/* Latest Challenges */}
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <CodeIcon size={16} color="#6366f1" /> New Challenges
-                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <CodeIcon size={16} color="#6366f1" /> New Challenges
+                        </h3>
+                        <Link to="/student/coding" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all →</Link>
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {latestChallenges.length === 0 ? (
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>No challenges available</p>
@@ -159,6 +162,30 @@ export default function StudentDashboard() {
                             </Link>
                         ))}
                     </div>
+                </div>
+
+                {/* Achievements Card */}
+                <div className="glass-card" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Award size={16} color="#f59e0b" /> Earned Badges
+                        </h3>
+                        <Link to="/student/achievements" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all →</Link>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', padding: '0.5rem 0' }}>
+                        <div style={{ width: 48, height: 48, background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }} title="Early Bird">
+                            <Rocket size={20} />
+                        </div>
+                        <div style={{ width: 48, height: 48, background: 'rgba(239,68,68,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }} title="Fast Learner">
+                            <Flame size={20} />
+                        </div>
+                        <div style={{ width: 48, height: 48, background: 'rgba(245,158,11,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }} title="Quiz Master">
+                            <Trophy size={20} />
+                        </div>
+                    </div>
+                    <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
+                        You have earned **3 badges**!
+                    </p>
                 </div>
             </div>
         </div>

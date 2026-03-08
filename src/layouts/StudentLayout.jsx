@@ -9,6 +9,7 @@ import {
 const navItems = [
     { to: '/student', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/student/courses', icon: BookOpen, label: 'My Courses' },
+    { to: '/student/achievements', icon: Award, label: 'Achievements' },
     { to: '/student/playground', icon: Globe, label: 'Code Playground' },
     { to: '/student/schedule', icon: Calendar, label: 'Schedule' },
 ]
@@ -121,7 +122,12 @@ export default function StudentLayout() {
                     </button>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <button className="hide-mobile" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8, padding: '0.5rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                        <button
+                            onClick={() => navigate('/student/achievements')}
+                            className="hide-mobile"
+                            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8, padding: '0.5rem', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                            title="Achievements"
+                        >
                             <Award size={18} color="#10b981" />
                         </button>
                         <div style={{ position: 'relative' }}>
