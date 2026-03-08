@@ -23,8 +23,8 @@ export default function StudentManagement() {
         if (profile?.id) loadData()
     }, [profile])
 
-    async function loadData() {
-        setLoading(true)
+    async function loadData(silent = false) {
+        if (!silent) setLoading(true)
         try {
             // Fetch all users with role 'student'
             const { data: allStudents } = await supabase
@@ -126,7 +126,7 @@ export default function StudentManagement() {
 
             setAssigningTo(null)
             setSelectedCourse('')
-            loadData()
+            loadData(true)
         } catch (err) {
             setError(err.message || 'Failed to assign course')
         } finally {
@@ -135,7 +135,7 @@ export default function StudentManagement() {
     }
 
     async function handleUpdateStatus(studentId, newStatus) {
-        setLoading(true)
+        setSaving(true)
         try {
             const { error } = await supabase
                 .from('users')
@@ -143,28 +143,30 @@ export default function StudentManagement() {
                 .eq('id', studentId)
 
             if (error) throw error
-            loadData()
+            loadData(true)
         } catch (err) {
             console.error('Error updating status:', err)
             setError(err.message || 'Failed to update student status')
-            setLoading(false)
+        } finally {
+            setSaving(false)
         }
     }
 
     async function handleDeleteStudent(id) {
         if (!confirm('Are you sure you want to completely remove this student? This will also remove their course enrollments and progress.')) return
-        setLoading(true)
+        setSaving(true)
         try {
             const { error } = await supabase
                 .from('users')
                 .delete()
                 .eq('id', id)
             if (error) throw error
-            loadData()
+            loadData(true)
         } catch (err) {
             console.error('Error deleting student:', err)
             setError(err.message || 'Failed to delete student')
-            setLoading(false)
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -176,7 +178,7 @@ export default function StudentManagement() {
                 .update({ access_expires_at: expiryDate ? new Date(expiryDate).toISOString() : null })
                 .eq('id', studentId)
             if (error) throw error
-            loadData()
+            loadData(true)
         } catch (err) {
             console.error('Error updating expiry:', err)
             setError(err.message || 'Failed to update access expiry')
