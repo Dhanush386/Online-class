@@ -21,7 +21,9 @@ export default function StudentDashboard() {
                 { data: progress },
                 { data: sessions },
                 { data: challenges },
-                { data: submissions }
+                { data: submissions },
+                { data: memberships },
+                { data: locks }
             ] = await Promise.all([
                 supabase.from('enrollments').select('course_id').eq('student_id', profile.id),
                 supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
@@ -29,9 +31,20 @@ export default function StudentDashboard() {
                     .gte('scheduled_time', new Date().toISOString())
                     .order('scheduled_time', { ascending: true })
                     .limit(3),
-                supabase.from('coding_challenges').select('*, courses(title)').order('created_at', { ascending: false }).limit(3),
-                supabase.from('coding_submissions').select('score, status').eq('student_id', profile.id)
+                supabase.from('coding_challenges').select('*, courses(title)').order('created_at', { ascending: false }),
+                supabase.from('coding_submissions').select('score, status').eq('student_id', profile.id),
+                supabase.from('group_members').select('group_id').eq('student_id', profile.id),
+                supabase.from('resource_access').select('*').eq('is_locked', true)
             ])
+
+            const userGroupIds = memberships?.map(m => m.group_id) || []
+            const lockedResourceIds = locks
+                ?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding')
+                .map(l => l.resource_id) || []
+
+            const filteredChallenges = (challenges || [])
+                .filter(c => !lockedResourceIds.includes(c.id))
+                .slice(0, 3)
 
             const avgComp = progress?.length
                 ? Math.round(progress.reduce((s, p) => s + (p.completion_percentage || 0), 0) / progress.length)
@@ -51,7 +64,7 @@ export default function StudentDashboard() {
                 solved: solvedCount
             })
             setUpcomingSessions(sessions || [])
-            setLatestChallenges(challenges || [])
+            setLatestChallenges(filteredChallenges)
             setLoading(false)
         }
         load()

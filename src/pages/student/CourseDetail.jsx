@@ -32,22 +32,33 @@ export default function CourseDetail() {
                 { data: prog },
                 { data: chls },
                 { data: assessData },
-                { data: subData }
+                { data: subData },
+                { data: memberships },
+                { data: locks }
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
                 supabase.from('videos').select('*').eq('course_id', courseId).order('scheduled_time', { ascending: true }),
                 supabase.from('progress').select('*').eq('student_id', profile.id).eq('course_id', courseId).single(),
                 supabase.from('coding_challenges').select('*').eq('course_id', courseId),
                 supabase.from('assessments').select('*').eq('course_id', courseId).order('due_date', { ascending: true }),
-                supabase.from('assessment_submissions').select('*').eq('student_id', profile.id)
+                supabase.from('assessment_submissions').select('*').eq('student_id', profile.id),
+                supabase.from('group_members').select('group_id').eq('student_id', profile.id),
+                supabase.from('resource_access').select('*').eq('is_locked', true)
             ])
+
+            const userGroupIds = memberships?.map(m => m.group_id) || []
+            const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding').map(l => l.resource_id) || []
+            const lockedAssessIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'assessment').map(l => l.resource_id) || []
+
             setCourse(crs)
             setSessions(vids || [])
             setProgress(prog)
-            setChallenges(chls || [])
+            setChallenges((chls || []).filter(c => !lockedCodingIds.includes(c.id)))
 
             const grouped = { daily: [], weekly: [], final: [] }
-                ; (assessData || []).forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
+                ; (assessData || [])
+                    .filter(a => !lockedAssessIds.includes(a.id))
+                    .forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
             setAssessments(grouped)
 
             const subMap = {}

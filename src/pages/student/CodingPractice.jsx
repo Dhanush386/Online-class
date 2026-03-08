@@ -40,15 +40,25 @@ export default function CodingPractice() {
             return
         }
 
-        const [{ data: challengeData }, { data: submissionData }] = await Promise.all([
+        const [
+            { data: challengeData },
+            { data: submissionData },
+            { data: memberships },
+            { data: locks }
+        ] = await Promise.all([
             supabase.from('coding_challenges')
                 .select('*, courses(title)')
                 .in('course_id', enrolledIds)
                 .order('created_at', { ascending: false }),
-            supabase.from('coding_submissions').select('*').eq('student_id', profile.id)
+            supabase.from('coding_submissions').select('*').eq('student_id', profile.id),
+            supabase.from('group_members').select('group_id').eq('student_id', profile.id),
+            supabase.from('resource_access').select('*').eq('resource_type', 'coding').eq('is_locked', true)
         ])
 
-        setChallenges(challengeData || [])
+        const userGroupIds = memberships?.map(m => m.group_id) || []
+        const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id)).map(l => l.resource_id) || []
+
+        setChallenges((challengeData || []).filter(c => !lockedCodingIds.includes(c.id)))
         setSubmissions(submissionData || [])
         setLoading(false)
     }

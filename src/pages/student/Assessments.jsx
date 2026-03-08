@@ -33,16 +33,28 @@ export default function Assessments() {
                 return
             }
 
-            const [{ data: assessData }, { data: subData }] = await Promise.all([
+            const [
+                { data: assessData },
+                { data: subData },
+                { data: memberships },
+                { data: locks }
+            ] = await Promise.all([
                 supabase.from('assessments')
                     .select('*, courses(title)')
                     .in('course_id', enrolledIds)
                     .order('due_date', { ascending: true }),
-                supabase.from('assessment_submissions').select('*').eq('student_id', profile.id)
+                supabase.from('assessment_submissions').select('*').eq('student_id', profile.id),
+                supabase.from('group_members').select('group_id').eq('student_id', profile.id),
+                supabase.from('resource_access').select('*').eq('resource_type', 'assessment').eq('is_locked', true)
             ])
 
+            const userGroupIds = memberships?.map(m => m.group_id) || []
+            const lockedAssessIds = locks?.filter(l => userGroupIds.includes(l.group_id)).map(l => l.resource_id) || []
+
             const grouped = { daily: [], weekly: [], final: [] }
-                ; (assessData || []).forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
+                ; (assessData || [])
+                    .filter(a => !lockedAssessIds.includes(a.id))
+                    .forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
             setAssessments(grouped)
 
             // Group submissions by assessment_id

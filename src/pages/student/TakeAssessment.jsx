@@ -116,11 +116,31 @@ export default function TakeAssessment() {
         setLoading(true)
         try {
             // Check attempt count first
-            const { data: existingSubs } = await supabase
-                .from('assessment_submissions')
-                .select('id')
-                .eq('assessment_id', assessmentId)
-                .eq('student_id', profile.id)
+            const [
+                { data: existingSubs },
+                { data: assess, error: aErr },
+                { data: qData, error: qErr },
+                { data: memberships },
+                { data: locks }
+            ] = await Promise.all([
+                supabase.from('assessment_submissions').select('id').eq('assessment_id', assessmentId).eq('student_id', profile.id),
+                supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
+                supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true }),
+                supabase.from('group_members').select('group_id').eq('student_id', profile.id),
+                supabase.from('resource_access').select('*').eq('resource_id', assessmentId).eq('resource_type', 'assessment').eq('is_locked', true)
+            ])
+
+            if (aErr) throw aErr
+            if (qErr) throw qErr
+
+            // Check if locked for student's groups
+            const userGroupIds = memberships?.map(m => m.group_id) || []
+            const isLocked = locks?.some(l => userGroupIds.includes(l.group_id))
+            if (isLocked) {
+                alert('This assessment is currently locked for your group.')
+                navigate(`/student/courses/${assess.course_id}`, { replace: true })
+                return
+            }
 
             if ((existingSubs || []).length >= MAX_ATTEMPTS) {
                 navigate(`/student/assessments/${assessmentId}/review`, { replace: true })
@@ -128,14 +148,6 @@ export default function TakeAssessment() {
             }
 
             setAttemptNumber((existingSubs || []).length + 1)
-
-            const [{ data: assess, error: aErr }, { data: qData, error: qErr }] = await Promise.all([
-                supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
-                supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true })
-            ])
-            if (aErr) throw aErr
-            if (qErr) throw qErr
-
             setAssessment(assess)
             setQuestions(qData || [])
         } catch (err) {

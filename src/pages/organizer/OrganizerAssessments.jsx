@@ -15,6 +15,10 @@ export default function OrganizerAssessments() {
     const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '' })
     const [editingId, setEditingId] = useState(null)
 
+    const [groups, setGroups] = useState([])
+    const [resourceAccess, setResourceAccess] = useState([])
+    const [lockingResource, setLockingResource] = useState(null)
+
     useEffect(() => {
         if (profile?.id) {
             loadInitialData()
@@ -23,16 +27,49 @@ export default function OrganizerAssessments() {
 
     async function loadInitialData() {
         setLoading(true)
-        const [{ data: courseData }, { data: assessData }] = await Promise.all([
+        const [
+            { data: courseData },
+            { data: assessData },
+            { data: groupData },
+            { data: accessData }
+        ] = await Promise.all([
             supabase.from('courses').select('id, title').eq('organizer_id', profile.id),
-            supabase.from('assessments').select('*, courses(title)').order('created_at', { ascending: false })
+            supabase.from('assessments').select('*, courses(title)').order('created_at', { ascending: false }),
+            supabase.from('groups').select('*').eq('organizer_id', profile.id),
+            supabase.from('resource_access').select('*').eq('resource_type', 'assessment')
         ])
 
         setCourses(courseData || [])
-        // Filter assessments to only show those belonging to organizer's courses
-        // (RLS handles this on backend, but we filter if needed for UI)
         setAssessments(assessData || [])
+        setGroups(groupData || [])
+        setResourceAccess(accessData || [])
         setLoading(false)
+    }
+
+    async function toggleResourceLock(groupId, resourceId) {
+        const existing = resourceAccess.find(a => a.group_id === groupId && a.resource_id === resourceId)
+        try {
+            if (existing) {
+                const { error } = await supabase.from('resource_access')
+                    .update({ is_locked: !existing.is_locked })
+                    .eq('id', existing.id)
+                if (error) throw error
+            } else {
+                const { error } = await supabase.from('resource_access')
+                    .insert({
+                        resource_id: resourceId,
+                        resource_type: 'assessment',
+                        group_id: groupId,
+                        is_locked: true
+                    })
+                if (error) throw error
+            }
+            // Reload access data
+            const { data } = await supabase.from('resource_access').select('*').eq('resource_type', 'assessment')
+            setResourceAccess(data || [])
+        } catch (err) {
+            console.error('Error toggling lock:', err)
+        }
     }
 
     async function handleSubmit(e) {
@@ -139,6 +176,9 @@ export default function OrganizerAssessments() {
                                         {a.type.toUpperCase()}
                                     </span>
                                     <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                        <button onClick={() => setLockingResource(a)} title="Access Control" style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: '0.4rem' }}>
+                                            <Clock size={16} />
+                                        </button>
                                         <button onClick={() => openEdit(a)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>
                                             <Edit2 size={16} />
                                         </button>
@@ -171,6 +211,55 @@ export default function OrganizerAssessments() {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Access Control Modal */}
+            {lockingResource && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                    <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 450, padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Access Control</h3>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{lockingResource.title}</p>
+                            </div>
+                            <button onClick={() => setLockingResource(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ padding: '1.5rem', maxHeight: '60vh', overflowY: 'auto' }}>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                                Toggle locks for specific groups. Locked resources are invisible/non-accessible to students in that group.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {groups.filter(g => g.course_id === lockingResource.course_id).length === 0 ? (
+                                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                        No groups created for this course.
+                                    </div>
+                                ) : (
+                                    groups.filter(g => g.course_id === lockingResource.course_id).map(g => {
+                                        const access = resourceAccess.find(a => a.group_id === g.id && a.resource_id === lockingResource.id)
+                                        const isLocked = access?.is_locked || false
+                                        return (
+                                            <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
+                                                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: isLocked ? '#991b1b' : '#166534' }}>{g.name}</div>
+                                                <button
+                                                    onClick={() => toggleResourceLock(g.id, lockingResource.id)}
+                                                    className={isLocked ? "btn-primary" : "btn-secondary"}
+                                                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: isLocked ? '#ef4444' : 'white' }}
+                                                >
+                                                    {isLocked ? 'Unlock' : 'Lock'}
+                                                </button>
+                                            </div>
+                                        )
+                                    })
+                                )}
+                            </div>
+                        </div>
+                        <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid var(--card-border)', textAlign: 'right' }}>
+                            <button onClick={() => setLockingResource(null)} className="btn-secondary" style={{ fontSize: '0.85rem' }}>Done</button>
+                        </div>
+                    </div>
                 </div>
             )}
 

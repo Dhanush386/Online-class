@@ -133,12 +133,28 @@ export default function CodeWorkspace() {
 
     async function loadChallenge() {
         setLoading(true)
-        const [{ data, error }, { data: subs }] = await Promise.all([
+        const [
+            { data, error },
+            { data: subs },
+            { data: memberships },
+            { data: locks }
+        ] = await Promise.all([
             supabase.from('coding_challenges').select('*, courses(title)').eq('id', challengeId).single(),
-            supabase.from('coding_submissions').select('*').eq('challenge_id', challengeId).eq('student_id', profile.id).order('created_at', { ascending: false })
+            supabase.from('coding_submissions').select('*').eq('challenge_id', challengeId).eq('student_id', profile.id).order('created_at', { ascending: false }),
+            supabase.from('group_members').select('group_id').eq('student_id', profile.id),
+            supabase.from('resource_access').select('*').eq('resource_id', challengeId).eq('resource_type', 'coding').eq('is_locked', true)
         ])
 
         if (data) {
+            // Check if locked for student's groups
+            const userGroupIds = memberships?.map(m => m.group_id) || []
+            const isLocked = locks?.some(l => userGroupIds.includes(l.group_id))
+            if (isLocked) {
+                alert('This coding challenge is currently locked for your group.')
+                navigate('/student/coding', { replace: true })
+                return
+            }
+
             setChallenge(data)
             setPastSubmissions(subs || [])
             setAttemptCount((subs || []).length)

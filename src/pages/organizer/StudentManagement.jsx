@@ -68,6 +68,11 @@ export default function StudentManagement() {
     const [invites, setInvites] = useState([])
     const [organizers, setOrganizers] = useState([])
     const [inviteEmail, setInviteEmail] = useState('')
+    const [groups, setGroups] = useState([])
+    const [groupMembers, setGroupMembers] = useState([])
+    const [newGroupName, setNewGroupName] = useState('')
+    const [groupCourseId, setGroupCourseId] = useState('')
+    const [managingGroup, setManagingGroup] = useState(null)
 
     useEffect(() => {
         if (profile?.id) loadData()
@@ -136,6 +141,20 @@ export default function StudentManagement() {
                 .from('organizer_invites')
                 .select('*')
             setInvites(allInvites || [])
+
+            // Fetch Groups
+            const { data: allGroups } = await supabase
+                .from('groups')
+                .select('*, courses(title)')
+                .eq('organizer_id', profile.id)
+            setGroups(allGroups || [])
+
+            // Fetch Group Memberships
+            const { data: allMembers } = await supabase
+                .from('group_members')
+                .select('*')
+            setGroupMembers(allMembers || [])
+
         } catch (err) {
             console.error('Error loading student management data:', err)
         } finally {
@@ -277,8 +296,49 @@ export default function StudentManagement() {
     const filtered = students.filter(s => {
         const matchesSearch = s.name?.toLowerCase().includes(search.toLowerCase()) || s.email?.toLowerCase().includes(search.toLowerCase())
         if (tab === 'active') return matchesSearch && s.status === 'approved'
-        return matchesSearch && s.status === 'pending'
+        if (tab === 'pending') return matchesSearch && s.status === 'pending'
+        return false // Tab 'groups' handled separately
     })
+
+    async function handleCreateGroup(e) {
+        e.preventDefault()
+        if (!newGroupName || !groupCourseId) return
+        setSaving(true)
+        try {
+            const { error } = await supabase.from('groups').insert({
+                name: newGroupName,
+                course_id: groupCourseId,
+                organizer_id: profile.id
+            })
+            if (error) throw error
+            setNewGroupName('')
+            loadData(true)
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    async function handleDeleteGroup(groupId) {
+        if (!confirm('Delete this group? Students will be removed from it but will keep their course access.')) return
+        try {
+            await supabase.from('groups').delete().eq('id', groupId)
+            loadData(true)
+        } catch (err) { console.error(err) }
+    }
+
+    async function toggleMembership(groupId, studentId) {
+        const isMember = groupMembers.some(m => m.group_id === groupId && m.student_id === studentId)
+        try {
+            if (isMember) {
+                await supabase.from('group_members').delete().eq('group_id', groupId).eq('student_id', studentId)
+            } else {
+                await supabase.from('group_members').insert({ group_id: groupId, student_id: studentId })
+            }
+            loadData(true)
+        } catch (err) { console.error(err) }
+    }
 
     function avgCompletion(enrollments) {
         if (!enrollments?.length) return 0
@@ -336,6 +396,13 @@ export default function StudentManagement() {
                 >
                     Organizer Team
                 </button>
+                <button
+                    className={`nav-btn ${tab === 'groups' ? 'active' : ''}`}
+                    onClick={() => setTab('groups')}
+                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'groups' ? '2px solid #10b981' : '2px solid transparent', color: tab === 'groups' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                >
+                    Batches & Groups
+                </button>
             </div>
 
             {loading ? (
@@ -370,7 +437,6 @@ export default function StudentManagement() {
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                        {/* Current Organizers */}
                         <div>
                             <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Users size={16} /> Current Organizers ({organizers.length})
@@ -389,8 +455,6 @@ export default function StudentManagement() {
                                 ))}
                             </div>
                         </div>
-
-                        {/* Pending Invites */}
                         <div>
                             <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Clock size={16} /> Pending Invites ({invites.length})
@@ -423,6 +487,59 @@ export default function StudentManagement() {
                         </div>
                     </div>
                 </div>
+            ) : tab === 'groups' ? (
+                <div className="animate-fade-in">
+                    <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Create New Batch/Group</h3>
+                        <form onSubmit={handleCreateGroup} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '1rem' }}>
+                            <input
+                                className="form-input"
+                                placeholder="Group Name (e.g. Batch A)"
+                                value={newGroupName}
+                                onChange={e => setNewGroupName(e.target.value)}
+                                required
+                            />
+                            <select
+                                className="form-input"
+                                value={groupCourseId}
+                                onChange={e => setGroupCourseId(e.target.value)}
+                                required
+                            >
+                                <option value="">Select Course</option>
+                                {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                            </select>
+                            <button type="submit" className="btn-primary" disabled={saving}>
+                                {saving ? 'Creating...' : 'Create Group'}
+                            </button>
+                        </form>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+                        {groups.map(g => {
+                            const membersCount = groupMembers.filter(m => m.group_id === g.id).length
+                            return (
+                                <div key={g.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{g.name}</h3>
+                                        <button onClick={() => handleDeleteGroup(g.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                        {g.courses?.title} • {membersCount} Students
+                                    </p>
+                                    <button
+                                        onClick={() => setManagingGroup(g)}
+                                        className="btn-secondary"
+                                        style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
+                                    >
+                                        Manage Members
+                                    </button>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
             ) : filtered.length === 0 ? (
                 <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
                     <Users size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
@@ -440,21 +557,25 @@ export default function StudentManagement() {
                         const isOpen = expanded === student.id
                         return (
                             <div key={student.id} className="glass-card" style={{ overflow: 'hidden' }}>
-                                {/* Row */}
                                 <div
                                     className="stack-mobile"
                                     style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', cursor: 'pointer' }}
                                     onClick={() => setExpanded(isOpen ? null : student.id)}
                                 >
-                                    {/* Avatar + Main Info Group */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, width: '100%' }}>
-                                        {/* Avatar */}
                                         <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
                                             {student.name?.[0]?.toUpperCase() || '?'}
                                         </div>
-                                        {/* Info */}
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{student.name}</div>
+                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {student.name}
+                                                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                                    {groupMembers.filter(m => m.student_id === student.id).map(m => {
+                                                        const g = groups.find(gr => gr.id === m.group_id)
+                                                        return g ? <span key={g.id} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: '#dcfce7', color: '#166534', borderRadius: 4, fontWeight: 700 }}>{g.name}</span> : null
+                                                    })}
+                                                </div>
+                                            </div>
                                             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{student.email}</div>
                                         </div>
                                     </div>
@@ -488,13 +609,11 @@ export default function StudentManagement() {
                                                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Progress</div>
                                                 </div>
                                             </div>
-
                                             <div style={{ width: 100 }} className="hide-mobile">
                                                 <div className="progress-bar-track">
                                                     <div className="progress-bar-fill" style={{ width: `${avg}%`, background: avg > 70 ? 'linear-gradient(90deg,#10b981,#059669)' : avg > 40 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)' }} />
                                                 </div>
                                             </div>
-
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                                 <button
                                                     className="btn-secondary"
@@ -524,11 +643,9 @@ export default function StudentManagement() {
                                     )}
                                 </div>
 
-                                {/* Expanded detail */}
                                 {isOpen && (
                                     <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--card-border)' }}>
                                         <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
-                                            {/* Expiry Control */}
                                             <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 10, border: '1px solid #fed7aa', gridColumn: '1 / -1', marginBottom: '0.5rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -548,7 +665,6 @@ export default function StudentManagement() {
                                                     </p>
                                                 )}
                                             </div>
-
                                             {student.enrollments?.length > 0 ? (
                                                 student.enrollments.map((en, i) => (
                                                     <div key={i} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
@@ -579,7 +695,6 @@ export default function StudentManagement() {
                 </div>
             )}
 
-            {/* Assign Course Modal */}
             {assigningTo && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
                     <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 400, padding: '2rem' }}>
@@ -589,19 +704,11 @@ export default function StudentManagement() {
                                 <X size={20} />
                             </button>
                         </div>
-
                         <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Student</div>
                             <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{assigningTo.name}</div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{assigningTo.email}</div>
                         </div>
-
-                        {error && (
-                            <div style={{ padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <AlertCircle size={16} flexShrink={0} /> {error}
-                            </div>
-                        )}
-
                         <form onSubmit={handleAssignCourse}>
                             <div className="form-group" style={{ marginBottom: '2rem' }}>
                                 <label className="form-label" style={{ marginBottom: '0.75rem' }}>Select Course</label>
@@ -622,19 +729,55 @@ export default function StudentManagement() {
                                     <ChevronDown size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                                 </div>
                             </div>
-
                             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                                 <button type="button" className="btn-secondary" onClick={() => setAssigningTo(null)} disabled={saving}>Cancel</button>
-                                <button type="submit" className="btn-primary" disabled={saving || !selectedCourse} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    {saving ? <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : <Save size={16} />}
-                                    Assign
+                                <button type="submit" className="btn-primary" disabled={saving || !selectedCourse}>
+                                    {saving ? 'Assigning...' : 'Assign'}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+
+            {managingGroup && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                    <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 500, maxHeight: '80vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Manage Members: {managingGroup.name}</h3>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Only showing students enrolled in {managingGroup.courses?.title}</p>
+                            </div>
+                            <button onClick={() => setManagingGroup(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+                            {students
+                                .filter(s => s.enrollments.some(e => e.id === managingGroup.course_id))
+                                .map(s => {
+                                    const isMember = groupMembers.some(m => m.group_id === managingGroup.id && m.student_id === s.id)
+                                    return (
+                                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
+                                            <div>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{s.name}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.email}</div>
+                                            </div>
+                                            <button
+                                                onClick={() => toggleMembership(managingGroup.id, s.id)}
+                                                className={isMember ? "btn-secondary" : "btn-primary"}
+                                                style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
+                                            >
+                                                {isMember ? 'Remove' : 'Add'}
+                                            </button>
+                                        </div>
+                                    )
+                                })
+                            }
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
-
