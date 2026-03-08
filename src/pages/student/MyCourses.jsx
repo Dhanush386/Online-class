@@ -18,7 +18,7 @@ export default function MyCourses() {
                 const [enrollmentRes, progressRes] = await Promise.all([
                     supabase
                         .from('enrollments')
-                        .select('course_id, enrolled_at, courses(id, title, description)')
+                        .select('course_id, enrolled_at, courses(id, title, description, start_date, end_date)')
                         .eq('student_id', profile.id),
                     supabase
                         .from('progress')
@@ -35,6 +35,8 @@ export default function MyCourses() {
                         id: e.courses?.id,
                         title: e.courses?.title,
                         description: e.courses?.description,
+                        startDate: e.courses?.start_date,
+                        endDate: e.courses?.end_date,
                         completion: prog?.completion_percentage || 0,
                         timeSpent: prog?.time_spent_minutes || 0,
                         enrolledAt: e.enrolled_at,
@@ -98,7 +100,13 @@ export default function MyCourses() {
 
                                 {/* Content */}
                                 <div style={{ padding: '1.25rem' }}>
-                                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{course.title}</h3>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>{course.title}</h3>
+                                    {(course.startDate || course.endDate) && (
+                                        <div style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: 700, marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                            <Clock size={12} />
+                                            {new Date(course.startDate).toLocaleDateString()} - {new Date(course.endDate).toLocaleDateString()}
+                                        </div>
+                                    )}
                                     <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{course.description || 'No description provided'}</p>
 
                                     {/* Progress */}

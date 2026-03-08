@@ -10,7 +10,7 @@ export default function CourseManagement() {
     const [showModal, setShowModal] = useState(false)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
-    const [formData, setFormData] = useState({ title: '', description: '' })
+    const [formData, setFormData] = useState({ title: '', description: '', start_date: '', end_date: '' })
     const [editingId, setEditingId] = useState(null)
 
     useEffect(() => {
@@ -37,6 +37,8 @@ export default function CourseManagement() {
         const payload = {
             title: formData.title,
             description: formData.description,
+            start_date: formData.start_date || null,
+            end_date: formData.end_date || null,
             organizer_id: profile.id
         }
 
@@ -50,7 +52,7 @@ export default function CourseManagement() {
             }
 
             setShowModal(false)
-            setFormData({ title: '', description: '' })
+            setFormData({ title: '', description: '', start_date: '', end_date: '' })
             setEditingId(null)
             loadCourses()
         } catch (err) {
@@ -73,7 +75,12 @@ export default function CourseManagement() {
 
     function openEdit(course) {
         setEditingId(course.id)
-        setFormData({ title: course.title, description: course.description || '' })
+        setFormData({
+            title: course.title,
+            description: course.description || '',
+            start_date: course.start_date ? new Date(new Date(course.start_date).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '',
+            end_date: course.end_date ? new Date(new Date(course.end_date).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''
+        })
         setShowModal(true)
     }
 
@@ -85,7 +92,7 @@ export default function CourseManagement() {
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Create and manage your educational programs</p>
                 </div>
                 <button
-                    onClick={() => { setEditingId(null); setFormData({ title: '', description: '' }); setShowModal(true) }}
+                    onClick={() => { setEditingId(null); setFormData({ title: '', description: '', start_date: '', end_date: '' }); setShowModal(true) }}
                     className="btn-primary"
                     style={{ gap: '0.5rem' }}
                 >
@@ -128,6 +135,14 @@ export default function CourseManagement() {
                                     </div>
                                 </div>
                                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{course.title}</h3>
+                                {(course.start_date || course.end_date) && (
+                                    <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#f97316', fontSize: '0.75rem', fontWeight: 600 }}>
+                                        <Clock size={14} />
+                                        <span>
+                                            {course.start_date ? new Date(course.start_date).toLocaleDateString() : '...'} - {course.end_date ? new Date(course.end_date).toLocaleDateString() : '...'}
+                                        </span>
+                                    </div>
+                                )}
                                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                     {course.description || 'No description provided.'}
                                 </p>
@@ -185,6 +200,27 @@ export default function CourseManagement() {
                                     onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
                                     style={{ resize: 'none' }}
                                 />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                                <div>
+                                    <label className="form-label">Start Date</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="form-input"
+                                        value={formData.start_date}
+                                        onChange={e => setFormData(p => ({ ...p, start_date: e.target.value }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="form-label">End Date</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="form-input"
+                                        value={formData.end_date}
+                                        onChange={e => setFormData(p => ({ ...p, end_date: e.target.value }))}
+                                    />
+                                </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>

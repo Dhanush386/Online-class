@@ -145,6 +145,57 @@ export default function TakeAssessment() {
         }
     }
 
+    async function updateOverallProgress(courseId) {
+        if (!profile?.id || !courseId) return
+
+        // Fetch everything needed for calculation
+        const [
+            { data: vids },
+            { data: chls },
+            { data: assessData },
+            { data: progressData },
+            { data: subData }
+        ] = await Promise.all([
+            supabase.from('videos').select('id').eq('course_id', courseId),
+            supabase.from('coding_challenges').select('id').eq('course_id', courseId),
+            supabase.from('assessments').select('id').eq('course_id', courseId),
+            supabase.from('progress').select('*').eq('student_id', profile.id).eq('course_id', courseId).single(),
+            supabase.from('coding_submissions').select('challenge_id, status').eq('student_id', profile.id),
+            supabase.from('assessment_submissions').select('assessment_id').eq('student_id', profile.id)
+        ])
+
+        // Refetch submissions because we just added one (or pass it in)
+        // For simplicity, let's just do a fresh count
+        const { data: allAssessSubs } = await supabase.from('assessment_submissions').select('assessment_id').eq('student_id', profile.id)
+
+        const totalSessions = (vids || []).length
+        const totalCoding = (chls || []).length
+        const totalAssessments = (assessData || []).length
+
+        const completedSessions = progressData?.video_id ? 1 : 0 // Simplified legacy check
+        const completedCoding = (chls || []).filter(c => (subData || []).some(s => s.challenge_id === c.id && s.status === 'accepted')).length
+        const completedAssess = (assessData || []).filter(a => (allAssessSubs || []).some(s => s.assessment_id === a.id)).length
+
+        const sessionPct = totalSessions > 0 ? (completedSessions / totalSessions) : 0
+        const codingPct = totalCoding > 0 ? (completedCoding / totalCoding) : 0
+        const assessPct = totalAssessments > 0 ? (completedAssess / totalAssessments) : 0
+
+        let activeCategories = 0
+        let sumPct = 0
+        if (totalSessions > 0) { activeCategories++; sumPct += sessionPct }
+        if (totalCoding > 0) { activeCategories++; sumPct += codingPct }
+        if (totalAssessments > 0) { activeCategories++; sumPct += assessPct }
+
+        const finalPct = activeCategories > 0 ? Math.round((sumPct / activeCategories) * 100) : 0
+
+        await supabase.from('progress').upsert({
+            student_id: profile.id,
+            course_id: courseId,
+            completion_percentage: finalPct,
+            last_updated: new Date().toISOString()
+        }, { onConflict: 'student_id, course_id' })
+    }
+
     async function handleSubmit(isAuto = false) {
         if (!isAuto && Object.keys(answers).length < questions.length) {
             if (!confirm('You haven\'t answered all questions. Submit anyway?')) return
@@ -184,6 +235,9 @@ export default function TakeAssessment() {
                 percentage: Math.round((correctCount / questions.length) * 100)
             })
             setSubmitted(true)
+
+            // Update course progress
+            updateOverallProgress(assessment.course_id)
         } catch (err) {
             setError(err.message)
         } finally {

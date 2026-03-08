@@ -61,18 +61,70 @@ export default function CourseDetail() {
         load()
     }, [courseId, profile])
 
-    async function markComplete(sessionId) {
-        const total = sessions.length
-        const completed = sessions.filter(s => s.id === sessionId || completedIds.includes(s.id)).length
-        const pct = total > 0 ? Math.round((completed / total) * 100) : 0
+    async function updateOverallProgress() {
+        if (!profile?.id || !courseId) return
+
+        const totalSessions = sessions.length
+        const totalCoding = challenges.length
+        const totalAssessments = assessments.daily.length + assessments.weekly.length + assessments.final.length
+
+        // Progress components
+        const completedSessions = sessions.filter(s => completedIds.includes(s.id)).length
+        const completedCoding = challenges.filter(c => (submissions[c.id] || []).some(s => s.status === 'accepted')).length
+        // For assessments, we count if they have at least one submission
+        let completedAssess = 0
+        Object.values(assessments).flat().forEach(a => {
+            if ((submissions[a.id] || []).length > 0) completedAssess++
+        })
+
+        const sessionPct = totalSessions > 0 ? (completedSessions / totalSessions) : 0
+        const codingPct = totalCoding > 0 ? (completedCoding / totalCoding) : 0
+        const assessPct = totalAssessments > 0 ? (completedAssess / totalAssessments) : 0
+
+        // Balanced average (1/3 each)
+        // If a category doesn't exist (total is 0), we ignore it and re-weight the others
+        let activeCategories = 0
+        let sumPct = 0
+        if (totalSessions > 0) { activeCategories++; sumPct += sessionPct }
+        if (totalCoding > 0) { activeCategories++; sumPct += codingPct }
+        if (totalAssessments > 0) { activeCategories++; sumPct += assessPct }
+
+        const finalPct = activeCategories > 0 ? Math.round((sumPct / activeCategories) * 100) : 0
+
         await supabase.from('progress').upsert({
             student_id: profile.id,
             course_id: courseId,
-            video_id: sessionId,
-            completion_percentage: pct,
-            completed: true,
-        })
-        setProgress(p => ({ ...(p || {}), completion_percentage: pct }))
+            completion_percentage: finalPct,
+            last_updated: new Date().toISOString()
+        }, { onConflict: 'student_id, course_id' })
+
+        setProgress(p => ({ ...(p || {}), completion_percentage: finalPct }))
+    }
+
+    async function markComplete(sessionId) {
+        // Optimistically update
+        const newCompletedIds = [...completedIds, sessionId]
+
+        const totalSessions = sessions.length
+        const completedSessionsCount = newCompletedIds.length
+        const totalCoding = challenges.length
+        const totalAssessments = assessments.daily.length + assessments.weekly.length + assessments.final.length
+
+        // Calculate based on the NEW state
+        const sessionPct = totalSessions > 0 ? (completedSessionsCount / totalSessions) : 0
+        // ... rest stays same but for simplicity we reuse the weighted logic
+
+        // Actually, let's just update the table record which tracks the specific video_id for backward compatibility
+        // but our NEW logic will use counts from other tables.
+
+        await supabase.from('progress').upsert({
+            student_id: profile.id,
+            course_id: courseId,
+            video_id: sessionId, // Keep for legacy logic
+            completed: true
+        }, { onConflict: 'student_id, course_id' })
+
+        updateOverallProgress()
     }
 
     const completedIds = progress ? [progress.video_id] : []
@@ -110,8 +162,21 @@ export default function CourseDetail() {
 
             {/* Header */}
             <div style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{course?.title}</h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{course?.description}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{course?.title}</h1>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{course?.description}</p>
+                    </div>
+                    {(course?.start_date || course?.end_date) && (
+                        <div style={{ textAlign: 'right', background: 'rgba(99,102,241,0.05)', padding: '0.75rem 1.25rem', borderRadius: 12, border: '1px solid rgba(99,102,241,0.1)' }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Course Timeline</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Calendar size={14} color="#6366f1" />
+                                {course.start_date ? new Date(course.start_date).toLocaleDateString() : 'TBA'} - {course.end_date ? new Date(course.end_date).toLocaleDateString() : 'TBA'}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Progress banner */}
