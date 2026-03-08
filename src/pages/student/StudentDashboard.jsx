@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar'
 import 'react-circular-progressbar/dist/styles.css'
-import { Clock, BookOpen, Trophy, Award, Video, Calendar, ExternalLink, Zap, Code as CodeIcon, ChevronRight } from 'lucide-react'
+import { Clock, BookOpen, Trophy, Award, Video, Calendar, ExternalLink, Zap, Code as CodeIcon, ChevronRight, Rocket, Flame } from 'lucide-react'
 
 export default function StudentDashboard() {
     const { profile } = useAuth()
