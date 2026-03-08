@@ -22,6 +22,58 @@ export default function TakeAssessment() {
 
     const [currentIdx, setCurrentIdx] = useState(0)
     const [answers, setAnswers] = useState({}) // { questionId: selectedOption }
+    const [isStarted, setIsStarted] = useState(false)
+    const containerRef = useRef(null)
+
+    useEffect(() => {
+        const handleSecurity = (e) => {
+            if (isStarted) {
+                e.preventDefault()
+            }
+        }
+
+        const handleFullScreenChange = () => {
+            if (isStarted && !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                // User exited fullscreen
+                alert('Security Violation: Fullscreen mode is required. Please reentry fullscreen or your attempt will be invalidated.')
+                enterFullScreen()
+            }
+        }
+
+        if (isStarted) {
+            document.addEventListener('contextmenu', handleSecurity)
+            document.addEventListener('copy', handleSecurity)
+            document.addEventListener('paste', handleSecurity)
+            document.addEventListener('cut', handleSecurity)
+            document.addEventListener('fullscreenchange', handleFullScreenChange)
+            document.addEventListener('webkitfullscreenchange', handleFullScreenChange)
+            document.addEventListener('mozfullscreenchange', handleFullScreenChange)
+            document.addEventListener('MSFullscreenChange', handleFullScreenChange)
+        }
+
+        return () => {
+            document.removeEventListener('contextmenu', handleSecurity)
+            document.removeEventListener('copy', handleSecurity)
+            document.removeEventListener('paste', handleSecurity)
+            document.removeEventListener('cut', handleSecurity)
+            document.removeEventListener('fullscreenchange', handleFullScreenChange)
+            document.removeEventListener('webkitfullscreenchange', handleFullScreenChange)
+            document.removeEventListener('mozfullscreenchange', handleFullScreenChange)
+            document.removeEventListener('MSFullscreenChange', handleFullScreenChange)
+        }
+    }, [isStarted])
+
+    const enterFullScreen = () => {
+        const elem = document.documentElement
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen()
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen()
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen()
+        }
+        setIsStarted(true)
+    }
 
     useEffect(() => {
         if (assessmentId) loadData()
@@ -133,6 +185,32 @@ export default function TakeAssessment() {
                     <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                         Back to Course
                     </button>
+                </div>
+            </div>
+        )
+    }
+
+    if (!isStarted) {
+        return (
+            <div className="animate-fade-in" style={{ maxWidth: 600, margin: '4rem auto', textAlign: 'center' }}>
+                <div className="glass-card" style={{ padding: '3rem' }}>
+                    <div style={{ width: 80, height: 80, background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#6366f1' }}>
+                        <Lock size={40} />
+                    </div>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Secure Assessment</h1>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                        This assessment will be taken in <strong>Fullscreen Mode</strong> to ensure a fair environment.
+                        Right-click and copy-paste are disabled.
+                    </p>
+                    <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', color: '#9a3412', fontSize: '0.875rem', marginBottom: '2rem', textAlign: 'left' }}>
+                        <strong>Note:</strong> Exiting fullscreen or switching tabs may result in a warning or automatic submission.
+                    </div>
+                    <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem' }}>
+                        Enter Secure Mode & Start
+                    </button>
+                    <Link to={`/student/courses/${assessment?.course_id}`} style={{ display: 'block', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        Cancel and Go Back
+                    </Link>
                 </div>
             </div>
         )
