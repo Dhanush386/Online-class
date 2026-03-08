@@ -374,6 +374,11 @@ export default function StudentManagement() {
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {error && (
+                        <div style={{ padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <AlertCircle size={16} flexShrink={0} /> {error}
+                        </div>
+                    )}
                     {filtered.map(student => {
                         const avg = avgCompletion(student.enrollments)
                         const isOpen = expanded === student.id
