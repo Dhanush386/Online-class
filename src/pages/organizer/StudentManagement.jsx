@@ -3,6 +3,56 @@ import { supabase } from '../../lib/supabase'
 import { Users, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail, Trash2, Calendar } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
+const ExpiryControl = ({ studentId, currentExpiry, onUpdate, saving }) => {
+    const toLocalISO = (date) => {
+        if (!date) return ''
+        const d = new Date(date)
+        return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    }
+
+    const [val, setVal] = useState(toLocalISO(currentExpiry))
+
+    // Update local value if external value changes (e.g. after save)
+    useEffect(() => {
+        setVal(toLocalISO(currentExpiry))
+    }, [currentExpiry])
+
+    const hasChanged = val !== toLocalISO(currentExpiry)
+
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.75rem', color: '#9a3412' }}>Expires on:</span>
+            <input
+                type="datetime-local"
+                className="form-input"
+                style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', width: 'auto', background: 'white' }}
+                value={val}
+                onChange={(e) => setVal(e.target.value)}
+                disabled={saving}
+            />
+            {hasChanged && (
+                <button
+                    onClick={() => onUpdate(studentId, val)}
+                    disabled={saving}
+                    className="btn-primary"
+                    style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem', background: '#f97316', border: 'none' }}
+                >
+                    {saving ? '...' : <Save size={12} />}
+                </button>
+            )}
+            {currentExpiry && (
+                <button
+                    onClick={() => onUpdate(studentId, null)}
+                    disabled={saving}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                >
+                    Clear
+                </button>
+            )}
+        </div>
+    )
+}
+
 export default function StudentManagement() {
     const { profile } = useAuth()
     const [students, setStudents] = useState([])
@@ -485,24 +535,12 @@ export default function StudentManagement() {
                                                         <Clock size={16} color="#f97316" />
                                                         <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#9a3412' }}>Access Control</span>
                                                     </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                        <span style={{ fontSize: '0.75rem', color: '#9a3412' }}>Expires on:</span>
-                                                        <input
-                                                            type="datetime-local"
-                                                            className="form-input"
-                                                            style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', width: 'auto', background: 'white' }}
-                                                            value={student.access_expires_at ? new Date(new Date(student.access_expires_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
-                                                            onChange={(e) => handleUpdateExpiry(student.id, e.target.value)}
-                                                        />
-                                                        {student.access_expires_at && (
-                                                            <button
-                                                                onClick={() => handleUpdateExpiry(student.id, null)}
-                                                                style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
-                                                            >
-                                                                Clear Expire
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                    <ExpiryControl
+                                                        studentId={student.id}
+                                                        currentExpiry={student.access_expires_at}
+                                                        onUpdate={handleUpdateExpiry}
+                                                        saving={saving}
+                                                    />
                                                 </div>
                                                 {student.access_expires_at && new Date(student.access_expires_at) < new Date() && (
                                                     <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
