@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar'
 import 'react-circular-progressbar/dist/styles.css'
-import { Clock, BookOpen, Trophy, Award, Video, Calendar, ExternalLink, Zap, Code as CodeIcon, ChevronRight, Rocket, Flame } from 'lucide-react'
+import { Clock, BookOpen, Trophy, Award, Video, Calendar, ExternalLink, Zap, Code as CodeIcon, ChevronRight, Rocket, Flame, FileText } from 'lucide-react'
 
 export default function StudentDashboard() {
     const { profile } = useAuth()
@@ -270,7 +270,10 @@ export default function StudentDashboard() {
                                         <FileText size={18} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {r.day_number && <span style={{ color: '#6366f1', marginRight: '0.4rem' }}>Day {r.day_number}:</span>}
+                                            {r.title}
+                                        </div>
                                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{r.courses?.title}</div>
                                     </div>
                                     <a href={r.file_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', textDecoration: 'none', gap: '0.3rem' }}>

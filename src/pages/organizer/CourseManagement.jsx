@@ -16,7 +16,7 @@ export default function CourseManagement() {
     const [currentCourse, setCurrentCourse] = useState(null)
     const [resources, setResources] = useState([])
     const [loadingResources, setLoadingResources] = useState(false)
-    const [resourceForm, setResourceForm] = useState({ title: '', description: '', file_url: '', resource_type: 'pdf' })
+    const [resourceForm, setResourceForm] = useState({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: 1 })
 
     useEffect(() => {
         if (profile?.id) loadCourses()
@@ -111,7 +111,7 @@ export default function CourseManagement() {
         })
 
         if (!error) {
-            setResourceForm({ title: '', description: '', file_url: '', resource_type: 'pdf' })
+            setResourceForm({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: (parseInt(resourceForm.day_number) || 1) + 1 })
             openResources(currentCourse)
         } else {
             alert('Failed to add resource: ' + error.message)
@@ -255,32 +255,53 @@ export default function CourseManagement() {
                                         />
                                     </div>
                                 </div>
-                                <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}>
+                                <div style={{ gridColumn: '1 / -1' }}>
+                                    <label className="form-label">Day / Session Number</label>
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        placeholder="e.g. 1"
+                                        min="1"
+                                        value={resourceForm.day_number}
+                                        onChange={e => setResourceForm(p => ({ ...p, day_number: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', gridColumn: '1 / -1' }}>
                                     <Plus size={16} /> Add Material
                                 </button>
                             </form>
 
-                            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Existing Materials</h4>
+                            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Existing Materials (Grouped by Day)</h4>
                             {loadingResources ? (
                                 <p style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>Loading...</p>
                             ) : resources.length === 0 ? (
                                 <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No materials uploaded yet.</p>
                             ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    {resources.map(r => (
-                                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                                            <div style={{ width: 36, height: 36, background: r.resource_type === 'ppt' ? '#fff7ed' : '#f0fdf4', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                {r.resource_type === 'ppt' ? <FileText size={18} color="#f97316" /> : <FileText size={18} color="#22c55e" />}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    {Array.from(new Set(resources.map(r => r.day_number || 1))).sort((a, b) => a - b).map(day => (
+                                        <div key={day}>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <Calendar size={12} /> Day {day}
                                             </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
-                                                <a href={r.file_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.7rem', color: '#6366f1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                    <LinkIcon size={10} /> View Link
-                                                </a>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                {resources.filter(r => (r.day_number || 1) === day).map(r => (
+                                                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                                                        <div style={{ width: 36, height: 36, background: r.resource_type === 'ppt' ? '#fff7ed' : '#f0fdf4', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            {r.resource_type === 'ppt' ? <FileText size={18} color="#f97316" /> : <FileText size={18} color="#22c55e" />}
+                                                        </div>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+                                                            <a href={r.file_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.7rem', color: '#6366f1', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                                <LinkIcon size={10} /> View Link
+                                                            </a>
+                                                        </div>
+                                                        <button onClick={() => deleteResource(r.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <button onClick={() => deleteResource(r.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
-                                                <Trash2 size={16} />
-                                            </button>
                                         </div>
                                     ))}
                                 </div>

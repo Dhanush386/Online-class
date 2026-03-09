@@ -404,30 +404,41 @@ export default function CourseDetail() {
                     </div>
 
                     <div style={{ padding: '1.5rem', background: 'white', borderBottomLeftRadius: 16, borderBottomRightRadius: 16, border: '1px solid var(--card-border)', borderTop: 'none' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
-                            {courseResources.length === 0 ? (
-                                <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                    <FileText size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
-                                    <p>No study materials uploaded yet</p>
-                                </div>
-                            ) : courseResources.map(r => (
-                                <div key={r.id} className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                        <div style={{ width: 36, height: 36, background: r.resource_type === 'ppt' ? 'rgba(249,115,22,0.1)' : 'rgba(16,185,129,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            <FileText size={18} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
+                        {courseResources.length === 0 ? (
+                            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                <FileText size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+                                <p>No study materials uploaded yet</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                {Array.from(new Set(courseResources.map(r => r.day_number || 1))).sort((a, b) => a - b).map(day => (
+                                    <div key={day}>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Calendar size={14} /> Day {day}
                                         </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
-                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{r.resource_type.toUpperCase()}</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+                                            {courseResources.filter(r => (r.day_number || 1) === day).map(r => (
+                                                <div key={r.id} className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <div style={{ width: 36, height: 36, background: r.resource_type === 'ppt' ? 'rgba(249,115,22,0.1)' : 'rgba(16,185,129,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                            <FileText size={18} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
+                                                        </div>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+                                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{r.resource_type.toUpperCase()}</div>
+                                                        </div>
+                                                    </div>
+                                                    {r.description && <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.description}</p>}
+                                                    <a href={r.file_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ width: '100%', justifyContent: 'center', gap: '0.4rem', marginTop: 'auto', padding: '0.5rem', fontSize: '0.78rem' }}>
+                                                        <ExternalLink size={14} /> View Material
+                                                    </a>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                    {r.description && <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.description}</p>}
-                                    <a href={r.file_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ width: '100%', justifyContent: 'center', gap: '0.4rem', marginTop: 'auto', padding: '0.5rem', fontSize: '0.78rem' }}>
-                                        <ExternalLink size={14} /> View Material
-                                    </a>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
