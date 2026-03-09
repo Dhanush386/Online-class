@@ -411,7 +411,7 @@ export default function CodeWorkspace() {
     }
 
     return (
-        <div style={{ position: 'fixed', inset: 0, top: 60, display: 'flex', background: '#f8fafc', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', background: '#f8fafc', overflow: 'hidden' }}>
             {/* Sidebar (Brief Challenge Overview) */}
             <aside style={{
                 width: sidebarOpen ? (window.innerWidth <= 768 ? '100%' : 320) : 0,
