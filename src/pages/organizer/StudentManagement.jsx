@@ -314,7 +314,10 @@ export default function StudentManagement() {
                 course_id: groupCourseId,
                 organizer_id: profile.id
             })
-            if (error) throw error
+            if (error) {
+                if (error.code === '23505') throw new Error(`A group named "${newGroupName}" already exists for this course.`);
+                throw error
+            }
             setNewGroupName('')
             loadData(true)
         } catch (err) {

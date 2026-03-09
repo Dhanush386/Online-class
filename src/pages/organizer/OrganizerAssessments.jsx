@@ -240,7 +240,12 @@ export default function OrganizerAssessments() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 {groups.filter(g => g.course_id === lockingResource.course_id).length === 0 ? (
                                     <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                        No groups created for this course.
+                                        No groups/batches created for this course.
+                                        {groups.length > 0 && (
+                                            <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#f59e0b' }}>
+                                                Note: Batches are course-specific. You have {groups.length} batch(es) in other courses.
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     groups.filter(g => g.course_id === lockingResource.course_id).map(g => {
