@@ -257,220 +257,190 @@ export default function CourseDetail() {
                     </div>
                 </div>
             )}
-            {/* Day Selector */}
-            <div style={{ marginBottom: '2rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Select Day</div>
-                <div style={{ display: 'flex', gap: '0.625rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none' }} className="hide-scrollbar">
-                    {Array.from({ length: daysCount }, (_, i) => i + 1).map(day => {
-                        const status = getDayStatus(day)
-                        const isActive = selectedDay === day
-                        return (
-                            <button
-                                key={day}
-                                onClick={() => setSelectedDay(day)}
+            {/* Day Accordion List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
+                {Array.from({ length: daysCount }, (_, i) => i + 1).map(day => {
+                    const status = getDayStatus(day)
+                    const isActive = selectedDay === day
+
+                    // Filter content for this day to calculate topic count
+                    const daySessions = sessions.filter(s => (s.day_number || 1) === day)
+                    const dayChallenges = challenges.filter(c => (c.day_number || 1) === day)
+                    const dayAssessmentsCount = assessments.daily.filter(a => (a.day_number || 1) === day).length +
+                        assessments.weekly.filter(a => (a.day_number || 1) === day).length +
+                        assessments.final.filter(a => (a.day_number || 1) === day).length
+                    const dayResources = courseResources.filter(r => (r.day_number || 1) === day)
+
+                    const topicCount = daySessions.length + dayChallenges.length + dayAssessmentsCount + dayResources.length
+
+                    return (
+                        <div key={day} className="glass-card" style={{ overflow: 'hidden', border: isActive ? '1px solid var(--accent-light)' : '1px solid var(--card-border)', transition: 'all 0.3s ease' }}>
+                            {/* Accordion Header */}
+                            <div
+                                onClick={() => setSelectedDay(isActive ? null : day)}
                                 style={{
-                                    minWidth: 80,
-                                    padding: '0.75rem 1rem',
-                                    borderRadius: 14,
-                                    border: isActive ? '2px solid var(--accent-light)' : '1px solid var(--card-border)',
-                                    background: isActive ? 'white' : status.locked ? '#f1f5f9' : 'white',
-                                    cursor: 'pointer',
+                                    padding: '1.25rem 1.5rem',
                                     display: 'flex',
-                                    flexDirection: 'column',
                                     alignItems: 'center',
-                                    gap: '0.25rem',
-                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    boxShadow: isActive ? '0 4px 12px rgba(99,102,241,0.15)' : 'none',
-                                    opacity: status.locked && !isActive ? 0.6 : 1,
-                                    transform: isActive ? 'scale(1.05)' : 'none'
+                                    justifyContent: 'space-between',
+                                    cursor: 'pointer',
+                                    background: isActive ? 'rgba(99,102,241,0.03)' : 'transparent',
+                                    userSelect: 'none'
                                 }}
                             >
-                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isActive ? '#6366f1' : 'var(--text-muted)' }}>DAY</span>
-                                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: isActive ? '#6366f1' : 'var(--text-primary)' }}>{day}</span>
-                                {status.locked && <Lock size={12} color="#94a3b8" />}
-                            </button>
-                        )
-                    })}
-                </div>
-            </div>
-
-            {/* Selected Day Content */}
-            {(() => {
-                const dayStatus = getDayStatus(selectedDay)
-                if (dayStatus.locked) {
-                    return (
-                        <div className="glass-card" style={{ padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', border: '1px dashed #cbd5e1' }}>
-                            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.5rem' }}>
-                                <Lock size={32} color="#ef4444" />
-                            </div>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>Day {selectedDay} is Locked</h3>
-                            <p style={{ color: 'var(--text-secondary)', maxWidth: 400 }}>{dayStatus.reason || "This content hasn't been released yet or is restricted by your instructor."}</p>
-                            <button onClick={() => setSelectedDay(1)} className="btn-secondary" style={{ marginTop: '1rem' }}>Go to Available Days</button>
-                        </div>
-                    )
-                }
-
-                const daySessions = sessions.filter(s => (s.day_number || 1) === selectedDay)
-                const dayChallenges = challenges.filter(c => (c.day_number || 1) === selectedDay)
-                const dayAssessments = {
-                    daily: assessments.daily.filter(a => (a.day_number || 1) === selectedDay),
-                    weekly: assessments.weekly.filter(a => (a.day_number || 1) === selectedDay),
-                    final: assessments.final.filter(a => (a.day_number || 1) === selectedDay)
-                }
-                const dayResources = courseResources.filter(r => (r.day_number || 1) === selectedDay)
-
-                const hasContent = daySessions.length > 0 || dayChallenges.length > 0 || Object.values(dayAssessments).some(a => a.length > 0) || dayResources.length > 0
-
-                if (!hasContent) {
-                    return (
-                        <div className="glass-card" style={{ padding: '4rem 2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                            <Calendar size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
-                            <p>No content has been added for Day {selectedDay} yet.</p>
-                        </div>
-                    )
-                }
-
-                return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        {/* Live/Recorded Sessions */}
-                        {daySessions.length > 0 && (
-                            <section>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    <Video size={18} color="#6366f1" />
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Live Class & Videos</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        {isActive ? <ChevronRight size={20} style={{ transform: 'rotate(90deg)', transition: 'transform 0.3s ease', color: 'var(--accent-light)' }} /> : <ChevronRight size={20} style={{ transition: 'transform 0.3s ease', color: 'var(--text-muted)' }} />}
+                                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: isActive ? 'var(--accent-light)' : 'var(--text-primary)' }}>Day {day}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 500 }}>
+                                        <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-muted)' }} />
+                                        {topicCount} Topics
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    {daySessions.map((s, i) => {
-                                        const live = isLive(s.scheduled_time)
-                                        const upcoming = isUpcoming(s.scheduled_time)
-                                        const done = completedIds.includes(s.id)
-                                        const recorded = isRecorded(s)
-                                        return (
-                                            <div key={s.id} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', background: live ? 'rgba(239,68,68,0.06)' : activeVideo?.id === s.id ? 'rgba(99,102,241,0.06)' : 'white', border: `1px solid ${live ? 'rgba(239,68,68,0.2)' : activeVideo?.id === s.id ? 'var(--accent-light)' : '#e2e8f0'}` }}>
-                                                <div style={{ width: 44, height: 44, borderRadius: 12, background: live ? 'rgba(239,68,68,0.1)' : 'rgba(99,102,241,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                    {live ? <Zap size={20} color="#f87171" className="animate-pulse" /> : <Play size={20} color="#818cf8" />}
-                                                </div>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>{s.title}</div>
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.25rem' }}>
-                                                        {!recorded && s.scheduled_time && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={12} />{new Date(s.scheduled_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>}
-                                                        {recorded && <span style={{ color: '#10b981', fontWeight: 600 }}>● Recorded Lesson</span>}
-                                                        {s.duration_minutes && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12} />{s.duration_minutes} min</span>}
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                                    {live && <span style={{ background: '#ef4444', color: 'white', fontSize: '0.65rem', fontWeight: 800, padding: '0.25rem 0.5rem', borderRadius: 6, letterSpacing: '0.05em' }}>LIVE</span>}
-                                                    {recorded ? (
-                                                        <button onClick={() => { setActiveVideo(s); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="btn-primary" style={{ padding: '0.5rem 1.25rem' }}>Watch</button>
-                                                    ) : s.video_url && (
-                                                        <a href={s.video_url} target="_blank" rel="noreferrer" className={live ? 'btn-primary' : 'btn-secondary'} style={{ textDecoration: 'none', padding: '0.5rem 1.25rem', background: live ? 'linear-gradient(135deg,#ef4444,#dc2626)' : undefined }}>
-                                                            {live ? 'Join Now' : 'Link'}
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </section>
-                        )}
 
-                        {/* Coding Challenges */}
-                        {dayChallenges.length > 0 && (
-                            <section>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    <Code size={18} color="#f59e0b" />
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Coding Practice</h3>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-                                    {dayChallenges.map(c => (
-                                        <Link key={c.id} to={`/student/coding/${c.id}`} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', textDecoration: 'none', transition: 'all 0.2s ease', border: '1px solid #e2e8f0', background: 'white' }}
-                                            onMouseOver={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                                            onMouseOut={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'none' }}>
-                                            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245,158,11,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <span style={{ fontSize: '1.5rem' }}>{c.language === 'python' ? '🐍' : c.language === 'java' ? '☕' : '💻'}</span>
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>{c.title}</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', gap: '0.75rem', marginTop: '0.2rem' }}>
-                                                    <span style={{ color: c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444', fontWeight: 700 }}>{c.difficulty?.toUpperCase()}</span>
-                                                    <span>• {c.xp_reward} XP</span>
-                                                </div>
-                                            </div>
-                                            <ChevronRight size={18} color="#94a3b8" />
-                                        </Link>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        {/* Assessments */}
-                        {Object.values(dayAssessments).some(a => a.length > 0) && (
-                            <section>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    <ClipboardList size={18} color="#10b981" />
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Quizzes & Assessments</h3>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                                    {Object.entries(dayAssessments).map(([type, list]) =>
-                                        list.map(a => {
-                                            const color = ASSESS_COLORS[type]
-                                            const attempts = (submissions[a.id] || []).length
-                                            const exhausted = attempts >= MAX_ATTEMPTS
-                                            return (
-                                                <div key={a.id} className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: `1px solid ${exhausted ? '#e2e8f0' : color + '33'}` }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{type} Quiz</div>
-                                                        {exhausted && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '0.1rem 0.4rem', borderRadius: 4 }}>Completed</span>}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>{a.title}</div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <div style={{ flex: 1, height: 4, background: '#f1f5f9', borderRadius: 2 }}>
-                                                            <div style={{ width: `${(Math.min(attempts, MAX_ATTEMPTS) / MAX_ATTEMPTS) * 100}%`, height: '100%', background: color, borderRadius: 2 }} />
-                                                        </div>
-                                                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{attempts}/{MAX_ATTEMPTS}</span>
-                                                    </div>
-                                                    {exhausted ? (
-                                                        <button onClick={() => navigate(`/student/assessments/${a.id}/review`)} className="btn-secondary" style={{ width: '100%', fontSize: '0.75rem', padding: '0.4rem' }}>View Results</button>
-                                                    ) : (
-                                                        <button onClick={() => navigate(`/student/assessments/${a.id}/take`)} className="btn-primary" style={{ width: '100%', background: color, border: 'none', fontSize: '0.75rem', padding: '0.5rem' }}>{attempts > 0 ? 'Retry' : 'Start'}</button>
-                                                    )}
-                                                </div>
-                                            )
-                                        })
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    {status.locked && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, background: '#fef2f2', padding: '0.25rem 0.6rem', borderRadius: 20 }}>
+                                            <Lock size={12} /> Locked
+                                        </div>
+                                    )}
+                                    {!status.locked && topicCount === 0 && (
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Empty</span>
                                     )}
                                 </div>
-                            </section>
-                        )}
+                            </div>
 
-                        {/* Resources */}
-                        {dayResources.length > 0 && (
-                            <section>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    <FileText size={18} color="#64748b" />
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Study Materials</h3>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                                    {dayResources.map(r => (
-                                        <div key={r.id} className="glass-card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                                            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <FileText size={20} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
+                            {/* Accordion Body */}
+                            {isActive && (
+                                <div className="animate-fade-in" style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--card-border)' }}>
+                                    <div style={{ paddingTop: '1.5rem' }}>
+                                        {status.locked ? (
+                                            <div style={{ textAlign: 'center', padding: '2rem 1rem', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
+                                                <Lock size={32} color="#94a3b8" style={{ marginBottom: '1rem' }} />
+                                                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Content Locked</h4>
+                                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{status.reason || "This day's content is not yet available."}</p>
                                             </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
-                                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{r.resource_type.toUpperCase()}</div>
+                                        ) : topicCount === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                                <Calendar size={32} style={{ margin: '0 auto 1rem', opacity: 0.2 }} />
+                                                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No content uploaded for this day yet.</p>
                                             </div>
-                                            <a href={r.file_url} target="_blank" rel="noreferrer" title="View Material" style={{ color: '#6366f1' }}>
-                                                <ExternalLink size={18} />
-                                            </a>
-                                        </div>
-                                    ))}
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                                {/* Day Sessions */}
+                                                {daySessions.length > 0 && (
+                                                    <section>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                                            <Video size={16} color="#6366f1" />
+                                                            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Live Class & Videos</h4>
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                            {daySessions.map(s => {
+                                                                const live = isLive(s.scheduled_time)
+                                                                const recorded = isRecorded(s)
+                                                                return (
+                                                                    <div key={s.id} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: live ? 'rgba(239,68,68,0.03)' : 'white' }}>
+                                                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: live ? 'rgba(239,68,68,0.08)' : 'rgba(99,102,241,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                            {live ? <Zap size={18} color="#f87171" /> : <Play size={18} color="#818cf8" />}
+                                                                        </div>
+                                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                                            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{s.title}</div>
+                                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                                                                                {recorded ? 'Recorded Lesson' : s.scheduled_time ? new Date(s.scheduled_time).toLocaleString() : 'TBA'}
+                                                                            </div>
+                                                                        </div>
+                                                                        {recorded ? (
+                                                                            <button onClick={() => { setActiveVideo(s); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Watch</button>
+                                                                        ) : s.video_url && (
+                                                                            <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>Join</a>
+                                                                        )}
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </section>
+                                                )}
+
+                                                {/* Day Coding Challenges */}
+                                                {dayChallenges.length > 0 && (
+                                                    <section>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                                            <Code size={16} color="#f59e0b" />
+                                                            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Coding Practice</h4>
+                                                        </div>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                                                            {dayChallenges.map(c => (
+                                                                <Link key={c.id} to={`/student/coding/${c.id}`} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', textDecoration: 'none' }}>
+                                                                    <div style={{ fontSize: '1.25rem' }}>{c.language === 'python' ? '🐍' : '💻'}</div>
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{c.title}</div>
+                                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{c.difficulty.toUpperCase()} • {c.xp_reward} XP</div>
+                                                                    </div>
+                                                                    <ChevronRight size={14} color="var(--text-muted)" />
+                                                                </Link>
+                                                            ))}
+                                                        </div>
+                                                    </section>
+                                                )}
+
+                                                {/* Day Assessments */}
+                                                {(assessments.daily.filter(a => (a.day_number || 1) === day).length > 0 ||
+                                                    assessments.weekly.filter(a => (a.day_number || 1) === day).length > 0 ||
+                                                    assessments.final.filter(a => (a.day_number || 1) === day).length > 0) && (
+                                                        <section>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                                                <ClipboardList size={16} color="#10b981" />
+                                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Assessments</h4>
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                                {['daily', 'weekly', 'final'].map(type =>
+                                                                    assessments[type].filter(a => (a.day_number || 1) === day).map(a => {
+                                                                        const attempts = (submissions[a.id] || []).length
+                                                                        return (
+                                                                            <div key={a.id} className="glass-card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `4px solid ${ASSESS_COLORS[type]}` }}>
+                                                                                <div>
+                                                                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: ASSESS_COLORS[type], textTransform: 'uppercase' }}>{type}</div>
+                                                                                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{a.title}</div>
+                                                                                </div>
+                                                                                <button onClick={() => navigate(`/student/assessments/${a.id}/take`)} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
+                                                                                    {attempts > 0 ? 'Retry' : 'Start'}
+                                                                                </button>
+                                                                            </div>
+                                                                        )
+                                                                    })
+                                                                )}
+                                                            </div>
+                                                        </section>
+                                                    )}
+
+                                                {/* Day Resources */}
+                                                {dayResources.length > 0 && (
+                                                    <section>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                                            <FileText size={16} color="#64748b" />
+                                                            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Study Materials</h4>
+                                                        </div>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '0.75rem' }}>
+                                                            {dayResources.map(r => (
+                                                                <div key={r.id} className="glass-card" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#f8fafc' }}>
+                                                                    <FileText size={16} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
+                                                                    <div style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+                                                                    <a href={r.file_url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-light)' }}><ExternalLink size={14} /></a>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </section>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </section>
-                        )}
-                    </div>
-                )
-            })()}
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
         </div>
     )
 }
