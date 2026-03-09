@@ -339,7 +339,10 @@ export default function StudentManagement() {
                 if (error) throw error
             } else {
                 // Use upsert to prevent 409 Conflict (though composite primary key should be handled)
-                const { error } = await supabase.from('group_members').upsert({ group_id: groupId, student_id: studentId })
+                const { error } = await supabase.from('group_members').upsert(
+                    { group_id: groupId, student_id: studentId },
+                    { onConflict: 'group_id,student_id' }
+                )
                 if (error) throw error
             }
             await loadData(true)
