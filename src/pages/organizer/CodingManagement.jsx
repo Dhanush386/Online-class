@@ -107,7 +107,7 @@ export default function CodingManagement() {
                 test_cases: formData.test_cases.filter(tc => tc.expected_output.trim() !== ''),
                 open_time: formData.open_time ? new Date(formData.open_time).toISOString() : null,
                 close_time: formData.close_time ? new Date(formData.close_time).toISOString() : null,
-                allowed_assets: formData.allowed_assets.split('\n').map(l => l.trim()).filter(Boolean)
+                allowed_assets: (formData.allowed_assets || '').split('\n').map(l => l.trim()).filter(Boolean)
             }
 
             if (editingId) {
@@ -157,6 +157,7 @@ export default function CodingManagement() {
             open_time: toLocalInput(c.open_time),
             close_time: toLocalInput(c.close_time),
             target_visual_url: c.target_visual_url || '',
+            allowed_assets: Array.isArray(c.allowed_assets) ? c.allowed_assets.join('\n') : (c.allowed_assets || ''),
             test_cases: c.test_cases || [{ input: '', expected_output: '', is_hidden: false }],
             day_number: c.day_number || 1
         })
@@ -169,6 +170,7 @@ export default function CodingManagement() {
             course_id: '', language: 'python', difficulty: 'easy',
             starter_code: '', constraints: '', input_format: '', output_format: '',
             xp_reward: 15, open_time: '', close_time: '',
+            target_visual_url: '', allowed_assets: '',
             day_number: 1,
             test_cases: [{ input: '', expected_output: '', is_hidden: false }]
         })
