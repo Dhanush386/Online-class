@@ -16,9 +16,10 @@ export default function StudentDashboard() {
 
     useEffect(() => {
         async function load() {
-            if (!profile?.id) return
+            const { data: enrollments } = await supabase.from('enrollments').select('course_id').eq('student_id', profile.id)
+            const enrolledIds = (enrollments || []).map(e => e.course_id)
+
             const [
-                { data: enrollments },
                 { data: progress },
                 { data: sessions },
                 { data: challenges },
@@ -27,7 +28,6 @@ export default function StudentDashboard() {
                 { data: locks },
                 { data: resData }
             ] = await Promise.all([
-                supabase.from('enrollments').select('course_id').eq('student_id', profile.id),
                 supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
                 supabase.from('videos').select('id, title, scheduled_time, duration_minutes, video_url, courses(title)')
                     .gte('scheduled_time', new Date().toISOString())
@@ -37,7 +37,9 @@ export default function StudentDashboard() {
                 supabase.from('coding_submissions').select('score, status').eq('student_id', profile.id),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
                 supabase.from('resource_access').select('*').eq('is_locked', true),
-                supabase.from('course_resources').select('*, courses(title)').in('course_id', (enrollments || []).map(e => e.course_id)).order('created_at', { ascending: false }).limit(3)
+                enrolledIds.length > 0
+                    ? supabase.from('course_resources').select('*, courses(title)').in('course_id', enrolledIds).order('created_at', { ascending: false }).limit(3)
+                    : Promise.resolve({ data: [] })
             ])
 
             const userGroupIds = memberships?.map(m => m.group_id) || []

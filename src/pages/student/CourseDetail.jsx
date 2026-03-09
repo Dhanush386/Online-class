@@ -13,12 +13,19 @@ export default function CourseDetail() {
     const { profile } = useAuth()
     const navigate = useNavigate()
     const location = useLocation()
+
+    // Helper utilities
+    const isLive = (t) => t && Math.abs(new Date() - new Date(t)) < 3600000
+    const isUpcoming = (t) => t && new Date(t) > new Date() && !isLive(t)
+    const isRecorded = (vid) => vid && vid.video_url && vid.video_url.includes('supabase.co/storage')
+
     const [course, setCourse] = useState(null)
     const [sessions, setSessions] = useState([])
     const [challenges, setChallenges] = useState([])
     const [assessments, setAssessments] = useState({ daily: [], weekly: [], final: [] })
     const [submissions, setSubmissions] = useState({}) // { assessmentId: [sub, ...] }
     const [progress, setProgress] = useState(null)
+    const completedIds = progress ? [progress.video_id] : []
     const [courseResources, setCourseResources] = useState([])
     const [loading, setLoading] = useState(true)
     const [activeVideo, setActiveVideo] = useState(null)
@@ -143,11 +150,6 @@ export default function CourseDetail() {
         updateOverallProgress()
     }
 
-    const completedIds = progress ? [progress.video_id] : []
-
-    const isLive = (t) => t && Math.abs(new Date() - new Date(t)) < 3600000
-    const isUpcoming = (t) => t && new Date(t) > new Date() && !isLive(t)
-    const isRecorded = (v) => v && v.video_url && v.video_url.includes('supabase.co/storage')
 
     if (loading) return <div style={{ color: 'var(--text-muted)', padding: '2rem' }}>Loading...</div>
 
