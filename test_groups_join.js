@@ -13,9 +13,10 @@ envFile.split('\n').forEach(line => {
 const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY)
 
 async function test() {
-    console.log("Fetching groups...")
-    const { data: groups, error: gErr } = await supabase.from('groups').select('id, name, course_id, organizer_id')
-    console.log("Groups:", groups, gErr)
+    console.log("Fetching groups with courses relation...")
+    const { data: groups, error: gErr } = await supabase.from('groups').select('*, courses(title)')
+    console.log("Groups:", JSON.stringify(groups, null, 2))
+    if (gErr) console.log("Error:", gErr)
 }
 
 test()

@@ -149,7 +149,7 @@ export default function StudentManagement() {
             // Fetch Groups
             const { data: allGroups } = await supabase
                 .from('groups')
-                .select('*, courses(title)')
+                .select('*, courses!groups_course_id_fkey(title)')
                 .eq('organizer_id', profile.id)
             setGroups(allGroups || [])
 
