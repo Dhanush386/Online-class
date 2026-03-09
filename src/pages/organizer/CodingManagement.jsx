@@ -239,8 +239,13 @@ export default function CodingManagement() {
                                     {LANGUAGES.find(l => l.id === c.language)?.icon} {c.language.toUpperCase()}
                                 </span>
                                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                    <button onClick={() => setLockingResource(c)} title="Access Control" style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: '0.4rem' }}>
-                                        <Clock size={16} />
+                                    <button
+                                        onClick={() => setLockingResource(c)}
+                                        className="btn-secondary"
+                                        title="Access Control"
+                                        style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                    >
+                                        <Clock size={14} /> Batch
                                     </button>
                                     <button onClick={() => openEdit(c)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>
                                         <Edit2 size={16} />
@@ -254,6 +259,14 @@ export default function CodingManagement() {
                                 {resourceAccess.some(a => a.resource_id === c.id && a.is_locked) && <Lock size={14} color="#ef4444" style={{ flexShrink: 0 }} />}
                                 {c.title}
                             </h3>
+                            {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.75rem' }}>
+                                    {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).map(a => {
+                                        const g = groups.find(gr => gr.id === a.group_id)
+                                        return g ? <span key={g.id} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: '#fee2e2', color: '#991b1b', borderRadius: 4, fontWeight: 600 }}>Locked: {g.name}</span> : null
+                                    })}
+                                </div>
+                            )}
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                 <BookOpen size={12} /> {c.courses?.title} • {c.difficulty.toUpperCase()}
                             </div>
@@ -330,9 +343,24 @@ export default function CodingManagement() {
                                 <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                                     {editingId ? 'Edit Challenge' : 'Create New Coding Challenge'}
                                 </h2>
-                                <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                    <X size={20} />
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    {editingId && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const c = challenges.find(ch => ch.id === editingId)
+                                                if (c) setLockingResource(c)
+                                            }}
+                                            className="btn-secondary"
+                                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                        >
+                                            <Clock size={14} /> Access Control
+                                        </button>
+                                    )}
+                                    <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                        <X size={20} />
+                                    </button>
+                                </div>
                             </div>
 
                             <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>

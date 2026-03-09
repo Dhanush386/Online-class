@@ -15,6 +15,7 @@ export default function CodingPractice() {
     const [submissions, setSubmissions] = useState([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
+    const [groups, setGroups] = useState([])
 
     useEffect(() => {
         if (profile?.id) {
@@ -44,7 +45,8 @@ export default function CodingPractice() {
             { data: challengeData },
             { data: submissionData },
             { data: memberships },
-            { data: locks }
+            { data: locks },
+            { data: groupsData }
         ] = await Promise.all([
             supabase.from('coding_challenges')
                 .select('*, courses(title)')
@@ -52,11 +54,14 @@ export default function CodingPractice() {
                 .order('created_at', { ascending: false }),
             supabase.from('coding_submissions').select('*').eq('student_id', profile.id),
             supabase.from('group_members').select('group_id').eq('student_id', profile.id),
-            supabase.from('resource_access').select('*').eq('resource_type', 'coding').eq('is_locked', true)
+            supabase.from('resource_access').select('*').eq('resource_type', 'coding').eq('is_locked', true),
+            supabase.from('groups').select('*').in('course_id', enrolledIds)
         ])
 
         const userGroupIds = memberships?.map(m => m.group_id) || []
         const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id)).map(l => l.resource_id) || []
+
+        setGroups(groupsData || [])
 
         setChallenges((challengeData || []).filter(c => !lockedCodingIds.includes(c.id)))
         setSubmissions(submissionData || [])
@@ -148,7 +153,20 @@ export default function CodingPractice() {
                         }} onClick={() => navigate(`/student/coding/${c.id}`)}>
 
                             {/* Question Title */}
-                            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#1e40af', width: '100%' }}>{c.title}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%' }}>
+                                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#1e40af' }}>{c.title}</div>
+                                {userGroupIds.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                        {memberships.filter(m => {
+                                            const g = groups?.find(gr => gr.id === m.group_id && gr.course_id === c.course_id)
+                                            return !!g
+                                        }).map(m => {
+                                            const g = groups?.find(gr => gr.id === m.group_id)
+                                            return g ? <span key={g.id} style={{ fontSize: '0.65rem', padding: '0.05rem 0.4rem', background: '#dcfce7', color: '#15803d', borderRadius: 4, fontWeight: 700 }}>Batch: {g.name}</span> : null
+                                        })}
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Mobile Info Row */}
                             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', width: '100%', borderBottom: window.innerWidth <= 1024 ? '1px solid #f1f5f9' : 'none', paddingBottom: window.innerWidth <= 1024 ? '1rem' : '0' }}>
