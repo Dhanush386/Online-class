@@ -62,7 +62,7 @@ export default function CodingPractice() {
             supabase.from('groups').select('*').in('course_id', enrolledIds)
         ])
 
-        const groupIds = membershipsData?.map(m => m.group_id) || []
+        const groupIds = memberships?.map(m => m.group_id) || []
         const lockedCodingIds = locks?.filter(l => groupIds.includes(l.group_id)).map(l => l.resource_id) || []
         const now = new Date()
 
@@ -75,7 +75,7 @@ export default function CodingPractice() {
             return false
         }
 
-        setMemberships(membershipsData || [])
+        setMemberships(memberships || [])
         setUserGroupIds(groupIds)
         setGroups(groupsData || [])
 
