@@ -16,6 +16,8 @@ export default function CodingPractice() {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [groups, setGroups] = useState([])
+    const [userGroupIds, setUserGroupIds] = useState([])
+    const [memberships, setMemberships] = useState([])
 
     useEffect(() => {
         if (profile?.id) {
@@ -60,19 +62,21 @@ export default function CodingPractice() {
             supabase.from('groups').select('*').in('course_id', enrolledIds)
         ])
 
-        const userGroupIds = memberships?.map(m => m.group_id) || []
-        const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id)).map(l => l.resource_id) || []
+        const groupIds = membershipsData?.map(m => m.group_id) || []
+        const lockedCodingIds = locks?.filter(l => groupIds.includes(l.group_id)).map(l => l.resource_id) || []
         const now = new Date()
 
         const isDayLocked = (courseId, dayNum) => {
             if (!dayNum) return false
-            const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && userGroupIds.includes(a.group_id))
+            const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && groupIds.includes(a.group_id))
             if (!access) return false
             if (access.is_locked) return true
             if (access.open_time && new Date(access.open_time) > now) return true
             return false
         }
 
+        setMemberships(membershipsData || [])
+        setUserGroupIds(groupIds)
         setGroups(groupsData || [])
 
         setChallenges((challengeData || []).filter(c => !lockedCodingIds.includes(c.id) && !isDayLocked(c.course_id, c.day_number)))
