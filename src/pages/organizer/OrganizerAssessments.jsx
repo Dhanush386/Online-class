@@ -12,7 +12,7 @@ export default function OrganizerAssessments() {
     const [showModal, setShowModal] = useState(false)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
-    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '' })
+    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '', day_number: 1 })
     const [editingId, setEditingId] = useState(null)
 
     const [groups, setGroups] = useState([])
@@ -86,7 +86,8 @@ export default function OrganizerAssessments() {
                 course_id: formData.course_id,
                 type: formData.type,
                 due_date: formData.due_date || null,
-                description: formData.description
+                description: formData.description,
+                day_number: parseInt(formData.day_number) || 1
             }
 
             if (editingId) {
@@ -124,13 +125,14 @@ export default function OrganizerAssessments() {
             course_id: a.course_id,
             type: a.type,
             due_date: a.due_date ? a.due_date.split('T')[0] : '',
-            description: a.description || ''
+            description: a.description || '',
+            day_number: a.day_number || 1
         })
         setShowModal(true)
     }
 
     function resetForm() {
-        setFormData({ title: '', course_id: '', type: 'daily', due_date: '', description: '' })
+        setFormData({ title: '', course_id: '', type: 'daily', due_date: '', description: '', day_number: 1 })
         setEditingId(null)
         setError('')
     }
@@ -316,7 +318,18 @@ export default function OrganizerAssessments() {
                                 />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                <div>
+                                    <label className="form-label">Day Number</label>
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        min="1"
+                                        value={formData.day_number}
+                                        onChange={e => setFormData(p => ({ ...p, day_number: e.target.value }))}
+                                        required
+                                    />
+                                </div>
                                 <div>
                                     <label className="form-label">Type</label>
                                     <select

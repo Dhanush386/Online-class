@@ -32,6 +32,7 @@ export default function CodingManagement() {
         starter_code: '', constraints: '', input_format: '', output_format: '',
         xp_reward: 15, open_time: '', close_time: '',
         target_visual_url: '', allowed_assets: '',
+        day_number: 1,
         test_cases: [{ input: '', expected_output: '', is_hidden: false }]
     })
 
@@ -156,8 +157,8 @@ export default function CodingManagement() {
             open_time: toLocalInput(c.open_time),
             close_time: toLocalInput(c.close_time),
             target_visual_url: c.target_visual_url || '',
-            allowed_assets: Array.isArray(c.allowed_assets) ? c.allowed_assets.join('\n') : '',
-            test_cases: c.test_cases || [{ input: '', expected_output: '', is_hidden: false }]
+            test_cases: c.test_cases || [{ input: '', expected_output: '', is_hidden: false }],
+            day_number: c.day_number || 1
         })
         setShowModal(true)
     }
@@ -168,7 +169,7 @@ export default function CodingManagement() {
             course_id: '', language: 'python', difficulty: 'easy',
             starter_code: '', constraints: '', input_format: '', output_format: '',
             xp_reward: 15, open_time: '', close_time: '',
-            target_visual_url: '', allowed_assets: '',
+            day_number: 1,
             test_cases: [{ input: '', expected_output: '', is_hidden: false }]
         })
         setEditingId(null)
@@ -416,7 +417,20 @@ export default function CodingManagement() {
                                             type="number"
                                             className="form-input"
                                             value={formData.xp_reward}
-                                            onChange={e => setFormData({ ...formData, xp_reward: parseInt(e.target.value) })}
+                                            onChange={e => setFormData({ ...formData, xp_reward: parseInt(e.target.value) || 15 })}
+                                        />
+                                    </div>
+                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                        <label className="form-label">Day Number</label>
+                                        <input
+                                            id="day_number"
+                                            name="day_number"
+                                            type="number"
+                                            className="form-input"
+                                            min="1"
+                                            value={formData.day_number}
+                                            onChange={e => setFormData({ ...formData, day_number: parseInt(e.target.value) || 1 })}
+                                            required
                                         />
                                     </div>
                                 </div>

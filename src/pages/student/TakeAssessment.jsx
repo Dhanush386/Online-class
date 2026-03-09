@@ -121,13 +121,15 @@ export default function TakeAssessment() {
                 { data: assess, error: aErr },
                 { data: qData, error: qErr },
                 { data: memberships },
-                { data: locks }
+                { data: locks },
+                { data: locksDay }
             ] = await Promise.all([
                 supabase.from('assessment_submissions').select('id').eq('assessment_id', assessmentId).eq('student_id', profile.id),
                 supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
                 supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true }),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
-                supabase.from('resource_access').select('*').eq('resource_id', assessmentId).eq('resource_type', 'assessment').eq('is_locked', true)
+                supabase.from('resource_access').select('*').eq('resource_id', assessmentId).eq('resource_type', 'assessment').eq('is_locked', true),
+                supabase.from('day_access').select('*').eq('resource_type', 'assessment') // although we use course_id and day_number mostly
             ])
 
             if (aErr) throw aErr
@@ -135,9 +137,16 @@ export default function TakeAssessment() {
 
             // Check if locked for student's groups
             const userGroupIds = memberships?.map(m => m.group_id) || []
-            const isLocked = locks?.some(l => userGroupIds.includes(l.group_id))
-            if (isLocked) {
-                alert('This assessment is currently locked for your group.')
+
+            // Check manual resource-level lock
+            const isResourceLocked = locks?.some(l => userGroupIds.includes(l.group_id))
+
+            // Check day-level lock/schedule
+            const dayAccess = (locksDay || []).find(a => a.course_id === assess.course_id && a.day_number === assess.day_number && userGroupIds.includes(a.group_id))
+            const isDayLocked = dayAccess?.is_locked || (dayAccess?.open_time && new Date(dayAccess.open_time) > new Date())
+
+            if (isResourceLocked || isDayLocked) {
+                alert(isDayLocked && dayAccess?.open_time ? `This day opens at ${new Date(dayAccess.open_time).toLocaleString()}` : 'This assessment is currently locked for your group.')
                 navigate(`/student/courses/${assess.course_id}`, { replace: true })
                 return
             }

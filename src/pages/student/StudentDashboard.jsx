@@ -26,6 +26,7 @@ export default function StudentDashboard() {
                 { data: submissions },
                 { data: memberships },
                 { data: locks },
+                { data: locksDay },
                 { data: resData }
             ] = await Promise.all([
                 supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
@@ -37,22 +38,40 @@ export default function StudentDashboard() {
                 supabase.from('coding_submissions').select('score, status').eq('student_id', profile.id),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
                 supabase.from('resource_access').select('*').eq('is_locked', true),
+                supabase.from('day_access').select('*'),
                 enrolledIds.length > 0
-                    ? supabase.from('course_resources').select('*, courses(title)').in('course_id', enrolledIds).order('created_at', { ascending: false }).limit(3)
+                    ? supabase.from('course_resources').select('*, courses(title)').in('course_id', enrolledIds).order('created_at', { ascending: false })
+                    : Promise.resolve({ data: [] }),
+                enrolledIds.length > 0
+                    ? supabase.from('videos').select('id, title, scheduled_time, duration_minutes, video_url, course_id, day_number, courses(title)')
+                        .in('course_id', enrolledIds)
+                        .gte('scheduled_time', new Date().toISOString())
+                        .order('scheduled_time', { ascending: true })
                     : Promise.resolve({ data: [] })
             ])
 
             const userGroupIds = memberships?.map(m => m.group_id) || []
+            const now = new Date()
 
-            const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding').map(l => l.resource_id) || []
-            const lockedMaterialIds = locks?.filter(l => userGroupIds.includes(l.group_id) && (l.resource_type === 'resource' || l.resource_type === 'other')).map(l => l.resource_id) || []
+            const isDayLocked = (courseId, dayNum) => {
+                if (!dayNum) return false
+                const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && userGroupIds.includes(a.group_id))
+                if (!access) return false
+                if (access.is_locked) return true
+                if (access.open_time && new Date(access.open_time) > now) return true
+                return false
+            }
 
             const filteredChallenges = (challenges || [])
-                .filter(c => !lockedCodingIds.includes(c.id))
+                .filter(c => !lockedCodingIds.includes(c.id) && !isDayLocked(c.course_id, c.day_number))
                 .slice(0, 3)
 
             const filteredMaterials = (resData || [])
-                .filter(r => !lockedMaterialIds.includes(r.id))
+                .filter(r => !lockedMaterialIds.includes(r.id) && !isDayLocked(r.course_id, r.day_number))
+                .slice(0, 3)
+
+            const filteredSessions = (sessions || [])
+                .filter(s => !isDayLocked(s.course_id, s.day_number))
                 .slice(0, 3)
 
             const avgComp = progress?.length
@@ -72,7 +91,7 @@ export default function StudentDashboard() {
                 xp: totalXp,
                 solved: solvedCount
             })
-            setUpcomingSessions(sessions || [])
+            setUpcomingSessions(filteredSessions)
             setLatestChallenges(filteredChallenges)
             setRecentResources(filteredMaterials)
             setLoading(false)

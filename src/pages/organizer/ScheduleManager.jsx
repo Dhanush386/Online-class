@@ -51,6 +51,7 @@ export default function ScheduleManager() {
             description: editVideo.description,
             scheduled_time: toISOWithOffset(editVideo.scheduled_time),
             duration_minutes: parseInt(editVideo.duration_minutes) || null,
+            day_number: parseInt(editVideo.day_number) || 1,
             course_id: editVideo.course_id,
         }).eq('id', editVideo.id)
         if (!error) {
@@ -95,7 +96,7 @@ export default function ScheduleManager() {
                                 <th>Video Title</th>
                                 <th>Course</th>
                                 <th>Scheduled Time</th>
-                                <th>Duration</th>
+                                <th>Day</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -114,9 +115,8 @@ export default function ScheduleManager() {
                                         </div>
                                     </td>
                                     <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                            <Clock size={13} />
-                                            {v.duration_minutes ? `${v.duration_minutes} min` : '—'}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
+                                            Day {v.day_number || 1}
                                         </div>
                                     </td>
                                     <td>
@@ -179,6 +179,10 @@ export default function ScheduleManager() {
                                     <label className="form-label">Duration (min)</label>
                                     <input type="number" className="form-input" value={editVideo.duration_minutes || ''} onChange={e => setEditVideo(p => ({ ...p, duration_minutes: e.target.value }))} />
                                 </div>
+                            </div>
+                            <div>
+                                <label className="form-label">Day Number</label>
+                                <input type="number" className="form-input" min="1" value={editVideo.day_number || 1} onChange={e => setEditVideo(p => ({ ...p, day_number: e.target.value }))} required />
                             </div>
                             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                                 <button onClick={() => setEditVideo(null)} className="btn-secondary">Cancel</button>

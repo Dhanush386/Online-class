@@ -3,13 +3,13 @@ import { supabase } from '../../lib/supabase'
 import { Users, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail, Trash2, Calendar } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
-const ExpiryControl = ({ studentId, currentExpiry, onUpdate, saving }) => {
-    const toLocalISO = (date) => {
-        if (!date) return ''
-        const d = new Date(date)
-        return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
-    }
+const toLocalISO = (date) => {
+    if (!date) return ''
+    const d = new Date(date)
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
 
+const ExpiryControl = ({ studentId, currentExpiry, onUpdate, saving }) => {
     const [val, setVal] = useState(toLocalISO(currentExpiry))
 
     // Update local value if external value changes (e.g. after save)
@@ -74,6 +74,9 @@ export default function StudentManagement() {
     const [groupCourseId, setGroupCourseId] = useState('')
     const [managingGroup, setManagingGroup] = useState(null)
     const [togglingMember, setTogglingMember] = useState(null) // studentId
+    const [schedulingGroup, setSchedulingGroup] = useState(null)
+    const [dayAccess, setDayAccess] = useState([])
+    const [maxDay, setMaxDay] = useState(1)
 
     useEffect(() => {
         if (profile?.id) loadData()
@@ -329,6 +332,77 @@ export default function StudentManagement() {
         } catch (err) { console.error(err) }
     }
 
+    async function loadDayAccess(group) {
+        setSchedulingGroup(group)
+        setLoading(true)
+        try {
+            // 1. Get max day for the course
+            const [
+                { data: vids },
+                { data: cods },
+                { data: asss },
+                { data: ress }
+            ] = await Promise.all([
+                supabase.from('videos').select('day_number').eq('course_id', group.course_id),
+                supabase.from('coding_challenges').select('day_number').eq('course_id', group.course_id),
+                supabase.from('assessments').select('day_number').eq('course_id', group.course_id),
+                supabase.from('course_resources').select('day_number').eq('course_id', group.course_id)
+            ])
+
+            const allDays = [
+                ...(vids || []).map(v => v.day_number),
+                ...(cods || []).map(c => c.day_number),
+                ...(asss || []).map(a => a.day_number),
+                ...(ress || []).map(r => r.day_number)
+            ]
+            const max = Math.max(1, ...allDays.filter(d => d !== null))
+            setMaxDay(max)
+
+            // 2. Fetch existing day_access
+            const { data } = await supabase
+                .from('day_access')
+                .select('*')
+                .eq('group_id', group.id)
+            setDayAccess(data || [])
+        } catch (err) {
+            console.error(err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleUpdateDayAccess(day, field, value) {
+        const existing = dayAccess.find(a => a.day_number === day)
+        const payload = {
+            course_id: schedulingGroup.course_id,
+            group_id: schedulingGroup.id,
+            day_number: day,
+            [field]: value
+        }
+
+        try {
+            const { error } = await supabase
+                .from('day_access')
+                .upsert(payload, { onConflict: 'course_id,day_number,group_id' })
+
+            if (error) throw error
+
+            // Update local state
+            setDayAccess(prev => {
+                const idx = prev.findIndex(a => a.day_number === day)
+                if (idx > -1) {
+                    const next = [...prev]
+                    next[idx] = { ...next[idx], ...payload }
+                    return next
+                }
+                return [...prev, payload]
+            })
+        } catch (err) {
+            console.error(err)
+            setError(err.message)
+        }
+    }
+
     async function toggleMembership(groupId, studentId) {
         if (togglingMember) return
         setTogglingMember(studentId)
@@ -542,13 +616,22 @@ export default function StudentManagement() {
                                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                                         {g.courses?.title} • {membersCount} Students
                                     </p>
-                                    <button
-                                        onClick={() => setManagingGroup(g)}
-                                        className="btn-secondary"
-                                        style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
-                                    >
-                                        Manage Members
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            onClick={() => setManagingGroup(g)}
+                                            className="btn-secondary"
+                                            style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
+                                        >
+                                            Members
+                                        </button>
+                                        <button
+                                            onClick={() => loadDayAccess(g)}
+                                            className="btn-secondary"
+                                            style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                        >
+                                            <Calendar size={14} style={{ marginRight: '0.3rem' }} /> Day Schedule
+                                        </button>
+                                    </div>
                                 </div>
                             )
                         })}
@@ -789,6 +872,66 @@ export default function StudentManagement() {
                                     )
                                 })
                             }
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {schedulingGroup && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                    <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 700, maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Day Schedule: {schedulingGroup.name}</h3>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Set timing and locking for each day in {schedulingGroup.courses?.title}</p>
+                            </div>
+                            <button onClick={() => setSchedulingGroup(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {Array.from({ length: maxDay }, (_, i) => i + 1).map(day => {
+                                    const access = dayAccess.find(a => a.day_number === day) || { is_locked: false, open_time: '', close_time: '' }
+                                    return (
+                                        <div key={day} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 100px', gap: '1rem', alignItems: 'center', padding: '1rem', background: access.is_locked ? '#fff1f2' : '#f8fafc', borderRadius: 12, border: `1px solid ${access.is_locked ? '#fecaca' : '#e2e8f0'}` }}>
+                                            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Day {day}</div>
+                                            <div>
+                                                <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>OPEN TIME</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    className="form-input"
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                                                    value={access.open_time ? toLocalISO(access.open_time) : ''}
+                                                    onChange={e => handleUpdateDayAccess(day, 'open_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>CLOSE TIME</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    className="form-input"
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                                                    value={access.close_time ? toLocalISO(access.close_time) : ''}
+                                                    onChange={e => handleUpdateDayAccess(day, 'close_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                                />
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <button
+                                                    onClick={() => handleUpdateDayAccess(day, 'is_locked', !access.is_locked)}
+                                                    className={access.is_locked ? "btn-primary" : "btn-secondary"}
+                                                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: access.is_locked ? '#ef4444' : 'white', width: '100%' }}
+                                                >
+                                                    {access.is_locked ? 'Unlock' : 'Lock'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                        <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+                            <button onClick={() => setSchedulingGroup(null)} className="btn-secondary">Done</button>
                         </div>
                     </div>
                 </div>

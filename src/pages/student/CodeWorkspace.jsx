@@ -137,20 +137,29 @@ export default function CodeWorkspace() {
             { data, error },
             { data: subs },
             { data: memberships },
-            { data: locks }
+            { data: locks },
+            { data: locksDay }
         ] = await Promise.all([
             supabase.from('coding_challenges').select('*, courses(title)').eq('id', challengeId).single(),
             supabase.from('coding_submissions').select('*').eq('challenge_id', challengeId).eq('student_id', profile.id).order('created_at', { ascending: false }),
             supabase.from('group_members').select('group_id').eq('student_id', profile.id),
-            supabase.from('resource_access').select('*').eq('resource_id', challengeId).eq('resource_type', 'coding').eq('is_locked', true)
+            supabase.from('resource_access').select('*').eq('resource_id', challengeId).eq('resource_type', 'coding').eq('is_locked', true),
+            supabase.from('day_access').select('*')
         ])
 
         if (data) {
             // Check if locked for student's groups
             const userGroupIds = memberships?.map(m => m.group_id) || []
-            const isLocked = locks?.some(l => userGroupIds.includes(l.group_id))
-            if (isLocked) {
-                alert('This coding challenge is currently locked for your group.')
+
+            // Check manual resource-level lock
+            const isResourceLocked = locks?.some(l => userGroupIds.includes(l.group_id))
+
+            // Check day-level lock/schedule
+            const dayAccess = (locksDay || []).find(a => a.course_id === data.course_id && a.day_number === data.day_number && userGroupIds.includes(a.group_id))
+            const isDayLocked = dayAccess?.is_locked || (dayAccess?.open_time && new Date(dayAccess.open_time) > new Date())
+
+            if (isResourceLocked || isDayLocked) {
+                alert(isDayLocked && dayAccess?.open_time ? `This day opens at ${new Date(dayAccess.open_time).toLocaleString()}` : 'This coding challenge is currently locked for your group.')
                 navigate('/student/coding', { replace: true })
                 return
             }

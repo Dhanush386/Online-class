@@ -37,7 +37,8 @@ export default function Assessments() {
                 { data: assessData },
                 { data: subData },
                 { data: memberships },
-                { data: locks }
+                { data: locks },
+                { data: locksDay }
             ] = await Promise.all([
                 supabase.from('assessments')
                     .select('*, courses(title)')
@@ -45,15 +46,26 @@ export default function Assessments() {
                     .order('due_date', { ascending: true }),
                 supabase.from('assessment_submissions').select('*').eq('student_id', profile.id),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
-                supabase.from('resource_access').select('*').eq('resource_type', 'assessment').eq('is_locked', true)
+                supabase.from('resource_access').select('*').eq('resource_type', 'assessment').eq('is_locked', true),
+                supabase.from('day_access').select('*')
             ])
 
             const userGroupIds = memberships?.map(m => m.group_id) || []
             const lockedAssessIds = locks?.filter(l => userGroupIds.includes(l.group_id)).map(l => l.resource_id) || []
+            const now = new Date()
+
+            const isDayLocked = (courseId, dayNum) => {
+                if (!dayNum) return false
+                const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && userGroupIds.includes(a.group_id))
+                if (!access) return false
+                if (access.is_locked) return true
+                if (access.open_time && new Date(access.open_time) > now) return true
+                return false
+            }
 
             const grouped = { daily: [], weekly: [], final: [] }
                 ; (assessData || [])
-                    .filter(a => !lockedAssessIds.includes(a.id))
+                    .filter(a => !lockedAssessIds.includes(a.id) && !isDayLocked(a.course_id, a.day_number))
                     .forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
             setAssessments(grouped)
 

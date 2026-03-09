@@ -46,6 +46,7 @@ export default function CodingPractice() {
             { data: submissionData },
             { data: memberships },
             { data: locks },
+            { data: locksDay },
             { data: groupsData }
         ] = await Promise.all([
             supabase.from('coding_challenges')
@@ -55,15 +56,26 @@ export default function CodingPractice() {
             supabase.from('coding_submissions').select('*').eq('student_id', profile.id),
             supabase.from('group_members').select('group_id').eq('student_id', profile.id),
             supabase.from('resource_access').select('*').eq('resource_type', 'coding').eq('is_locked', true),
+            supabase.from('day_access').select('*'),
             supabase.from('groups').select('*').in('course_id', enrolledIds)
         ])
 
         const userGroupIds = memberships?.map(m => m.group_id) || []
         const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id)).map(l => l.resource_id) || []
+        const now = new Date()
+
+        const isDayLocked = (courseId, dayNum) => {
+            if (!dayNum) return false
+            const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && userGroupIds.includes(a.group_id))
+            if (!access) return false
+            if (access.is_locked) return true
+            if (access.open_time && new Date(access.open_time) > now) return true
+            return false
+        }
 
         setGroups(groupsData || [])
 
-        setChallenges((challengeData || []).filter(c => !lockedCodingIds.includes(c.id)))
+        setChallenges((challengeData || []).filter(c => !lockedCodingIds.includes(c.id) && !isDayLocked(c.course_id, c.day_number)))
         setSubmissions(submissionData || [])
         setLoading(false)
     }

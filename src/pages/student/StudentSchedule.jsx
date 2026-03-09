@@ -11,11 +11,49 @@ export default function StudentSchedule() {
 
     useEffect(() => {
         async function load() {
-            const { data } = await supabase
-                .from('videos')
-                .select('*, courses(title)')
-                .order('scheduled_time', { ascending: true })
-            setSessions(data || [])
+            setLoading(true)
+            // Fetch enrolled course IDs
+            const { data: enrollments } = await supabase
+                .from('enrollments')
+                .select('course_id')
+                .eq('student_id', profile.id)
+
+            const enrolledIds = (enrollments || []).map(e => e.course_id)
+
+            if (enrolledIds.length === 0) {
+                setSessions([])
+                setLoading(false)
+                return
+            }
+
+            const [
+                { data: vids },
+                { data: memberships },
+                { data: locksDay }
+            ] = await Promise.all([
+                supabase.from('videos')
+                    .select('*, courses(title)')
+                    .in('course_id', enrolledIds)
+                    .order('scheduled_time', { ascending: true }),
+                supabase.from('group_members').select('group_id').eq('student_id', profile.id),
+                supabase.from('day_access').select('*')
+            ])
+
+            const userGroupIds = memberships?.map(m => m.group_id) || []
+            const now = new Date()
+
+            const isDayLocked = (courseId, dayNum) => {
+                if (!dayNum) return false
+                const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && userGroupIds.includes(a.group_id))
+                if (!access) return false
+                if (access.is_locked) return true
+                if (access.open_time && new Date(access.open_time) > now) return true
+                return false
+            }
+
+            const filteredByDay = (vids || []).filter(v => !isDayLocked(v.course_id, v.day_number))
+
+            setSessions(filteredByDay)
             setLoading(false)
         }
         load()

@@ -10,6 +10,7 @@ export default function ScheduleLiveClass() {
     const [form, setForm] = useState({
         course_id: '', title: '', description: '',
         meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '',
+        day_number: 1
     })
     const [selectedFile, setSelectedFile] = useState(null)
     const [saving, setSaving] = useState(false)
@@ -77,12 +78,13 @@ export default function ScheduleLiveClass() {
                     ? new Date(form.scheduled_time).toISOString()
                     : null,
                 duration_minutes: durationMins,
+                day_number: parseInt(form.day_number) || 1
             })
 
             if (dbErr) throw dbErr
 
             setSuccess(true)
-            setForm({ course_id: '', title: '', description: '', meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '' })
+            setForm({ course_id: '', title: '', description: '', meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '', day_number: 1 })
             setSelectedFile(null)
             setTimeout(() => setSuccess(false), 4000)
         } catch (err) {
@@ -229,47 +231,32 @@ export default function ScheduleLiveClass() {
                     </div>
 
                     {/* Schedule fields */}
-                    {mode === 'live' ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div>
-                                <label className="form-label">Start Time</label>
-                                <div style={{ position: 'relative' }}>
-                                    <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                    <input type="datetime-local" className="form-input" value={form.scheduled_time} onChange={e => setForm(p => ({ ...p, scheduled_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="form-label">End Time</label>
-                                <div style={{ position: 'relative' }}>
-                                    <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                    <input type="datetime-local" className="form-input" value={form.end_time} onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required
-                                        min={form.scheduled_time || undefined}
-                                    />
-                                </div>
-                                {form.scheduled_time && form.end_time && (() => {
-                                    const mins = Math.round((new Date(form.end_time) - new Date(form.scheduled_time)) / 60000)
-                                    return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.35rem' }}>⏱ {mins} min duration</div> : null
-                                })()}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                        <div>
+                            <label className="form-label">Day Number</label>
+                            <input type="number" className="form-input" min="1" value={form.day_number} onChange={e => setForm(p => ({ ...p, day_number: e.target.value }))} required />
+                        </div>
+                        <div>
+                            <label className="form-label">Start Time</label>
+                            <div style={{ position: 'relative' }}>
+                                <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input type="datetime-local" className="form-input" value={form.scheduled_time} onChange={e => setForm(p => ({ ...p, scheduled_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
                             </div>
                         </div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div>
-                                <label className="form-label">Publish Date</label>
-                                <div style={{ position: 'relative' }}>
-                                    <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                    <input type="datetime-local" className="form-input" value={form.scheduled_time} onChange={e => setForm(p => ({ ...p, scheduled_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} />
-                                </div>
+                        <div>
+                            <label className="form-label">End Time</label>
+                            <div style={{ position: 'relative' }}>
+                                <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input type="datetime-local" className="form-input" value={form.end_time} onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required
+                                    min={form.scheduled_time || undefined}
+                                />
                             </div>
-                            <div>
-                                <label className="form-label">Duration (minutes)</label>
-                                <div style={{ position: 'relative' }}>
-                                    <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                    <input type="number" className="form-input" placeholder="60" min="1" value={form.duration_minutes} onChange={e => setForm(p => ({ ...p, duration_minutes: e.target.value }))} style={{ paddingLeft: '2.5rem' }} />
-                                </div>
-                            </div>
+                            {form.scheduled_time && form.end_time && (() => {
+                                const mins = Math.round((new Date(form.end_time) - new Date(form.scheduled_time)) / 60000)
+                                return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.35rem' }}>⏱ {mins} min duration</div> : null
+                            })()}
                         </div>
-                    )}
+                    </div>
 
                     <button type="submit" className="btn-primary" disabled={saving} style={{ alignSelf: 'flex-end', minWidth: 180, justifyContent: 'center' }}>
                         {saving
