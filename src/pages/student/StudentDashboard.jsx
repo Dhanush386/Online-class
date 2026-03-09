@@ -62,6 +62,9 @@ export default function StudentDashboard() {
                 return false
             }
 
+            const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding').map(l => l.resource_id) || []
+            const lockedMaterialIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'resource').map(l => l.resource_id) || []
+
             const filteredChallenges = (challenges || [])
                 .filter(c => !lockedCodingIds.includes(c.id) && !isDayLocked(c.course_id, c.day_number))
                 .slice(0, 3)
