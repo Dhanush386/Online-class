@@ -26,8 +26,19 @@ export default function MyCourses() {
                         .eq('student_id', profile.id)
                 ])
 
-                const enrollmentData = enrollmentRes.data || []
+                const rawEnrollmentData = enrollmentRes.data || []
                 const progressData = progressRes.data || []
+
+                // Deduplicate enrollments
+                const enrollmentData = []
+                const seenIds = new Set()
+                rawEnrollmentData.forEach(e => {
+                    const cid = e.courses?.id
+                    if (cid && !seenIds.has(cid)) {
+                        seenIds.add(cid)
+                        enrollmentData.push(e)
+                    }
+                })
 
                 const mapped = enrollmentData.map(e => {
                     const prog = progressData.find(p => p.course_id === e.course_id)

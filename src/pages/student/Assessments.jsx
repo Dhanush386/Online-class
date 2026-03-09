@@ -20,12 +20,12 @@ export default function Assessments() {
     useEffect(() => {
         async function load() {
             // Fetch enrolled course IDs first
-            const { data: enrollments } = await supabase
+            const { data: rawEnrollments } = await supabase
                 .from('enrollments')
                 .select('course_id')
                 .eq('student_id', profile.id)
 
-            const enrolledIds = (enrollments || []).map(e => e.course_id)
+            const enrolledIds = [...new Set((rawEnrollments || []).map(e => e.course_id))]
 
             if (enrolledIds.length === 0) {
                 setAssessments({ daily: [], weekly: [], final: [] })

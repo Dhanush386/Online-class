@@ -16,8 +16,19 @@ export default function StudentDashboard() {
 
     useEffect(() => {
         async function load() {
-            const { data: enrollments } = await supabase.from('enrollments').select('course_id').eq('student_id', profile.id)
-            const enrolledIds = (enrollments || []).map(e => e.course_id)
+            const { data: rawEnrollments } = await supabase.from('enrollments').select('course_id').eq('student_id', profile.id)
+
+            // Deduplicate enrollments to fix duplicate course cards
+            const enrollments = []
+            const uniqueCourseIds = new Set()
+                ; (rawEnrollments || []).forEach(e => {
+                    if (!uniqueCourseIds.has(e.course_id)) {
+                        uniqueCourseIds.add(e.course_id)
+                        enrollments.push(e)
+                    }
+                })
+
+            const enrolledIds = enrollments.map(e => e.course_id)
 
             const [
                 { data: progress },
