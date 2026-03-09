@@ -72,7 +72,8 @@ export default function CodingManagement() {
             if (existing) {
                 const { error } = await supabase.from('resource_access')
                     .update({ is_locked: !existing.is_locked })
-                    .eq('id', existing.id)
+                    .eq('resource_id', resourceId)
+                    .eq('group_id', groupId)
                 if (error) throw error
             } else {
                 const { error } = await supabase.from('resource_access')
