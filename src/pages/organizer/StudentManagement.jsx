@@ -73,6 +73,7 @@ export default function StudentManagement() {
     const [newGroupName, setNewGroupName] = useState('')
     const [groupCourseId, setGroupCourseId] = useState('')
     const [managingGroup, setManagingGroup] = useState(null)
+    const [togglingMember, setTogglingMember] = useState(null) // studentId
 
     useEffect(() => {
         if (profile?.id) loadData()
@@ -329,15 +330,25 @@ export default function StudentManagement() {
     }
 
     async function toggleMembership(groupId, studentId) {
+        if (togglingMember) return
+        setTogglingMember(studentId)
         const isMember = groupMembers.some(m => m.group_id === groupId && m.student_id === studentId)
         try {
             if (isMember) {
-                await supabase.from('group_members').delete().eq('group_id', groupId).eq('student_id', studentId)
+                const { error } = await supabase.from('group_members').delete().eq('group_id', groupId).eq('student_id', studentId)
+                if (error) throw error
             } else {
-                await supabase.from('group_members').insert({ group_id: groupId, student_id: studentId })
+                // Use upsert to prevent 409 Conflict (though composite primary key should be handled)
+                const { error } = await supabase.from('group_members').upsert({ group_id: groupId, student_id: studentId })
+                if (error) throw error
             }
-            loadData(true)
-        } catch (err) { console.error(err) }
+            await loadData(true)
+        } catch (err) {
+            console.error(err)
+            setError(err.message || 'Failed to update membership')
+        } finally {
+            setTogglingMember(null)
+        }
     }
 
     function avgCompletion(enrollments) {
@@ -765,10 +776,11 @@ export default function StudentManagement() {
                                             </div>
                                             <button
                                                 onClick={() => toggleMembership(managingGroup.id, s.id)}
+                                                disabled={togglingMember === s.id}
                                                 className={isMember ? "btn-secondary" : "btn-primary"}
-                                                style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
+                                                style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', opacity: togglingMember === s.id ? 0.7 : 1 }}
                                             >
-                                                {isMember ? 'Remove' : 'Add'}
+                                                {togglingMember === s.id ? '...' : (isMember ? 'Remove' : 'Add')}
                                             </button>
                                         </div>
                                     )
