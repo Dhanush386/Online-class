@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Plus, Trash2, Edit2, X, Save, AlertCircle, ChevronLeft, HelpCircle, CheckCircle2 } from 'lucide-react'
+import { Plus, Trash2, Edit2, X, Save, AlertCircle, ChevronLeft, HelpCircle, CheckCircle2, Clock } from 'lucide-react'
 
 export default function AssessmentQuestions() {
     const { assessmentId } = useParams()
@@ -18,6 +18,9 @@ export default function AssessmentQuestions() {
         correct_answer: ''
     })
     const [editingId, setEditingId] = useState(null)
+    const [groups, setGroups] = useState([])
+    const [resourceAccess, setResourceAccess] = useState([])
+    const [showLockModal, setShowLockModal] = useState(false)
 
     useEffect(() => {
         if (assessmentId) {
@@ -26,15 +29,55 @@ export default function AssessmentQuestions() {
     }, [assessmentId])
 
     async function loadData() {
-        setLoading(true)
-        const [{ data: assessData }, { data: questData }] = await Promise.all([
+        const [
+            { data: assessData },
+            { data: questData },
+            { data: groupData },
+            { data: accessData }
+        ] = await Promise.all([
             supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
-            supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true })
+            supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true }),
+            supabase.from('groups').select('*').in('course_id', [assessmentId]), // This is wrong, need courseId from assessmentId
+            supabase.from('resource_access').select('*').eq('resource_id', assessmentId).eq('resource_type', 'assessment')
         ])
+
+        // Correction: Need to get course_id first or use a join
+        const { data: aData } = await supabase.from('assessments').select('course_id').eq('id', assessmentId).single()
+        if (aData) {
+            const { data: gData } = await supabase.from('groups').select('*').eq('course_id', aData.course_id)
+            setGroups(gData || [])
+        }
 
         setAssessment(assessData)
         setQuestions(questData || [])
+        setResourceAccess(accessData || [])
         setLoading(false)
+    }
+
+    async function toggleResourceLock(groupId) {
+        const existing = resourceAccess.find(a => a.group_id === groupId && a.resource_id === assessmentId)
+        try {
+            if (existing) {
+                const { error } = await supabase.from('resource_access')
+                    .update({ is_locked: !existing.is_locked })
+                    .eq('id', existing.id)
+                if (error) throw error
+            } else {
+                const { error } = await supabase.from('resource_access')
+                    .insert({
+                        resource_id: assessmentId,
+                        resource_type: 'assessment',
+                        group_id: groupId,
+                        is_locked: true
+                    })
+                if (error) throw error
+            }
+            // Reload access data
+            const { data } = await supabase.from('resource_access').select('*').eq('resource_id', assessmentId).eq('resource_type', 'assessment')
+            setResourceAccess(data || [])
+        } catch (err) {
+            console.error('Error toggling lock:', err)
+        }
     }
 
     async function handleSubmit(e) {
@@ -119,6 +162,13 @@ export default function AssessmentQuestions() {
                         style={{ gap: '0.5rem' }}
                     >
                         <Plus size={18} /> Add Question
+                    </button>
+                    <button
+                        onClick={() => setShowLockModal(true)}
+                        className="btn-secondary"
+                        style={{ gap: '0.5rem', marginLeft: '0.75rem' }}
+                    >
+                        <Clock size={18} /> Access Control
                     </button>
                 </div>
             </div>
@@ -261,6 +311,54 @@ export default function AssessmentQuestions() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Access Control Modal */}
+            {showLockModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                    <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 450, padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Access Control</h3>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{assessment?.title}</p>
+                            </div>
+                            <button onClick={() => setShowLockModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ padding: '1.5rem', maxHeight: '60vh', overflowY: 'auto' }}>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                                Toggle locks for specific groups. Locked resources are invisible/non-accessible to students in that group.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {groups.length === 0 ? (
+                                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                        No groups created for this course.
+                                    </div>
+                                ) : (
+                                    groups.map(g => {
+                                        const access = resourceAccess.find(a => a.group_id === g.id && a.resource_id === assessmentId)
+                                        const isLocked = access?.is_locked || false
+                                        return (
+                                            <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
+                                                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: isLocked ? '#991b1b' : '#166534' }}>{g.name}</div>
+                                                <button
+                                                    onClick={() => toggleResourceLock(g.id)}
+                                                    className={isLocked ? "btn-primary" : "btn-secondary"}
+                                                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: isLocked ? '#ef4444' : 'white' }}
+                                                >
+                                                    {isLocked ? 'Unlock' : 'Lock'}
+                                                </button>
+                                            </div>
+                                        )
+                                    })
+                                )}
+                            </div>
+                        </div>
+                        <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid var(--card-border)', textAlign: 'right' }}>
+                            <button onClick={() => setShowLockModal(false)} className="btn-secondary" style={{ fontSize: '0.85rem' }}>Done</button>
+                        </div>
                     </div>
                 </div>
             )}

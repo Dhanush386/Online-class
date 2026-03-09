@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock } from 'lucide-react'
+import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock } from 'lucide-react'
 
 const LANGUAGES = [
     { id: 'html', name: 'HTML/CSS/JS (Web)', icon: '🌐' },
@@ -249,7 +249,10 @@ export default function CodingManagement() {
                                     </button>
                                 </div>
                             </div>
-                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>{c.title}</h3>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {resourceAccess.some(a => a.resource_id === c.id && a.is_locked) && <Lock size={14} color="#ef4444" style={{ flexShrink: 0 }} />}
+                                {c.title}
+                            </h3>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                 <BookOpen size={12} /> {c.courses?.title} • {c.difficulty.toUpperCase()}
                             </div>
@@ -263,252 +266,257 @@ export default function CodingManagement() {
                         </div>
                     ))}
                 </div>
-            )}
+            )
+            }
 
             {/* Access Control Modal */}
-            {lockingResource && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
-                    <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 450, padding: 0, overflow: 'hidden' }}>
-                        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Access Control</h3>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{lockingResource.title}</p>
-                            </div>
-                            <button onClick={() => setLockingResource(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div style={{ padding: '1.5rem', maxHeight: '60vh', overflowY: 'auto' }}>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                                Toggle locks for specific groups. Locked resources are invisible/non-accessible to students in that group.
-                            </p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                {groups.filter(g => g.course_id === lockingResource.course_id).length === 0 ? (
-                                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                        No groups created for this course.
-                                    </div>
-                                ) : (
-                                    groups.filter(g => g.course_id === lockingResource.course_id).map(g => {
-                                        const access = resourceAccess.find(a => a.group_id === g.id && a.resource_id === lockingResource.id)
-                                        const isLocked = access?.is_locked || false
-                                        return (
-                                            <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
-                                                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: isLocked ? '#991b1b' : '#166534' }}>{g.name}</div>
-                                                <button
-                                                    onClick={() => toggleResourceLock(g.id, lockingResource.id)}
-                                                    className={isLocked ? "btn-primary" : "btn-secondary"}
-                                                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: isLocked ? '#ef4444' : 'white' }}
-                                                >
-                                                    {isLocked ? 'Unlock' : 'Lock'}
-                                                </button>
-                                            </div>
-                                        )
-                                    })
-                                )}
-                            </div>
-                        </div>
-                        <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid var(--card-border)', textAlign: 'right' }}>
-                            <button onClick={() => setLockingResource(null)} className="btn-secondary" style={{ fontSize: '0.85rem' }}>Done</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal */}
-            {showModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                    <div className="glass-card animate-scale-in" style={{ width: '90%', maxWidth: 800, maxHeight: '90vh', padding: 0, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                {editingId ? 'Edit Challenge' : 'Create New Coding Challenge'}
-                            </h2>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
-                            {error && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
-                                    <AlertCircle size={18} /> {error}
-                                </div>
-                            )}
-
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: window.innerWidth <= 600 ? '1fr' : '1.5fr 1fr 1fr',
-                                gap: '1rem',
-                                marginBottom: '1.25rem'
-                            }}>
-                                <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
-                                    <label className="form-label">Course</label>
-                                    <select
-                                        id="course_id"
-                                        name="course_id"
-                                        className="form-input"
-                                        value={formData.course_id}
-                                        onChange={e => setFormData(p => ({ ...p, course_id: e.target.value }))}
-                                        required
-                                    >
-                                        <option value="">Select Course</option>
-                                        {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                                    </select>
-                                </div>
-                                <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
-                                    <label className="form-label">Language</label>
-                                    <select className="form-input" value={formData.language} onChange={e => setFormData(p => ({ ...p, language: e.target.value }))} required>
-                                        {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.icon} {l.name}</option>)}
-                                    </select>
-                                </div>
-                                <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
-                                    <label className="form-label">Difficulty</label>
-                                    <select
-                                        className="form-input"
-                                        value={formData.difficulty}
-                                        onChange={e => setFormData({ ...formData, difficulty: e.target.value })}
-                                    >
-                                        {DIFFICULTIES.map(d => (
-                                            <option key={d} value={d}>{d.toUpperCase()}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
-                                    <label className="form-label">XP Reward</label>
-                                    <input
-                                        id="xp_reward"
-                                        name="xp_reward"
-                                        type="number"
-                                        className="form-input"
-                                        value={formData.xp_reward}
-                                        onChange={e => setFormData({ ...formData, xp_reward: parseInt(e.target.value) })}
-                                    />
-                                </div>
-                            </div>
-
-                            <div style={{ marginBottom: '1.25rem' }}>
-                                <label className="form-label">Challenge Title</label>
-                                <input
-                                    id="challenge-title"
-                                    name="challenge-title"
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="e.g. Reverse a String"
-                                    value={formData.title}
-                                    onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
-                                    required
-                                />
-                            </div>
-
-                            <div style={{ marginBottom: '1.25rem' }}>
-                                <label className="form-label">Problem Statement (Markdown supported)</label>
-                                <textarea className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
-                            </div>
-
-                            <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+            {
+                lockingResource && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                        <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 450, padding: 0, overflow: 'hidden' }}>
+                            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
-                                    <label className="form-label">Starter Code</label>
-                                    <textarea className="form-input" rows={6} placeholder="Inital code for the student..." value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Access Control</h3>
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{lockingResource.title}</p>
                                 </div>
-                                <div>
-                                    <label className="form-label">Constraints</label>
-                                    <textarea className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
-                                </div>
-                            </div>
-
-                            {/* Open / Close Time */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                                <div>
-                                    <label className="form-label">Open Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                    <div style={{ position: 'relative' }}>
-                                        <Calendar size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                        <input type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
-                                            value={formData.open_time}
-                                            onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="form-label">Close Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                    <div style={{ position: 'relative' }}>
-                                        <Clock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                        <input type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
-                                            value={formData.close_time}
-                                            min={formData.open_time || undefined}
-                                            onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
-                                        />
-                                    </div>
-                                    {formData.open_time && formData.close_time && (() => {
-                                        const mins = Math.round((new Date(formData.close_time) - new Date(formData.open_time)) / 60000)
-                                        return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.3rem' }}>⏱ {mins} min window</div> : null
-                                    })()}
-                                </div>
-                            </div>
-
-                            <div style={{ marginBottom: '1.25rem' }}>
-                                <label className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="Link to an image or video for the student to replicate"
-                                    value={formData.target_visual_url}
-                                    onChange={e => setFormData(p => ({ ...p, target_visual_url: e.target.value }))}
-                                />
-                                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Useful for HTML/CSS challenges where students need a visual goal.</p>
-                            </div>
-
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <label className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                <textarea
-                                    className="form-input"
-                                    rows={3}
-                                    placeholder="List links (one per line) students can copy-paste (images, fonts, etc.)"
-                                    value={formData.allowed_assets}
-                                    onChange={e => setFormData(p => ({ ...p, allowed_assets: e.target.value }))}
-                                />
-                            </div>
-
-                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                    <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Test Cases</h4>
-                                    <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: [...p.test_cases, { input: '', expected_output: '', is_hidden: false }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
-                                        <Plus size={14} /> Add Test Case
-                                    </button>
-                                </div>
-                                {formData.test_cases.map((tc, idx) => (
-                                    <div key={idx} className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.75rem', marginBottom: '0.75rem', alignItems: 'center' }}>
-                                        <textarea className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => {
-                                            const newTCData = [...formData.test_cases]; newTCData[idx].input = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                        }} style={{ fontSize: '0.8rem' }} />
-                                        <textarea className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => {
-                                            const newTCData = [...formData.test_cases]; newTCData[idx].expected_output = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                        }} style={{ fontSize: '0.8rem' }} />
-                                        <div style={{ display: 'flex', flexDirection: window.innerWidth <= 768 ? 'row' : 'column', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                                            <label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>HIDDEN</label>
-                                            <input
-                                                type="checkbox"
-                                                checked={tc.is_hidden}
-                                                onChange={e => {
-                                                    const newTCData = [...formData.test_cases]; newTCData[idx].is_hidden = e.target.checked; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                                }}
-                                            />
-                                        </div>
-                                        <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: p.test_cases.filter((_, i) => i !== idx) }))} style={{ background: 'none', border: 'none', color: '#ef4444', padding: '0.5rem', cursor: 'pointer', alignSelf: 'center' }}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
-                                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary" style={{ padding: '0.6rem 1.25rem' }}>Cancel</button>
-                                <button type="submit" className="btn-primary" disabled={saving} style={{ padding: '0.6rem 1.5rem', gap: '0.5rem' }}>
-                                    {saving ? 'Saving...' : (editingId ? <><Save size={18} /> Update</> : <><Plus size={18} /> Create Challenge</>)}
+                                <button onClick={() => setLockingResource(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                    <X size={20} />
                                 </button>
                             </div>
-                        </form>
+                            <div style={{ padding: '1.5rem', maxHeight: '60vh', overflowY: 'auto' }}>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                                    Toggle locks for specific groups. Locked resources are invisible/non-accessible to students in that group.
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {groups.filter(g => g.course_id === lockingResource.course_id).length === 0 ? (
+                                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                            No groups created for this course.
+                                        </div>
+                                    ) : (
+                                        groups.filter(g => g.course_id === lockingResource.course_id).map(g => {
+                                            const access = resourceAccess.find(a => a.group_id === g.id && a.resource_id === lockingResource.id)
+                                            const isLocked = access?.is_locked || false
+                                            return (
+                                                <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
+                                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: isLocked ? '#991b1b' : '#166534' }}>{g.name}</div>
+                                                    <button
+                                                        onClick={() => toggleResourceLock(g.id, lockingResource.id)}
+                                                        className={isLocked ? "btn-primary" : "btn-secondary"}
+                                                        style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: isLocked ? '#ef4444' : 'white' }}
+                                                    >
+                                                        {isLocked ? 'Unlock' : 'Lock'}
+                                                    </button>
+                                                </div>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                            <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid var(--card-border)', textAlign: 'right' }}>
+                                <button onClick={() => setLockingResource(null)} className="btn-secondary" style={{ fontSize: '0.85rem' }}>Done</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+
+            {/* Modal */}
+            {
+                showModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                        <div className="glass-card animate-scale-in" style={{ width: '90%', maxWidth: 800, maxHeight: '90vh', padding: 0, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                    {editingId ? 'Edit Challenge' : 'Create New Coding Challenge'}
+                                </h2>
+                                <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
+                                {error && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                        <AlertCircle size={18} /> {error}
+                                    </div>
+                                )}
+
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: window.innerWidth <= 600 ? '1fr' : '1.5fr 1fr 1fr',
+                                    gap: '1rem',
+                                    marginBottom: '1.25rem'
+                                }}>
+                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                        <label className="form-label">Course</label>
+                                        <select
+                                            id="course_id"
+                                            name="course_id"
+                                            className="form-input"
+                                            value={formData.course_id}
+                                            onChange={e => setFormData(p => ({ ...p, course_id: e.target.value }))}
+                                            required
+                                        >
+                                            <option value="">Select Course</option>
+                                            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                                        </select>
+                                    </div>
+                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                        <label className="form-label">Language</label>
+                                        <select className="form-input" value={formData.language} onChange={e => setFormData(p => ({ ...p, language: e.target.value }))} required>
+                                            {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.icon} {l.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                        <label className="form-label">Difficulty</label>
+                                        <select
+                                            className="form-input"
+                                            value={formData.difficulty}
+                                            onChange={e => setFormData({ ...formData, difficulty: e.target.value })}
+                                        >
+                                            {DIFFICULTIES.map(d => (
+                                                <option key={d} value={d}>{d.toUpperCase()}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                        <label className="form-label">XP Reward</label>
+                                        <input
+                                            id="xp_reward"
+                                            name="xp_reward"
+                                            type="number"
+                                            className="form-input"
+                                            value={formData.xp_reward}
+                                            onChange={e => setFormData({ ...formData, xp_reward: parseInt(e.target.value) })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '1.25rem' }}>
+                                    <label className="form-label">Challenge Title</label>
+                                    <input
+                                        id="challenge-title"
+                                        name="challenge-title"
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="e.g. Reverse a String"
+                                        value={formData.title}
+                                        onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+
+                                <div style={{ marginBottom: '1.25rem' }}>
+                                    <label className="form-label">Problem Statement (Markdown supported)</label>
+                                    <textarea className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
+                                </div>
+
+                                <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                    <div>
+                                        <label className="form-label">Starter Code</label>
+                                        <textarea className="form-input" rows={6} placeholder="Inital code for the student..." value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                    </div>
+                                    <div>
+                                        <label className="form-label">Constraints</label>
+                                        <textarea className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
+                                    </div>
+                                </div>
+
+                                {/* Open / Close Time */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                    <div>
+                                        <label className="form-label">Open Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                        <div style={{ position: 'relative' }}>
+                                            <Calendar size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                            <input type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
+                                                value={formData.open_time}
+                                                onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="form-label">Close Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                        <div style={{ position: 'relative' }}>
+                                            <Clock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                            <input type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
+                                                value={formData.close_time}
+                                                min={formData.open_time || undefined}
+                                                onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
+                                            />
+                                        </div>
+                                        {formData.open_time && formData.close_time && (() => {
+                                            const mins = Math.round((new Date(formData.close_time) - new Date(formData.open_time)) / 60000)
+                                            return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.3rem' }}>⏱ {mins} min window</div> : null
+                                        })()}
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '1.25rem' }}>
+                                    <label className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="Link to an image or video for the student to replicate"
+                                        value={formData.target_visual_url}
+                                        onChange={e => setFormData(p => ({ ...p, target_visual_url: e.target.value }))}
+                                    />
+                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Useful for HTML/CSS challenges where students need a visual goal.</p>
+                                </div>
+
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                    <textarea
+                                        className="form-input"
+                                        rows={3}
+                                        placeholder="List links (one per line) students can copy-paste (images, fonts, etc.)"
+                                        value={formData.allowed_assets}
+                                        onChange={e => setFormData(p => ({ ...p, allowed_assets: e.target.value }))}
+                                    />
+                                </div>
+
+                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Test Cases</h4>
+                                        <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: [...p.test_cases, { input: '', expected_output: '', is_hidden: false }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
+                                            <Plus size={14} /> Add Test Case
+                                        </button>
+                                    </div>
+                                    {formData.test_cases.map((tc, idx) => (
+                                        <div key={idx} className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.75rem', marginBottom: '0.75rem', alignItems: 'center' }}>
+                                            <textarea className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => {
+                                                const newTCData = [...formData.test_cases]; newTCData[idx].input = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
+                                            }} style={{ fontSize: '0.8rem' }} />
+                                            <textarea className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => {
+                                                const newTCData = [...formData.test_cases]; newTCData[idx].expected_output = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
+                                            }} style={{ fontSize: '0.8rem' }} />
+                                            <div style={{ display: 'flex', flexDirection: window.innerWidth <= 768 ? 'row' : 'column', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                                                <label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>HIDDEN</label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={tc.is_hidden}
+                                                    onChange={e => {
+                                                        const newTCData = [...formData.test_cases]; newTCData[idx].is_hidden = e.target.checked; setFormData(p => ({ ...p, test_cases: newTCData }))
+                                                    }}
+                                                />
+                                            </div>
+                                            <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: p.test_cases.filter((_, i) => i !== idx) }))} style={{ background: 'none', border: 'none', color: '#ef4444', padding: '0.5rem', cursor: 'pointer', alignSelf: 'center' }}>
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
+                                    <button type="button" onClick={() => setShowModal(false)} className="btn-secondary" style={{ padding: '0.6rem 1.25rem' }}>Cancel</button>
+                                    <button type="submit" className="btn-primary" disabled={saving} style={{ padding: '0.6rem 1.5rem', gap: '0.5rem' }}>
+                                        {saving ? 'Saving...' : (editingId ? <><Save size={18} /> Update</> : <><Plus size={18} /> Create Challenge</>)}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     )
 }

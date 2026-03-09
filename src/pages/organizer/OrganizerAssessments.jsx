@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, BookOpen, ChevronRight } from 'lucide-react'
+import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, BookOpen, ChevronRight, Clock } from 'lucide-react'
 
 export default function OrganizerAssessments() {
     const { profile } = useAuth()
@@ -187,7 +187,10 @@ export default function OrganizerAssessments() {
                                         </button>
                                     </div>
                                 </div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{a.title}</h3>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {resourceAccess.some(acc => acc.resource_id === a.id && acc.is_locked) && <Clock size={16} color="#ef4444" />}
+                                    {a.title}
+                                </h3>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                                     <BookOpen size={14} /> {a.courses?.title || 'Unknown Course'}
                                 </div>

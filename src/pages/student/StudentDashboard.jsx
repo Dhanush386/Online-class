@@ -11,6 +11,7 @@ export default function StudentDashboard() {
     const [data, setData] = useState({ courses: 0, completion: 0, timeSpent: 0, badges: 3, rank: 1, topics: 0, xp: 0, solved: 0 })
     const [upcomingSessions, setUpcomingSessions] = useState([])
     const [latestChallenges, setLatestChallenges] = useState([])
+    const [recentResources, setRecentResources] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -23,7 +24,8 @@ export default function StudentDashboard() {
                 { data: challenges },
                 { data: submissions },
                 { data: memberships },
-                { data: locks }
+                { data: locks },
+                { data: resData }
             ] = await Promise.all([
                 supabase.from('enrollments').select('course_id').eq('student_id', profile.id),
                 supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
@@ -34,16 +36,21 @@ export default function StudentDashboard() {
                 supabase.from('coding_challenges').select('*, courses(title)').order('created_at', { ascending: false }),
                 supabase.from('coding_submissions').select('score, status').eq('student_id', profile.id),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
-                supabase.from('resource_access').select('*').eq('is_locked', true)
+                supabase.from('resource_access').select('*').eq('is_locked', true),
+                supabase.from('course_resources').select('*, courses(title)').in('course_id', (enrollments || []).map(e => e.course_id)).order('created_at', { ascending: false }).limit(3)
             ])
 
             const userGroupIds = memberships?.map(m => m.group_id) || []
-            const lockedResourceIds = locks
-                ?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding')
-                .map(l => l.resource_id) || []
+
+            const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding').map(l => l.resource_id) || []
+            const lockedMaterialIds = locks?.filter(l => userGroupIds.includes(l.group_id) && (l.resource_type === 'resource' || l.resource_type === 'other')).map(l => l.resource_id) || []
 
             const filteredChallenges = (challenges || [])
-                .filter(c => !lockedResourceIds.includes(c.id))
+                .filter(c => !lockedCodingIds.includes(c.id))
+                .slice(0, 3)
+
+            const filteredMaterials = (resData || [])
+                .filter(r => !lockedMaterialIds.includes(r.id))
                 .slice(0, 3)
 
             const avgComp = progress?.length
@@ -65,6 +72,7 @@ export default function StudentDashboard() {
             })
             setUpcomingSessions(sessions || [])
             setLatestChallenges(filteredChallenges)
+            setRecentResources(filteredMaterials)
             setLoading(false)
         }
         load()
@@ -239,6 +247,39 @@ export default function StudentDashboard() {
                     <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
                         You have earned **3 badges**!
                     </p>
+                </div>
+
+                {/* Study Materials Card */}
+                <div className="glass-card" style={{ padding: '1.5rem', gridColumn: window.innerWidth > 1024 ? '1 / -1' : 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <FileText size={16} color="#10b981" /> Recent Study Materials
+                        </h3>
+                        <Link to="/student/courses" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all via Courses →</Link>
+                    </div>
+                    {recentResources.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)' }}>
+                            <FileText size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.3, display: 'block' }} />
+                            <p style={{ fontSize: '0.85rem' }}>No materials available yet</p>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                            {recentResources.map(r => (
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                    <div style={{ width: 40, height: 40, background: r.resource_type === 'ppt' ? 'rgba(249,115,22,0.1)' : 'rgba(16,185,129,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <FileText size={18} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{r.courses?.title}</div>
+                                    </div>
+                                    <a href={r.file_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', textDecoration: 'none', gap: '0.3rem' }}>
+                                        <ExternalLink size={12} /> View
+                                    </a>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

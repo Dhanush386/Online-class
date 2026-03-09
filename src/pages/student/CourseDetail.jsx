@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock } from 'lucide-react'
+import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText } from 'lucide-react'
 import ReactPlayer from 'react-player'
 
 const MAX_ATTEMPTS = 2
@@ -19,6 +19,7 @@ export default function CourseDetail() {
     const [assessments, setAssessments] = useState({ daily: [], weekly: [], final: [] })
     const [submissions, setSubmissions] = useState({}) // { assessmentId: [sub, ...] }
     const [progress, setProgress] = useState(null)
+    const [courseResources, setCourseResources] = useState([])
     const [loading, setLoading] = useState(true)
     const [activeVideo, setActiveVideo] = useState(null)
     const [activeTab, setActiveTab] = useState(location.state?.tab || 'sessions')
@@ -34,7 +35,8 @@ export default function CourseDetail() {
                 { data: assessData },
                 { data: subData },
                 { data: memberships },
-                { data: locks }
+                { data: locks },
+                { data: resData }
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
                 supabase.from('videos').select('*').eq('course_id', courseId).order('scheduled_time', { ascending: true }),
@@ -43,17 +45,20 @@ export default function CourseDetail() {
                 supabase.from('assessments').select('*').eq('course_id', courseId).order('due_date', { ascending: true }),
                 supabase.from('assessment_submissions').select('*').eq('student_id', profile.id),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
-                supabase.from('resource_access').select('*').eq('is_locked', true)
+                supabase.from('resource_access').select('*').eq('is_locked', true),
+                supabase.from('course_resources').select('*').eq('course_id', courseId).order('created_at', { ascending: false })
             ])
 
             const userGroupIds = memberships?.map(m => m.group_id) || []
             const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding').map(l => l.resource_id) || []
             const lockedAssessIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'assessment').map(l => l.resource_id) || []
+            const lockedMaterialIds = locks?.filter(l => userGroupIds.includes(l.group_id) && (l.resource_type === 'resource' || l.resource_type === 'other')).map(l => l.resource_id) || []
 
             setCourse(crs)
             setSessions(vids || [])
             setProgress(prog)
             setChallenges((chls || []).filter(c => !lockedCodingIds.includes(c.id)))
+            setCourseResources((resData || []).filter(r => !lockedMaterialIds.includes(r.id)))
 
             const grouped = { daily: [], weekly: [], final: [] }
                 ; (assessData || [])
@@ -206,9 +211,11 @@ export default function CourseDetail() {
             )}
             {/* Tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: '#f1f5f9', padding: '0.375rem', borderRadius: 12, border: '1px solid var(--card-border)', width: 'fit-content' }}>
-                {[{ id: 'sessions', label: `Sessions (${sessions.length})`, icon: <Video size={14} /> },
-                { id: 'coding', label: `Coding (${challenges.length})`, icon: <Code size={14} /> },
-                { id: 'assessments', label: `Assessments`, icon: <ClipboardList size={14} /> }
+                {[
+                    { id: 'sessions', label: `Sessions (${sessions.length})`, icon: <Video size={14} /> },
+                    { id: 'coding', label: `Coding (${challenges.length})`, icon: <Code size={14} /> },
+                    { id: 'assessments', label: `Assessments`, icon: <ClipboardList size={14} /> },
+                    { id: 'resources', label: `Resources (${courseResources.length})`, icon: <FileText size={14} /> }
                 ].map(t => (
                     <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
                         display: 'flex', alignItems: 'center', gap: '0.4rem',
@@ -387,6 +394,41 @@ export default function CourseDetail() {
                             ))}
                         </div>
                     )}
+                </div>
+            )}
+            {activeTab === 'resources' && (
+                <div className="animate-fade-in">
+                    <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
+                        <FileText size={16} color="#10b981" />
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Study Materials ({courseResources.length})</h3>
+                    </div>
+
+                    <div style={{ padding: '1.5rem', background: 'white', borderBottomLeftRadius: 16, borderBottomRightRadius: 16, border: '1px solid var(--card-border)', borderTop: 'none' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+                            {courseResources.length === 0 ? (
+                                <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    <FileText size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+                                    <p>No study materials uploaded yet</p>
+                                </div>
+                            ) : courseResources.map(r => (
+                                <div key={r.id} className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div style={{ width: 36, height: 36, background: r.resource_type === 'ppt' ? 'rgba(249,115,22,0.1)' : 'rgba(16,185,129,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <FileText size={18} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{r.resource_type.toUpperCase()}</div>
+                                        </div>
+                                    </div>
+                                    {r.description && <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.description}</p>}
+                                    <a href={r.file_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ width: '100%', justifyContent: 'center', gap: '0.4rem', marginTop: 'auto', padding: '0.5rem', fontSize: '0.78rem' }}>
+                                        <ExternalLink size={14} /> View Material
+                                    </a>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
