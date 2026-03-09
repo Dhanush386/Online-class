@@ -1,8 +1,11 @@
 import { useState, useRef } from 'react'
 import {
     Play, Eye, Code as CodeIcon, Database, Globe,
-    CheckCircle2, XCircle, Clock, Info, RotateCcw
+    CheckCircle2, XCircle, Clock, Info, RotateCcw,
+    Save, Folder, Trash2, X
 } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabase'
 
 const LANGUAGE_CONFIG = {
     python: { id: 100, name: 'Python 3', icon: <CodeIcon size={16} /> },
@@ -19,7 +22,7 @@ const STARTER_CODE = {
     cpp: '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}',
     c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
     sql: '-- Type your SQL query here\nSELECT * FROM users;',
-    html: '<!DOCTYPE html>\n<html>\n<head>\n<style>\n  body { font-family: sans-serif; text-align: center; }\n  h1 { color: #6366f1; }\n</style>\n</head>\n<body>\n  <h1>Hello from Playground!</h1>\n</body>\n</html>'
+    html: '<!DOCTYPE html>\n<html>\n<head>\n  <title>My Playground</title>\n  <style>\n    body { font-family: sans-serif; text-align: center; }\n    h1 { color: #6366f1; }\n  </style>\n</head>\n<body>\n  <h1>Hello from Playground!</h1>\n\n  <script>\n    console.log("Ready to code.");\n  </script>\n</body>\n</html>'
 }
 
 export default function CodePlayground() {
@@ -30,7 +33,64 @@ export default function CodePlayground() {
     const [activeTab, setActiveTab] = useState('output') // 'output', 'preview'
     const [stdin, setStdin] = useState('')
 
+    const { profile } = useAuth()
+    const [savedSnippets, setSavedSnippets] = useState([])
+    const [showSaveModal, setShowSaveModal] = useState(false)
+    const [showLoadModal, setShowLoadModal] = useState(false)
+    const [snippetTitle, setSnippetTitle] = useState('')
+    const [saving, setSaving] = useState(false)
+
     const iframeRef = useRef(null)
+
+    // Load user snippets
+    const fetchSnippets = async () => {
+        if (!profile?.id) return
+        const { data } = await supabase
+            .from('saved_code_snippets')
+            .select('*')
+            .eq('user_id', profile.id)
+            .order('created_at', { ascending: false })
+        if (data) setSavedSnippets(data)
+    }
+
+    const handleSave = async (e) => {
+        e.preventDefault()
+        if (!snippetTitle.trim() || !profile?.id) return
+        setSaving(true)
+        try {
+            await supabase.from('saved_code_snippets').insert({
+                user_id: profile.id,
+                title: snippetTitle.trim(),
+                language,
+                code
+            })
+            setShowSaveModal(false)
+            setSnippetTitle('')
+            alert('Code saved successfully!')
+        } catch (err) {
+            alert('Failed to save code: ' + err.message)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const handleLoad = (snippet) => {
+        if (confirm(`Load "${snippet.title}"? Your current code will be overwritten.`)) {
+            setLanguage(snippet.language)
+            setCode(snippet.code)
+            setShowLoadModal(false)
+            setResult(null)
+            if (snippet.language === 'html') setActiveTab('preview')
+            else setActiveTab('output')
+        }
+    }
+
+    const handleDeleteSnippet = async (id) => {
+        if (confirm('Delete this saved snippet?')) {
+            await supabase.from('saved_code_snippets').delete().eq('id', id)
+            fetchSnippets() // Refresh list
+        }
+    }
 
     const handleLanguageChange = (newLang) => {
         if (confirm('Switching languages will reset your current code. Continue?')) {
@@ -118,6 +178,16 @@ export default function CodePlayground() {
                             <option key={id} value={id}>{config.name}</option>
                         ))}
                     </select>
+
+                    <div style={{ width: 1, height: 24, background: '#e2e8f0', margin: '0 0.5rem' }}></div>
+
+                    <button onClick={() => setShowSaveModal(true)} className="btn-secondary" style={{ gap: '0.5rem', background: 'white' }}>
+                        <Save size={18} /> Save
+                    </button>
+                    <button onClick={() => { fetchSnippets(); setShowLoadModal(true); }} className="btn-secondary" style={{ gap: '0.5rem', background: 'white' }}>
+                        <Folder size={18} /> My Code
+                    </button>
+
                     <button onClick={runCode} disabled={running} className="btn-primary" style={{ gap: '0.5rem' }}>
                         {running ? <Clock size={18} className="animate-spin" /> : <Play size={18} />} Run Code
                     </button>
@@ -237,6 +307,75 @@ export default function CodePlayground() {
                     </div>
                 </div>
             </div>
+
+            {/* Save Modal */}
+            {
+                showSaveModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                        <div className="glass-card animate-scale-up" style={{ width: 400, padding: '2rem' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>Save Code Snippet</h2>
+                            <form onSubmit={handleSave}>
+                                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                    <label className="form-label">Snippet Title</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="form-input"
+                                        value={snippetTitle}
+                                        onChange={e => setSnippetTitle(e.target.value)}
+                                        placeholder="e.g. Binary Search Python"
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                    <button type="button" onClick={() => setShowSaveModal(false)} className="btn-secondary">Cancel</button>
+                                    <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Saving...' : 'Save Snippet'}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Load Modal */}
+            {
+                showLoadModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                        <div className="glass-card animate-scale-up" style={{ width: 600, maxHeight: '80vh', padding: '2rem', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>My Saved Snippets</h2>
+                                <button onClick={() => setShowLoadModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {savedSnippets.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                                        <Folder size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+                                        <p>You haven't saved any code snippets yet.</p>
+                                    </div>
+                                ) : (
+                                    savedSnippets.map(snippet => (
+                                        <div key={snippet.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                                            <div>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{snippet.title}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                                    {LANGUAGE_CONFIG[snippet.language]?.name || snippet.language} • {new Date(snippet.created_at).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button onClick={() => handleLoad(snippet)} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Load</button>
+                                                <button onClick={() => handleDeleteSnippet(snippet.id)} className="btn-danger" style={{ padding: '0.4rem', fontSize: '0.8rem' }} title="Delete">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
         </div>
     )
 }

@@ -168,9 +168,8 @@ export default function CodingPractice() {
                             transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                         }} onClick={() => navigate(`/student/coding/${c.id}`)}>
 
-                            {/* Question Title */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%' }}>
-                                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#1e40af' }}>{c.title}</div>
+                                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#1e40af' }}>Q{filtered.indexOf(c) + 1}: {c.title}</div>
                                 {userGroupIds.length > 0 && (
                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
                                         {memberships.filter(m => {

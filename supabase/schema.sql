@@ -266,3 +266,61 @@ create policy "Students can manage own assessment submissions" on public.assessm
 create policy "Organizers can view assessment submissions" on public.assessment_submissions for select using (
   exists (select 1 from public.assessments a join public.courses c on a.course_id = c.id where a.id = assessment_id and c.organizer_id = auth.uid())
 );
+-- Create video_progress table to track individual watched videos
+CREATE TABLE IF NOT EXISTS public.video_progress (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    video_id UUID REFERENCES public.videos(id) ON DELETE CASCADE,
+    course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+    watched_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(student_id, video_id)
+);
+
+-- Enable RLS on video_progress
+ALTER TABLE public.video_progress ENABLE ROW LEVEL SECURITY;
+
+-- Policies for video_progress
+DROP POLICY IF EXISTS "Students can view own video progress" ON public.video_progress;
+CREATE POLICY "Students can view own video progress" ON public.video_progress FOR SELECT USING (auth.uid() = student_id);
+
+DROP POLICY IF EXISTS "Students can insert own video progress" ON public.video_progress;
+CREATE POLICY "Students can insert own video progress" ON public.video_progress FOR INSERT WITH CHECK (auth.uid() = student_id);
+
+DROP POLICY IF EXISTS "Organizers can view student video progress" ON public.video_progress;
+CREATE POLICY "Organizers can view student video progress" ON public.video_progress FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.courses WHERE id = course_id AND organizer_id = auth.uid())
+);
+
+-- Fix progress table constraints (drop potential duplicates first)
+-- Ensure only one progress row per student per course
+ALTER TABLE public.progress DROP CONSTRAINT IF EXISTS progress_student_id_course_id_key;
+ALTER TABLE public.progress ADD CONSTRAINT progress_student_id_course_id_key UNIQUE (student_id, course_id);
+-- Create saved_code_snippets table
+CREATE TABLE IF NOT EXISTS public.saved_code_snippets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    language TEXT NOT NULL,
+    code TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.saved_code_snippets ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+DROP POLICY IF EXISTS "Users can view own snippets" ON public.saved_code_snippets;
+CREATE POLICY "Users can view own snippets" ON public.saved_code_snippets 
+FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own snippets" ON public.saved_code_snippets;
+CREATE POLICY "Users can insert own snippets" ON public.saved_code_snippets 
+FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own snippets" ON public.saved_code_snippets;
+CREATE POLICY "Users can update own snippets" ON public.saved_code_snippets 
+FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own snippets" ON public.saved_code_snippets;
+CREATE POLICY "Users can delete own snippets" ON public.saved_code_snippets 
+FOR DELETE USING (auth.uid() = user_id);

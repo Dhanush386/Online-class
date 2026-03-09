@@ -25,6 +25,10 @@ export default function CodeWorkspace() {
     const { profile } = useAuth()
     const [challenge, setChallenge] = useState(null)
     const [code, setCode] = useState('')
+    const [htmlCode, setHtmlCode] = useState('<!DOCTYPE html>\n<html>\n<head>\n  <title>My Web Page</title>\n  <!-- Link your style.css here -->\n\n</head>\n<body>\n  <h1>Hello World</h1>\n\n  <!-- Link your script.js here -->\n\n</body>\n</html>')
+    const [cssCode, setCssCode] = useState('/* Write your CSS here */\nbody {\n  font-family: sans-serif;\n}')
+    const [jsCode, setJsCode] = useState('// Write your JavaScript here\nconsole.log("Script loaded!");')
+    const [webTab, setWebTab] = useState('html') // HTML, CSS, JS
     const [loading, setLoading] = useState(true)
     const [running, setRunning] = useState(false)
     const [submitting, setSubmitting] = useState(false)
@@ -33,6 +37,8 @@ export default function CodeWorkspace() {
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024)
     const [attemptCount, setAttemptCount] = useState(0)
     const [pastSubmissions, setPastSubmissions] = useState([])
+    const [allChallenges, setAllChallenges] = useState([])
+    const [currentIndex, setCurrentIndex] = useState(-1)
 
     const iframeRef = useRef(null)
     const isReadOnly = attemptCount >= MAX_ATTEMPTS
@@ -144,10 +150,15 @@ export default function CodeWorkspace() {
             supabase.from('coding_submissions').select('*').eq('challenge_id', challengeId).eq('student_id', profile.id).order('created_at', { ascending: false }),
             supabase.from('group_members').select('group_id').eq('student_id', profile.id),
             supabase.from('resource_access').select('*').eq('resource_id', challengeId).eq('resource_type', 'coding').eq('is_locked', true),
-            supabase.from('day_access').select('*')
+            supabase.from('day_access').select('*'),
+            supabase.from('coding_challenges').select('id, title, course_id, day_number').order('created_at', { ascending: true })
         ])
 
         if (data) {
+            // Filter all challenges to get sequence for same course/day
+            const sameDayChallenges = (allChallengesData || []).filter(c => c.course_id === data.course_id && (c.day_number || 1) === (data.day_number || 1))
+            setAllChallenges(sameDayChallenges)
+            setCurrentIndex(sameDayChallenges.findIndex(c => c.id === challengeId))
             // Check if locked for student's groups
             const userGroupIds = memberships?.map(m => m.group_id) || []
 
@@ -180,14 +191,38 @@ export default function CodeWorkspace() {
 
             // If they have attempts, load their last code as default
             if (subs && subs.length > 0) {
-                setCode(subs[0].code || data.starter_code || '')
+                const prevCode = subs[0].code || data.starter_code || ''
+                if (data.language === 'html') {
+                    try {
+                        const parsed = JSON.parse(prevCode)
+                        setHtmlCode(parsed.html || '')
+                        setCssCode(parsed.css || '')
+                        setJsCode(parsed.js || '')
+                    } catch (e) {
+                        setHtmlCode(prevCode) // Fallback for old records
+                    }
+                } else {
+                    setCode(prevCode)
+                }
+
                 // Show last submission results
                 if (subs.length >= MAX_ATTEMPTS) {
                     setResult({ status: subs[0].status === 'accepted' ? 'success' : 'error', message: `${subs[0].tests_passed} test(s) passed — No attempts remaining`, testResults: subs[0].results })
                     setActiveTab('output')
                 }
             } else {
-                setCode(data.starter_code || '')
+                if (data.language === 'html') {
+                    try {
+                        const parsed = JSON.parse(data.starter_code || '{}')
+                        setHtmlCode(parsed.html || '')
+                        setCssCode(parsed.css || '')
+                        setJsCode(parsed.js || '')
+                    } catch (e) {
+                        setHtmlCode(data.starter_code || '')
+                    }
+                } else {
+                    setCode(data.starter_code || '')
+                }
             }
         } else {
             navigate('/student/coding')
@@ -311,7 +346,7 @@ export default function CodeWorkspace() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        source_code: code,
+                        source_code: challenge.language === 'html' ? getCombinedWebCode() : code,
                         language_id: LANGUAGE_CONFIG[challenge.language]?.id || 100,
                         stdin: tc.input || ''
                     })
@@ -342,7 +377,7 @@ export default function CodeWorkspace() {
             await supabase.from('coding_submissions').insert({
                 challenge_id: challenge.id,
                 student_id: profile.id,
-                code: code,
+                code: challenge.language === 'html' ? JSON.stringify({ html: htmlCode, css: cssCode, js: jsCode }) : code,
                 status: allPassed ? 'accepted' : 'wrong_answer',
                 tests_passed: passedCount,
                 score: score,
@@ -358,6 +393,20 @@ export default function CodeWorkspace() {
             // Update course progress if they passed
             if (allPassed) {
                 updateOverallProgress(challenge.course_id)
+
+                // Logic for "Next Question" or "Completion"
+                const nextChallenge = allChallenges[currentIndex + 1]
+                if (nextChallenge) {
+                    setResult(prev => ({ ...prev, message: 'All test cases passed! Moving to next question in 2 seconds...' }))
+                    setTimeout(() => {
+                        navigate(`/student/coding/${nextChallenge.id}`)
+                    }, 2000)
+                } else {
+                    setResult(prev => ({ ...prev, message: 'Congratulations! You have completed all challenges for today. Finishing in 2 seconds...' }))
+                    setTimeout(() => {
+                        navigate('/student/dashboard')
+                    }, 2000)
+                }
             }
         } catch (err) {
             setResult({ status: 'error', message: 'Submission error: ' + err.message })
@@ -367,11 +416,31 @@ export default function CodeWorkspace() {
         }
     }
 
+    const getCombinedWebCode = () => {
+        let finalHtml = htmlCode
+
+        // Manual Linking Logic: Only inject CSS if they linked style.css
+        const cssLinkRegex = /<link[^>]*href=["']style\.css["'][^>]*>/i
+        if (cssLinkRegex.test(finalHtml)) {
+            finalHtml = finalHtml.replace(cssLinkRegex, `<style>${cssCode}</style>`)
+        }
+
+        // Manual Linking Logic: Only inject JS if they linked script.js
+        const jsScriptRegex = /<script[^>]*src=["']script\.js["'][^>]*><\/script>/i
+        if (jsScriptRegex.test(finalHtml)) {
+            finalHtml = finalHtml.replace(jsScriptRegex, `<script>${jsCode}<\/script>`)
+        }
+
+        // If it lacks basic wrappers but they're expecting preview, we just return the raw HTML.
+        // It's their responsibility to structure it correctly.
+        return finalHtml
+    }
+
     const updatePreview = () => {
         if (iframeRef.current) {
             const document = iframeRef.current.contentDocument
             document.open()
-            document.write(code)
+            document.write(getCombinedWebCode())
             document.close()
         }
     }
@@ -434,6 +503,9 @@ export default function CodeWorkspace() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1' }}>{challenge.language.toUpperCase()}</span>
                         <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: 4, color: '#64748b' }}>{challenge.difficulty}</span>
+                    </div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.25rem' }}>
+                        QUESTION {currentIndex + 1} OF {allChallenges.length}
                     </div>
                     <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>{challenge.title}</h2>
                 </div>
@@ -548,21 +620,55 @@ export default function CodeWorkspace() {
                 <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                     {/* Left Pane: Code Editor */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#1e293b' }}>
-                        <div style={{ padding: '0.5rem 1rem', background: '#0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
-                                solution.{challenge.language === 'python' ? 'py' : challenge.language === 'sql' ? 'sql' : 'java'}
-                            </span>
-                        </div>
-                        <textarea
-                            value={code}
-                            onChange={e => setCode(e.target.value)}
-                            spellCheck={false}
-                            style={{
-                                flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0',
-                                border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem',
-                                fontFamily: 'monospace', lineHeight: 1.5, resize: 'none'
-                            }}
-                        />
+                        {challenge.language === 'html' ? (
+                            <>
+                                <div style={{ padding: '0', background: '#0f172a', display: 'flex', borderBottom: '1px solid #334155' }}>
+                                    <div style={{ display: 'flex' }}>
+                                        <button onClick={() => setWebTab('html')} style={{ padding: '0.6rem 1rem', background: webTab === 'html' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'html' ? '#e2e8f0' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'html' ? '2px solid #e34c26' : '2px solid transparent' }}>
+                                            <div style={{ width: 14, height: 14, background: '#e34c26', color: 'white', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 800 }}>5</div> HTML
+                                        </button>
+                                        <button onClick={() => setWebTab('css')} style={{ padding: '0.6rem 1rem', background: webTab === 'css' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'css' ? '#e2e8f0' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'css' ? '2px solid #264de4' : '2px solid transparent' }}>
+                                            <div style={{ width: 14, height: 14, background: '#264de4', color: 'white', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 800 }}>3</div> CSS
+                                        </button>
+                                        <button onClick={() => setWebTab('js')} style={{ padding: '0.6rem 1rem', background: webTab === 'js' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'js' ? '#e2e8f0' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'js' ? '2px solid #f0db4f' : '2px solid transparent' }}>
+                                            <div style={{ width: 14, height: 14, background: '#f0db4f', color: '#323330', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 800 }}>JS</div> JAVASCRIPT
+                                        </button>
+                                    </div>
+                                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: '1rem', gap: 12 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>
+                                            Web <ChevronLeft size={14} style={{ transform: 'rotate(-90deg)' }} />
+                                        </div>
+                                    </div>
+                                </div>
+                                {webTab === 'html' && (
+                                    <textarea value={htmlCode} onChange={e => setHtmlCode(e.target.value)} spellCheck={false} placeholder="<!-- HTML goes here -->" style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }} />
+                                )}
+                                {webTab === 'css' && (
+                                    <textarea value={cssCode} onChange={e => setCssCode(e.target.value)} spellCheck={false} placeholder="/* CSS goes here */" style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }} />
+                                )}
+                                {webTab === 'js' && (
+                                    <textarea value={jsCode} onChange={e => setJsCode(e.target.value)} spellCheck={false} placeholder="// JavaScript goes here" style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }} />
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <div style={{ padding: '0.5rem 1rem', background: '#0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
+                                        solution.{challenge.language === 'python' ? 'py' : challenge.language === 'sql' ? 'sql' : 'java'}
+                                    </span>
+                                </div>
+                                <textarea
+                                    value={code}
+                                    onChange={e => setCode(e.target.value)}
+                                    spellCheck={false}
+                                    style={{
+                                        flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0',
+                                        border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem',
+                                        fontFamily: 'monospace', lineHeight: 1.5, resize: 'none'
+                                    }}
+                                />
+                            </>
+                        )}
                     </div>
 
                     {/* Right Pane: Results / Preview */}

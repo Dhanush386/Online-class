@@ -18,11 +18,6 @@ export default function CourseDetail() {
     const isLive = (t) => t && Math.abs(new Date() - new Date(t)) < 3600000
     const isUpcoming = (t) => t && new Date(t) > new Date() && !isLive(t)
     const isRecorded = (vid) => vid && vid.video_url && vid.video_url.includes('supabase.co/storage')
-    const toLocalISO = (date) => {
-        if (!date) return ''
-        const d = new Date(date)
-        return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
-    }
 
     const [course, setCourse] = useState(null)
     const [sessions, setSessions] = useState([])
@@ -30,13 +25,11 @@ export default function CourseDetail() {
     const [assessments, setAssessments] = useState({ daily: [], weekly: [], final: [] })
     const [submissions, setSubmissions] = useState({}) // { assessmentId: [sub, ...] }
     const [progress, setProgress] = useState(null)
-    const completedIds = progress ? [progress.video_id] : []
     const [courseResources, setCourseResources] = useState([])
     const [dayAccess, setDayAccess] = useState([])
     const [selectedDay, setSelectedDay] = useState(1)
     const [loading, setLoading] = useState(true)
     const [activeVideo, setActiveVideo] = useState(null)
-    const [activeTab, setActiveTab] = useState(location.state?.tab || 'sessions')
 
     useEffect(() => {
         async function load() {
@@ -51,7 +44,8 @@ export default function CourseDetail() {
                 { data: memberships },
                 { data: dayAccessData },
                 { data: locks },
-                { data: resData }
+                { data: resData },
+                { data: vpData }
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
                 supabase.from('videos').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
@@ -62,17 +56,10 @@ export default function CourseDetail() {
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
                 supabase.from('day_access').select('*').eq('course_id', courseId),
                 supabase.from('resource_access').select('*').eq('is_locked', true),
-                supabase.from('course_resources').select('*').eq('course_id', courseId).order('day_number', { ascending: true })
+                supabase.from('course_resources').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
+                supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId)
             ])
 
-            const allContentDays = [
-                ...(vids || []).map(v => v.day_number),
-                ...(chls || []).map(c => c.day_number),
-                ...(assessData || []).map(a => a.day_number),
-                ...(resData || []).map(r => r.day_number)
-            ].filter(d => d !== null && d !== undefined)
-
-            const max = Math.max(1, ...allContentDays)
             // No need for setMaxDay state if we just use it to build the day list, but let's see
 
             const userGroupIds = memberships?.map(m => m.group_id) || []
@@ -85,7 +72,7 @@ export default function CourseDetail() {
 
             setCourse(crs)
             setSessions(vids || [])
-            setProgress(prog)
+            setProgress({ ...(prog || {}), video_progress: vpData || [] })
             setChallenges((chls || []).filter(c => !lockedCodingIds.includes(c.id)))
             setCourseResources((resData || []).filter(r => !lockedMaterialIds.includes(r.id)))
 
@@ -109,25 +96,34 @@ export default function CourseDetail() {
     async function updateOverallProgress() {
         if (!profile?.id || !courseId) return
 
-        const totalSessions = sessions.length
-        const totalCoding = challenges.length
-        const totalAssessments = assessments.daily.length + assessments.weekly.length + assessments.final.length
+        const [
+            { data: vids },
+            { data: chls },
+            { data: assessData },
+            { data: vpData },
+            { data: subData }
+        ] = await Promise.all([
+            supabase.from('videos').select('id').eq('course_id', courseId),
+            supabase.from('coding_challenges').select('id').eq('course_id', courseId),
+            supabase.from('assessments').select('id').eq('course_id', courseId),
+            supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
+            supabase.from('coding_submissions').select('challenge_id, status').eq('student_id', profile.id)
+        ])
 
-        // Progress components
-        const completedSessions = sessions.filter(s => completedIds.includes(s.id)).length
-        const completedCoding = challenges.filter(c => (submissions[c.id] || []).some(s => s.status === 'accepted')).length
-        // For assessments, we count if they have at least one submission
-        let completedAssess = 0
-        Object.values(assessments).flat().forEach(a => {
-            if ((submissions[a.id] || []).length > 0) completedAssess++
-        })
+        const { data: allAssessSubs } = await supabase.from('assessment_submissions').select('assessment_id').eq('student_id', profile.id)
+
+        const totalSessions = (vids || []).length
+        const totalCoding = (chls || []).length
+        const totalAssessments = (assessData || []).length
+
+        const completedSessions = (vids || []).filter(v => (vpData || []).some(vp => vp.video_id === v.id)).length
+        const completedCoding = (chls || []).filter(c => (subData || []).some(s => s.challenge_id === c.id && s.status === 'accepted')).length
+        const completedAssess = (assessData || []).filter(a => (allAssessSubs || []).some(s => s.assessment_id === a.id)).length
 
         const sessionPct = totalSessions > 0 ? (completedSessions / totalSessions) : 0
         const codingPct = totalCoding > 0 ? (completedCoding / totalCoding) : 0
         const assessPct = totalAssessments > 0 ? (completedAssess / totalAssessments) : 0
 
-        // Balanced average (1/3 each)
-        // If a category doesn't exist (total is 0), we ignore it and re-weight the others
         let activeCategories = 0
         let sumPct = 0
         if (totalSessions > 0) { activeCategories++; sumPct += sessionPct }
@@ -147,29 +143,21 @@ export default function CourseDetail() {
     }
 
     async function markComplete(sessionId) {
-        // Optimistically update
-        const newCompletedIds = [...completedIds, sessionId]
-
-        const totalSessions = sessions.length
-        const completedSessionsCount = newCompletedIds.length
-        const totalCoding = challenges.length
-        const totalAssessments = assessments.daily.length + assessments.weekly.length + assessments.final.length
-
-        // Calculate based on the NEW state
-        const sessionPct = totalSessions > 0 ? (completedSessionsCount / totalSessions) : 0
-        // ... rest stays same but for simplicity we reuse the weighted logic
-
-        // Actually, let's just update the table record which tracks the specific video_id for backward compatibility
-        // but our NEW logic will use counts from other tables.
-
-        await supabase.from('progress').upsert({
+        // Add to video_progress
+        const { error } = await supabase.from('video_progress').insert({
             student_id: profile.id,
             course_id: courseId,
-            video_id: sessionId, // Keep for legacy logic
-            completed: true
-        }, { onConflict: 'student_id, course_id' })
+            video_id: sessionId
+        })
 
-        updateOverallProgress()
+        if (!error || error.code === '23505') { // Ignore unique violation
+            // Add to local state so UI updates instantly
+            setProgress(prev => ({
+                ...(prev || {}),
+                video_progress: [...(prev?.video_progress || []), { video_id: sessionId }]
+            }))
+            updateOverallProgress()
+        }
     }
 
     const getDayStatus = (dayNum) => {
