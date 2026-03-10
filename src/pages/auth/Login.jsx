@@ -129,7 +129,7 @@ export default function Login() {
                     </p>
 
                     <p style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.875rem' }}>
-                        <Link to="/forgot-password" style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.2s', ':hover': { color: '#64748b' } }}>
+                        <Link className="forgot-password-link" to="/forgot-password" style={{ color: '#334155', fontWeight: 600, textDecoration: 'none', transition: 'color 0.2s' }}>
                             Forgot your password?
                         </Link>
                     </p>
