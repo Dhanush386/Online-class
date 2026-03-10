@@ -56,8 +56,9 @@ export default function SharedProject() {
                 `
                 setPreviewContent(combinedCode)
 
-                // 4. Increment view count (fire and forget RPC)
-                supabase.rpc('increment_project_views', { p_id: projectId }).catch(console.error)
+                // 4. Increment view count
+                const { error: viewErr } = await supabase.rpc('increment_project_views', { p_id: projectId })
+                if (viewErr) console.error("Failed to increment view:", viewErr)
 
             } catch (err) {
                 console.error("Error loading project:", err)
