@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 // Auth Pages
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
 
 // Layouts
 import OrganizerLayout from './layouts/OrganizerLayout'
@@ -41,6 +42,7 @@ export default function App() {
           {/* Public */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Organizer */}
           <Route path="/organizer" element={

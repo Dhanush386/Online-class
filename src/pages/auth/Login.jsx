@@ -127,6 +127,12 @@ export default function Login() {
                         Don't have an account?{' '}
                         <Link to="/register" style={{ color: 'var(--accent-light)', fontWeight: 600, textDecoration: 'none' }}>Create one</Link>
                     </p>
+
+                    <p style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.875rem' }}>
+                        <Link to="/forgot-password" style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.2s', ':hover': { color: '#64748b' } }}>
+                            Forgot your password?
+                        </Link>
+                    </p>
                 </div>
             </div>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

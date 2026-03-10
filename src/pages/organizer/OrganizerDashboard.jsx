@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Users, Video, BookOpen, TrendingUp, Play, Clock, Calendar, Code } from 'lucide-react'
+import { Users, Video, BookOpen, TrendingUp, Play, Clock, Calendar, Code, Key, RefreshCw } from 'lucide-react'
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
@@ -18,6 +18,8 @@ export default function OrganizerDashboard() {
     const [recentVideos, setRecentVideos] = useState([])
     const [recentChallenges, setRecentChallenges] = useState([])
     const [loading, setLoading] = useState(true)
+    const [resetCode, setResetCode] = useState(null)
+    const [generatingCode, setGeneratingCode] = useState(false)
 
     useEffect(() => {
         async function load() {
@@ -49,8 +51,42 @@ export default function OrganizerDashboard() {
             setRecentChallenges(challenges || [])
             setLoading(false)
         }
-        if (profile) load()
+
+        async function fetchResetCode() {
+            const { data } = await supabase.from('organizer_reset_codes').select('code').eq('organizer_id', profile?.id).single()
+            if (data) setResetCode(data.code)
+        }
+
+        if (profile) {
+            load()
+            fetchResetCode()
+        }
     }, [profile])
+
+    const generateResetCode = async () => {
+        setGeneratingCode(true)
+        try {
+            // First check if one exists since we only want one active code per organizer
+            const { data: existing } = await supabase.from('organizer_reset_codes').select('code').eq('organizer_id', profile.id).single()
+            if (existing) {
+                // Generate new one by calling the RPC directly?
+                // Actually, the easiest way to generate a new code securely without full DB logic on frontend is to
+                // just let JS generate a random number and update it, but in the migration we wrote `generate_6_digit_code()`
+                // For simplicity, we can do it here:
+                const newCode = Math.floor(100000 + Math.random() * 900000).toString()
+                await supabase.from('organizer_reset_codes').update({ code: newCode }).eq('organizer_id', profile.id)
+                setResetCode(newCode)
+            } else {
+                const newCode = Math.floor(100000 + Math.random() * 900000).toString()
+                await supabase.from('organizer_reset_codes').insert({ organizer_id: profile.id, code: newCode })
+                setResetCode(newCode)
+            }
+        } catch (err) {
+            console.error('Error generating code:', err)
+        } finally {
+            setGeneratingCode(false)
+        }
+    }
 
     const statCards = [
         { label: 'Total Students', value: stats.students, icon: Users, color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
@@ -85,6 +121,33 @@ export default function OrganizerDashboard() {
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{label}</div>
                     </div>
                 ))}
+            </div>
+
+            {/* Reset Code Card */}
+            <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ width: 48, height: 48, background: 'rgba(99,102,241,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Key size={24} color="#6366f1" />
+                    </div>
+                    <div>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Student Password Reset Code</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Share this code with students who forgot their password.</p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <div style={{ background: '#1e293b', color: '#10b981', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '1.5rem', fontWeight: 800, letterSpacing: '4px', fontFamily: 'monospace' }}>
+                        {resetCode ? resetCode : '------'}
+                    </div>
+                    <button
+                        onClick={generateResetCode}
+                        disabled={generatingCode}
+                        className="btn-secondary"
+                        style={{ background: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                        <RefreshCw size={16} className={generatingCode ? 'animate-spin' : ''} />
+                        {resetCode ? 'Regenerate Code' : 'Generate Code'}
+                    </button>
+                </div>
             </div>
 
             {/* Chart + Recent */}
