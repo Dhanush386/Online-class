@@ -357,3 +357,36 @@ body {
     /* Prevents auto-zoom on iOS */
   }
 }
+
+/* Mobile Blocker Overlay */
+.mobile-blocker {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-main);
+  z-index: 999999;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.mobile-blocker-content {
+  background: white;
+  padding: 2.5rem 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+}
+
+@media (max-width: 639px) {
+
+  /* Tailwinds standard sm breakpoint is 640px, under this is mobile phones */
+  .mobile-blocker {
+    display: flex;
+  }
+}

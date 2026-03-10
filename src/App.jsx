@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import MobileBlocker from './components/MobileBlocker'
 
 // Auth Pages
 import Login from './pages/auth/Login'
@@ -37,6 +38,7 @@ import Achievements from './pages/student/Achievements'
 export default function App() {
   return (
     <BrowserRouter>
+      <MobileBlocker />
       <AuthProvider>
         <Routes>
           {/* Public */}
