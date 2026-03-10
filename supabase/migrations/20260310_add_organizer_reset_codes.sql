@@ -53,7 +53,7 @@ CREATE OR REPLACE FUNCTION public.reset_student_password(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth
+SET search_path = public, auth, extensions
 AS $$
 DECLARE
     v_user_id UUID;
