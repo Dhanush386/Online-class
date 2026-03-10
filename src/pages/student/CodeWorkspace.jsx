@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import {
     ChevronLeft, Play, Send, Layout, Eye, Sidebar as SidebarIcon,
-    AlertCircle, CheckCircle2, XCircle, Clock, Info, Code as CodeIcon, Database, Globe, Lock
+    AlertCircle, CheckCircle2, XCircle, Clock, Info, Code as CodeIcon, Database, Globe, Lock, Share2, Copy
 } from 'lucide-react'
 
 const LANGUAGE_CONFIG = {
@@ -46,6 +46,13 @@ export default function CodeWorkspace() {
     const [isStarted, setIsStarted] = useState(false)
     const [violationCount, setViolationCount] = useState(0)
     const [isAutoSubmitted, setIsAutoSubmitted] = useState(false)
+
+    // Publish States
+    const [showPublishModal, setShowPublishModal] = useState(false)
+    const [publishTitle, setPublishTitle] = useState('')
+    const [publishDesc, setPublishDesc] = useState('')
+    const [publishing, setPublishing] = useState(false)
+    const [publishedUrl, setPublishedUrl] = useState(null)
 
     useEffect(() => {
         if (violationCount >= 3 && isStarted && !isAutoSubmitted && attemptCount < MAX_ATTEMPTS) {
@@ -416,6 +423,34 @@ export default function CodeWorkspace() {
         }
     }
 
+    const publishProject = async (e) => {
+        e.preventDefault()
+        if (!publishTitle.trim() || !profile?.id) return
+        setPublishing(true)
+
+        try {
+            const { data, error } = await supabase.from('published_projects').insert({
+                user_id: profile.id,
+                title: publishTitle.trim(),
+                description: publishDesc.trim() || null,
+                html: htmlCode,
+                css: cssCode,
+                js: jsCode
+            }).select('id').single()
+
+            if (error) throw error
+            if (data) {
+                setPublishedUrl(`${window.location.origin}/p/${data.id}`)
+                setPublishTitle('')
+                setPublishDesc('')
+            }
+        } catch (err) {
+            alert('Failed to publish project: ' + err.message)
+        } finally {
+            setPublishing(false)
+        }
+    }
+
     const getCombinedWebCode = () => {
         let finalHtml = htmlCode
 
@@ -608,6 +643,11 @@ export default function CodeWorkspace() {
                                 <button onClick={runCode} disabled={running} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '0.4rem 0.8rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
                                     <Play size={14} /> Run
                                 </button>
+                                {challenge.language === 'html' && (
+                                    <button onClick={() => { setPublishedUrl(null); setShowPublishModal(true); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', padding: '0.4rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 10px rgba(16,185,129,0.2)' }}>
+                                        <Share2 size={14} /> Publish
+                                    </button>
+                                )}
                                 <button onClick={handleSubmit} disabled={submitting || running} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#6366f1', color: 'white', border: 'none', padding: '0.4rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 10px rgba(99,102,241,0.2)' }}>
                                     <Send size={14} /> {submitting ? 'Submitting...' : 'Submit'}
                                 </button>
@@ -777,6 +817,67 @@ export default function CodeWorkspace() {
                 }
                 .tab-btn.active { background: #f1f5f9; color: #1e293b; }
             `}</style>
+
+            {/* Publish Modal */}
+            {
+                showPublishModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                        <div className="glass-card animate-scale-up" style={{ width: 450, padding: '2rem' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Globe size={20} color="#10b981" /> Publish Web Project
+                            </h2>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+                                Make your project public. Anyone with the link will be able to view it.
+                            </p>
+
+                            {publishedUrl ? (
+                                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '1.5rem', borderRadius: 12, textAlign: 'center' }}>
+                                    <h3 style={{ color: '#166534', fontWeight: 700, marginBottom: '1rem' }}>Project Published! 🎉</h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid #dcfce3', marginBottom: '1rem' }}>
+                                        <input type="text" readOnly value={publishedUrl} style={{ flex: 1, border: 'none', outline: 'none', fontSize: '0.8rem', color: '#1e293b' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                                        <button onClick={() => { navigator.clipboard.writeText(publishedUrl); alert("Copied!"); }} className="btn-primary" style={{ padding: '0.5rem 1.5rem', background: '#10b981' }}>
+                                            <Copy size={16} /> Copy Link
+                                        </button>
+                                        <button onClick={() => setShowPublishModal(false)} className="btn-secondary">Close</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <form onSubmit={publishProject}>
+                                    <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                        <label className="form-label">Project Title</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="form-input"
+                                            value={publishTitle}
+                                            onChange={e => setPublishTitle(e.target.value)}
+                                            placeholder="My Awesome Website"
+                                        />
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                        <label className="form-label">Description (Optional)</label>
+                                        <textarea
+                                            className="form-input"
+                                            value={publishDesc}
+                                            onChange={e => setPublishDesc(e.target.value)}
+                                            placeholder="What is this project about?"
+                                            style={{ minHeight: 80, resize: 'vertical' }}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                        <button type="button" onClick={() => setShowPublishModal(false)} className="btn-secondary">Cancel</button>
+                                        <button type="submit" disabled={publishing} className="btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                                            {publishing ? 'Publishing...' : 'Publish to World'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                )
+            }
         </div>
     )
 }

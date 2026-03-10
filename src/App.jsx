@@ -8,6 +8,9 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
 
+// Public Pages
+import SharedProject from './pages/public/SharedProject'
+
 // Layouts
 import OrganizerLayout from './layouts/OrganizerLayout'
 import StudentLayout from './layouts/StudentLayout'
@@ -45,6 +48,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/p/:projectId" element={<SharedProject />} />
 
           {/* Organizer */}
           <Route path="/organizer" element={

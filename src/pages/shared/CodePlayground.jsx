@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import {
     Play, Eye, Code as CodeIcon, Database, Globe,
     CheckCircle2, XCircle, Clock, Info, RotateCcw,
-    Save, Folder, Trash2, X
+    Save, Folder, Trash2, X, Share2, Copy
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -39,6 +39,12 @@ export default function CodePlayground() {
     const [showLoadModal, setShowLoadModal] = useState(false)
     const [snippetTitle, setSnippetTitle] = useState('')
     const [saving, setSaving] = useState(false)
+
+    const [showPublishModal, setShowPublishModal] = useState(false)
+    const [publishTitle, setPublishTitle] = useState('')
+    const [publishDesc, setPublishDesc] = useState('')
+    const [publishing, setPublishing] = useState(false)
+    const [publishedUrl, setPublishedUrl] = useState(null)
 
     const iframeRef = useRef(null)
 
@@ -89,6 +95,34 @@ export default function CodePlayground() {
         if (confirm('Delete this saved snippet?')) {
             await supabase.from('saved_code_snippets').delete().eq('id', id)
             fetchSnippets() // Refresh list
+        }
+    }
+
+    const publishProject = async (e) => {
+        e.preventDefault()
+        if (!publishTitle.trim() || !profile?.id) return
+        setPublishing(true)
+
+        try {
+            const { data, error } = await supabase.from('published_projects').insert({
+                user_id: profile.id,
+                title: publishTitle.trim(),
+                description: publishDesc.trim() || null,
+                html: code,  // CodePlayground handles web as a single HTML string
+                css: '',
+                js: ''
+            }).select('id').single()
+
+            if (error) throw error
+            if (data) {
+                setPublishedUrl(`${window.location.origin}/p/${data.id}`)
+                setPublishTitle('')
+                setPublishDesc('')
+            }
+        } catch (err) {
+            alert('Failed to publish project: ' + err.message)
+        } finally {
+            setPublishing(false)
         }
     }
 
@@ -180,6 +214,12 @@ export default function CodePlayground() {
                     </select>
 
                     <div style={{ width: 1, height: 24, background: '#e2e8f0', margin: '0 0.5rem' }}></div>
+
+                    {language === 'html' && (
+                        <button onClick={() => { setPublishedUrl(null); setShowPublishModal(true); }} className="btn-primary" style={{ gap: '0.5rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                            <Share2 size={18} /> Publish
+                        </button>
+                    )}
 
                     <button onClick={() => setShowSaveModal(true)} className="btn-secondary" style={{ gap: '0.5rem', background: 'white' }}>
                         <Save size={18} /> Save
@@ -376,6 +416,67 @@ export default function CodePlayground() {
                         </div>
                     </div>
                 )}
+
+            {/* Publish Modal */}
+            {
+                showPublishModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                        <div className="glass-card animate-scale-up" style={{ width: 450, padding: '2rem' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Globe size={20} color="#10b981" /> Publish Web Project
+                            </h2>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+                                Make your project public. Anyone with the link will be able to view it.
+                            </p>
+
+                            {publishedUrl ? (
+                                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '1.5rem', borderRadius: 12, textAlign: 'center' }}>
+                                    <h3 style={{ color: '#166534', fontWeight: 700, marginBottom: '1rem' }}>Project Published! 🎉</h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid #dcfce3', marginBottom: '1rem' }}>
+                                        <input type="text" readOnly value={publishedUrl} style={{ flex: 1, border: 'none', outline: 'none', fontSize: '0.8rem', color: '#1e293b' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                                        <button onClick={() => { navigator.clipboard.writeText(publishedUrl); alert("Copied!"); }} className="btn-primary" style={{ padding: '0.5rem 1.5rem', background: '#10b981' }}>
+                                            <Copy size={16} /> Copy Link
+                                        </button>
+                                        <button onClick={() => setShowPublishModal(false)} className="btn-secondary">Close</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <form onSubmit={publishProject}>
+                                    <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                        <label className="form-label">Project Title</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="form-input"
+                                            value={publishTitle}
+                                            onChange={e => setPublishTitle(e.target.value)}
+                                            placeholder="My Awesome Website"
+                                        />
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                        <label className="form-label">Description (Optional)</label>
+                                        <textarea
+                                            className="form-input"
+                                            value={publishDesc}
+                                            onChange={e => setPublishDesc(e.target.value)}
+                                            placeholder="What is this project about?"
+                                            style={{ minHeight: 80, resize: 'vertical' }}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                        <button type="button" onClick={() => setShowPublishModal(false)} className="btn-secondary">Cancel</button>
+                                        <button type="submit" disabled={publishing} className="btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                                            {publishing ? 'Publishing...' : 'Publish to World'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                )
+            }
         </div>
     )
 }
