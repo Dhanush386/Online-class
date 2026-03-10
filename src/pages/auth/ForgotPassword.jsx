@@ -32,7 +32,7 @@ export default function ForgotPassword() {
                 setSuccess(true)
                 setTimeout(() => navigate('/login'), 2500)
             } else {
-                throw new Error("Invalid reset code or email not found.")
+                throw new Error("Invalid or expired reset code. If this code was already used, ask your Organizer for the new one.")
             }
 
         } catch (err) {
