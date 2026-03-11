@@ -9,6 +9,7 @@ import {
 
 const LANGUAGE_CONFIG = {
     python: { id: 100, name: 'Python 3', icon: <CodeIcon size={16} /> },
+    python_ml: { id: 31, name: 'Python (Scientific)', icon: <CodeIcon size={16} />, useExtra: true },
     java: { id: 91, name: 'Java', icon: <CodeIcon size={16} /> },
     cpp: { id: 105, name: 'C++', icon: <CodeIcon size={16} /> },
     c: { id: 103, name: 'C', icon: <CodeIcon size={16} /> },
@@ -253,13 +254,16 @@ export default function CodeWorkspace() {
         }
 
         try {
+            const config = LANGUAGE_CONFIG[challenge.language] || { id: 100 }
+            const baseUrl = config.useExtra ? 'https://extra-ce.judge0.com' : 'https://ce.judge0.com'
+
             // Judge0 API Implementation
-            const response = await fetch('https://ce.judge0.com/submissions?base64_encoded=false&wait=true', {
+            const response = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     source_code: code,
-                    language_id: LANGUAGE_CONFIG[challenge.language].id,
+                    language_id: config.id,
                     stdin: challenge.test_cases?.[0]?.input || ''
                 })
             })
@@ -360,12 +364,15 @@ export default function CodeWorkspace() {
 
             for (let i = 0; i < totalTests; i++) {
                 const tc = challenge.test_cases[i]
-                const response = await fetch('https://ce.judge0.com/submissions?base64_encoded=false&wait=true', {
+                const config = LANGUAGE_CONFIG[challenge.language] || { id: 100 }
+                const baseUrl = config.useExtra ? 'https://extra-ce.judge0.com' : 'https://ce.judge0.com'
+
+                const response = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         source_code: challenge.language === 'html' ? getCombinedWebCode() : code,
-                        language_id: LANGUAGE_CONFIG[challenge.language]?.id || 100,
+                        language_id: config.id,
                         stdin: tc.input || ''
                     })
                 })

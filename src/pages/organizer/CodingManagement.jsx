@@ -6,6 +6,7 @@ import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filt
 const LANGUAGES = [
     { id: 'html', name: 'HTML/CSS/JS (Web)', icon: '🌐' },
     { id: 'python', name: 'Python 3', icon: '🐍' },
+    { id: 'python_ml', name: 'Python (Scientific/ML)', icon: '🧪' },
     { id: 'java', name: 'Java', icon: '☕' },
     { id: 'cpp', name: 'C++', icon: '⚙️' },
     { id: 'c', name: 'C', icon: '📄' },
