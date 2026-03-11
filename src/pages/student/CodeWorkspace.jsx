@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 
 const LANGUAGE_CONFIG = {
-    python: { id: 100, name: 'Python 3', icon: <CodeIcon size={16} /> },
+    python: { id: 31, name: 'Python 3', icon: <CodeIcon size={16} />, useExtra: true },
     python_ml: { id: 31, name: 'Python (Scientific)', icon: <CodeIcon size={16} />, useExtra: true },
     java: { id: 91, name: 'Java', icon: <CodeIcon size={16} /> },
     cpp: { id: 105, name: 'C++', icon: <CodeIcon size={16} /> },
