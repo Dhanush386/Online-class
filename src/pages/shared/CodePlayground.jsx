@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 
 const LANGUAGE_CONFIG = {
-    python: { id: 31, name: 'Python 3', icon: <CodeIcon size={16} />, useExtra: true },
+    python: { id: 25, name: 'Python 3', icon: <CodeIcon size={16} />, useExtra: true },
     java: { id: 91, name: 'Java', icon: <CodeIcon size={16} /> },
     cpp: { id: 105, name: 'C++', icon: <CodeIcon size={16} /> },
     c: { id: 103, name: 'C', icon: <CodeIcon size={16} /> },
@@ -339,7 +339,14 @@ export default function CodePlayground() {
                                         )}
                                         {result.compile_output && (
                                             <div style={{ marginTop: '0.5rem' }}>
-                                                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>COMPILATION</div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                                    <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>Console Output</h4>
+                                                    {language === 'python' && (
+                                                        <div style={{ fontSize: '0.7rem', color: '#6366f1', background: '#eef2ff', padding: '0.25rem 0.6rem', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                            <Info size={12} /> Memory Limit: 256MB
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <pre style={{ background: '#1e293b', color: '#e2e8f0', padding: '1rem', borderRadius: 8, fontSize: '0.8rem', overflowX: 'auto' }}>{result.compile_output}</pre>
                                             </div>
                                         )}

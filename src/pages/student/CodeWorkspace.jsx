@@ -8,8 +8,8 @@ import {
 } from 'lucide-react'
 
 const LANGUAGE_CONFIG = {
-    python: { id: 31, name: 'Python 3', icon: <CodeIcon size={16} />, useExtra: true },
-    python_ml: { id: 31, name: 'Python (Scientific)', icon: <CodeIcon size={16} />, useExtra: true },
+    python: { id: 25, name: 'Python 3', icon: <CodeIcon size={16} />, useExtra: true },
+    python_ml: { id: 25, name: 'Python (Scientific)', icon: <CodeIcon size={16} />, useExtra: true },
     java: { id: 91, name: 'Java', icon: <CodeIcon size={16} /> },
     cpp: { id: 105, name: 'C++', icon: <CodeIcon size={16} /> },
     c: { id: 103, name: 'C', icon: <CodeIcon size={16} /> },
@@ -748,7 +748,14 @@ export default function CodeWorkspace() {
                             </div>
                         ) : (
                             <div className="animate-fade-in">
-                                <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>Console Output</h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                    <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>Console Output</h4>
+                                    {(challenge.language === 'python' || challenge.language === 'python_ml') && (
+                                        <div style={{ fontSize: '0.7rem', color: '#6366f1', background: '#eef2ff', padding: '0.25rem 0.6rem', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <Info size={12} /> Memory Limit: 256MB
+                                        </div>
+                                    )}
+                                </div>
                                 {!result ? (
                                     <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>
                                         <Clock size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
