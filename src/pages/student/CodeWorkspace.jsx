@@ -295,13 +295,13 @@ export default function CodeWorkspace() {
             { data: vids },
             { data: chls },
             { data: assessData },
-            { data: progressData },
+            { data: vpData },
             { data: subData }
         ] = await Promise.all([
             supabase.from('videos').select('id').eq('course_id', courseId),
             supabase.from('coding_challenges').select('id').eq('course_id', courseId),
             supabase.from('assessments').select('id').eq('course_id', courseId),
-            supabase.from('progress').select('*').eq('student_id', profile.id).eq('course_id', courseId).single(),
+            supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
             supabase.from('coding_submissions').select('challenge_id, status').eq('student_id', profile.id)
         ])
 
@@ -311,7 +311,7 @@ export default function CodeWorkspace() {
         const totalCoding = (chls || []).length
         const totalAssessments = (assessData || []).length
 
-        const completedSessions = progressData?.video_id ? 1 : 0
+        const completedSessions = (vids || []).filter(v => (vpData || []).some(vp => vp.video_id === v.id)).length
         const completedCoding = (chls || []).filter(c => (subData || []).some(s => s.challenge_id === c.id && s.status === 'accepted')).length
         const completedAssess = (assessData || []).filter(a => (allAssessSubs || []).some(s => s.assessment_id === a.id)).length
 
