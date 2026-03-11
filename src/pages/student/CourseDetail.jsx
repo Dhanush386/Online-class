@@ -97,11 +97,11 @@ export default function CourseDetail() {
         if (!profile?.id || !courseId) return
 
         const [
-            { data: vids },
-            { data: chls },
-            { data: assessData },
-            { data: vpData },
-            { data: subData }
+            { data: vids, error: ve },
+            { data: chls, error: ce },
+            { data: assessData, error: ae },
+            { data: vpData, error: vpe },
+            { data: subData, error: se }
         ] = await Promise.all([
             supabase.from('videos').select('id').eq('course_id', courseId),
             supabase.from('coding_challenges').select('id').eq('course_id', courseId),
@@ -110,7 +110,12 @@ export default function CourseDetail() {
             supabase.from('coding_submissions').select('challenge_id, status').eq('student_id', profile.id)
         ])
 
-        const { data: allAssessSubs } = await supabase.from('assessment_submissions').select('assessment_id').eq('student_id', profile.id)
+        if (ve || ce || ae || vpe || se) {
+            console.error('Progress fetch error:', { ve, ce, ae, vpe, se })
+        }
+
+        const { data: allAssessSubs, error: ase } = await supabase.from('assessment_submissions').select('assessment_id').eq('student_id', profile.id)
+        if (ase) console.error('Assessment subs fetch error:', ase)
 
         const totalSessions = (vids || []).length
         const totalCoding = (chls || []).length
@@ -131,13 +136,18 @@ export default function CourseDetail() {
         if (totalAssessments > 0) { activeCategories++; sumPct += assessPct }
 
         const finalPct = activeCategories > 0 ? Math.round((sumPct / activeCategories) * 100) : 0
+        console.log(`Progress Update [${courseId}]: ${finalPct}% (V:${completedSessions}/${totalSessions}, C:${completedCoding}/${totalCoding}, A:${completedAssess}/${totalAssessments})`)
 
-        await supabase.from('progress').upsert({
+        const { error: upError } = await supabase.from('progress').upsert({
             student_id: profile.id,
             course_id: courseId,
             completion_percentage: finalPct,
             last_updated: new Date().toISOString()
-        }, { onConflict: 'student_id, course_id' })
+        }, { onConflict: 'student_id,course_id' })
+
+        if (upError) {
+            console.error('Progress upsert error:', upError)
+        }
 
         setProgress(p => ({ ...(p || {}), completion_percentage: finalPct }))
     }
