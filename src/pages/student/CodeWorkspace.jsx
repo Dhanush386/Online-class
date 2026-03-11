@@ -151,7 +151,8 @@ export default function CodeWorkspace() {
             { data: subs },
             { data: memberships },
             { data: locks },
-            { data: locksDay }
+            { data: locksDay },
+            { data: allChallengesData }
         ] = await Promise.all([
             supabase.from('coding_challenges').select('*, courses(title)').eq('id', challengeId).single(),
             supabase.from('coding_submissions').select('*').eq('challenge_id', challengeId).eq('student_id', profile.id).order('created_at', { ascending: false }),
