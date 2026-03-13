@@ -53,7 +53,7 @@ export default function OrganizerDashboard() {
         }
 
         async function fetchResetCode() {
-            const { data } = await supabase.from('organizer_reset_codes').select('code').eq('organizer_id', profile?.id).single()
+            const { data } = await supabase.from('organizer_reset_codes').select('code').eq('organizer_id', profile?.id).maybeSingle()
             if (data) setResetCode(data.code)
         }
 
@@ -67,7 +67,7 @@ export default function OrganizerDashboard() {
         setGeneratingCode(true)
         try {
             // First check if one exists since we only want one active code per organizer
-            const { data: existing } = await supabase.from('organizer_reset_codes').select('code').eq('organizer_id', profile.id).single()
+            const { data: existing } = await supabase.from('organizer_reset_codes').select('code').eq('organizer_id', profile.id).maybeSingle()
             if (existing) {
                 // Generate new one by calling the RPC directly?
                 // Actually, the easiest way to generate a new code securely without full DB logic on frontend is to
