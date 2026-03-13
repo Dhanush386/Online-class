@@ -13,6 +13,13 @@ export default function Login() {
     const [error, setError] = useState('')
 
     const [isLampOn, setIsLampOn] = useState(false)
+ 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLampOn(true)
+        }, 3000)
+        return () => clearTimeout(timer)
+    }, [])
 
     async function handleSubmit(e) {
         e.preventDefault()
