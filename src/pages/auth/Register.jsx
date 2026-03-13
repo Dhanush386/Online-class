@@ -112,13 +112,14 @@ export default function Register() {
 
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
                         <div>
-                            <label className="form-label">Full Name</label>
+                            <label htmlFor="name" className="form-label">Full Name</label>
                             <div style={{ position: 'relative' }}>
                                 <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
                                     id="name"
                                     name="name"
                                     type="text"
+                                    autoComplete="name"
                                     className="form-input"
                                     placeholder="John Doe"
                                     value={form.name}
@@ -129,13 +130,14 @@ export default function Register() {
                             </div>
                         </div>
                         <div>
-                            <label className="form-label">Email Address</label>
+                            <label htmlFor="email" className="form-label">Email Address</label>
                             <div style={{ position: 'relative' }}>
                                 <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
                                     id="email"
                                     name="email"
                                     type="email"
+                                    autoComplete="email"
                                     className="form-input"
                                     placeholder="you@example.com"
                                     value={form.email}
@@ -146,13 +148,14 @@ export default function Register() {
                             </div>
                         </div>
                         <div>
-                            <label className="form-label">Password</label>
+                            <label htmlFor="password" className="form-label">Password</label>
                             <div style={{ position: 'relative' }}>
                                 <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
                                     id="password"
                                     name="password"
                                     type={showPassword ? 'text' : 'password'}
+                                    autoComplete="new-password"
                                     className="form-input"
                                     placeholder="Min. 6 characters"
                                     value={form.password}

@@ -68,11 +68,13 @@ export default function ForgotPassword() {
                         )}
 
                         <div className="form-group">
-                            <label className="form-label">Email Address</label>
+                            <label htmlFor="email" className="form-label">Email Address</label>
                             <div style={{ position: 'relative' }}>
                                 <Mail size={18} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 11 }} />
                                 <input
+                                    id="email"
                                     type="email"
+                                    autoComplete="email"
                                     required
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
@@ -84,10 +86,11 @@ export default function ForgotPassword() {
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">Organizer Reset Code</label>
+                            <label htmlFor="resetCode" className="form-label">Organizer Reset Code</label>
                             <div style={{ position: 'relative' }}>
                                 <Key size={18} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 11 }} />
                                 <input
+                                    id="resetCode"
                                     type="text"
                                     required
                                     value={resetCode}
@@ -101,11 +104,13 @@ export default function ForgotPassword() {
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">New Password</label>
+                            <label htmlFor="newPassword" className="form-label">New Password</label>
                             <div style={{ position: 'relative' }}>
                                 <Lock size={18} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 11 }} />
                                 <input
+                                    id="newPassword"
                                     type="password"
+                                    autoComplete="new-password"
                                     required
                                     value={newPassword}
                                     onChange={e => setNewPassword(e.target.value)}
