@@ -74,7 +74,7 @@ export default function Login() {
                     filter: isLampOn ? 'drop-shadow(0 0 30px rgba(253, 224, 71, 0.3))' : 'brightness(0.2)',
                     transition: 'filter 0.8s ease'
                 }}>
-                    <img src="/images/lamp.png" alt="Lamp" style={{ width: '100%', display: 'block' }} />
+                    <img src="/lamp.png" alt="Lamp" style={{ width: '100%', display: 'block' }} />
                 </div>
             </div>
 
