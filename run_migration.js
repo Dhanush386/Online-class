@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const connectionString = "postgresql://postgres.pdkkznkwybvilkpmxqmx:Dhanush@2404@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres";
-const schemaPath = path.join(__dirname, 'supabase', 'migrations', '20260310_add_published_projects.sql');
+const schemaPath = path.join(__dirname, 'supabase', 'migrations', '20260313_admin_roles_and_assignments.sql');
 
 async function run() {
     const client = new Client({ connectionString });

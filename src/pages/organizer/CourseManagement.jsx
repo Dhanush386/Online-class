@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Plus, BookOpen, Trash2, Edit2, X, Save, AlertCircle, FileText, Upload, Link as LinkIcon } from 'lucide-react'
+import { Plus, BookOpen, Trash2, Edit2, X, Save, AlertCircle, FileText, Upload, Link as LinkIcon, Globe } from 'lucide-react'
 
 export default function CourseManagement() {
     const { profile } = useAuth()
+    const navigate = useNavigate()
     const [courses, setCourses] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
@@ -24,11 +25,22 @@ export default function CourseManagement() {
 
     async function loadCourses() {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('courses')
-            .select('*')
-            .eq('organizer_id', profile.id)
-            .order('created_at', { ascending: false })
+        let query = supabase.from('courses').select('*')
+        
+        if (profile?.role === 'sub_admin') {
+            const { data: assignments } = await supabase
+                .from('admin_course_assignments')
+                .select('course_id')
+                .eq('admin_id', profile.id)
+            
+            const assignedIds = (assignments || []).map(a => a.course_id)
+            query = query.in('id', assignedIds)
+        } else if (profile?.role === 'organizer') {
+            query = query.eq('organizer_id', profile.id)
+        }
+        // main_admin sees all
+
+        const { data, error } = await query.order('created_at', { ascending: false })
 
         if (!error) setCourses(data || [])
         setLoading(false)
@@ -136,7 +148,7 @@ export default function CourseManagement() {
                 <button
                     onClick={() => { setEditingId(null); setFormData({ title: '', description: '', start_date: '', end_date: '' }); setShowModal(true) }}
                     className="btn-primary"
-                    style={{ gap: '0.5rem' }}
+                    style={{ gap: '0.5rem', display: profile?.role === 'sub_admin' ? 'none' : 'flex' }}
                 >
                     <Plus size={18} /> Create Course
                 </button>
@@ -167,7 +179,7 @@ export default function CourseManagement() {
                                     <div style={{ width: 40, height: 40, background: 'rgba(99,102,241,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <BookOpen size={20} color="#6366f1" />
                                     </div>
-                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                    <div style={{ display: 'flex', gap: '0.25rem', visibility: profile?.role === 'sub_admin' ? 'hidden' : 'visible' }}>
                                         <button onClick={() => openEdit(course)} style={{ p: '0.4rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }} title="Edit">
                                             <Edit2 size={16} />
                                         </button>
@@ -194,6 +206,9 @@ export default function CourseManagement() {
                                     Created {new Date(course.created_at).toLocaleDateString()}
                                 </span>
                                 <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Course</span>
+                                <button onClick={() => navigate(`/student/courses/${course.id}`)} className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem' }}>
+                                    <Globe size={14} /> Open Portal
+                                </button>
                                 <button onClick={() => openResources(course)} className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem' }}>
                                     <FileText size={14} /> Materials
                                 </button>

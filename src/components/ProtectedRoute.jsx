@@ -25,8 +25,14 @@ export function ProtectedRoute({ children, requiredRole }) {
     }
 
     if (requiredRole && profile?.role !== requiredRole) {
+        // Hierarchical role checks
+        const isAdmin = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
+        
+        if (requiredRole === 'organizer' && isAdmin) return children
+        if (requiredRole === 'student' && profile?.role === 'sub_admin') return children
+
         // Redirect to correct dashboard IF a role exists
-        if (profile?.role === 'organizer') return <Navigate to="/organizer" replace />
+        if (isAdmin) return <Navigate to="/organizer" replace />
         if (profile?.role === 'student') return <Navigate to="/student" replace />
 
         // If we have a user but NO profile record, don't loop back to login.

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, BookOpen, ChevronRight, Clock } from 'lucide-react'
 
 export default function OrganizerAssessments() {
     const { profile } = useAuth()
+    const location = useLocation()
     const [courses, setCourses] = useState([])
     const [assessments, setAssessments] = useState([])
     const [loading, setLoading] = useState(true)
@@ -27,13 +28,27 @@ export default function OrganizerAssessments() {
 
     async function loadInitialData() {
         setLoading(true)
+        
+        let courseQuery = supabase.from('courses').select('id, title')
+        if (profile?.role === 'sub_admin') {
+            const { data: assignments } = await supabase
+                .from('admin_course_assignments')
+                .select('course_id')
+                .eq('admin_id', profile.id)
+            
+            const assignedIds = (assignments || []).map(a => a.course_id)
+            courseQuery = courseQuery.in('id', assignedIds)
+        } else if (profile?.role === 'organizer') {
+            courseQuery = courseQuery.eq('organizer_id', profile.id)
+        }
+
         const [
             { data: courseData },
             { data: assessData },
             { data: groupData },
             { data: accessData }
         ] = await Promise.all([
-            supabase.from('courses').select('id, title').eq('organizer_id', profile.id),
+            courseQuery,
             supabase.from('assessments').select('*, courses(title)').order('created_at', { ascending: false }),
             supabase.from('groups').select('*').eq('organizer_id', profile.id),
             supabase.from('resource_access').select('*').eq('resource_type', 'assessment')
@@ -45,6 +60,17 @@ export default function OrganizerAssessments() {
         setResourceAccess(accessData || [])
         setLoading(false)
     }
+
+    useEffect(() => {
+        if (location.state?.courseId) {
+            setFormData(prev => ({ 
+                ...prev, 
+                course_id: location.state.courseId,
+                day_number: location.state.day || 1
+            }))
+            if (location.state.openModal) setShowModal(true)
+        }
+    }, [location.state])
 
     async function toggleResourceLock(groupId, resourceId) {
         const existing = resourceAccess.find(a => a.group_id === groupId && a.resource_id === resourceId)

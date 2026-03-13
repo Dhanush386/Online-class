@@ -9,6 +9,7 @@ import {
 const navItems = [
     { to: '/organizer', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/organizer/courses', icon: BookOpen, label: 'Courses' },
+    { to: '/organizer/admins', icon: Users, label: 'Admins', role: 'main_admin' },
     { to: '/organizer/assessments', icon: ClipboardList, label: 'Assessments' },
     { to: '/organizer/coding', icon: Code, label: 'Coding Practice' },
     { to: '/organizer/playground', icon: Globe, label: 'Code Playground' },
@@ -77,7 +78,7 @@ export default function OrganizerLayout() {
 
                 {/* Nav */}
                 <nav style={{ flex: 1, padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto' }}>
-                    {navItems.map(({ to, icon: Icon, label, end }) => (
+                    {navItems.filter(item => !item.role || profile?.role === item.role).map(({ to, icon: Icon, label, end }) => (
                         <NavLink
                             key={to + label}
                             to={to}
@@ -102,7 +103,7 @@ export default function OrganizerLayout() {
                             </div>
                             <div style={{ overflow: 'hidden' }}>
                                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.name || 'Organizer'}</div>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Admin</div>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--accent-light)', fontWeight: 600 }}>{profile?.role === 'main_admin' ? 'Main Admin' : profile?.role === 'sub_admin' ? 'Sub Admin' : 'Organizer'}</div>
                             </div>
                         </div>
                     )}

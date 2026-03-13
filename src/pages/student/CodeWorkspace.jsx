@@ -23,7 +23,11 @@ const MAX_ATTEMPTS = 2
 export default function CodeWorkspace() {
     const { challengeId } = useParams()
     const navigate = useNavigate()
+    const queryParams = new URLSearchParams(window.location.search)
+    const isAdminMode = queryParams.get('admin') === 'true'
     const { profile } = useAuth()
+    const isOrganizer = profile?.role === 'organizer'
+    const canBypass = isAdminMode && isOrganizer
     const [challenge, setChallenge] = useState(null)
     const [code, setCode] = useState('')
     const [htmlCode, setHtmlCode] = useState('<!DOCTYPE html>\n<html>\n<head>\n  <title>My Web Page</title>\n  <!-- Link your style.css here -->\n\n</head>\n<body>\n  <h1>Hello World</h1>\n\n  <!-- Link your script.js here -->\n\n</body>\n</html>')
@@ -69,13 +73,13 @@ export default function CodeWorkspace() {
 
     useEffect(() => {
         const handleSecurity = (e) => {
-            if (isStarted) {
+            if (isStarted && !canBypass) {
                 e.preventDefault()
             }
         }
 
         const handleFullScreenChange = () => {
-            if (isStarted && !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+            if (isStarted && !canBypass && !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
                 setViolationCount(prev => {
                     const next = prev + 1
                     if (next < 3) {
@@ -88,7 +92,7 @@ export default function CodeWorkspace() {
         }
 
         const handleVisibilityChange = () => {
-            if (isStarted && document.hidden) {
+            if (isStarted && !canBypass && document.hidden) {
                 setViolationCount(prev => {
                     const next = prev + 1
                     if (next < 3) {
@@ -128,6 +132,10 @@ export default function CodeWorkspace() {
     }, [isStarted])
 
     const enterFullScreen = () => {
+        if (canBypass) {
+            setIsStarted(true)
+            return
+        }
         const elem = document.documentElement
         if (elem.requestFullscreen) {
             elem.requestFullscreen()
@@ -172,11 +180,11 @@ export default function CodeWorkspace() {
             const userGroupIds = memberships?.map(m => m.group_id) || []
 
             // Check manual resource-level lock
-            const isResourceLocked = locks?.some(l => userGroupIds.includes(l.group_id))
+            const isResourceLocked = !canBypass && locks?.some(l => userGroupIds.includes(l.group_id))
 
             // Check day-level lock/schedule
-            const dayAccess = (locksDay || []).find(a => a.course_id === data.course_id && a.day_number === data.day_number && userGroupIds.includes(a.group_id))
-            const isDayLocked = dayAccess?.is_locked || (dayAccess?.open_time && new Date(dayAccess.open_time) > new Date())
+            const dayAccess = locksDay?.find(a => a.course_id === data.course_id && a.day_number === data.day_number && userGroupIds.includes(a.group_id))
+            const isDayLocked = !canBypass && (dayAccess?.is_locked || (dayAccess?.open_time && new Date(dayAccess.open_time) > new Date()))
 
             if (isResourceLocked || isDayLocked) {
                 alert(isDayLocked && dayAccess?.open_time ? `This day opens at ${new Date(dayAccess.open_time).toLocaleString()}` : 'This coding challenge is currently locked for your group.')
@@ -215,7 +223,7 @@ export default function CodeWorkspace() {
                 }
 
                 // Show last submission results
-                if (subs.length >= MAX_ATTEMPTS) {
+                if (subs.length >= MAX_ATTEMPTS && !canBypass) {
                     setResult({ status: subs[0].status === 'accepted' ? 'success' : 'error', message: `${subs[0].tests_passed} test(s) passed — No attempts remaining`, testResults: subs[0].results })
                     setActiveTab('output')
                 }
@@ -399,24 +407,26 @@ export default function CodeWorkspace() {
 
             const score = allPassed ? (challenge.xp_reward || 15) : 0
 
-            await supabase.from('coding_submissions').insert({
-                challenge_id: challenge.id,
-                student_id: profile.id,
-                code: challenge.language === 'html' ? JSON.stringify({ html: htmlCode, css: cssCode, js: jsCode }) : code,
-                status: allPassed ? 'accepted' : 'wrong_answer',
-                tests_passed: passedCount,
-                score: score,
-                results: testResults
-            })
+            if (!canBypass) {
+                await supabase.from('coding_submissions').insert({
+                    challenge_id: challenge.id,
+                    student_id: profile.id,
+                    code: challenge.language === 'html' ? JSON.stringify({ html: htmlCode, css: cssCode, js: jsCode }) : code,
+                    status: allPassed ? 'accepted' : 'wrong_answer',
+                    tests_passed: passedCount,
+                    score: score,
+                    results: testResults
+                })
+            }
 
             setResult({
                 status: allPassed ? 'success' : 'error',
-                message: allPassed ? 'All test cases passed!' : `${passedCount}/${totalTests} test cases passed.`,
+                message: allPassed ? (canBypass ? 'Verification Complete: All test cases passed!' : 'All test cases passed!') : `${passedCount}/${totalTests} test cases passed.`,
                 testResults
             })
 
             // Update course progress if they passed
-            if (allPassed) {
+            if (allPassed && !canBypass) {
                 updateOverallProgress(challenge.course_id)
 
                 // Logic for "Next Question" or "Completion"
@@ -550,8 +560,8 @@ export default function CodeWorkspace() {
                 height: '100%'
             }}>
                 <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9' }}>
-                    <Link to="/student/coding" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.8rem', textDecoration: 'none', marginBottom: '0.75rem' }}>
-                        <ChevronLeft size={16} /> Back to Challenges
+                    <Link to={canBypass ? "/organizer/coding" : "/student/coding"} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.8rem', textDecoration: 'none', marginBottom: '0.75rem' }}>
+                        <ChevronLeft size={16} /> Back to {canBypass ? "Management" : "Challenges"}
                     </Link>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1' }}>{challenge.language.toUpperCase()}</span>
@@ -666,8 +676,8 @@ export default function CodeWorkspace() {
                                         <Share2 size={14} /> Publish
                                     </button>
                                 )}
-                                <button onClick={handleSubmit} disabled={submitting || running} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#6366f1', color: 'white', border: 'none', padding: '0.4rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 10px rgba(99,102,241,0.2)' }}>
-                                    <Send size={14} /> {submitting ? 'Submitting...' : 'Submit'}
+                                <button onClick={handleSubmit} disabled={submitting || running} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: canBypass ? '#10b981' : '#6366f1', color: 'white', border: 'none', padding: '0.4rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 10px rgba(99,102,241,0.2)' }}>
+                                    <Send size={14} /> {submitting ? 'Verifying...' : (canBypass ? 'Verify All Tests' : 'Submit')}
                                 </button>
                             </>
                         ))}
@@ -789,12 +799,12 @@ export default function CodeWorkspace() {
                                                                 {tc.passed ? <CheckCircle2 size={14} color="#10b981" /> : <XCircle size={14} color="#ef4444" />}
                                                                 <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>Test Case {tc.id}</span>
                                                             </div>
-                                                            {tc.isHidden && (
-                                                                <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: '#e2e8f0', borderRadius: 4, color: '#64748b', fontWeight: 700 }}>HIDDEN</span>
+                                                            {(tc.isHidden || canBypass) && (
+                                                                <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: canBypass && tc.isHidden ? '#fee2e2' : '#e2e8f0', borderRadius: 4, color: canBypass && tc.isHidden ? '#b91c1c' : '#64748b', fontWeight: 700 }}>{tc.isHidden ? 'HIDDEN' : 'VISIBLE'}</span>
                                                             )}
                                                         </div>
 
-                                                        {(!tc.isHidden || !tc.passed) && (
+                                                        {(!tc.isHidden || !tc.passed || canBypass) && (
                                                             <div style={{ fontSize: '0.75rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                                 <div>
                                                                     <div style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.65rem', marginBottom: 2 }}>INPUT</div>

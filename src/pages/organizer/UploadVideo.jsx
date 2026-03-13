@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Video, Link, Calendar, Clock, FolderOpen, CheckCircle, AlertCircle, Plus, Upload, PlayCircle, Radio } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 
 export default function ScheduleLiveClass() {
     const { profile } = useAuth()
+    const location = useLocation()
     const [courses, setCourses] = useState([])
     const [mode, setMode] = useState('live') // 'live' or 'upload'
     const [form, setForm] = useState({
@@ -17,13 +19,38 @@ export default function ScheduleLiveClass() {
     const [success, setSuccess] = useState(false)
     const [error, setError] = useState('')
 
-    useEffect(() => {
-        if (profile?.id) {
-            supabase.from('courses').select('id, title')
-                .eq('organizer_id', profile.id)
-                .then(({ data }) => setCourses(data || []))
+    async function loadCourses() {
+        let query = supabase.from('courses').select('id, title')
+        
+        if (profile?.role === 'sub_admin') {
+            const { data: assignments } = await supabase
+                .from('admin_course_assignments')
+                .select('course_id')
+                .eq('admin_id', profile.id)
+            
+            const assignedIds = (assignments || []).map(a => a.course_id)
+            query = query.in('id', assignedIds)
+        } else if (profile?.role === 'organizer') {
+            query = query.eq('organizer_id', profile.id)
         }
+        
+        const { data } = await query
+        setCourses(data || [])
+    }
+
+    useEffect(() => {
+        if (profile?.id) loadCourses()
     }, [profile])
+
+    useEffect(() => {
+        if (location.state?.courseId) {
+            setForm(prev => ({ 
+                ...prev, 
+                course_id: location.state.courseId,
+                day_number: location.state.day || 1
+            }))
+        }
+    }, [location.state])
 
     async function handleSubmit(e) {
         e.preventDefault()

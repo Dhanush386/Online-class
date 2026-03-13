@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText } from 'lucide-react'
+import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List } from 'lucide-react'
 import ReactPlayer from 'react-player'
 
 const MAX_ATTEMPTS = 2
@@ -330,9 +330,16 @@ export default function CourseDetail() {
                                                 {/* Day Sessions */}
                                                 {daySessions.length > 0 && (
                                                     <section>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                                            <Video size={16} color="#6366f1" />
-                                                            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Live Class & Videos</h4>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <Video size={16} color="#6366f1" />
+                                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Live Class & Videos</h4>
+                                                            </div>
+                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
+                                                                <button onClick={() => navigate('/organizer/upload', { state: { courseId } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
+                                                                    <Plus size={12} /> Add Session
+                                                                </button>
+                                                            )}
                                                         </div>
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                                             {daySessions.map(s => {
@@ -349,11 +356,18 @@ export default function CourseDetail() {
                                                                                 {recorded ? 'Recorded Lesson' : s.scheduled_time ? new Date(s.scheduled_time).toLocaleString() : 'TBA'}
                                                                             </div>
                                                                         </div>
-                                                                        {recorded ? (
-                                                                            <button onClick={() => { setActiveVideo(s); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Watch</button>
-                                                                        ) : s.video_url && (
-                                                                            <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>Join</a>
-                                                                        )}
+                                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
+                                                                                <button onClick={() => navigate('/organizer/upload', { state: { editId: s.id } })} className="btn-secondary" style={{ padding: '0.4rem', border: 'none', background: 'none', color: 'var(--text-secondary)' }} title="Edit">
+                                                                                    <Edit2 size={16} />
+                                                                                </button>
+                                                                            )}
+                                                                            {recorded ? (
+                                                                                <button onClick={() => { setActiveVideo(s); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Watch</button>
+                                                                            ) : s.video_url && (
+                                                                                <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>Join</a>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 )
                                                             })}
@@ -364,9 +378,16 @@ export default function CourseDetail() {
                                                 {/* Day Coding Challenges */}
                                                 {dayChallenges.length > 0 && (
                                                     <section>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                                            <Code size={16} color="#f59e0b" />
-                                                            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Coding Practice</h4>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <Code size={16} color="#f59e0b" />
+                                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Coding Practice</h4>
+                                                            </div>
+                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
+                                                                <button onClick={() => navigate('/organizer/coding', { state: { courseId, day: day } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
+                                                                    <Plus size={12} /> Add Exercise
+                                                                </button>
+                                                            )}
                                                         </div>
                                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
                                                             {dayChallenges.map(c => (
@@ -388,10 +409,22 @@ export default function CourseDetail() {
                                                     assessments.weekly.filter(a => (a.day_number || 1) === day).length > 0 ||
                                                     assessments.final.filter(a => (a.day_number || 1) === day).length > 0) && (
                                                         <section>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                                 <ClipboardList size={16} color="#10b981" />
                                                                 <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Assessments</h4>
                                                             </div>
+                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
+                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                    <button onClick={() => navigate('/organizer/assessments', { state: { courseId, day: day } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
+                                                                        <List size={12} /> Manage
+                                                                    </button>
+                                                                    <button onClick={() => navigate('/organizer/assessments/new', { state: { courseId, day: day } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
+                                                                        <Plus size={12} /> Add Quiz
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                                                 {['daily', 'weekly', 'final'].map(type =>
                                                                     assessments[type].filter(a => (a.day_number || 1) === day).map(a => {
@@ -416,9 +449,16 @@ export default function CourseDetail() {
                                                 {/* Day Resources */}
                                                 {dayResources.length > 0 && (
                                                     <section>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                                            <FileText size={16} color="#64748b" />
-                                                            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Study Materials</h4>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <FileText size={16} color="#64748b" />
+                                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Study Materials</h4>
+                                                            </div>
+                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
+                                                                <button onClick={() => navigate('/organizer/courses', { state: { courseId, openMaterials: true } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
+                                                                    <Plus size={12} /> Add Material
+                                                                </button>
+                                                            )}
                                                         </div>
                                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '0.75rem' }}>
                                                             {dayResources.map(r => (

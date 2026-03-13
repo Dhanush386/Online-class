@@ -18,6 +18,7 @@ import StudentLayout from './layouts/StudentLayout'
 // Organizer Pages
 import OrganizerDashboard from './pages/organizer/OrganizerDashboard'
 import CourseManagement from './pages/organizer/CourseManagement'
+import AdminManagement from './pages/organizer/AdminManagement'
 import OrganizerAssessments from './pages/organizer/OrganizerAssessments'
 import AssessmentQuestions from './pages/organizer/AssessmentQuestions'
 import CodingManagement from './pages/organizer/CodingManagement'
@@ -50,7 +51,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/p/:projectId" element={<SharedProject />} />
 
-          {/* Organizer */}
+          {/* Organizer / Admin */}
           <Route path="/organizer" element={
             <ProtectedRoute requiredRole="organizer">
               <OrganizerLayout />
@@ -58,6 +59,7 @@ export default function App() {
           }>
             <Route index element={<OrganizerDashboard />} />
             <Route path="courses" element={<CourseManagement />} />
+            <Route path="admins" element={<AdminManagement />} />
             <Route path="assessments" element={<OrganizerAssessments />} />
             <Route path="assessments/:assessmentId/questions" element={<AssessmentQuestions />} />
             <Route path="coding" element={<CodingManagement />} />

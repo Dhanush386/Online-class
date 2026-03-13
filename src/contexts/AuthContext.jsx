@@ -145,8 +145,8 @@ export function AuthProvider({ children }) {
     }
 
     async function signUp({ email, password, name, role }) {
-        // If registering as organizer, check if invited
-        if (role === 'organizer') {
+        // If registering as organizer or admin role, check if invited
+        if (role === 'organizer' || role === 'main_admin' || role === 'sub_admin') {
             const { data: invite, error: inviteError } = await supabase
                 .from('organizer_invites')
                 .select('*')
@@ -183,8 +183,8 @@ export function AuthProvider({ children }) {
                 console.error('Initial profile creation failed:', profileError)
             }
 
-            // If organizer account created, remove the invite
-            if (role === 'organizer') {
+            // If admin account created, remove the invite
+            if (role === 'organizer' || role === 'main_admin' || role === 'sub_admin') {
                 await supabase.from('organizer_invites').delete().eq('email', email.toLowerCase())
             }
         }

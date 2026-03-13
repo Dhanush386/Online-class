@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock } from 'lucide-react'
@@ -18,6 +19,7 @@ const DIFFICULTIES = ['easy', 'medium', 'hard']
 // Organizer Coding Management Page
 export default function CodingManagement() {
     const { profile } = useAuth()
+    const location = useLocation()
     const [courses, setCourses] = useState([])
     const [challenges, setChallenges] = useState([])
     const [loading, setLoading] = useState(true)
@@ -38,6 +40,17 @@ export default function CodingManagement() {
     })
 
     const [groups, setGroups] = useState([])
+
+    useEffect(() => {
+        if (location.state?.courseId) {
+            setFormData(prev => ({ 
+                ...prev, 
+                course_id: location.state.courseId,
+                day_number: location.state.day || 1
+            }))
+            if (location.state.openModal) setShowModal(true)
+        }
+    }, [location.state])
     const [resourceAccess, setResourceAccess] = useState([])
     const [lockingResource, setLockingResource] = useState(null)
 
@@ -279,7 +292,16 @@ export default function CodingManagement() {
                             </p>
                             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.test_cases?.length || 0} Test Cases</span>
-                                <button onClick={() => openEdit(c)} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>View Details</button>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                        onClick={() => window.open(`/student/coding/${c.id}?admin=true`, '_blank')}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                    >
+                                        Test Question
+                                    </button>
+                                    <button onClick={() => openEdit(c)} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>View Details</button>
+                                </div>
                             </div>
                         </div>
                     ))}
