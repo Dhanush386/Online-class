@@ -29,7 +29,7 @@ export function ProtectedRoute({ children, requiredRole }) {
         const isAdmin = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
         
         if (requiredRole === 'organizer' && isAdmin) return children
-        if (requiredRole === 'student' && profile?.role === 'sub_admin') return children
+        if (requiredRole === 'student' && (isAdmin || profile?.role === 'student')) return children
 
         // Redirect to correct dashboard IF a role exists
         if (isAdmin) return <Navigate to="/organizer" replace />

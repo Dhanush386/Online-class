@@ -562,15 +562,23 @@ export default function CodingManagement() {
                                     </div>
                                     {formData.test_cases.map((tc, idx) => (
                                         <div key={idx} className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.75rem', marginBottom: '0.75rem', alignItems: 'center' }}>
-                                            <textarea className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => {
-                                                const newTCData = [...formData.test_cases]; newTCData[idx].input = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                            }} style={{ fontSize: '0.8rem' }} />
-                                            <textarea className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => {
-                                                const newTCData = [...formData.test_cases]; newTCData[idx].expected_output = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                            }} style={{ fontSize: '0.8rem' }} />
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>INPUT</label>
+                                                <textarea id={`tc-input-${idx}`} name={`tc_input_${idx}`} className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => {
+                                                    const newTCData = [...formData.test_cases]; newTCData[idx].input = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
+                                                }} style={{ fontSize: '0.8rem' }} />
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                <label htmlFor={`tc-output-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>OUTPUT</label>
+                                                <textarea id={`tc-output-${idx}`} name={`tc_output_${idx}`} className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => {
+                                                    const newTCData = [...formData.test_cases]; newTCData[idx].expected_output = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
+                                                }} style={{ fontSize: '0.8rem' }} />
+                                            </div>
                                             <div style={{ display: 'flex', flexDirection: window.innerWidth <= 768 ? 'row' : 'column', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>HIDDEN</label>
+                                                <label htmlFor={`tc-hidden-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>HIDDEN</label>
                                                 <input
+                                                    id={`tc-hidden-${idx}`}
+                                                    name={`tc_hidden_${idx}`}
                                                     type="checkbox"
                                                     checked={tc.is_hidden}
                                                     onChange={e => {

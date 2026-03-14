@@ -215,8 +215,10 @@ export default function AdminManagement() {
                         <form onSubmit={handleInviteSubAdmin} style={{ padding: '1.5rem' }}>
                             {error && <div style={{ color: '#ef4444', background: '#fef2f2', padding: '0.75rem', borderRadius: 8, marginBottom: '1rem', fontSize: '0.85rem' }}>{error}</div>}
                             <div style={{ marginBottom: '1rem' }}>
-                                <label className="form-label">Email Address</label>
+                                <label htmlFor="invite-email" className="form-label">Email Address</label>
                                 <input 
+                                    id="invite-email"
+                                    name="email"
                                     type="email" 
                                     className="form-input" 
                                     placeholder="admin@example.com" 
