@@ -20,7 +20,7 @@ export default function Register() {
                     .from('organizer_invites')
                     .select('role')
                     .eq('email', form.email.toLowerCase())
-                    .single()
+                    .maybeSingle()
 
                 if (data && !error) {
                     setIsInvited(true)
