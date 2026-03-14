@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock } from 'lucide-react'
 
 const MAX_ATTEMPTS = 2
 

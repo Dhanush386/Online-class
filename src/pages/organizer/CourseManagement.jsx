@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Plus, BookOpen, Trash2, Edit2, X, Save, AlertCircle, FileText, Upload, Link as LinkIcon, Globe } from 'lucide-react'
+import { Plus, BookOpen, Trash2, Edit2, X, Save, AlertCircle, FileText, Upload, Link as LinkIcon, Globe, Clock, Calendar } from 'lucide-react'
 
 export default function CourseManagement() {
     const { profile } = useAuth()
@@ -237,8 +237,10 @@ export default function CourseManagement() {
                             <form onSubmit={handleResourceSubmit} style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: '2rem' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                                     <div style={{ gridColumn: '1 / -1' }}>
-                                        <label className="form-label">Material Title</label>
+                                        <label htmlFor="resource-title" className="form-label">Material Title</label>
                                         <input
+                                            id="resource-title"
+                                            name="title"
                                             type="text"
                                             className="form-input"
                                             placeholder="e.g. Introduction PPT"
@@ -248,8 +250,10 @@ export default function CourseManagement() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="form-label">Type</label>
+                                        <label htmlFor="resource-type" className="form-label">Type</label>
                                         <select
+                                            id="resource-type"
+                                            name="resource_type"
                                             className="form-input"
                                             value={resourceForm.resource_type}
                                             onChange={e => setResourceForm(p => ({ ...p, resource_type: e.target.value }))}
@@ -260,8 +264,10 @@ export default function CourseManagement() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="form-label">File/Link URL</label>
+                                        <label htmlFor="resource-link" className="form-label">File/Link URL</label>
                                         <input
+                                            id="resource-link"
+                                            name="file_url"
                                             type="url"
                                             className="form-input"
                                             placeholder="https://..."
@@ -272,8 +278,10 @@ export default function CourseManagement() {
                                     </div>
                                 </div>
                                 <div style={{ gridColumn: '1 / -1' }}>
-                                    <label className="form-label">Day / Session Number</label>
+                                    <label htmlFor="resource-day" className="form-label">Day / Session Number</label>
                                     <input
+                                        id="resource-day"
+                                        name="day_number"
                                         type="number"
                                         className="form-input"
                                         placeholder="e.g. 1"
@@ -348,8 +356,10 @@ export default function CourseManagement() {
                             )}
 
                             <div style={{ marginBottom: '1.25rem' }}>
-                                <label className="form-label">Course Title</label>
+                                <label htmlFor="course-title" className="form-label">Course Title</label>
                                 <input
+                                    id="course-title"
+                                    name="title"
                                     type="text"
                                     className="form-input"
                                     placeholder="e.g. Full Stack Web Development"
@@ -360,8 +370,10 @@ export default function CourseManagement() {
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label className="form-label">Description</label>
+                                <label htmlFor="course-desc" className="form-label">Description</label>
                                 <textarea
+                                    id="course-desc"
+                                    name="description"
                                     className="form-input"
                                     rows={4}
                                     placeholder="Briefly describe what this course covers..."
@@ -373,8 +385,10 @@ export default function CourseManagement() {
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                                 <div>
-                                    <label className="form-label">Start Date</label>
+                                    <label htmlFor="start-date" className="form-label">Start Date</label>
                                     <input
+                                        id="start-date"
+                                        name="start_date"
                                         type="datetime-local"
                                         className="form-input"
                                         value={formData.start_date}
@@ -382,8 +396,10 @@ export default function CourseManagement() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="form-label">End Date</label>
+                                    <label htmlFor="end-date" className="form-label">End Date</label>
                                     <input
+                                        id="end-date"
+                                        name="end_date"
                                         type="datetime-local"
                                         className="form-input"
                                         value={formData.end_date}

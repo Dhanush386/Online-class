@@ -408,9 +408,9 @@ export default function CodingManagement() {
                                     marginBottom: '1.25rem'
                                 }}>
                                     <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
-                                        <label className="form-label">Course</label>
+                                        <label htmlFor="course-id" className="form-label">Course</label>
                                         <select
-                                            id="course_id"
+                                            id="course-id"
                                             name="course_id"
                                             className="form-input"
                                             value={formData.course_id}
@@ -422,14 +422,16 @@ export default function CodingManagement() {
                                         </select>
                                     </div>
                                     <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
-                                        <label className="form-label">Language</label>
-                                        <select className="form-input" value={formData.language} onChange={e => setFormData(p => ({ ...p, language: e.target.value }))} required>
+                                        <label htmlFor="language" className="form-label">Language</label>
+                                        <select id="language" name="language" className="form-input" value={formData.language} onChange={e => setFormData(p => ({ ...p, language: e.target.value }))} required>
                                             {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.icon} {l.name}</option>)}
                                         </select>
                                     </div>
                                     <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
-                                        <label className="form-label">Difficulty</label>
+                                        <label htmlFor="difficulty" className="form-label">Difficulty</label>
                                         <select
+                                            id="difficulty"
+                                            name="difficulty"
                                             className="form-input"
                                             value={formData.difficulty}
                                             onChange={e => setFormData({ ...formData, difficulty: e.target.value })}
@@ -466,10 +468,10 @@ export default function CodingManagement() {
                                 </div>
 
                                 <div style={{ marginBottom: '1.25rem' }}>
-                                    <label className="form-label">Challenge Title</label>
+                                    <label htmlFor="challenge-title-input" className="form-label">Challenge Title</label>
                                     <input
-                                        id="challenge-title"
-                                        name="challenge-title"
+                                        id="challenge-title-input"
+                                        name="title"
                                         type="text"
                                         className="form-input"
                                         placeholder="e.g. Reverse a String"
@@ -480,38 +482,38 @@ export default function CodingManagement() {
                                 </div>
 
                                 <div style={{ marginBottom: '1.25rem' }}>
-                                    <label className="form-label">Problem Statement (Markdown supported)</label>
-                                    <textarea className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
+                                    <label htmlFor="problem-statement" className="form-label">Problem Statement (Markdown supported)</label>
+                                    <textarea id="problem-statement" name="problem_statement" className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
                                 </div>
 
                                 <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
                                     <div>
-                                        <label className="form-label">Starter Code</label>
-                                        <textarea className="form-input" rows={6} placeholder="Inital code for the student..." value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                        <label htmlFor="starter-code" className="form-label">Starter Code</label>
+                                        <textarea id="starter-code" name="starter_code" className="form-input" rows={6} placeholder="Inital code for the student..." value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '0.85rem' }} />
                                     </div>
                                     <div>
-                                        <label className="form-label">Constraints</label>
-                                        <textarea className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
+                                        <label htmlFor="constraints" className="form-label">Constraints</label>
+                                        <textarea id="constraints" name="constraints" className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
                                     </div>
                                 </div>
 
                                 {/* Open / Close Time */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
                                     <div>
-                                        <label className="form-label">Open Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                        <label htmlFor="open-time" className="form-label">Open Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
                                         <div style={{ position: 'relative' }}>
                                             <Calendar size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                            <input type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
+                                            <input id="open-time" name="open_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
                                                 value={formData.open_time}
                                                 onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="form-label">Close Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                        <label htmlFor="close-time" className="form-label">Close Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
                                         <div style={{ position: 'relative' }}>
                                             <Clock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                            <input type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
+                                            <input id="close-time" name="close_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
                                                 value={formData.close_time}
                                                 min={formData.open_time || undefined}
                                                 onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
@@ -525,8 +527,10 @@ export default function CodingManagement() {
                                 </div>
 
                                 <div style={{ marginBottom: '1.25rem' }}>
-                                    <label className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                    <label htmlFor="target-visual" className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
                                     <input
+                                        id="target-visual"
+                                        name="target_visual_url"
                                         type="text"
                                         className="form-input"
                                         placeholder="Link to an image or video for the student to replicate"
@@ -537,8 +541,10 @@ export default function CodingManagement() {
                                 </div>
 
                                 <div style={{ marginBottom: '1.5rem' }}>
-                                    <label className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                    <label htmlFor="allowed-assets" className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
                                     <textarea
+                                        id="allowed-assets"
+                                        name="allowed_assets"
                                         className="form-input"
                                         rows={3}
                                         placeholder="List links (one per line) students can copy-paste (images, fonts, etc.)"

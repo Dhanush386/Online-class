@@ -321,9 +321,9 @@ export default function OrganizerAssessments() {
                             )}
 
                             <div style={{ marginBottom: '1.25rem' }}>
-                                <label className="form-label">Course</label>
+                                <label htmlFor="course-select" className="form-label">Course</label>
                                 <select
-                                    id="course_id"
+                                    id="course-select"
                                     name="course_id"
                                     className="form-input"
                                     value={formData.course_id}
@@ -336,10 +336,10 @@ export default function OrganizerAssessments() {
                             </div>
 
                             <div style={{ marginBottom: '1.25rem' }}>
-                                <label className="form-label">Assessment Title</label>
+                                <label htmlFor="assessment-title-input" className="form-label">Assessment Title</label>
                                 <input
-                                    id="assessment-title"
-                                    name="assessment-title"
+                                    id="assessment-title-input"
+                                    name="title"
                                     type="text"
                                     className="form-input"
                                     placeholder="e.g. Week 1 Quiz: Introduction"
@@ -351,8 +351,10 @@ export default function OrganizerAssessments() {
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
                                 <div>
-                                    <label className="form-label">Day Number</label>
+                                    <label htmlFor="day-number" className="form-label">Day Number</label>
                                     <input
+                                        id="day-number"
+                                        name="day_number"
                                         type="number"
                                         className="form-input"
                                         min="1"
@@ -362,10 +364,10 @@ export default function OrganizerAssessments() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="form-label">Type</label>
+                                    <label htmlFor="assessment-type-select" className="form-label">Type</label>
                                     <select
-                                        id="assessment-type"
-                                        name="assessment-type"
+                                        id="assessment-type-select"
+                                        name="type"
                                         className="form-input"
                                         value={formData.type}
                                         onChange={e => setFormData(p => ({ ...p, type: e.target.value }))}
@@ -376,10 +378,10 @@ export default function OrganizerAssessments() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="form-label">Due Date (optional)</label>
+                                    <label htmlFor="due-date-input" className="form-label">Due Date (optional)</label>
                                     <input
-                                        id="due-date"
-                                        name="due-date"
+                                        id="due-date-input"
+                                        name="due_date"
                                         type="date"
                                         className="form-input"
                                         value={formData.due_date}
@@ -389,8 +391,10 @@ export default function OrganizerAssessments() {
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label className="form-label">Instructions / Description</label>
+                                <label htmlFor="assessment-desc" className="form-label">Instructions / Description</label>
                                 <textarea
+                                    id="assessment-desc"
+                                    name="description"
                                     className="form-input"
                                     rows={3}
                                     placeholder="Any notes for students..."

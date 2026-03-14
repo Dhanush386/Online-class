@@ -186,10 +186,10 @@ export default function ScheduleLiveClass() {
 
                     {/* Course */}
                     <div>
-                        <label className="form-label">Course</label>
+                        <label htmlFor="course-select" className="form-label">Course</label>
                         <div style={{ position: 'relative' }}>
                             <FolderOpen size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 1 }} />
-                            <select className="form-input" value={form.course_id} onChange={e => setForm(p => ({ ...p, course_id: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required>
+                            <select id="course-select" name="course_id" className="form-input" value={form.course_id} onChange={e => setForm(p => ({ ...p, course_id: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required>
                                 <option value="">Select a course...</option>
                                 {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                             </select>
@@ -198,20 +198,22 @@ export default function ScheduleLiveClass() {
 
                     {/* Title */}
                     <div>
-                        <label className="form-label">{mode === 'live' ? 'Session Title' : 'Video Title'}</label>
+                        <label htmlFor="session-title" className="form-label">{mode === 'live' ? 'Session Title' : 'Video Title'}</label>
                         <div style={{ position: 'relative' }}>
                             <Video size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input type="text" className="form-input" placeholder={mode === 'live' ? 'e.g. Week 3 — React State Management' : 'e.g. Introduction to Next.js'} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
+                            <input id="session-title" name="title" type="text" className="form-input" placeholder={mode === 'live' ? 'e.g. Week 3 — React State Management' : 'e.g. Introduction to Next.js'} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
                         </div>
                     </div>
 
                     {/* Meeting URL or File Upload */}
                     {mode === 'live' ? (
                         <div>
-                            <label className="form-label">Meeting Link</label>
+                            <label htmlFor="meeting-link" className="form-label">Meeting Link</label>
                             <div style={{ position: 'relative' }}>
                                 <Link size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
+                                    id="meeting-link"
+                                    name="meeting_url"
                                     type="url"
                                     className="form-input"
                                     placeholder="https://meet.google.com/abc-defg-hij"
@@ -253,28 +255,28 @@ export default function ScheduleLiveClass() {
 
                     {/* Description */}
                     <div>
-                        <label className="form-label">Description <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                        <textarea className="form-input" rows={3} placeholder="Topics covered in this content..." value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={{ resize: 'vertical', minHeight: 80 }} />
+                        <label htmlFor="description" className="form-label">Description <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                        <textarea id="description" name="description" className="form-input" rows={3} placeholder="Topics covered in this content..." value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={{ resize: 'vertical', minHeight: 80 }} />
                     </div>
 
                     {/* Schedule fields */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                         <div>
-                            <label className="form-label">Day Number</label>
-                            <input type="number" className="form-input" min="1" value={form.day_number} onChange={e => setForm(p => ({ ...p, day_number: e.target.value }))} required />
+                            <label htmlFor="day-number" className="form-label">Day Number</label>
+                            <input id="day-number" name="day_number" type="number" className="form-input" min="1" value={form.day_number} onChange={e => setForm(p => ({ ...p, day_number: e.target.value }))} required />
                         </div>
                         <div>
-                            <label className="form-label">Start Time</label>
+                            <label htmlFor="start-time" className="form-label">Start Time</label>
                             <div style={{ position: 'relative' }}>
                                 <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input type="datetime-local" className="form-input" value={form.scheduled_time} onChange={e => setForm(p => ({ ...p, scheduled_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
+                                <input id="start-time" name="scheduled_time" type="datetime-local" className="form-input" value={form.scheduled_time} onChange={e => setForm(p => ({ ...p, scheduled_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
                             </div>
                         </div>
                         <div>
-                            <label className="form-label">End Time</label>
+                            <label htmlFor="end-time" className="form-label">End Time</label>
                             <div style={{ position: 'relative' }}>
                                 <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input type="datetime-local" className="form-input" value={form.end_time} onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required
+                                <input id="end-time" name="end_time" type="datetime-local" className="form-input" value={form.end_time} onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required
                                     min={form.scheduled_time || undefined}
                                 />
                             </div>

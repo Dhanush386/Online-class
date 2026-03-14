@@ -584,6 +584,8 @@ export default function StudentManagement() {
                         <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Create New Batch/Group</h3>
                         <form onSubmit={handleCreateGroup} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '1rem' }}>
                             <input
+                                id="new-group-name"
+                                name="name"
                                 className="form-input"
                                 placeholder="Group Name (e.g. Batch A)"
                                 value={newGroupName}
@@ -591,6 +593,8 @@ export default function StudentManagement() {
                                 required
                             />
                             <select
+                                id="group-course-select"
+                                name="course_id"
                                 className="form-input"
                                 value={groupCourseId}
                                 onChange={e => setGroupCourseId(e.target.value)}
@@ -811,10 +815,12 @@ export default function StudentManagement() {
                         </div>
                         <form onSubmit={handleAssignCourse}>
                             <div className="form-group" style={{ marginBottom: '2rem' }}>
-                                <label className="form-label" style={{ marginBottom: '0.75rem' }}>Select Course</label>
+                                <label htmlFor="course-assign-select" className="form-label" style={{ marginBottom: '0.75rem' }}>Select Course</label>
                                 <div style={{ position: 'relative' }}>
                                     <BookOpen size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                     <select
+                                        id="course-assign-select"
+                                        name="course_id"
                                         className="form-input"
                                         value={selectedCourse}
                                         onChange={(e) => setSelectedCourse(e.target.value)}

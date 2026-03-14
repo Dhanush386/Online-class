@@ -56,33 +56,42 @@ export default function Login() {
         }}>
             {/* The Cinematic Scene */}
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-                {/* Light Glow Effect */}
+                {/* Full Screen Lamp Background */}
+                <div className="lamp-bg" style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 0,
+                    filter: isLampOn ? 'saturate(1.2) contrast(1.1)' : 'brightness(0.15) grayscale(0.5)',
+                    transition: 'filter 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    overflow: 'hidden'
+                }}>
+                    <img 
+                        src="/lamp.png" 
+                        alt="Cinematic Lamp" 
+                        style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover', 
+                            display: 'block',
+                            opacity: isLampOn ? 0.7 : 0.4,
+                            transition: 'opacity 1.2s ease'
+                        }} 
+                    />
+                </div>
+
+                {/* Light Glow Effect - Adjusted for full screen */}
                 <div style={{
                     position: 'absolute',
-                    top: '35%',
+                    top: '50%',
                     left: '50%',
                     transform: 'translate(-50%, -50%)',
-                    width: '120vw',
-                    height: '120vw',
-                    background: 'radial-gradient(circle at 50% 50%, rgba(253, 224, 71, 0.12) 0%, rgba(253, 224, 71, 0.05) 30%, transparent 60%)',
+                    width: '150vw',
+                    height: '150vw',
+                    background: 'radial-gradient(circle at 50% 50%, rgba(253, 224, 71, 0.15) 0%, rgba(253, 224, 71, 0.08) 25%, transparent 60%)',
                     opacity: isLampOn ? 1 : 0,
-                    transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transition: 'opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
                     zIndex: 1
                 }} />
-
-                {/* Lamp Image Container */}
-                <div className="lamp-container" style={{
-                    position: 'absolute',
-                    top: '20%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '280px',
-                    zIndex: 10,
-                    filter: isLampOn ? 'drop-shadow(0 0 30px rgba(253, 224, 71, 0.3))' : 'brightness(0.2)',
-                    transition: 'filter 0.8s ease'
-                }}>
-                    <img src="/lamp.png" alt="Lamp" style={{ width: '100%', display: 'block' }} />
-                </div>
             </div>
 
             {/* The Switch Component */}

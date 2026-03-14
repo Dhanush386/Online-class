@@ -254,8 +254,10 @@ export default function AssessmentQuestions() {
                             )}
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label className="form-label">Question Text</label>
+                                <label htmlFor="question-text" className="form-label">Question Text</label>
                                 <textarea
+                                    id="question-text"
+                                    name="question_text"
                                     className="form-input"
                                     rows={3}
                                     placeholder="Enter the question..."
@@ -273,6 +275,7 @@ export default function AssessmentQuestions() {
                                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                             <div style={{ flexShrink: 0 }}>
                                                 <input
+                                                    id={`opt-${i}-radio`}
                                                     type="radio"
                                                     name="correct_answer"
                                                     checked={formData.correct_answer === opt && opt !== ''}
@@ -282,6 +285,8 @@ export default function AssessmentQuestions() {
                                                 />
                                             </div>
                                             <input
+                                                id={`opt-${i}-text`}
+                                                name={`option_${i}`}
                                                 type="text"
                                                 className="form-input"
                                                 placeholder={`Option ${String.fromCharCode(65 + i)}`}

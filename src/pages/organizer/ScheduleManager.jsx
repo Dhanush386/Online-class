@@ -157,32 +157,32 @@ export default function ScheduleManager() {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div>
-                                <label className="form-label">Title</label>
-                                <input type="text" className="form-input" value={editVideo.title} onChange={e => setEditVideo(p => ({ ...p, title: e.target.value }))} />
+                                <label htmlFor="edit-title" className="form-label">Title</label>
+                                <input id="edit-title" name="title" type="text" className="form-input" value={editVideo.title} onChange={e => setEditVideo(p => ({ ...p, title: e.target.value }))} />
                             </div>
                             <div>
-                                <label className="form-label">Course</label>
-                                <select className="form-input" value={editVideo.course_id} onChange={e => setEditVideo(p => ({ ...p, course_id: e.target.value }))}>
+                                <label htmlFor="edit-course" className="form-label">Course</label>
+                                <select id="edit-course" name="course_id" className="form-input" value={editVideo.course_id} onChange={e => setEditVideo(p => ({ ...p, course_id: e.target.value }))}>
                                     {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="form-label">Description</label>
-                                <textarea className="form-input" rows={3} value={editVideo.description || ''} onChange={e => setEditVideo(p => ({ ...p, description: e.target.value }))} style={{ resize: 'vertical' }} />
+                                <label htmlFor="edit-desc" className="form-label">Description</label>
+                                <textarea id="edit-desc" name="description" className="form-input" rows={3} value={editVideo.description || ''} onChange={e => setEditVideo(p => ({ ...p, description: e.target.value }))} style={{ resize: 'vertical' }} />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div>
-                                    <label className="form-label">Scheduled Time</label>
-                                    <input type="datetime-local" className="form-input" value={toLocalInput(editVideo.scheduled_time)} onChange={e => setEditVideo(p => ({ ...p, scheduled_time: e.target.value }))} />
+                                    <label htmlFor="edit-time" className="form-label">Scheduled Time</label>
+                                    <input id="edit-time" name="scheduled_time" type="datetime-local" className="form-input" value={toLocalInput(editVideo.scheduled_time)} onChange={e => setEditVideo(p => ({ ...p, scheduled_time: e.target.value }))} />
                                 </div>
                                 <div>
-                                    <label className="form-label">Duration (min)</label>
-                                    <input type="number" className="form-input" value={editVideo.duration_minutes || ''} onChange={e => setEditVideo(p => ({ ...p, duration_minutes: e.target.value }))} />
+                                    <label htmlFor="edit-duration" className="form-label">Duration (min)</label>
+                                    <input id="edit-duration" name="duration_minutes" type="number" className="form-input" value={editVideo.duration_minutes || ''} onChange={e => setEditVideo(p => ({ ...p, duration_minutes: e.target.value }))} />
                                 </div>
                             </div>
                             <div>
-                                <label className="form-label">Day Number</label>
-                                <input type="number" className="form-input" min="1" value={editVideo.day_number || 1} onChange={e => setEditVideo(p => ({ ...p, day_number: e.target.value }))} required />
+                                <label htmlFor="edit-day" className="form-label">Day Number</label>
+                                <input id="edit-day" name="day_number" type="number" className="form-input" min="1" value={editVideo.day_number || 1} onChange={e => setEditVideo(p => ({ ...p, day_number: e.target.value }))} required />
                             </div>
                             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                                 <button onClick={() => setEditVideo(null)} className="btn-secondary">Cancel</button>
