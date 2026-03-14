@@ -18,19 +18,24 @@ export default function Register() {
             if (form.email.includes('@')) {
                 const { data, error } = await supabase
                     .from('organizer_invites')
-                    .select('email')
+                    .select('role')
                     .eq('email', form.email.toLowerCase())
                     .single()
 
                 if (data && !error) {
                     setIsInvited(true)
+                    setForm(p => ({ ...p, role: data.role || 'organizer' }))
                 } else {
                     setIsInvited(false)
-                    if (form.role === 'organizer') setForm(p => ({ ...p, role: 'student' }))
+                    if (['organizer', 'sub_admin', 'main_admin'].includes(form.role)) {
+                        setForm(p => ({ ...p, role: 'student' }))
+                    }
                 }
             } else {
                 setIsInvited(false)
-                if (form.role === 'organizer') setForm(p => ({ ...p, role: 'student' }))
+                if (['organizer', 'sub_admin', 'main_admin'].includes(form.role)) {
+                    setForm(p => ({ ...p, role: 'student' }))
+                }
             }
         }
         const timer = setTimeout(checkInvite, 500)
@@ -80,28 +85,31 @@ export default function Register() {
                             {[
                                 { value: 'student', label: 'Student', icon: BookOpen, color: '#10b981', show: true },
                                 { value: 'organizer', label: 'Organizer', icon: Users, color: '#6366f1', show: isInvited },
-                            ].filter(r => r.show).map(({ value, label, icon: Icon, color }) => (
-                                <button
-                                    key={value}
-                                    type="button"
-                                    onClick={() => setForm(p => ({ ...p, role: value }))}
-                                    style={{
-                                        padding: '1rem',
-                                        borderRadius: 12,
-                                        border: `2px solid ${form.role === value ? color : 'var(--card-border)'}`,
-                                        background: form.role === value ? `rgba(${value === 'student' ? '16,185,129' : '99,102,241'},0.1)` : 'rgba(255,255,255,0.03)',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        gap: '0.5rem',
-                                        transition: 'all 0.2s ease',
-                                    }}
-                                >
-                                    <Icon size={24} color={form.role === value ? color : 'var(--text-muted)'} />
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: form.role === value ? color : 'var(--text-secondary)' }}>{label}</span>
-                                </button>
-                            ))}
+                            ].filter(r => r.show).map(({ value, label, icon: Icon, color }) => {
+                                    const isSelected = value === 'student' ? form.role === 'student' : ['organizer', 'sub_admin', 'main_admin'].includes(form.role)
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setForm(p => ({ ...p, role: value }))}
+                                            style={{
+                                                padding: '1rem',
+                                                borderRadius: 12,
+                                                border: `2px solid ${isSelected ? color : 'var(--card-border)'}`,
+                                                background: isSelected ? `rgba(${value === 'student' ? '16,185,129' : '99,102,241'},0.1)` : 'rgba(255,255,255,0.03)',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                transition: 'all 0.2s ease',
+                                            }}
+                                        >
+                                            <Icon size={24} color={isSelected ? color : 'var(--text-muted)'} />
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: isSelected ? color : 'var(--text-secondary)' }}>{label}</span>
+                                        </button>
+                                    )
+                                })}
                         </div>
                         {isInvited && form.role !== 'organizer' && (
                             <p style={{ fontSize: '0.7rem', color: '#6366f1', marginTop: '0.5rem', textAlign: 'center' }}>

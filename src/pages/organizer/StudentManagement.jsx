@@ -68,6 +68,7 @@ export default function StudentManagement() {
     const [invites, setInvites] = useState([])
     const [organizers, setOrganizers] = useState([])
     const [inviteEmail, setInviteEmail] = useState('')
+    const [inviteRole, setInviteRole] = useState('organizer')
     const [groups, setGroups] = useState([])
     const [groupMembers, setGroupMembers] = useState([])
     const [newGroupName, setNewGroupName] = useState('')
@@ -268,7 +269,11 @@ export default function StudentManagement() {
         try {
             const { error: inviteError } = await supabase
                 .from('organizer_invites')
-                .insert({ email: inviteEmail.toLowerCase(), invited_by: profile.id })
+                .insert({ 
+                    email: inviteEmail.toLowerCase(), 
+                    invited_by: profile.id,
+                    role: inviteRole
+                })
 
             if (inviteError) {
                 if (inviteError.code === '23505') throw new Error('This email is already invited')
@@ -294,6 +299,23 @@ export default function StudentManagement() {
             loadData()
         } catch (err) {
             console.error('Error removing invite:', err)
+        }
+    }
+
+    async function handleUpdateRole(userId, newRole) {
+        setSaving(true)
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ role: newRole })
+                .eq('id', userId)
+            if (error) throw error
+            loadData(true)
+        } catch (err) {
+            console.error('Error updating role:', err)
+            setError(err.message || 'Failed to update role')
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -505,8 +527,8 @@ export default function StudentManagement() {
                 <div className="animate-fade-in">
                     <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Invite New Organizer</h3>
-                        <form onSubmit={handleInviteOrganizer} style={{ display: 'flex', gap: '0.75rem' }}>
-                            <div style={{ flex: 1, position: 'relative' }}>
+                        <form onSubmit={handleInviteOrganizer} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.75rem' }}>
+                            <div style={{ position: 'relative' }}>
                                 <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
                                     id="invite-email"
@@ -520,6 +542,18 @@ export default function StudentManagement() {
                                     required
                                 />
                             </div>
+                            <select 
+                                id="invite-role"
+                                name="invite-role"
+                                className="form-input"
+                                value={inviteRole}
+                                onChange={e => setInviteRole(e.target.value)}
+                                style={{ width: 'auto' }}
+                            >
+                                <option value="organizer">Organizer</option>
+                                <option value="sub_admin">Sub Admin</option>
+                                <option value="main_admin">Main Admin</option>
+                            </select>
                             <button type="submit" className="btn-primary" disabled={saving} style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
                                 {saving ? 'Inviting...' : 'Invite'}
                             </button>
@@ -542,6 +576,21 @@ export default function StudentManagement() {
                                             <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{org.name} {org.id === profile.id && '(You)'}</div>
                                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{org.email}</div>
                                         </div>
+                                        {profile?.role === 'main_admin' ? (
+                                            <select 
+                                                value={org.role} 
+                                                onChange={(e) => handleUpdateRole(org.id, e.target.value)}
+                                                className="form-input"
+                                                style={{ width: 'auto', fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                                                disabled={org.id === profile.id}
+                                            >
+                                                <option value="organizer">Organizer</option>
+                                                <option value="sub_admin">Sub Admin</option>
+                                                <option value="main_admin">Main Admin</option>
+                                            </select>
+                                        ) : (
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{org.role?.replace('_', ' ')}</span>
+                                        )}
                                     </div>
                                 ))}
                             </div>
