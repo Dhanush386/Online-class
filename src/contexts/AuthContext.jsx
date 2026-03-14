@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
@@ -10,7 +10,6 @@ export function AuthProvider({ children }) {
     const [browserSessionId] = useState(() => {
         let id = localStorage.getItem('online_class_session_uuid')
         if (!id) {
-            // Fallback for crypto.randomUUID if not available
             id = (typeof crypto !== 'undefined' && crypto.randomUUID)
                 ? crypto.randomUUID()
                 : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
@@ -18,6 +17,11 @@ export function AuthProvider({ children }) {
         }
         return id
     })
+
+    // Use a ref to store the stable session ID to avoid dependency cycle in useEffect
+    // but keep the state for the initial value consistency.
+    const sessionIdRef = useRef(browserSessionId)
+    useEffect(() => { sessionIdRef.current = browserSessionId }, [browserSessionId])
 
     useEffect(() => {
         // Get initial session
@@ -69,7 +73,7 @@ export function AuthProvider({ children }) {
                 filter: `id=eq.${user.id}`
             }, (payload) => {
                 // Check session ID
-                if (payload.new.current_session_id && payload.new.current_session_id !== browserSessionId) {
+                if (payload.new.current_session_id && payload.new.current_session_id !== sessionIdRef.current) {
                     alert('Session Invalidation: You have been logged out because another system logged in using your account.')
                     signOut()
                     return
@@ -83,7 +87,7 @@ export function AuthProvider({ children }) {
             clearInterval(expiryCheck)
             supabase.removeChannel(channel)
         }
-    }, [user, profile, browserSessionId])
+    }, [user, profile]) // Removed browserSessionId to fix React warning, using ref instead
 
     async function fetchProfile(userId) {
         try {
@@ -128,10 +132,10 @@ export function AuthProvider({ children }) {
                 if (checkExpiry(data)) return
 
                 // Update DB with current session ID if different
-                if (data.current_session_id !== browserSessionId) {
+                if (data.current_session_id !== sessionIdRef.current) {
                     await supabase
                         .from('users')
-                        .update({ current_session_id: browserSessionId })
+                        .update({ current_session_id: sessionIdRef.current })
                         .eq('id', userId)
                 }
             }
@@ -175,6 +179,10 @@ export function AuthProvider({ children }) {
             }
 
             console.log('Inserting profile data:', profileData)
+            
+            // Wait briefly to ensure auth session is fully recognized (fixes potential RLS race condition)
+            await new Promise(resolve => setTimeout(resolve, 500))
+
             const { error: profileError } = await supabase
                 .from('users')
                 .upsert(profileData, { onConflict: 'id' })
