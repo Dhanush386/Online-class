@@ -78,6 +78,10 @@ export function AuthProvider({ children }) {
                     signOut()
                     return
                 }
+                
+                // Reactive Profile Update
+                setProfile(payload.new)
+                
                 // Check expiry
                 checkExpiry(payload.new)
             })

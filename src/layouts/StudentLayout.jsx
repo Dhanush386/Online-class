@@ -99,9 +99,27 @@ export default function StudentLayout() {
                             </div>
                             <div style={{ overflow: 'hidden' }}>
                                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.name || 'Student'}</div>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Learner</div>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{profile?.role === 'student' ? 'Learner' : profile?.role?.replace('_', ' ').toUpperCase()}</div>
                             </div>
                         </div>
+                    )}
+
+                    {['organizer', 'sub_admin', 'main_admin'].includes(profile?.role) && (
+                        <button 
+                            onClick={() => navigate('/organizer')} 
+                            className="nav-item" 
+                            style={{ 
+                                width: '100%', 
+                                border: '1px solid rgba(99,102,241,0.2)', 
+                                background: 'rgba(99,102,241,0.05)', 
+                                color: '#6366f1',
+                                marginBottom: '0.5rem',
+                                justifyContent: collapsed && !isMobile ? 'center' : 'flex-start'
+                            }}
+                        >
+                            <Globe size={18} />
+                            {(!collapsed || isMobile) && <span style={{ fontWeight: 700 }}>Admin Panel</span>}
+                        </button>
                     )}
                     <button onClick={handleSignOut} className="nav-item" style={{ width: '100%', border: 'none', background: 'none', justifyContent: collapsed && !isMobile ? 'center' : 'flex-start', color: '#dc2626' }}>
                         <LogOut size={18} />

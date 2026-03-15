@@ -33,7 +33,8 @@ export default function Login() {
                 .eq('id', authUser.id)
                 .single()
 
-            if (data?.role === 'organizer') navigate('/organizer')
+            const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(data?.role)
+            if (isAdmin) navigate('/organizer')
             else navigate('/student')
         } catch (err) {
             setError(err.message || 'Invalid email or password')
