@@ -99,7 +99,7 @@ export function AuthProvider({ children }) {
                 .from('users')
                 .select('id, name, email, role, status, current_session_id, access_expires_at')
                 .eq('id', userId)
-                .single()
+                .maybeSingle()
 
             if (error) {
                 console.error('Profile fetch error:', error.code, error.message, error.status)

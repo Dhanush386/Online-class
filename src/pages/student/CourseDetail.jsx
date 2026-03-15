@@ -49,7 +49,7 @@ export default function CourseDetail() {
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
                 supabase.from('videos').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
-                supabase.from('progress').select('*').eq('student_id', profile.id).eq('course_id', courseId).single(),
+                supabase.from('progress').select('*').eq('student_id', profile.id).eq('course_id', courseId).maybeSingle(),
                 supabase.from('coding_challenges').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
                 supabase.from('assessments').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
                 supabase.from('assessment_submissions').select('*').eq('student_id', profile.id),
