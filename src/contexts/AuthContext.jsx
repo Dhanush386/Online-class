@@ -174,27 +174,6 @@ export function AuthProvider({ children }) {
         if (error) throw error
 
         if (data.user) {
-            const profileData = {
-                id: data.user.id,
-                name,
-                email: email.toLowerCase(),
-                role,
-                status: role === 'student' ? 'pending' : 'approved'
-            }
-
-            console.log('Inserting profile data:', profileData)
-            
-            // Wait briefly to ensure auth session is fully recognized (fixes potential RLS race condition)
-            await new Promise(resolve => setTimeout(resolve, 500))
-
-            const { error: profileError } = await supabase
-                .from('users')
-                .upsert(profileData, { onConflict: 'id' })
-
-            if (profileError) {
-                console.error('Initial profile creation failed:', profileError)
-            }
-
             // If admin account created, remove the invite
             if (role === 'organizer' || role === 'main_admin' || role === 'sub_admin') {
                 await supabase.from('organizer_invites').delete().eq('email', email.toLowerCase())
