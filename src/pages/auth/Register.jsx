@@ -11,7 +11,14 @@ export default function Register() {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
-    const [isInvited, setIsInvited] = useState(false)
+    const [isLampOn, setIsLampOn] = useState(false)
+ 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLampOn(true)
+        }, 3000)
+        return () => clearTimeout(timer)
+    }, [])
 
     useEffect(() => {
         const checkInvite = async () => {
@@ -58,20 +65,123 @@ export default function Register() {
     }
 
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: 500, height: 500, background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: '-20%', left: '-10%', width: 500, height: 500, background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+        <div style={{
+            minHeight: '100vh',
+            background: isLampOn ? '#0f172a' : '#020617',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            position: 'relative',
+            overflow: 'hidden',
+            transition: 'background 0.8s ease'
+        }}>
+            {/* The Cinematic Scene */}
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                <div className="lamp-bg" style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 0,
+                    filter: isLampOn ? 'saturate(1.2) contrast(1.1)' : 'brightness(0.15) grayscale(0.5)',
+                    transition: 'filter 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    overflow: 'hidden'
+                }}>
+                    <img 
+                        src="/lamp.png" 
+                        alt="Cinematic Lamp" 
+                        style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover', 
+                            display: 'block',
+                            opacity: isLampOn ? 0.7 : 0.4,
+                            transition: 'opacity 1.2s ease'
+                        }} 
+                    />
+                </div>
 
-            <div className="animate-fade-in" style={{ width: '100%', maxWidth: 440 }}>
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '150vw',
+                    height: '150vw',
+                    background: 'radial-gradient(circle at 50% 50%, rgba(253, 224, 71, 0.15) 0%, rgba(253, 224, 71, 0.08) 25%, transparent 60%)',
+                    opacity: isLampOn ? 1 : 0,
+                    transition: 'opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                    zIndex: 1
+                }} />
+            </div>
+
+            {/* The Switch Component */}
+            <div style={{
+                position: 'fixed',
+                top: 40,
+                right: 40,
+                zIndex: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 12
+            }}>
+                <button
+                    onClick={() => setIsLampOn(!isLampOn)}
+                    style={{
+                        width: 64,
+                        height: 32,
+                        borderRadius: '20px',
+                        background: isLampOn ? '#6366f1' : '#1e293b',
+                        border: '2px solid rgba(255,255,255,0.1)',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                        padding: 2,
+                        boxShadow: isLampOn ? '0 0 20px rgba(99, 102, 241, 0.4)' : 'none'
+                    }}
+                >
+                    <div style={{
+                        width: 24,
+                        height: 24,
+                        background: 'white',
+                        borderRadius: '50%',
+                        position: 'absolute',
+                        left: isLampOn ? 'calc(100% - 28px)' : 4,
+                        top: 2,
+                        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }} />
+                </button>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    {isLampOn ? 'Light On' : 'Light Off'}
+                </span>
+            </div>
+
+            <div style={{ 
+                position: 'relative', 
+                zIndex: 50, 
+                width: '100%', 
+                maxWidth: 440,
+                opacity: isLampOn ? 1 : 0,
+                transform: isLampOn ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+                transition: 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                pointerEvents: isLampOn ? 'all' : 'none'
+            }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 10px 30px rgba(99,102,241,0.2)' }}>
                         <GraduationCap size={32} color="white" />
                     </div>
-                    <h1 className="gradient-text" style={{ fontSize: '1.75rem', fontWeight: 800 }}>Create Account</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Join EduStream today</p>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'white' }} className="gradient-text">Create Account</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Join the EduStream community</p>
                 </div>
 
-                <div className="glass-card" style={{ padding: '2rem' }}>
+                <div className="glass-card" style={{ 
+                    padding: '2rem',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    backdropFilter: 'blur(24px)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                }}>
                     {error && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, marginBottom: '1.25rem', color: '#f87171', fontSize: '0.85rem' }}>
                             <AlertCircle size={16} />{error}
@@ -80,7 +190,7 @@ export default function Register() {
 
                     {/* Role Selector */}
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label className="form-label">I am a...</label>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, display: 'block' }}>I am a...</label>
                         <div style={{ display: 'grid', gridTemplateColumns: isInvited ? '1fr 1fr' : '1fr', gap: '0.75rem' }}>
                             {[
                                 { value: 'student', label: 'Student', icon: BookOpen, color: '#10b981', show: true },
@@ -95,8 +205,8 @@ export default function Register() {
                                             style={{
                                                 padding: '1rem',
                                                 borderRadius: 12,
-                                                border: `2px solid ${isSelected ? color : 'var(--card-border)'}`,
-                                                background: isSelected ? `rgba(${value === 'student' ? '16,185,129' : '99,102,241'},0.1)` : 'rgba(255,255,255,0.03)',
+                                                border: `2px solid ${isSelected ? color : 'rgba(255,255,255,0.1)'}`,
+                                                background: isSelected ? `rgba(${value === 'student' ? '16,185,129' : '99,102,241'},0.15)` : 'rgba(255,255,255,0.02)',
                                                 cursor: 'pointer',
                                                 display: 'flex',
                                                 flexDirection: 'column',
@@ -105,24 +215,24 @@ export default function Register() {
                                                 transition: 'all 0.2s ease',
                                             }}
                                         >
-                                            <Icon size={24} color={isSelected ? color : 'var(--text-muted)'} />
-                                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: isSelected ? color : 'var(--text-secondary)' }}>{label}</span>
+                                            <Icon size={24} color={isSelected ? color : 'rgba(255,255,255,0.3)'} />
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: isSelected ? color : 'rgba(255,255,255,0.5)' }}>{label}</span>
                                         </button>
                                     )
                                 })}
                         </div>
                         {isInvited && form.role !== 'organizer' && (
-                            <p style={{ fontSize: '0.7rem', color: '#6366f1', marginTop: '0.5rem', textAlign: 'center' }}>
+                            <p style={{ fontSize: '0.7rem', color: '#818cf8', marginTop: '0.75rem', textAlign: 'center', fontWeight: 600 }}>
                                 ✨ You are invited to join as an Organizer!
                             </p>
                         )}
                     </div>
 
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         <div>
-                            <label htmlFor="name" className="form-label">Full Name</label>
+                            <label htmlFor="name" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, display: 'block' }}>Full Name</label>
                             <div style={{ position: 'relative' }}>
-                                <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <User size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
                                 <input
                                     id="name"
                                     name="name"
@@ -132,15 +242,21 @@ export default function Register() {
                                     placeholder="John Doe"
                                     value={form.name}
                                     onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                                    style={{ paddingLeft: '2.5rem' }}
+                                    style={{ 
+                                        paddingLeft: '3rem',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        color: 'white',
+                                        height: 48
+                                    }}
                                     required
                                 />
                             </div>
                         </div>
                         <div>
-                            <label htmlFor="email" className="form-label">Email Address</label>
+                            <label htmlFor="email" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, display: 'block' }}>Email Address</label>
                             <div style={{ position: 'relative' }}>
-                                <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <Mail size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
                                 <input
                                     id="email"
                                     name="email"
@@ -150,15 +266,21 @@ export default function Register() {
                                     placeholder="you@example.com"
                                     value={form.email}
                                     onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                                    style={{ paddingLeft: '2.5rem' }}
+                                    style={{ 
+                                        paddingLeft: '3rem',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        color: 'white',
+                                        height: 48
+                                    }}
                                     required
                                 />
                             </div>
                         </div>
                         <div>
-                            <label htmlFor="password" className="form-label">Password</label>
+                            <label htmlFor="password" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, display: 'block' }}>Password</label>
                             <div style={{ position: 'relative' }}>
-                                <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <Lock size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
                                 <input
                                     id="password"
                                     name="password"
@@ -168,27 +290,37 @@ export default function Register() {
                                     placeholder="Min. 6 characters"
                                     value={form.password}
                                     onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                                    style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
+                                    style={{ 
+                                        paddingLeft: '3rem', 
+                                        paddingRight: '3rem',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        color: 'white',
+                                        height: 48
+                                    }}
                                     required
                                 />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
                         </div>
 
-                        <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', justifyContent: 'center', height: 44, fontSize: '0.95rem', background: form.role === 'student' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-                            {loading ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }} /> Creating...</> : 'Create Account'}
+                        <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', justifyContent: 'center', height: 48, fontSize: '1rem', fontWeight: 700, background: 'white', color: '#0f172a' }}>
+                            {loading ? 'Creating Account...' : 'Get Started'}
                         </button>
                     </form>
 
-                    <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)' }}>
                         Already have an account?{' '}
-                        <Link to="/login" style={{ color: 'var(--accent-light)', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
+                        <Link to="/login" style={{ color: 'white', fontWeight: 700, textDecoration: 'none' }}>Sign in</Link>
                     </p>
                 </div>
             </div>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <style>{`
+                @keyframes spin { to { transform: rotate(360deg); } }
+                .form-input::placeholder { color: rgba(255,255,255,0.2); }
+            `}</style>
         </div>
     )
 }
