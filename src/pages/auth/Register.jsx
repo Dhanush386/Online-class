@@ -128,6 +128,7 @@ export default function Register() {
             }}>
                 <button
                     onClick={() => setIsLampOn(!isLampOn)}
+                    aria-label="Toggle cinematic lamp"
                     style={{
                         width: 64,
                         height: 32,
@@ -191,7 +192,7 @@ export default function Register() {
 
                     {/* Role Selector */}
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, display: 'block' }}>I am a...</label>
+                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, display: 'block' }}>I am a...</p>
                         <div style={{ display: 'grid', gridTemplateColumns: isInvited ? '1fr 1fr' : '1fr', gap: '0.75rem' }}>
                             {[
                                 { value: 'student', label: 'Student', icon: BookOpen, color: '#10b981', show: true },

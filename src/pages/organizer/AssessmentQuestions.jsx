@@ -269,7 +269,7 @@ export default function AssessmentQuestions() {
                             </div>
 
                             <div style={{ marginBottom: '1rem' }}>
-                                <label className="form-label">Options (Choose one as correct)</label>
+                                <label htmlFor="opt-0-radio" className="form-label">Options (Choose one as correct)</label>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     {formData.options.map((opt, i) => (
                                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

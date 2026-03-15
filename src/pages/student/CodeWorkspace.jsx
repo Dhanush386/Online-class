@@ -881,8 +881,9 @@ export default function CodeWorkspace() {
                             ) : (
                                 <form onSubmit={publishProject}>
                                     <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                                        <label className="form-label">Project Title</label>
+                                        <label htmlFor="publish-title" className="form-label">Project Title</label>
                                         <input
+                                            id="publish-title"
                                             type="text"
                                             required
                                             className="form-input"
@@ -892,8 +893,9 @@ export default function CodeWorkspace() {
                                         />
                                     </div>
                                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                        <label className="form-label">Description (Optional)</label>
+                                        <label htmlFor="publish-desc" className="form-label">Description (Optional)</label>
                                         <textarea
+                                            id="publish-desc"
                                             className="form-input"
                                             value={publishDesc}
                                             onChange={e => setPublishDesc(e.target.value)}

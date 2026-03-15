@@ -366,8 +366,9 @@ export default function CodePlayground() {
                             <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>Save Code Snippet</h2>
                             <form onSubmit={handleSave}>
                                 <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                    <label className="form-label">Snippet Title</label>
+                                    <label htmlFor="snippet-title" className="form-label">Snippet Title</label>
                                     <input
+                                        id="snippet-title"
                                         type="text"
                                         required
                                         className="form-input"
@@ -455,8 +456,9 @@ export default function CodePlayground() {
                             ) : (
                                 <form onSubmit={publishProject}>
                                     <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                                        <label className="form-label">Project Title</label>
+                                        <label htmlFor="publish-title" className="form-label">Project Title</label>
                                         <input
+                                            id="publish-title"
                                             type="text"
                                             required
                                             className="form-input"
@@ -466,8 +468,9 @@ export default function CodePlayground() {
                                         />
                                     </div>
                                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                        <label className="form-label">Description (Optional)</label>
+                                        <label htmlFor="publish-desc" className="form-label">Description (Optional)</label>
                                         <textarea
+                                            id="publish-desc"
                                             className="form-input"
                                             value={publishDesc}
                                             onChange={e => setPublishDesc(e.target.value)}

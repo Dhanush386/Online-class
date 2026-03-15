@@ -442,7 +442,7 @@ export default function CodingManagement() {
                                         </select>
                                     </div>
                                     <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
-                                        <label className="form-label">XP Reward</label>
+                                        <label htmlFor="xp_reward" className="form-label">XP Reward</label>
                                         <input
                                             id="xp_reward"
                                             name="xp_reward"
@@ -453,7 +453,7 @@ export default function CodingManagement() {
                                         />
                                     </div>
                                     <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
-                                        <label className="form-label">Day Number</label>
+                                        <label htmlFor="day_number" className="form-label">Day Number</label>
                                         <input
                                             id="day_number"
                                             name="day_number"

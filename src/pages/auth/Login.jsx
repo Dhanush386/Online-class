@@ -107,6 +107,7 @@ export default function Login() {
             }}>
                 <button
                     onClick={() => setIsLampOn(!isLampOn)}
+                    aria-label="Toggle cinematic lamp"
                     style={{
                         width: 64,
                         height: 32,
