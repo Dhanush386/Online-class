@@ -57,7 +57,8 @@ export default function Register() {
         setError('')
         try {
             await signUp(form)
-            navigate(form.role === 'organizer' ? '/organizer' : '/student')
+            const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(form.role)
+            navigate(isAdmin ? '/organizer' : '/student')
         } catch (err) {
             setError(err.message || 'Registration failed')
         } finally {
@@ -196,7 +197,15 @@ export default function Register() {
                         <div style={{ display: 'grid', gridTemplateColumns: isInvited ? '1fr 1fr' : '1fr', gap: '0.75rem' }}>
                             {[
                                 { value: 'student', label: 'Student', icon: BookOpen, color: '#10b981', show: true },
-                                { value: 'organizer', label: 'Organizer', icon: Users, color: '#6366f1', show: isInvited },
+                                { 
+                                    value: isInvited && form.role !== 'student' ? form.role : 'organizer', 
+                                    label: isInvited && form.role !== 'student' 
+                                        ? form.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) 
+                                        : 'Organizer', 
+                                    icon: Users, 
+                                    color: '#6366f1', 
+                                    show: isInvited 
+                                },
                             ].filter(r => r.show).map(({ value, label, icon: Icon, color }) => {
                                     const isSelected = value === 'student' ? form.role === 'student' : ['organizer', 'sub_admin', 'main_admin'].includes(form.role)
                                     return (
@@ -223,9 +232,9 @@ export default function Register() {
                                     )
                                 })}
                         </div>
-                        {isInvited && form.role !== 'organizer' && (
+                        {isInvited && !['student'].includes(form.role) && (
                             <p style={{ fontSize: '0.7rem', color: '#818cf8', marginTop: '0.75rem', textAlign: 'center', fontWeight: 600 }}>
-                                ✨ You are invited to join as an Organizer!
+                                ✨ You are invited to join as a {form.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}!
                             </p>
                         )}
                     </div>
