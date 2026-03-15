@@ -22,12 +22,15 @@ export default function Register() {
     }, [])
 
     useEffect(() => {
+        const cleanEmail = form.email.trim().toLowerCase()
+        const cleanName = form.name.trim()
+
         const checkInvite = async () => {
-            if (form.email.includes('@')) {
+            if (cleanEmail.includes('@')) {
                 const { data, error } = await supabase
                     .from('organizer_invites')
                     .select('role')
-                    .eq('email', form.email.toLowerCase())
+                    .eq('email', cleanEmail)
                     .maybeSingle()
 
                 if (data && !error) {
@@ -52,11 +55,14 @@ export default function Register() {
 
     async function handleSubmit(e) {
         e.preventDefault()
+        const cleanEmail = form.email.trim().toLowerCase()
+        const cleanName = form.name.trim()
+        
         if (form.password.length < 6) { setError('Password must be at least 6 characters'); return }
         setLoading(true)
         setError('')
         try {
-            await signUp(form)
+            await signUp({ ...form, email: cleanEmail, name: cleanName })
             const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(form.role)
             navigate(isAdmin ? '/organizer' : '/student')
         } catch (err) {
