@@ -12,6 +12,7 @@ export default function Register() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [isLampOn, setIsLampOn] = useState(false)
+    const [isInvited, setIsInvited] = useState(false)
  
     useEffect(() => {
         const timer = setTimeout(() => {
