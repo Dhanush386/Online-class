@@ -227,13 +227,10 @@ export default function StudentManagement() {
     }
 
     async function handleDeleteStudent(id) {
-        if (!confirm('Are you sure you want to completely remove this student? This will also remove their course enrollments and progress.')) return
+        if (!confirm('Are you sure you want to PERMANENTLY remove this student? This will delete their account and all their data (enrollments, progress, etc.). This cannot be undone.')) return
         setSaving(true)
         try {
-            const { error } = await supabase
-                .from('users')
-                .delete()
-                .eq('id', id)
+            const { error } = await supabase.rpc('delete_user_permanently', { target_user_id: id })
             if (error) throw error
             loadData(true)
         } catch (err) {
@@ -576,21 +573,34 @@ export default function StudentManagement() {
                                             <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{org.name} {org.id === profile.id && '(You)'}</div>
                                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{org.email}</div>
                                         </div>
-                                        {profile?.role === 'main_admin' ? (
-                                            <select 
-                                                value={org.role} 
-                                                onChange={(e) => handleUpdateRole(org.id, e.target.value)}
-                                                className="form-input"
-                                                style={{ width: 'auto', fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
-                                                disabled={org.id === profile.id}
-                                            >
-                                                <option value="organizer">Organizer</option>
-                                                <option value="sub_admin">Sub Admin</option>
-                                                <option value="main_admin">Main Admin</option>
-                                            </select>
-                                        ) : (
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{org.role?.replace('_', ' ')}</span>
-                                        )}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            {profile?.role === 'main_admin' ? (
+                                                <>
+                                                    <select 
+                                                        value={org.role} 
+                                                        onChange={(e) => handleUpdateRole(org.id, e.target.value)}
+                                                        className="form-input"
+                                                        style={{ width: 'auto', fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                                                        disabled={org.id === profile.id}
+                                                    >
+                                                        <option value="organizer">Organizer</option>
+                                                        <option value="sub_admin">Sub Admin</option>
+                                                        <option value="main_admin">Main Admin</option>
+                                                    </select>
+                                                    {org.id !== profile.id && (
+                                                        <button 
+                                                            onClick={() => handleDeleteStudent(org.id)} 
+                                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7, padding: '0.2rem' }}
+                                                            title="Permanently Delete User"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{org.role?.replace('_', ' ')}</span>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

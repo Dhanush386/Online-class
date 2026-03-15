@@ -109,14 +109,12 @@ export default function AdminManagement() {
     }
 
     async function deleteSubAdmin(id) {
-        if (!confirm('Are you sure you want to remove this sub-admin? This will not delete their account but they will lose admin privileges.')) return
+        if (!confirm('Are you sure you want to PERMANENTLY remove this sub-admin? This will delete their account and all their project assignments. This cannot be undone.')) return
         
-        const { error } = await supabase
-            .from('users')
-            .update({ role: 'student' })
-            .eq('id', id)
+        const { error } = await supabase.rpc('delete_user_permanently', { target_user_id: id })
 
         if (!error) loadData()
+        else alert(error.message)
     }
 
     if (profile?.role !== 'main_admin') return <div style={{ padding: '2rem', color: 'red' }}>Access Denied</div>
