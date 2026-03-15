@@ -10,8 +10,6 @@ export default function StudentDashboard() {
     const { profile } = useAuth()
     const [data, setData] = useState({ courses: 0, completion: 0, timeSpent: 0, badges: 3, rank: 1, topics: 0, xp: 0, solved: 0 })
     const [upcomingSessions, setUpcomingSessions] = useState([])
-    const [latestChallenges, setLatestChallenges] = useState([])
-    const [recentResources, setRecentResources] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -33,32 +31,20 @@ export default function StudentDashboard() {
             const [
                 { data: progress },
                 { data: sessions },
-                { data: challenges },
                 { data: submissions },
                 { data: memberships },
                 { data: locks },
-                { data: locksDay },
-                { data: resData }
+                { data: locksDay }
             ] = await Promise.all([
                 supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
                 supabase.from('videos').select('id, title, scheduled_time, duration_minutes, video_url, courses(title)')
                     .gte('scheduled_time', new Date().toISOString())
                     .order('scheduled_time', { ascending: true })
                     .limit(3),
-                supabase.from('coding_challenges').select('*, courses(title)').order('created_at', { ascending: false }),
                 supabase.from('coding_submissions').select('score, status').eq('student_id', profile.id),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
                 supabase.from('resource_access').select('*').eq('is_locked', true),
-                supabase.from('day_access').select('*'),
-                enrolledIds.length > 0
-                    ? supabase.from('course_resources').select('*, courses(title)').in('course_id', enrolledIds).order('created_at', { ascending: false })
-                    : Promise.resolve({ data: [] }),
-                enrolledIds.length > 0
-                    ? supabase.from('videos').select('id, title, scheduled_time, duration_minutes, video_url, course_id, day_number, courses(title)')
-                        .in('course_id', enrolledIds)
-                        .gte('scheduled_time', new Date().toISOString())
-                        .order('scheduled_time', { ascending: true })
-                    : Promise.resolve({ data: [] })
+                supabase.from('day_access').select('*')
             ])
 
             const userGroupIds = memberships?.map(m => m.group_id) || []
@@ -74,15 +60,6 @@ export default function StudentDashboard() {
             }
 
             const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding').map(l => l.resource_id) || []
-            const lockedMaterialIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'resource').map(l => l.resource_id) || []
-
-            const filteredChallenges = (challenges || [])
-                .filter(c => !lockedCodingIds.includes(c.id) && !isDayLocked(c.course_id, c.day_number))
-                .slice(0, 3)
-
-            const filteredMaterials = (resData || [])
-                .filter(r => !lockedMaterialIds.includes(r.id) && !isDayLocked(r.course_id, r.day_number))
-                .slice(0, 3)
 
             const filteredSessions = (sessions || [])
                 .filter(s => !isDayLocked(s.course_id, s.day_number))
@@ -106,8 +83,6 @@ export default function StudentDashboard() {
                 solved: solvedCount
             })
             setUpcomingSessions(filteredSessions)
-            setLatestChallenges(filteredChallenges)
-            setRecentResources(filteredMaterials)
             setLoading(false)
         }
         load()
@@ -222,31 +197,6 @@ export default function StudentDashboard() {
                     </Link>
                 </div>
 
-                {/* Latest Challenges */}
-                <div className="glass-card" style={{ padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <CodeIcon size={16} color="#6366f1" /> New Challenges
-                        </h3>
-                        <Link to="/student/coding" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all →</Link>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {latestChallenges.length === 0 ? (
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>No challenges available</p>
-                        ) : latestChallenges.map(c => (
-                            <Link key={c.id} to={`/student/coding/${c.id}`} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textDecoration: 'none' }}>
-                                <div style={{ width: 32, height: 32, background: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', border: '1px solid #e2e8f0' }}>
-                                    {c.language === 'python' ? '🐍' : c.language === 'java' ? '☕' : '💻'}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</div>
-                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{c.difficulty.toUpperCase()}</div>
-                                </div>
-                                <ChevronRight size={14} color="#94a3b8" />
-                            </Link>
-                        ))}
-                    </div>
-                </div>
 
                 {/* Achievements Card */}
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
@@ -284,41 +234,6 @@ export default function StudentDashboard() {
                     </p>
                 </div>
 
-                {/* Study Materials Card */}
-                <div className="glass-card" style={{ padding: '1.5rem', gridColumn: window.innerWidth > 1024 ? '1 / -1' : 'auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <FileText size={16} color="#10b981" /> Recent Study Materials
-                        </h3>
-                        <Link to="/student/courses" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all via Courses →</Link>
-                    </div>
-                    {recentResources.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)' }}>
-                            <FileText size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.3, display: 'block' }} />
-                            <p style={{ fontSize: '0.85rem' }}>No materials available yet</p>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                            {recentResources.map(r => (
-                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                                    <div style={{ width: 40, height: 40, background: r.resource_type === 'ppt' ? 'rgba(249,115,22,0.1)' : 'rgba(16,185,129,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <FileText size={18} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            {r.day_number && <span style={{ color: '#6366f1', marginRight: '0.4rem' }}>Day {r.day_number}:</span>}
-                                            {r.title}
-                                        </div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{r.courses?.title}</div>
-                                    </div>
-                                    <a href={r.file_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', textDecoration: 'none', gap: '0.3rem' }}>
-                                        <ExternalLink size={12} /> View
-                                    </a>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
             </div>
         </div>
     )
