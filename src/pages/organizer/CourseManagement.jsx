@@ -18,7 +18,7 @@ export default function CourseManagement() {
     const [currentCourse, setCurrentCourse] = useState(null)
     const [resources, setResources] = useState([])
     const [loadingResources, setLoadingResources] = useState(false)
-    const [resourceForm, setResourceForm] = useState({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: 1 })
+    const [resourceForm, setResourceForm] = useState({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: 1, file: null })
 
     useEffect(() => {
         if (profile?.id) loadCourses()
@@ -118,16 +118,52 @@ export default function CourseManagement() {
 
     async function handleResourceSubmit(e) {
         e.preventDefault()
-        const { error } = await supabase.from('course_resources').insert({
-            ...resourceForm,
-            course_id: currentCourse.id
-        })
+        setSaving(true)
+        setError('')
 
-        if (!error) {
-            setResourceForm({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: (parseInt(resourceForm.day_number) || 1) + 1 })
+        try {
+            let finalUrl = resourceForm.file_url
+
+            // If a file is selected, upload it first
+            if (resourceForm.file) {
+                const file = resourceForm.file
+                const fileExt = file.name.split('.').pop()
+                const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+                const filePath = `${currentCourse.id}/${fileName}`
+
+                const { error: uploadError } = await supabase.storage
+                    .from('study-materials')
+                    .upload(filePath, file)
+
+                if (uploadError) throw uploadError
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('study-materials')
+                    .getPublicUrl(filePath)
+                
+                finalUrl = publicUrl
+            }
+
+            if (!finalUrl) throw new Error('Please provide a URL or upload a file')
+
+            const { error } = await supabase.from('course_resources').insert({
+                title: resourceForm.title,
+                description: resourceForm.description,
+                file_url: finalUrl,
+                resource_type: resourceForm.resource_type,
+                day_number: resourceForm.day_number,
+                course_id: currentCourse.id
+            })
+
+            if (error) throw error
+
+            setResourceForm({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: (parseInt(resourceForm.day_number) || 1) + 1, file: null })
             openResources(currentCourse)
-        } else {
-            alert('Failed to add resource: ' + error.message)
+        } catch (err) {
+            alert('Failed to add resource: ' + err.message)
+            setError(err.message)
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -263,17 +299,61 @@ export default function CourseManagement() {
                                             <option value="other">Other Link</option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label htmlFor="resource-link" className="form-label">File/Link URL</label>
-                                        <input
-                                            id="resource-link"
-                                            name="file_url"
-                                            type="url"
-                                            className="form-input"
-                                            placeholder="https://..."
-                                            value={resourceForm.file_url}
-                                            onChange={e => setResourceForm(p => ({ ...p, file_url: e.target.value }))}
-                                            required
+                                    <div style={{ gridColumn: '1 / -1' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <label className="form-label" style={{ marginBottom: 0 }}>Add via File or URL</label>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setResourceForm(p => ({ ...p, file: null }))}
+                                                    style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: !resourceForm.file ? '#6366f1' : 'var(--text-muted)', fontWeight: !resourceForm.file ? 700 : 500, cursor: 'pointer' }}
+                                                >URL</button>
+                                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>|</span>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => document.getElementById('file-upload-input').click()}
+                                                    style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: resourceForm.file ? '#6366f1' : 'var(--text-muted)', fontWeight: resourceForm.file ? 700 : 500, cursor: 'pointer' }}
+                                                >Desktop Upload</button>
+                                            </div>
+                                        </div>
+
+                                        {resourceForm.file ? (
+                                            <div style={{ padding: '0.75rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                                                    <Upload size={14} color="#6366f1" />
+                                                    <span style={{ fontWeight: 600 }}>{resourceForm.file.name}</span>
+                                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({(resourceForm.file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                                </div>
+                                                <button type="button" onClick={() => setResourceForm(p => ({ ...p, file: null }))} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><X size={14} /></button>
+                                            </div>
+                                        ) : (
+                                            <input
+                                                id="resource-link"
+                                                name="file_url"
+                                                type="url"
+                                                className="form-input"
+                                                placeholder="https://..."
+                                                value={resourceForm.file_url}
+                                                onChange={e => setResourceForm(p => ({ ...p, file_url: e.target.value }))}
+                                                required={!resourceForm.file}
+                                            />
+                                        )}
+                                        <input 
+                                            id="file-upload-input"
+                                            type="file" 
+                                            style={{ display: 'none' }} 
+                                            accept=".pdf,.ppt,.pptx"
+                                            onChange={(e) => {
+                                                const file = e.target.files[0]
+                                                if (file) {
+                                                    setResourceForm(p => ({ 
+                                                        ...p, 
+                                                        file,
+                                                        title: p.title || file.name.replace(/\.[^/.]+$/, ""),
+                                                        resource_type: file.name.endsWith('.pdf') ? 'pdf' : (file.name.includes('.ppt') ? 'ppt' : 'other')
+                                                    }))
+                                                }
+                                            }}
                                         />
                                     </div>
                                 </div>
