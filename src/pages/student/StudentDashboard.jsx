@@ -14,13 +14,19 @@ export default function StudentDashboard() {
 
     useEffect(() => {
         async function load() {
-            const { data: rawEnrollments } = await supabase.from('enrollments').select('course_id').eq('student_id', profile.id)
+            const { data: rawEnrollments } = await supabase
+                .from('enrollments')
+                .select('course_id, courses(start_date)')
+                .eq('student_id', profile.id)
 
             // Deduplicate enrollments to fix duplicate course cards
             const enrollments = []
             const uniqueCourseIds = new Set()
                 ; (rawEnrollments || []).forEach(e => {
-                    if (!uniqueCourseIds.has(e.course_id)) {
+                    const startDate = e.courses?.start_date
+                    const hasStarted = !startDate || new Date(startDate) <= new Date()
+                    
+                    if (hasStarted && !uniqueCourseIds.has(e.course_id)) {
                         uniqueCourseIds.add(e.course_id)
                         enrollments.push(e)
                     }

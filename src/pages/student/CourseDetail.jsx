@@ -197,6 +197,27 @@ export default function CourseDetail() {
 
     if (loading) return <div style={{ color: 'var(--text-muted)', padding: '2rem' }}>Loading...</div>
 
+    const isStudent = profile?.role === 'student'
+    const hasStarted = !course?.start_date || new Date(course.start_date) <= new Date()
+
+    if (isStudent && !hasStarted) {
+        return (
+            <div className="animate-fade-in" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
+                <div style={{ width: 80, height: 80, background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                    <Clock size={40} color="#6366f1" />
+                </div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Course Starting Soon</h2>
+                <p style={{ color: 'var(--text-secondary)', maxWidth: 500, margin: '0 auto 2rem' }}>
+                    This course is scheduled to start on <strong style={{color: 'var(--text-primary)'}}>{new Date(course.start_date).toLocaleString()}</strong>.
+                    <br />Please check back then to access your lessons and materials.
+                </p>
+                <button onClick={() => navigate('/student/courses')} className="btn-secondary">
+                    Back to My Courses
+                </button>
+            </div>
+        )
+    }
+
     return (
         <div className="animate-fade-in">
             {/* Player Modal / Inline Player */}
@@ -258,7 +279,16 @@ export default function CourseDetail() {
             )}
             {/* Day Accordion List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
-                {Array.from({ length: daysCount }, (_, i) => i + 1).map(day => {
+                {Array.from({ length: daysCount }, (_, i) => i + 1)
+                .filter(day => {
+                    const status = getDayStatus(day)
+                    // If student, hide days that haven't opened yet
+                    if (isStudent && status.locked && status.reason.includes('Opens at')) {
+                        return false
+                    }
+                    return true
+                })
+                .map(day => {
                     const status = getDayStatus(day)
                     const isActive = selectedDay === day
 

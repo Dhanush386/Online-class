@@ -32,7 +32,7 @@ export default function StudentSchedule() {
                 { data: locksDay }
             ] = await Promise.all([
                 supabase.from('videos')
-                    .select('*, courses(title)')
+                    .select('*, courses(title, start_date)')
                     .in('course_id', enrolledIds)
                     .order('scheduled_time', { ascending: true }),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
@@ -51,7 +51,10 @@ export default function StudentSchedule() {
                 return false
             }
 
-            const filteredByDay = (vids || []).filter(v => !isDayLocked(v.course_id, v.day_number))
+            const filteredByDay = (vids || []).filter(v => {
+                const hasStarted = !v.courses?.start_date || new Date(v.courses.start_date) <= now
+                return hasStarted && !isDayLocked(v.course_id, v.day_number)
+            })
 
             setSessions(filteredByDay)
             setLoading(false)

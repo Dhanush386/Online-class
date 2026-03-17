@@ -40,19 +40,21 @@ export default function MyCourses() {
                     }
                 })
 
-                const mapped = enrollmentData.map(e => {
-                    const prog = progressData.find(p => p.course_id === e.course_id)
-                    return {
-                        id: e.courses?.id,
-                        title: e.courses?.title,
-                        description: e.courses?.description,
-                        startDate: e.courses?.start_date,
-                        endDate: e.courses?.end_date,
-                        completion: prog?.completion_percentage || 0,
-                        timeSpent: prog?.time_spent_minutes || 0,
-                        enrolledAt: e.enrolled_at,
-                    }
-                })
+                const mapped = enrollmentData
+                    .map(e => {
+                        const prog = progressData.find(p => p.course_id === e.course_id)
+                        return {
+                            id: e.courses?.id,
+                            title: e.courses?.title,
+                            description: e.courses?.description,
+                            startDate: e.courses?.start_date,
+                            endDate: e.courses?.end_date,
+                            completion: prog?.completion_percentage || 0,
+                            timeSpent: prog?.time_spent_minutes || 0,
+                            enrolledAt: e.enrolled_at,
+                        }
+                    })
+                    .filter(c => !c.startDate || new Date(c.startDate) <= new Date())
                 setCourses(mapped)
             } catch (err) {
                 console.error('Error loading courses:', err)

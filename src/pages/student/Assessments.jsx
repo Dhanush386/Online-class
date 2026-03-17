@@ -41,7 +41,7 @@ export default function Assessments() {
                 { data: locksDay }
             ] = await Promise.all([
                 supabase.from('assessments')
-                    .select('*, courses(title)')
+                    .select('*, courses(title, start_date)')
                     .in('course_id', enrolledIds)
                     .order('due_date', { ascending: true }),
                 supabase.from('assessment_submissions').select('*').eq('student_id', profile.id),
@@ -65,7 +65,10 @@ export default function Assessments() {
 
             const grouped = { daily: [], weekly: [], final: [] }
                 ; (assessData || [])
-                    .filter(a => !lockedAssessIds.includes(a.id) && !isDayLocked(a.course_id, a.day_number))
+                    .filter(a => {
+                        const hasStarted = !a.courses?.start_date || new Date(a.courses.start_date) <= now
+                        return hasStarted && !lockedAssessIds.includes(a.id) && !isDayLocked(a.course_id, a.day_number)
+                    })
                     .forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
             setAssessments(grouped)
 
