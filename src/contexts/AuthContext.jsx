@@ -101,37 +101,22 @@ export function AuthProvider({ children }) {
                 .eq('id', userId)
                 .maybeSingle()
 
-            if (error) {
-                console.error('Profile fetch error:', error.code, error.message, error.status)
-
-                // 406 often means schema cache issue or "Accept" header mismatch (PostgREST)
-                if (error.status === 406) {
-                    console.warn('Supabase returned 406. This usually requires a Schema Cache refresh in Supabase Dashboard.')
-                }
-
-                if (error.code === 'PGRST116') {
-                    // User not found in public.users, try to recover from auth metadata
-                    const { data: { user } } = await supabase.auth.getUser()
-                    if (user) {
-                        // Profile not found - Create it
-                        const name = user.user_metadata?.name || 'New User'
-                        const role = localStorage.getItem('onboarding_role') || 'student' // Use onboarding_role if set, otherwise default
-                        const newProfile = { id: user.id, name, email: user.email, role, current_session_id: browserSessionId }
-
-                        console.log('Creating/Updating profile via upsert:', newProfile)
-                        const { error: upsertError } = await supabase
-                            .from('users')
-                            .upsert(newProfile, { onConflict: 'id' })
-
-                        if (!upsertError) {
-                            setProfile(newProfile)
-                            return
-                        } else {
-                            console.error('Profile upsert failed:', upsertError)
-                        }
+            if (!data) {
+                // User not found in public.users, try to recover from auth metadata
+                const { data: { user: authUser } } = await supabase.auth.getUser()
+                if (authUser) {
+                    const fallbackProfile = {
+                        id: authUser.id,
+                        name: authUser.user_metadata?.name || 'New User',
+                        email: authUser.email,
+                        role: authUser.user_metadata?.role || 'student',
+                        status: authUser.user_metadata?.role === 'student' ? 'pending' : 'approved',
+                        current_session_id: sessionIdRef.current
                     }
+                    console.log('Using metadata fallback profile:', fallbackProfile)
+                    setProfile(fallbackProfile)
                 }
-            } else if (data) {
+            } else {
                 // Check if expired on load
                 if (checkExpiry(data)) return
 
@@ -142,9 +127,8 @@ export function AuthProvider({ children }) {
                         .update({ current_session_id: sessionIdRef.current })
                         .eq('id', userId)
                 }
+                setProfile(data)
             }
-
-            setProfile(data)
         } catch (err) {
             console.error('Error in fetchProfile:', err)
         } finally {

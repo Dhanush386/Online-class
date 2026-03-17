@@ -31,9 +31,11 @@ export default function Login() {
                 .from('users')
                 .select('role')
                 .eq('id', authUser.id)
-                .single()
+                .maybeSingle()
+            
+            const role = data?.role || authUser.user_metadata?.role || 'student'
 
-            const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(data?.role)
+            const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(role)
             if (isAdmin) navigate('/organizer')
             else navigate('/student')
         } catch (err) {
