@@ -299,18 +299,19 @@ export default function StudentManagement() {
         }
     }
 
-    async function handleUpdateRole(userId, newRole) {
+    async function handleSyncStudents() {
         setSaving(true)
+        setError('')
         try {
-            const { error } = await supabase
-                .from('users')
-                .update({ role: newRole })
-                .eq('id', userId)
+            const { data, error } = await supabase.rpc('sync_profiles_from_auth')
             if (error) throw error
+            
+            const count = data?.synced_count || 0
+            alert(`Sync complete! ${count} missing profile entries were repaired.`)
             loadData(true)
         } catch (err) {
-            console.error('Error updating role:', err)
-            setError(err.message || 'Failed to update role')
+            console.error('Error syncing students:', err)
+            setError(err.message || 'Failed to sync students from auth')
         } finally {
             setSaving(false)
         }
@@ -499,6 +500,18 @@ export default function StudentManagement() {
                         </span>
                     )}
                 </button>
+
+                {tab === 'pending' && (
+                    <button
+                        onClick={handleSyncStudents}
+                        disabled={saving}
+                        className="btn-secondary"
+                        style={{ marginLeft: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                        title="Search for missing student profiles in the authentication system"
+                    >
+                        <Users size={14} /> {saving ? 'Syncing...' : 'Sync Students'}
+                    </button>
+                )}
                 <button
                     className={`nav-btn ${tab === 'team' ? 'active' : ''}`}
                     onClick={() => setTab('team')}
