@@ -13,17 +13,32 @@ export default function CourseManagement() {
     const [showModal, setShowModal] = useState(false)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
-    const [formData, setFormData] = useState({ title: '', description: '', start_date: '', end_date: '' })
+    const [formData, setFormData] = useState({ title: '', description: '', start_date: '', end_date: '', organizer_id: '' })
     const [editingId, setEditingId] = useState(null)
     const [showResourceModal, setShowResourceModal] = useState(false)
     const [currentCourse, setCurrentCourse] = useState(null)
     const [resources, setResources] = useState([])
     const [loadingResources, setLoadingResources] = useState(false)
     const [resourceForm, setResourceForm] = useState({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: 1, file: null })
+    const [organizers, setOrganizers] = useState([])
 
     useEffect(() => {
-        if (profile?.id) loadCourses()
+        if (profile?.id) {
+            loadCourses()
+            if (profile.role === 'main_admin') {
+                fetchOrganizers()
+            }
+        }
     }, [profile])
+
+    async function fetchOrganizers() {
+        const { data, error } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('role', 'organizer')
+            .order('name')
+        if (!error) setOrganizers(data || [])
+    }
 
     async function loadCourses() {
         setLoading(true)
@@ -58,7 +73,7 @@ export default function CourseManagement() {
             description: formData.description,
             start_date: toISOWithOffset(formData.start_date),
             end_date: toISOWithOffset(formData.end_date),
-            organizer_id: profile.id
+            organizer_id: formData.organizer_id || profile.id
         }
 
         try {
@@ -71,7 +86,7 @@ export default function CourseManagement() {
             }
 
             setShowModal(false)
-            setFormData({ title: '', description: '', start_date: '', end_date: '' })
+            setFormData({ title: '', description: '', start_date: '', end_date: '', organizer_id: '' })
             setEditingId(null)
             loadCourses()
         } catch (err) {
@@ -82,7 +97,7 @@ export default function CourseManagement() {
     }
 
     async function handleDelete(id) {
-        if (!confirm('Are you sure? This will not delete the videos/sessions associated but they will lose their reference.')) return
+        if (!confirm('Are you sure? This will PERMANENTLY delete the course and ALL associated materials, enrollments, and sessions. This action cannot be undone.')) return
 
         const { error } = await supabase.from('courses').delete().eq('id', id)
         if (!error) {
@@ -98,7 +113,8 @@ export default function CourseManagement() {
             title: course.title,
             description: course.description || '',
             start_date: toLocalInput(course.start_date),
-            end_date: toLocalInput(course.end_date)
+            end_date: toLocalInput(course.end_date),
+            organizer_id: course.organizer_id || ''
         })
         setShowModal(true)
     }
@@ -184,7 +200,7 @@ export default function CourseManagement() {
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Create and manage your educational programs</p>
                 </div>
                 <button
-                    onClick={() => { setEditingId(null); setFormData({ title: '', description: '', start_date: '', end_date: '' }); setShowModal(true) }}
+                    onClick={() => { setEditingId(null); setFormData({ title: '', description: '', start_date: '', end_date: '', organizer_id: profile.id }); setShowModal(true) }}
                     className="btn-primary"
                     style={{ gap: '0.5rem', display: profile?.role === 'sub_admin' ? 'none' : 'flex' }}
                 >
@@ -449,6 +465,25 @@ export default function CourseManagement() {
                                     required
                                 />
                             </div>
+
+                            {profile?.role === 'main_admin' && (
+                                <div style={{ marginBottom: '1.25rem' }}>
+                                    <label htmlFor="organizer-select" className="form-label">Assign Organizer</label>
+                                    <select
+                                        id="organizer-select"
+                                        className="form-input"
+                                        value={formData.organizer_id}
+                                        onChange={e => setFormData(p => ({ ...p, organizer_id: e.target.value }))}
+                                        required
+                                    >
+                                        <option value="">Select an Organizer</option>
+                                        <option value={profile.id}>{profile.name} (Main Admin)</option>
+                                        {organizers.map(org => (
+                                            <option key={org.id} value={org.id}>{org.name} ({org.email})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label htmlFor="course-desc" className="form-label">Description</label>
