@@ -39,6 +39,7 @@ import CodingPractice from './pages/student/CodingPractice'
 import CodeWorkspace from './pages/student/CodeWorkspace'
 import StudentSchedule from './pages/student/StudentSchedule'
 import Achievements from './pages/student/Achievements'
+import Profile from './pages/student/Profile'
 
 export default function App() {
   return (
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="achievements" element={<Achievements />} />
             <Route path="playground" element={<CodePlayground />} />
             <Route path="support" element={<Support />} />
+            <Route path="profile" element={<Profile />} />
           </Route>
 
           {/* Fallback */}

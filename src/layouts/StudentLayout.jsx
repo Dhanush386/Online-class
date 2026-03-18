@@ -203,7 +203,7 @@ export default function StudentLayout() {
 
                                         <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
 
-                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
+                                        <button onClick={() => { navigate('/student/profile'); setShowProfileMenu(false) }} className="dropdown-item">
                                             <User size={16} /> <span>Profile</span>
                                         </button>
 
