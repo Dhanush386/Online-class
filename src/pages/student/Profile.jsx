@@ -85,6 +85,12 @@ export default function Profile() {
         loadProfile()
     }, [user])
 
+    useEffect(() => {
+        if (isCameraOpen && stream && videoRef.current) {
+            videoRef.current.srcObject = stream
+        }
+    }, [isCameraOpen, stream])
+
     async function loadProfile() {
         if (!user) return
         try {
@@ -180,7 +186,6 @@ export default function Profile() {
             const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 400, height: 480 } })
             setStream(s)
             setIsCameraOpen(true)
-            if (videoRef.current) videoRef.current.srcObject = s
         } catch (err) {
             console.error('Camera access denied:', err)
             setToast({ type: 'error', message: 'Please allow camera access' })
