@@ -232,7 +232,7 @@ export default function StudentLayout() {
                                         <button onClick={() => { navigate('/student/playground'); setShowProfileMenu(false) }} className="dropdown-item">
                                             <Globe size={16} /> <span>Playground</span>
                                         </button>
-                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
+                                        <button onClick={() => { navigate('/student/playground?view=saved'); setShowProfileMenu(false) }} className="dropdown-item">
                                             <Zap size={16} /> <span>Saved Snippets</span>
                                         </button>
 

@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
     Play, Eye, Code as CodeIcon, Database, Globe,
     CheckCircle2, XCircle, Clock, Info, RotateCcw,
@@ -52,6 +53,18 @@ export default function CodePlayground() {
     const [publishedUrl, setPublishedUrl] = useState(null)
 
     const iframeRef = useRef(null)
+    const [searchParams, setSearchParams] = useSearchParams()
+
+    useEffect(() => {
+        if (searchParams.get('view') === 'saved') {
+            fetchSnippets()
+            setShowLoadModal(true)
+            // Clear the param after showing the modal to prevent it from re-opening
+            const newParams = new URLSearchParams(searchParams)
+            newParams.delete('view')
+            setSearchParams(newParams, { replace: true })
+        }
+    }, [searchParams, profile])
 
     // Load user snippets
     const fetchSnippets = async () => {
