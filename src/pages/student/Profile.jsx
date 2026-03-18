@@ -73,7 +73,8 @@ export default function Profile() {
         technical_skills: [],
         education_details: [],
         work_experience: [],
-        projects_achievements: []
+        projects_achievements: [],
+        whatsapp_updates: true
     })
 
     const fileInputRef = useRef(null)
@@ -610,7 +611,13 @@ export default function Profile() {
 
                                     <div style={{ background: '#f8fafc', borderRadius: 12, padding: '1.25rem', border: '1px solid #e2e8f0' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}>
-                                            <input type="checkbox" checked style={{ width: 20, height: 20, accentColor: '#10b981' }} />
+                                            <input 
+                                                type="checkbox" 
+                                                name="whatsapp_updates"
+                                                checked={formData.whatsapp_updates} 
+                                                onChange={handleChange}
+                                                style={{ width: 20, height: 20, accentColor: '#10b981' }} 
+                                            />
                                             <div>
                                                 <p style={{ fontWeight: 600, color: '#334155', fontSize: '0.95rem' }}>I would like to receive updates in WhatsApp.</p>
                                             </div>
