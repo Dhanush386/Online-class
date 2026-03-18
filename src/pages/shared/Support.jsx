@@ -32,20 +32,24 @@ export default function Support() {
 
         // Subscribe to new messages
         const subscription = supabase
-            .channel('support_messages')
+            .channel('support_messages_realtime')
             .on('postgres_changes', { 
-                event: 'INSERT', 
+                event: '*', 
                 schema: 'public', 
                 table: 'support_messages' 
             }, (payload) => {
-                if (isOrganizer) {
-                    // Update conversation list OR current messages
-                    fetchConversations()
-                    if (selectedStudent?.id === payload.new.student_id) {
+                if (payload.eventType === 'INSERT') {
+                    if (isOrganizer) {
+                        fetchConversations()
+                        if (selectedStudent?.id === payload.new.student_id) {
+                            setMessages(prev => [...prev, payload.new])
+                        }
+                    } else if (payload.new.student_id === profile?.id) {
                         setMessages(prev => [...prev, payload.new])
                     }
-                } else if (payload.new.student_id === profile?.id) {
-                    setMessages(prev => [...prev, payload.new])
+                } else if (payload.eventType === 'UPDATE') {
+                    setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m))
+                    if (isOrganizer) fetchConversations()
                 }
             })
             .subscribe()
