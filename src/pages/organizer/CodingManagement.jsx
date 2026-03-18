@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import CodeEditor from '../../components/CodeEditor'
 import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock } from 'lucide-react'
+import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
 const LANGUAGES = [
     { id: 'html', name: 'HTML/CSS/JS (Web)', icon: '🌐' },
@@ -132,8 +133,8 @@ export default function CodingManagement() {
                 ...formData,
                 starter_code: finalStarterCode,
                 test_cases: formData.test_cases.filter(tc => tc.expected_output.trim() !== ''),
-                open_time: formData.open_time ? new Date(formData.open_time).toISOString() : null,
-                close_time: formData.close_time ? new Date(formData.close_time).toISOString() : null,
+                open_time: toISOWithOffset(formData.open_time),
+                close_time: toISOWithOffset(formData.close_time),
                 allowed_assets: (formData.allowed_assets || '').split('\n').map(l => l.trim()).filter(Boolean)
             }
 
@@ -165,12 +166,6 @@ export default function CodingManagement() {
         }
     }
 
-    function toLocalInput(utcStr) {
-        if (!utcStr) return ''
-        const d = new Date(utcStr)
-        const pad = n => String(n).padStart(2, '0')
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-    }
 
     function openEdit(c) {
         setEditingId(c.id)

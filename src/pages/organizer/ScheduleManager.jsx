@@ -2,22 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Calendar, Edit2, Trash2, Clock, X, Save, Plus } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
+import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
-// Convert a UTC ISO string from the database into the value format required by <input type="datetime-local">
-function toLocalInput(utcString) {
-    if (!utcString) return ''
-    const d = new Date(utcString)
-    // Pad a number to 2 digits
-    const pad = n => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-// Convert a datetime-local string (no timezone) to a proper ISO string with local timezone offset
-function toISOWithOffset(localStr) {
-    if (!localStr) return null
-    const d = new Date(localStr) // browser treats this as local time
-    return d.toISOString()       // store as UTC ISO, which Supabase expects
-}
 
 export default function ScheduleManager() {
     const [videos, setVideos] = useState([])

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Video, Link, Calendar, Clock, FolderOpen, CheckCircle, AlertCircle, Plus, Upload, PlayCircle, Radio } from 'lucide-react'
+import { toISOWithOffset } from '../../lib/dateUtils'
 import { useLocation } from 'react-router-dom'
 
 export default function ScheduleLiveClass() {
@@ -101,9 +102,7 @@ export default function ScheduleLiveClass() {
                 title: form.title,
                 description: form.description,
                 video_url: finalUrl,
-                scheduled_time: mode === 'live' && form.scheduled_time
-                    ? new Date(form.scheduled_time).toISOString()
-                    : null,
+                scheduled_time: mode === 'live' ? toISOWithOffset(form.scheduled_time) : null,
                 duration_minutes: durationMins,
                 day_number: parseInt(form.day_number) || 1
             })

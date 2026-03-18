@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Plus, BookOpen, Trash2, Edit2, X, Save, AlertCircle, FileText, Upload, Link as LinkIcon, Globe, Clock, Calendar } from 'lucide-react'
+import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
 export default function CourseManagement() {
     const { profile } = useAuth()
@@ -55,8 +56,8 @@ export default function CourseManagement() {
         const payload = {
             title: formData.title,
             description: formData.description,
-            start_date: formData.start_date || null,
-            end_date: formData.end_date || null,
+            start_date: toISOWithOffset(formData.start_date),
+            end_date: toISOWithOffset(formData.end_date),
             organizer_id: profile.id
         }
 
@@ -96,8 +97,8 @@ export default function CourseManagement() {
         setFormData({
             title: course.title,
             description: course.description || '',
-            start_date: course.start_date ? new Date(new Date(course.start_date).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '',
-            end_date: course.end_date ? new Date(new Date(course.end_date).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''
+            start_date: toLocalInput(course.start_date),
+            end_date: toLocalInput(course.end_date)
         })
         setShowModal(true)
     }
