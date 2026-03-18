@@ -100,7 +100,7 @@ export default function Profile() {
                 .from('student_profiles')
                 .select('*')
                 .eq('student_id', user.id)
-                .single()
+                .maybeSingle()
 
             if (error && error.code !== 'PGRST116') throw error
             
