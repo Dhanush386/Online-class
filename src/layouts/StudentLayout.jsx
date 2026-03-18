@@ -238,9 +238,6 @@ export default function StudentLayout() {
                                         <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
                                             <Bookmark size={16} /> <span>Bookmarks</span>
                                         </button>
-                                        <button onClick={() => { navigate('/student/assessments'); setShowProfileMenu(false) }} className="dropdown-item">
-                                            <BookOpen size={16} /> <span>Question Bank</span>
-                                        </button>
 
                                         <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
 
@@ -250,9 +247,6 @@ export default function StudentLayout() {
 
                                         <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
 
-                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
-                                            <HelpCircle size={16} /> <span>Help Center</span>
-                                        </button>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '0.5rem' }} className="dropdown-item-container">
                                             <button onClick={() => setShowProfileMenu(false)} className="dropdown-item" style={{ flex: 1 }}>
                                                 <Gift size={16} /> <span>Invite & Earn</span>
