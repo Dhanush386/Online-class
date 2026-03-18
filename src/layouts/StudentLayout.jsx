@@ -247,15 +247,6 @@ export default function StudentLayout() {
 
                                         <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
 
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '0.5rem' }} className="dropdown-item-container">
-                                            <button onClick={() => setShowProfileMenu(false)} className="dropdown-item" style={{ flex: 1 }}>
-                                                <Gift size={16} /> <span>Invite & Earn</span>
-                                            </button>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#f1f5f9', padding: '0.2rem 0.4rem', borderRadius: 4, cursor: 'pointer' }}>
-                                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>T9ZKY9</span>
-                                                <ExternalLink size={12} color="#64748b" />
-                                            </div>
-                                        </div>
                                         <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
                                             <MessageCircle size={16} /> <span>Contact Us</span>
                                         </button>
