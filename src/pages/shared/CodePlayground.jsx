@@ -22,7 +22,7 @@ const STARTER_CODE = {
     cpp: '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}',
     c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
     sql: '-- Type your SQL query here\nSELECT * FROM users;',
-    html: '<!DOCTYPE html>\n<html>\n<head>\n  <title>My Playground</title>\n  <style>\n    body { font-family: sans-serif; text-align: center; }\n    h1 { color: #6366f1; }\n  </style>\n</head>\n<body>\n  <h1>Hello from Playground!</h1>\n\n  <script>\n    console.log("Ready to code.");\n  </script>\n</body>\n</html>'
+    html: '<h1>Hello from Playground!</h1>\n<p>Try editing the CSS and JS tabs to see the changes.</p>'
 }
 
 export default function CodePlayground() {
