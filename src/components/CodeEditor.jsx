@@ -34,34 +34,37 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly })
             html = html.replace(/([a-z-]+):/gi, '<span style="color: #60a5fa">$1</span>:')
             // Values
             html = html.replace(/: ([^;]+);/g, ': <span style="color: #fbbf24">$1</span>;')
-            // Selectors (very basic)
+            // Selectors
             html = html.replace(/^([.#a-z][^{]+) {/gim, '<span style="color: #f87171">$1</span> {')
         } else {
-            // JS / Python / SQL Common
+            const tokens = []
+            const pushToken = (match, color) => {
+                tokens.push(`<span style="color: ${color}">${match}</span>`)
+                return `___TOKEN_${tokens.length - 1}___`
+            }
+
+            // 1. Comments (lowest priority to overlap, but highest to ignore)
+            const commentRegex = lang === 'python' ? /(#.*)/g : lang === 'sql' ? /(--.*)/g : /(\/\/.*)/g
+            html = html.replace(commentRegex, m => pushToken(m, '#94a3b8'))
+
+            // 2. Strings
+            html = html.replace(/"([^"]*)"/g, m => pushToken(m, '#34d399'))
+            html = html.replace(/'([^']*)'/g, m => pushToken(m, '#34d399'))
+
+            // 3. Keywords
             const keywords = {
                 js: /\b(const|let|var|function|return|if|else|for|while|import|export|class|from|await|async|try|catch|new|this)\b/g,
-                python: /\b(def|class|return|if|else|elif|for|while|import|from|as|try|except|with|async|await|in|is|not|and|or|lambda)\b/g,
+                python: /\b(def|class|return|if|else|elif|for|while|import|from|as|try|except|with|async|await|in|is|not|and|or|lambda|print)\b/g,
                 sql: /\b(SELECT|FROM|WHERE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|DROP|JOIN|LEFT|RIGHT|INNER|ON|GROUP|BY|ORDER|LIMIT|ASC|DESC)\b/gi
             }
-
             const activeKeywords = keywords[lang] || keywords.js
-            html = html.replace(activeKeywords, '<span style="color: #c084fc">$1</span>')
-            
-            // Strings
-            html = html.replace(/"([^"]*)"/g, '<span style="color: #34d399">"$1"</span>')
-            html = html.replace(/'([^']*)'/g, '<span style="color: #34d399">\'$1\'</span>')
-            
-            // Numbers
-            html = html.replace(/\b(\d+)\b/g, '<span style="color: #fbbf24">$1</span>')
+            html = html.replace(activeKeywords, m => pushToken(m, '#c084fc'))
 
-            // Comments
-            if (lang === 'python') {
-                html = html.replace(/(#.*)/g, '<span style="color: #94a3b8">$1</span>')
-            } else if (lang === 'sql') {
-                html = html.replace(/(--.*)/g, '<span style="color: #94a3b8">$1</span>')
-            } else {
-                html = html.replace(/(\/\/.*)/g, '<span style="color: #94a3b8">$1</span>')
-            }
+            // 4. Numbers
+            html = html.replace(/\b(\d+)\b/g, m => pushToken(m, '#fbbf24'))
+
+            // Restore tokens
+            html = html.replace(/___TOKEN_(\d+)___/g, (m, id) => tokens[id])
         }
 
         return html
