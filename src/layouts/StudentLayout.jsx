@@ -233,9 +233,6 @@ export default function StudentLayout() {
                                             <Globe size={16} /> <span>Playground</span>
                                         </button>
                                         <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
-                                            <MessageSquare size={16} /> <span>My Discussions</span>
-                                        </button>
-                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
                                             <Zap size={16} /> <span>Saved Snippets</span>
                                         </button>
                                         <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
