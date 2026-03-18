@@ -22,15 +22,15 @@ const STARTER_CODE = {
     cpp: '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}',
     c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
     sql: '-- Type your SQL query here\nSELECT * FROM users;',
-    html: '<h1>Hello from Playground!</h1>\n<p>Try editing the CSS and JS tabs to see the changes.</p>'
+    html: '<!DOCTYPE html>\n<html>\n<head>\n    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous" />\n    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>\n    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>\n    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>\n    <script src="https://kit.fontawesome.com/d1c2ea8b80.js" crossorigin="anonymous"></script>\n</head>\n<body>\n    <div class="container mt-5">\n        <h1 class="text-primary">Bootstrap Playground</h1>\n        <p class="lead">Start building your responsive layout here.</p>\n    </div>\n</body>\n</html>'
 }
 
 export default function CodePlayground() {
     const [language, setLanguage] = useState('python')
     const [code, setCode] = useState(STARTER_CODE.python)
     const [htmlCode, setHtmlCode] = useState(STARTER_CODE.html)
-    const [cssCode, setCssCode] = useState('/* Write your CSS here */\nbody {\n  font-family: sans-serif;\n}')
-    const [jsCode, setJsCode] = useState('// Write your JS here\nconsole.log("Hello JS!");')
+    const [cssCode, setCssCode] = useState('@import url("https://fonts.googleapis.com/css2?family=Bree+Serif&family=Caveat:wght@400;700&family=Lobster&family=Monoton&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display+SC:ital,wght@0,400;0,700;1,700&family=Playfair+Display:ital,wght@0,400;0,700;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Source+Sans+Pro:ital,wght@0,400;0,700;1,700&family=Work+Sans:ital,wght@0,400;0,700;1,700&display=swap");\n\nbody {\n  font-family: "Open Sans", sans-serif;\n  padding: 20px;\n}')
+    const [jsCode, setJsCode] = useState('// JavaScript libraries (jQuery, Popper, Bootstrap) are already loaded via HTML head\nconsole.log("Ready to code with Bootstrap!");')
     const [webTab, setWebTab] = useState('html') // 'html', 'css', 'js'
     const [running, setRunning] = useState(false)
     const [result, setResult] = useState(null)
