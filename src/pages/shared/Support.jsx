@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react'
 import { Send, User as UserIcon, Clock, CheckCheck, MessageSquare, Search, Paperclip, File, X, Image as ImageIcon } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
