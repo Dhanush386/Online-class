@@ -244,7 +244,7 @@ export default function StudentLayout() {
 
                                         <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
 
-                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
+                                        <button onClick={() => { navigate('/student/support'); setShowProfileMenu(false) }} className="dropdown-item">
                                             <MessageCircle size={16} /> <span>Contact Us</span>
                                         </button>
 

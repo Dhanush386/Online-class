@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
     LayoutDashboard, Radio, Calendar, Users, LogOut,
-    GraduationCap, Menu, X, Bell, ChevronDown, BookOpen, ClipboardList, Code, Globe
+    GraduationCap, Menu, X, Bell, ChevronDown, BookOpen, ClipboardList, Code, Globe, MessageSquare
 } from 'lucide-react'
 
 const navItems = [
@@ -16,6 +16,7 @@ const navItems = [
     { to: '/organizer/upload', icon: Radio, label: 'Live Class' },
     { to: '/organizer/schedule', icon: Calendar, label: 'Schedule' },
     { to: '/organizer/students', icon: Users, label: 'Students' },
+    { to: '/organizer/support', icon: MessageSquare, label: 'Support' },
 ]
 
 export default function OrganizerLayout() {

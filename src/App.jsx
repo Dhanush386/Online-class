@@ -26,6 +26,7 @@ import UploadVideo from './pages/organizer/UploadVideo'
 import ScheduleManager from './pages/organizer/ScheduleManager'
 import StudentManagement from './pages/organizer/StudentManagement'
 import CodePlayground from './pages/shared/CodePlayground'
+import Support from './pages/shared/Support'
 
 // Student Pages
 import StudentDashboard from './pages/student/StudentDashboard'
@@ -67,6 +68,7 @@ export default function App() {
             <Route path="schedule" element={<ScheduleManager />} />
             <Route path="students" element={<StudentManagement />} />
             <Route path="playground" element={<CodePlayground />} />
+            <Route path="support" element={<Support />} />
           </Route>
 
           {/* Student */}
@@ -86,6 +88,7 @@ export default function App() {
             <Route path="schedule" element={<StudentSchedule />} />
             <Route path="achievements" element={<Achievements />} />
             <Route path="playground" element={<CodePlayground />} />
+            <Route path="support" element={<Support />} />
           </Route>
 
           {/* Fallback */}
