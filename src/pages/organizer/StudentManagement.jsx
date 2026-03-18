@@ -229,6 +229,38 @@ export default function StudentManagement() {
         }
     }
 
+    async function handleRemoveCourse(studentId, courseId) {
+        if (!confirm('Are you sure you want to remove this course assignment? This will also clear the student\'s progress for this course.')) return
+
+        setSaving(true)
+        try {
+            // 1. Delete enrollment
+            const { error: enrollError } = await supabase
+                .from('enrollments')
+                .delete()
+                .eq('student_id', studentId)
+                .eq('course_id', courseId)
+
+            if (enrollError) throw enrollError
+
+            // 2. Delete progress
+            const { error: progressError } = await supabase
+                .from('progress')
+                .delete()
+                .eq('student_id', studentId)
+                .eq('course_id', courseId)
+
+            if (progressError) console.error('Error deleting progress:', progressError)
+
+            loadData(true)
+        } catch (err) {
+            console.error('Error removing course:', err)
+            setError(err.message || 'Failed to remove course')
+        } finally {
+            setSaving(false)
+        }
+    }
+
     async function handleUpdateStatus(studentId, newStatus) {
         setSaving(true)
         try {
@@ -877,9 +909,18 @@ export default function StudentManagement() {
                                             {student.enrollments?.length > 0 ? (
                                                 student.enrollments.map((en, i) => (
                                                     <div key={i} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                                            <BookOpen size={14} color="#818cf8" />
-                                                            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{en.course}</span>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <BookOpen size={14} color="#818cf8" />
+                                                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{en.course}</span>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleRemoveCourse(student.id, en.id)}
+                                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center' }}
+                                                                title="Remove Course Assignment"
+                                                            >
+                                                                <Trash2 size={12} />
+                                                            </button>
                                                         </div>
                                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
                                                             <span style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}><TrendingUp size={11} /> {en.completion}%</span>
