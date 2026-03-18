@@ -536,22 +536,61 @@ export default function Profile() {
                                         <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem' }}>How would you like your name to appear on certificates?</p>
                                     </div>
 
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Date of Birth</label>
+                                            <input 
+                                                type="date"
+                                                name="dob"
+                                                value={formData.dob}
+                                                onChange={handleChange}
+                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>LinkedIn Profile URL</label>
+                                            <div style={{ position: 'relative' }}>
+                                                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#0077b5' }}>
+                                                    <Linkedin size={18} />
+                                                </div>
+                                                <input 
+                                                    name="linkedin_url"
+                                                    value={formData.linkedin_url}
+                                                    onChange={handleChange}
+                                                    placeholder="https://linkedin.com/in/username"
+                                                    style={{ width: '100%', padding: '0.8rem 1rem 0.8rem 3rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Gender</label>
-                                        <div style={{ display: 'flex', gap: '2rem' }}>
-                                            {['Male', 'Female', 'Transgender'].map(g => (
-                                                <label key={g} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '0.95rem', color: '#64748b' }}>
-                                                    <input 
-                                                        type="radio" 
-                                                        name="gender" 
-                                                        value={g} 
-                                                        checked={formData.gender === g}
-                                                        onChange={handleChange}
-                                                        style={{ width: 18, height: 18, accentColor: '#10b981' }}
-                                                    />
-                                                    {g}
-                                                </label>
-                                            ))}
+                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Resume/CV</label>
+                                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '1rem' }}>Upload your latest resume in PDF format (Max 5MB)</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                            <input 
+                                                type="file" 
+                                                ref={resumeInputRef} 
+                                                style={{ display: 'none' }} 
+                                                accept=".pdf"
+                                                onChange={(e) => handleFileUpload(e, 'resume')}
+                                            />
+                                            <button 
+                                                onClick={() => resumeInputRef.current.click()}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', color: '#475569' }}
+                                            >
+                                                <Upload size={18} /> {formData.resume_url ? 'Update Resume' : 'Upload Resume'}
+                                            </button>
+                                            {formData.resume_url && (
+                                                <a 
+                                                    href={formData.resume_url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer" 
+                                                    style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}
+                                                >
+                                                    <CheckCircle2 size={16} /> View Current Resume
+                                                </a>
+                                            )}
                                         </div>
                                     </div>
                                 </section>
