@@ -92,42 +92,7 @@ export default function StudentLayout() {
                     ))}
                 </nav>
 
-                {/* User */}
-                <div style={{ padding: '1rem 0.75rem', borderTop: '1px solid var(--sidebar-border)' }}>
-                    {(!collapsed || isMobile) && (
-                        <div style={{ marginBottom: '0.75rem', padding: '0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
-                                {profile?.name?.[0]?.toUpperCase() || 'S'}
-                            </div>
-                            <div style={{ overflow: 'hidden' }}>
-                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.name || 'Student'}</div>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{profile?.role === 'student' ? 'Learner' : profile?.role?.replace('_', ' ').toUpperCase()}</div>
-                            </div>
-                        </div>
-                    )}
-
-                    {['organizer', 'sub_admin', 'main_admin'].includes(profile?.role) && (
-                        <button 
-                            onClick={() => navigate('/organizer')} 
-                            className="nav-item" 
-                            style={{ 
-                                width: '100%', 
-                                border: '1px solid rgba(99,102,241,0.2)', 
-                                background: 'rgba(99,102,241,0.05)', 
-                                color: '#6366f1',
-                                marginBottom: '0.5rem',
-                                justifyContent: collapsed && !isMobile ? 'center' : 'flex-start'
-                            }}
-                        >
-                            <Globe size={18} />
-                            {(!collapsed || isMobile) && <span style={{ fontWeight: 700 }}>Admin Panel</span>}
-                        </button>
-                    )}
-                    <button onClick={handleSignOut} className="nav-item" style={{ width: '100%', border: 'none', background: 'none', justifyContent: collapsed && !isMobile ? 'center' : 'flex-start', color: '#dc2626' }}>
-                        <LogOut size={18} />
-                        {(!collapsed || isMobile) && <span>Sign Out</span>}
-                    </button>
-                </div>
+                {/* Sign Out removed from sidebar footer as it is already in the top header profile menu */}
             </aside>
 
             {/* Main */}

@@ -96,24 +96,7 @@ export default function OrganizerLayout() {
                     ))}
                 </nav>
 
-                {/* User / Sign Out */}
-                <div style={{ padding: '1rem 0.75rem', borderTop: '1px solid var(--sidebar-border)' }}>
-                    {(!collapsed || isMobile) && (
-                        <div style={{ marginBottom: '0.75rem', padding: '0.75rem', background: 'rgba(99,102,241,0.08)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
-                                {profile?.name?.[0]?.toUpperCase() || 'O'}
-                            </div>
-                            <div style={{ overflow: 'hidden' }}>
-                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.name || 'Organizer'}</div>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--accent-light)', fontWeight: 600 }}>{profile?.role === 'main_admin' ? 'Main Admin' : profile?.role === 'sub_admin' ? 'Sub Admin' : 'Organizer'}</div>
-                            </div>
-                        </div>
-                    )}
-                    <button onClick={handleSignOut} className="nav-item" style={{ width: '100%', border: 'none', background: 'none', justifyContent: collapsed && !isMobile ? 'center' : 'flex-start', color: '#dc2626' }}>
-                        <LogOut size={18} />
-                        {(!collapsed || isMobile) && <span>Sign Out</span>}
-                    </button>
-                </div>
+                {/* Sign Out removed from sidebar footer as it is already in the top header profile menu */}
             </aside>
 
             {/* Main */}
