@@ -26,6 +26,7 @@ export default function OrganizerLayout() {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
     const [showNotifications, setShowNotifications] = useState(false)
     const [unreadCount, setUnreadCount] = useState(1) // Simulate 1 unread notification
+    const [showProfileMenu, setShowProfileMenu] = useState(false)
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -162,12 +163,95 @@ export default function OrganizerLayout() {
                                 </>
                             )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(99,102,241,0.08)', borderRadius: 8, border: '1px solid rgba(99,102,241,0.15)' }}>
-                            <div style={{ width: 24, height: 24, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'white' }}>
-                                {profile?.name?.[0]?.toUpperCase() || 'O'}
+                        <div style={{ position: 'relative' }}>
+                            <div 
+                                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(99,102,241,0.08)', borderRadius: 8, border: '1px solid rgba(99,102,241,0.15)', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                className="nav-item-hover-org"
+                            >
+                                <div style={{ width: 24, height: 24, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'white' }}>
+                                    {profile?.name?.[0]?.toUpperCase() || 'O'}
+                                </div>
+                                <span className="hide-mobile" style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 500 }}>{profile?.name || 'Organizer'}</span>
+                                <ChevronDown size={14} color="var(--text-muted)" style={{ transform: showProfileMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                             </div>
-                            <span className="hide-mobile" style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 500 }}>{profile?.name || 'Organizer'}</span>
-                            <ChevronDown size={14} color="var(--text-muted)" />
+
+                            {showProfileMenu && (
+                                <>
+                                    <div 
+                                        onClick={() => setShowProfileMenu(false)}
+                                        style={{ position: 'fixed', inset: 0, zIndex: 45 }}
+                                    />
+                                    <div style={{ 
+                                        position: 'absolute', 
+                                        top: 'calc(100% + 10px)', 
+                                        right: 0, 
+                                        width: 220, 
+                                        background: 'white', 
+                                        borderRadius: 12, 
+                                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
+                                        border: '1px solid var(--sidebar-border)', 
+                                        zIndex: 50, 
+                                        padding: '0.5rem',
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '2px'
+                                    }}>
+                                        <div style={{ padding: '0.5rem 0.75rem', marginBottom: '0.25rem', borderBottom: '1px solid var(--sidebar-border)' }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{profile?.name}</div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{profile?.role?.replace('_', ' ').toUpperCase()}</div>
+                                        </div>
+
+                                        <button onClick={() => { navigate('/organizer'); setShowProfileMenu(false) }} className="dropdown-item-org">
+                                            <LayoutDashboard size={16} /> <span>Dashboard</span>
+                                        </button>
+                                        <button onClick={() => { navigate('/organizer/courses'); setShowProfileMenu(false) }} className="dropdown-item-org">
+                                            <BookOpen size={16} /> <span>My Courses</span>
+                                        </button>
+                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item-org">
+                                            <User size={16} /> <span>Settings</span>
+                                        </button>
+
+                                        <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
+
+                                        <button 
+                                            onClick={() => { handleSignOut(); setShowProfileMenu(false) }} 
+                                            className="dropdown-item-org" 
+                                            style={{ color: '#dc2626' }}
+                                        >
+                                            <LogOut size={16} /> <span>Sign Out</span>
+                                        </button>
+                                    </div>
+
+                                    <style>{`
+                                        .dropdown-item-org {
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 0.75rem;
+                                            padding: 0.6rem 0.75rem;
+                                            border: none;
+                                            background: none;
+                                            width: 100%;
+                                            text-align: left;
+                                            font-size: 0.85rem;
+                                            font-weight: 500;
+                                            color: #475569;
+                                            cursor: pointer;
+                                            border-radius: 8px;
+                                            transition: all 0.2s ease;
+                                        }
+                                        .dropdown-item-org:hover {
+                                            background: #f8fafc;
+                                            color: #6366f1;
+                                        }
+                                        .nav-item-hover-org:hover {
+                                            background: rgba(99,102,241,0.12) !important;
+                                            border-color: rgba(99,102,241,0.25) !important;
+                                        }
+                                    `}</style>
+                                </>
+                            )}
                         </div>
                     </div>
                 </header>

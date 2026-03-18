@@ -3,7 +3,8 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
     LayoutDashboard, BookOpen, Calendar, ClipboardList, LogOut,
-    GraduationCap, Menu, X, Bell, Award, Code, Globe
+    GraduationCap, Menu, X, Bell, Award, Code, Globe,
+    User, MessageSquare, Zap, Bookmark, HelpCircle, Gift, MessageCircle, Mountain, ChevronRight, ExternalLink
 } from 'lucide-react'
 
 const navItems = [
@@ -22,6 +23,7 @@ export default function StudentLayout() {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
     const [showNotifications, setShowNotifications] = useState(false)
     const [unreadCount, setUnreadCount] = useState(1) // Simulate 1 unread notification
+    const [showProfileMenu, setShowProfileMenu] = useState(false)
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -184,11 +186,131 @@ export default function StudentLayout() {
                                 </>
                             )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)' }}>
-                            <div style={{ width: 24, height: 24, background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'white' }}>
-                                {profile?.name?.[0]?.toUpperCase() || 'S'}
+                        <div style={{ position: 'relative' }}>
+                            <div 
+                                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                className="nav-item-hover"
+                            >
+                                <div style={{ width: 24, height: 24, background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'white' }}>
+                                    {profile?.name?.[0]?.toUpperCase() || 'S'}
+                                </div>
+                                <span className="hide-mobile" style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 500 }}>{profile?.name || 'Student'}</span>
                             </div>
-                            <span className="hide-mobile" style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 500 }}>{profile?.name || 'Student'}</span>
+
+                            {showProfileMenu && (
+                                <>
+                                    <div 
+                                        onClick={() => setShowProfileMenu(false)}
+                                        style={{ position: 'fixed', inset: 0, zIndex: 45 }}
+                                    />
+                                    <div style={{ 
+                                        position: 'absolute', 
+                                        top: 'calc(100% + 10px)', 
+                                        right: 0, 
+                                        width: 240, 
+                                        background: 'white', 
+                                        borderRadius: 12, 
+                                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
+                                        border: '1px solid var(--sidebar-border)', 
+                                        zIndex: 50, 
+                                        padding: '0.5rem',
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '2px'
+                                    }}>
+                                        <div style={{ padding: '0.5rem 0.75rem', marginBottom: '0.25rem', borderBottom: '1px solid var(--sidebar-border)' }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{profile?.name}</div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{profile?.email}</div>
+                                        </div>
+
+                                        <button onClick={() => { navigate('/student'); setShowProfileMenu(false) }} className="dropdown-item">
+                                            <Mountain size={16} /> <span>My Journey</span>
+                                        </button>
+                                        <button onClick={() => { navigate('/student/playground'); setShowProfileMenu(false) }} className="dropdown-item">
+                                            <Globe size={16} /> <span>Playground</span>
+                                        </button>
+                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
+                                            <MessageSquare size={16} /> <span>My Discussions</span>
+                                        </button>
+                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
+                                            <Zap size={16} /> <span>Saved Snippets</span>
+                                        </button>
+                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
+                                            <Bookmark size={16} /> <span>Bookmarks</span>
+                                        </button>
+                                        <button onClick={() => { navigate('/student/assessments'); setShowProfileMenu(false) }} className="dropdown-item">
+                                            <BookOpen size={16} /> <span>Question Bank</span>
+                                        </button>
+
+                                        <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
+
+                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
+                                            <User size={16} /> <span>Profile</span>
+                                        </button>
+
+                                        <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
+
+                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
+                                            <HelpCircle size={16} /> <span>Help Center</span>
+                                        </button>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '0.5rem' }} className="dropdown-item-container">
+                                            <button onClick={() => setShowProfileMenu(false)} className="dropdown-item" style={{ flex: 1 }}>
+                                                <Gift size={16} /> <span>Invite & Earn</span>
+                                            </button>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#f1f5f9', padding: '0.2rem 0.4rem', borderRadius: 4, cursor: 'pointer' }}>
+                                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#475569' }}>T9ZKY9</span>
+                                                <ExternalLink size={12} color="#64748b" />
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
+                                            <MessageCircle size={16} /> <span>Contact Us</span>
+                                        </button>
+
+                                        <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
+
+                                        <button 
+                                            onClick={() => { handleSignOut(); setShowProfileMenu(false) }} 
+                                            className="dropdown-item" 
+                                            style={{ color: '#dc2626' }}
+                                        >
+                                            <LogOut size={16} /> <span>Log Out</span>
+                                        </button>
+                                    </div>
+
+                                    <style>{`
+                                        .dropdown-item {
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 0.75rem;
+                                            padding: 0.6rem 0.75rem;
+                                            border: none;
+                                            background: none;
+                                            width: 100%;
+                                            text-align: left;
+                                            font-size: 0.85rem;
+                                            font-weight: 500;
+                                            color: #475569;
+                                            cursor: pointer;
+                                            border-radius: 8px;
+                                            transition: all 0.2s ease;
+                                        }
+                                        .dropdown-item:hover {
+                                            background: #f8fafc;
+                                            color: #10b981;
+                                        }
+                                        .dropdown-item-container:hover .dropdown-item {
+                                            background: #f8fafc;
+                                            color: #10b981;
+                                        }
+                                        .nav-item-hover:hover {
+                                            background: rgba(16,185,129,0.12) !important;
+                                            border-color: rgba(16,185,129,0.25) !important;
+                                        }
+                                    `}</style>
+                                </>
+                            )}
                         </div>
                     </div>
                 </header>
