@@ -13,8 +13,15 @@ export default function Login() {
     const [error, setError] = useState('')
 
     const [isLampOn, setIsLampOn] = useState(false)
+    const [infoMessage, setInfoMessage] = useState('')
  
     useEffect(() => {
+        // Check for session replacement reason
+        const params = new URLSearchParams(window.location.search)
+        if (params.get('reason') === 'replaced') {
+            setInfoMessage('You have been logged out because someone else logged into your account from a different device.')
+        }
+
         const timer = setTimeout(() => {
             setIsLampOn(true)
         }, 3000)
@@ -171,6 +178,13 @@ export default function Login() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, marginBottom: '1.5rem', color: '#f87171', fontSize: '0.85rem' }}>
                             <AlertCircle size={16} />
                             {error}
+                        </div>
+                    )}
+
+                    {infoMessage && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 10, marginBottom: '1.5rem', color: '#818cf8', fontSize: '0.85rem' }}>
+                            <AlertCircle size={16} />
+                            {infoMessage}
                         </div>
                     )}
 

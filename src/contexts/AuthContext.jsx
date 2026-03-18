@@ -74,8 +74,10 @@ export function AuthProvider({ children }) {
             }, (payload) => {
                 // Check session ID
                 if (payload.new.current_session_id && payload.new.current_session_id !== sessionIdRef.current) {
-                    alert('Session Invalidation: You have been logged out because another system logged in using your account.')
+                    console.warn('Session replaced by another device.')
                     signOut()
+                    // Use a query param to tell the login page why it happened
+                    window.location.href = '/login?reason=replaced'
                     return
                 }
                 
@@ -91,7 +93,7 @@ export function AuthProvider({ children }) {
             clearInterval(expiryCheck)
             supabase.removeChannel(channel)
         }
-    }, [user, profile]) // Removed browserSessionId to fix React warning, using ref instead
+    }, [user, profile])
 
     async function fetchProfile(userId) {
         try {
