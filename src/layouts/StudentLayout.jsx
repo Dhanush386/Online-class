@@ -133,7 +133,7 @@ export default function StudentLayout() {
             {/* Main */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 {/* Top bar */}
-                <header style={{ padding: '0 1rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--sidebar-border)', background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', flexShrink: 0 }}>
+                <header style={{ padding: '0 1rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--sidebar-border)', background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', flexShrink: 0, zIndex: 100, position: 'relative' }}>
                     <button
                         onClick={() => isMobile ? setMobileMenuOpen(!mobileMenuOpen) : setCollapsed(!collapsed)}
                         style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.5rem', borderRadius: 8 }}
@@ -213,9 +213,10 @@ export default function StudentLayout() {
                                         borderRadius: 12, 
                                         boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
                                         border: '1px solid var(--sidebar-border)', 
-                                        zIndex: 50, 
+                                        zIndex: 100, 
                                         padding: '0.5rem',
-                                        overflow: 'hidden',
+                                        maxHeight: 'calc(100vh - 80px)',
+                                        overflowY: 'auto',
                                         display: 'flex',
                                         flexDirection: 'column',
                                         gap: '2px'
