@@ -52,6 +52,7 @@ export default function Profile() {
         leetcode_url: '',
         resume_url: '',
         photo_url: '',
+        phone: '',
         whatsapp_number: '',
         parent_first_name: '',
         parent_last_name: '',
