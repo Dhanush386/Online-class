@@ -22,27 +22,28 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly })
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
 
-        if (lang === 'html' || lang === 'web') {
-            // Tags
-            html = html.replace(/(&lt;\/?[a-z1-6]+)(&gt;| )/gi, '<span style="color: #f87171">$1</span>$2')
-            // Attributes
-            html = html.replace(/ ([a-z-]+)=/gi, ' <span style="color: #fbbf24">$1</span>=')
-            // Strings
-            html = html.replace(/"([^"]*)"/g, '<span style="color: #34d399">"$1"</span>')
-        } else if (lang === 'css') {
-            // Properties
-            html = html.replace(/([a-z-]+):/gi, '<span style="color: #60a5fa">$1</span>:')
-            // Values
-            html = html.replace(/: ([^;]+);/g, ': <span style="color: #fbbf24">$1</span>;')
-            // Selectors
-            html = html.replace(/^([.#a-z][^{]+) {/gim, '<span style="color: #f87171">$1</span> {')
-        } else {
-            const tokens = []
-            const pushToken = (match, color) => {
-                tokens.push(`<span style="color: ${color}">${match}</span>`)
-                return `___TOKEN_${tokens.length - 1}___`
-            }
+        const tokens = []
+        const pushToken = (match, color) => {
+            tokens.push(`<span style="color: ${color}">${match}</span>`)
+            return `___TOKEN_${tokens.length - 1}___`
+        }
 
+        if (lang === 'html' || lang === 'web') {
+            // 1. Strings (inside attributes) - process first
+            html = html.replace(/"([^"]*)"/g, m => pushToken(m, '#34d399'))
+            // 2. Tags
+            html = html.replace(/(&lt;\/?[a-z1-6]+)(&gt;| )/gi, m => pushToken(m, '#f87171'))
+            // 3. Attributes
+            html = html.replace(/ ([a-z-]+)=/gi, m => pushToken(m, '#fbbf24'))
+        } else if (lang === 'css') {
+            // 1. Values (often contains strings/urls)
+            html = html.replace(/: ([^;]+);/g, (m, v) => ': ' + pushToken(v, '#fbbf24') + ';')
+            // 2. Properties
+            html = html.replace(/([a-z-]+):/gi, m => pushToken(m, '#60a5fa'))
+            // 3. Selectors
+            html = html.replace(/^([.#a-z][^{]+) {/gim, (m, s) => pushToken(s, '#f87171') + ' {')
+        } else {
+            // JS / Python / SQL Common
             // 1. Comments (lowest priority to overlap, but highest to ignore)
             const commentRegex = lang === 'python' ? /(#.*)/g : lang === 'sql' ? /(--.*)/g : /(\/\/.*)/g
             html = html.replace(commentRegex, m => pushToken(m, '#94a3b8'))
@@ -62,12 +63,10 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly })
 
             // 4. Numbers
             html = html.replace(/\b(\d+)\b/g, m => pushToken(m, '#fbbf24'))
-
-            // Restore tokens
-            html = html.replace(/___TOKEN_(\d+)___/g, (m, id) => tokens[id])
         }
 
-        return html
+        // Restore tokens
+        return html.replace(/___TOKEN_(\d+)___/g, (m, id) => tokens[id])
     }
 
     const handleKeyDown = (e) => {
