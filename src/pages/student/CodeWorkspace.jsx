@@ -6,6 +6,7 @@ import {
     ChevronLeft, Play, Send, Layout, Eye, Sidebar as SidebarIcon,
     AlertCircle, CheckCircle2, XCircle, Clock, Info, Code as CodeIcon, Database, Globe, Lock, Share2, Copy
 } from 'lucide-react'
+import CodeEditor from '../../components/CodeEditor'
 
 const LANGUAGE_CONFIG = {
     python: { id: 25, name: 'Python 3', icon: <CodeIcon size={16} />, useExtra: true },
@@ -722,35 +723,50 @@ export default function CodeWorkspace() {
                                         </div>
                                     </div>
                                 </div>
-                                {webTab === 'html' && (
-                                    <textarea value={htmlCode} onChange={e => setHtmlCode(e.target.value)} spellCheck={false} placeholder="<!-- HTML goes here -->" style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }} />
-                                )}
-                                {webTab === 'css' && (
-                                    <textarea value={cssCode} onChange={e => setCssCode(e.target.value)} spellCheck={false} placeholder="/* CSS goes here */" style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }} />
-                                )}
-                                {webTab === 'js' && (
-                                    <textarea value={jsCode} onChange={e => setJsCode(e.target.value)} spellCheck={false} placeholder="// JavaScript goes here" style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }} />
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <div style={{ padding: '0.5rem 1rem', background: '#0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
-                                        solution.{challenge.language === 'python' ? 'py' : challenge.language === 'sql' ? 'sql' : 'java'}
-                                    </span>
-                                </div>
-                                <textarea
-                                    value={code}
-                                    onChange={e => setCode(e.target.value)}
-                                    spellCheck={false}
-                                    style={{
-                                        flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0',
-                                        border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem',
-                                        fontFamily: 'monospace', lineHeight: 1.5, resize: 'none'
-                                    }}
+                            {webTab === 'html' && (
+                                <CodeEditor
+                                    value={htmlCode}
+                                    onChange={e => setHtmlCode(e.target.value)}
+                                    language="html"
+                                    placeholder="<!-- HTML code here -->"
+                                    readOnly={isReadOnly}
                                 />
-                            </>
-                        )}
+                            )}
+                            {webTab === 'css' && (
+                                <CodeEditor
+                                    value={cssCode}
+                                    onChange={e => setCssCode(e.target.value)}
+                                    language="css"
+                                    placeholder="/* CSS code here */"
+                                    readOnly={isReadOnly}
+                                />
+                            )}
+                            {webTab === 'js' && (
+                                <CodeEditor
+                                    value={jsCode}
+                                    onChange={e => setJsCode(e.target.value)}
+                                    language="js"
+                                    placeholder="// JS code here"
+                                    readOnly={isReadOnly}
+                                />
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <div style={{ padding: '0.5rem 1rem', background: '#0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
+                                    solution.{challenge.language === 'python' ? 'py' : challenge.language === 'sql' ? 'sql' : 'java'}
+                                </span>
+                            </div>
+                            <CodeEditor
+                                value={code}
+                                onChange={e => setCode(e.target.value)}
+                                language={challenge.language}
+                                placeholder="Write your solution here..."
+                                readOnly={isReadOnly}
+                            />
+                        </>
+                    )}
                     </div>
 
                     {/* Right Pane: Results / Preview */}

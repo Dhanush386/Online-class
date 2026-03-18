@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import CodeEditor from '../../components/CodeEditor'
 import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock } from 'lucide-react'
 
 const LANGUAGES = [
@@ -528,18 +529,22 @@ export default function CodingManagement() {
                                                     <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
                                                     <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
                                                 </div>
-                                                {webTab === 'html' && (
-                                                    <textarea value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} className="form-input" rows={6} placeholder="Initial HTML..." style={{ border: 'none', fontFamily: 'monospace', fontSize: '0.85rem' }} />
-                                                )}
-                                                {webTab === 'css' && (
-                                                    <textarea value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} className="form-input" rows={6} placeholder="Initial CSS..." style={{ border: 'none', fontFamily: 'monospace', fontSize: '0.85rem' }} />
-                                                )}
-                                                {webTab === 'js' && (
-                                                    <textarea value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} className="form-input" rows={6} placeholder="Initial JS..." style={{ border: 'none', fontFamily: 'monospace', fontSize: '0.85rem' }} />
-                                                )}
+                                                <div style={{ height: '180px', background: '#1e293b' }}>
+                                                    {webTab === 'html' && (
+                                                        <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="Initial HTML..." />
+                                                    )}
+                                                    {webTab === 'css' && (
+                                                        <CodeEditor value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} language="css" placeholder="Initial CSS..." />
+                                                    )}
+                                                    {webTab === 'js' && (
+                                                        <CodeEditor value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} language="js" placeholder="Initial JS..." />
+                                                    )}
+                                                </div>
                                             </div>
                                         ) : (
-                                            <textarea id="starter-code" name="starter_code" className="form-input" rows={6} placeholder="Initial code for the student..." value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                            <div style={{ height: '180px', background: '#1e293b', borderRadius: 8, overflow: 'hidden' }}>
+                                                <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} placeholder="Initial code..." />
+                                            </div>
                                         )}
                                     </div>
                                     <div>

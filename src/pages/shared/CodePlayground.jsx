@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import CodeEditor from '../../components/CodeEditor'
 
 const LANGUAGE_CONFIG = {
     python: { id: 25, name: 'Python 3', icon: <CodeIcon size={16} />, useExtra: true },
@@ -320,42 +321,36 @@ export default function CodePlayground() {
                         {language === 'html' ? (
                             <>
                                 {webTab === 'html' && (
-                                    <textarea
+                                    <CodeEditor
                                         value={htmlCode}
                                         onChange={e => setHtmlCode(e.target.value)}
-                                        spellCheck={false}
-                                        style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }}
+                                        language="html"
+                                        placeholder="<!-- HTML code here -->"
                                     />
                                 )}
                                 {webTab === 'css' && (
-                                    <textarea
+                                    <CodeEditor
                                         value={cssCode}
                                         onChange={e => setCssCode(e.target.value)}
-                                        spellCheck={false}
-                                        style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }}
+                                        language="css"
+                                        placeholder="/* CSS code here */"
                                     />
                                 )}
                                 {webTab === 'js' && (
-                                    <textarea
+                                    <CodeEditor
                                         value={jsCode}
                                         onChange={e => setJsCode(e.target.value)}
-                                        spellCheck={false}
-                                        style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }}
+                                        language="js"
+                                        placeholder="// JS code here"
                                     />
                                 )}
                             </>
                         ) : (
-                            <textarea
+                            <CodeEditor
                                 value={code}
                                 onChange={e => setCode(e.target.value)}
-                                spellCheck={false}
-                                style={{
-                                    flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0',
-                                    border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem',
-                                    fontFamily: 'monospace', lineHeight: 1.5, resize: 'none',
-                                    whiteSpace: 'pre',
-                                    overflowX: 'auto'
-                                }}
+                                language={language}
+                                placeholder="Write your code here..."
                             />
                         )}
                     </div>
