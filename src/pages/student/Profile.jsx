@@ -717,10 +717,22 @@ export default function Profile() {
                                                 onChange={handleChange}
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
                                             >
+                                                <option>Teacher</option>
+                                                <option>Professor/Faculty</option>
+                                                <option>Private Employee</option>
+                                                <option>IT Employee</option>
+                                                <option>Researcher/Scientist</option>
+                                                <option>Civil Servant/Bureaucrat</option>
+                                                <option>Doctor</option>
+                                                <option>Lawyer</option>
                                                 <option>Farmer</option>
-                                                <option>Employee</option>
-                                                <option>Business</option>
-                                                <option>Others</option>
+                                                <option>Entrepreneur</option>
+                                                <option>Freelancer</option>
+                                                <option>Homemaker</option>
+                                                <option>Retired Employee</option>
+                                                <option>Government Employee</option>
+                                                <option>College Management/Placement Cell</option>
+                                                <option>Other</option>
                                             </select>
                                         </div>
                                     </div>
