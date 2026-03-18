@@ -429,31 +429,46 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Registered Phone Number</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Phone Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
                                                     name="phone"
-                                                    value={profile?.phone || ''}
-                                                    disabled
-                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}
+                                                    value={formData.phone || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter phone number"
+                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                                 />
-                                                <button style={{ padding: '0.8rem 1rem', borderRadius: 10, background: 'rgba(99,102,241,0.1)', color: '#6366f1', border: 'none', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}>Update →</button>
                                             </div>
+                                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem' }}>Primary contact number</p>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Email ID</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>WhatsApp Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
-                                                    value={user?.email || ''}
-                                                    disabled
-                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}
+                                                    name="whatsapp_number"
+                                                    value={formData.whatsapp_number || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter WhatsApp number"
+                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                                 />
-                                                <button style={{ padding: '0.8rem 1rem', borderRadius: 10, background: 'rgba(99,102,241,0.1)', color: '#6366f1', border: 'none', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}>Update</button>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: 600 }}>
-                                                <CheckCircle2 size={14} /> Your Email address is verified
-                                            </div>
+                                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem' }}>For important updates on WhatsApp</p>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Email ID</label>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <input 
+                                                value={user?.email || ''}
+                                                disabled
+                                                style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: 600 }}>
+                                            <CheckCircle2 size={14} /> Your Email address is verified
                                         </div>
                                     </div>
 
