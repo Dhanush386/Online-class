@@ -102,6 +102,15 @@ export default function StudentManagement() {
                 .from('progress')
                 .select('*')
 
+            // Fetch all submissions for assessments and coding
+            const [
+                { data: allAssessSubmissions },
+                { data: allCodingSubmissions }
+            ] = await Promise.all([
+                supabase.from('assessment_submissions').select('student_id, score, total_questions'),
+                supabase.from('coding_submissions').select('student_id, score')
+            ])
+
             // Fetch all courses owned by this organizer
             const { data: allCourses } = await supabase
                 .from('courses')
@@ -126,11 +135,23 @@ export default function StudentManagement() {
                     })
                 })
 
-            // Combine students with their enrollments
-            const studentsWithData = (allStudents || []).map(s => ({
-                ...s,
-                enrollments: enrollmentMap[s.id] || []
-            }))
+            // Combine students with their data
+            const studentsWithData = (allStudents || []).map(s => {
+                const studentAssessments = (allAssessSubmissions || []).filter(a => a.student_id === s.id)
+                const totalPossible = studentAssessments.reduce((sum, a) => sum + (a.total_questions || 0), 0)
+                const totalScored = studentAssessments.reduce((sum, a) => sum + (a.score || 0), 0)
+                const assessAvg = totalPossible > 0 ? Math.round((totalScored / totalPossible) * 100) : 0
+
+                const studentCoding = (allCodingSubmissions || []).filter(c => c.student_id === s.id)
+                const codingTotal = studentCoding.reduce((sum, c) => sum + (c.score || 0), 0)
+
+                return {
+                    ...s,
+                    enrollments: enrollmentMap[s.id] || [],
+                    assessAvg,
+                    codingTotal
+                }
+            })
 
             setStudents(studentsWithData)
 
@@ -784,8 +805,20 @@ export default function StudentManagement() {
                                                     <div style={{ fontSize: '1rem', fontWeight: 700, color: avg > 70 ? '#10b981' : avg > 40 ? '#f59e0b' : '#f87171' }}>{avg}%</div>
                                                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Progress</div>
                                                 </div>
+                                                <div style={{ textAlign: 'center', minWidth: 70 }}>
+                                                    <div style={{ fontSize: '1rem', fontWeight: 700, color: student.assessAvg > 70 ? '#10b981' : student.assessAvg > 40 ? '#f59e0b' : '#f87171' }}>
+                                                        {student.assessAvg}%
+                                                    </div>
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Assignments</div>
+                                                </div>
+                                                <div style={{ textAlign: 'center', minWidth: 60 }}>
+                                                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#6366f1' }}>
+                                                        {student.codingTotal}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Coding</div>
+                                                </div>
                                             </div>
-                                            <div style={{ width: 100 }} className="hide-mobile">
+                                            <div style={{ width: 80 }} className="hide-mobile">
                                                 <div className="progress-bar-track">
                                                     <div className="progress-bar-fill" style={{ width: `${avg}%`, background: avg > 70 ? 'linear-gradient(90deg,#10b981,#059669)' : avg > 40 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)' }} />
                                                 </div>
