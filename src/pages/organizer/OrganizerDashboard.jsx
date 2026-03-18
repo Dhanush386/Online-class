@@ -6,11 +6,6 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 
-const chartData = [
-    { name: 'Mon', uploads: 2 }, { name: 'Tue', uploads: 4 },
-    { name: 'Wed', uploads: 3 }, { name: 'Thu', uploads: 5 },
-    { name: 'Fri', uploads: 6 }, { name: 'Sat', uploads: 2 }, { name: 'Sun', uploads: 4 },
-]
 
 export default function OrganizerDashboard() {
     const { profile } = useAuth()
@@ -18,6 +13,10 @@ export default function OrganizerDashboard() {
     const [recentVideos, setRecentVideos] = useState([])
     const [recentChallenges, setRecentChallenges] = useState([])
     const [loading, setLoading] = useState(true)
+    const [weeklyUploads, setWeeklyUploads] = useState([
+        { name: 'Mon', uploads: 0 }, { name: 'Tue', uploads: 0 }, { name: 'Wed', uploads: 0 },
+        { name: 'Thu', uploads: 0 }, { name: 'Fri', uploads: 0 }, { name: 'Sat', uploads: 0 }, { name: 'Sun', uploads: 0 }
+    ])
     const [resetCode, setResetCode] = useState(null)
     const [generatingCode, setGeneratingCode] = useState(false)
 
@@ -49,6 +48,37 @@ export default function OrganizerDashboard() {
             })
             setRecentVideos(videos || [])
             setRecentChallenges(challenges || [])
+
+            // Calculate weekly uploads for the graph
+            const now = new Date()
+            const dayOfWeek = now.getDay() // 0 (Sun) to 6 (Sat)
+            const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1) // Adjust to Monday
+            const monday = new Date(now.setDate(diff))
+            monday.setHours(0, 0, 0, 0)
+
+            const { data: allVideos } = await supabase
+                .from('videos')
+                .select('created_at')
+                .gte('created_at', monday.toISOString())
+
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+            const counts = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 }
+            
+            ;(allVideos || []).forEach(v => {
+                const dayName = dayNames[new Date(v.created_at).getDay()]
+                if (counts[dayName] !== undefined) counts[dayName]++
+            })
+
+            setWeeklyUploads([
+                { name: 'Mon', uploads: counts.Mon },
+                { name: 'Tue', uploads: counts.Tue },
+                { name: 'Wed', uploads: counts.Wed },
+                { name: 'Thu', uploads: counts.Thu },
+                { name: 'Fri', uploads: counts.Fri },
+                { name: 'Sat', uploads: counts.Sat },
+                { name: 'Sun', uploads: counts.Sun },
+            ])
+
             setLoading(false)
         }
 
@@ -156,7 +186,7 @@ export default function OrganizerDashboard() {
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
                     <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>Video Uploads — This Week</h3>
                     <ResponsiveContainer width="100%" height={220}>
-                        <AreaChart data={chartData}>
+                        <AreaChart data={weeklyUploads}>
                             <defs>
                                 <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
