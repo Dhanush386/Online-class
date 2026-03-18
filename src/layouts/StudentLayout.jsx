@@ -235,9 +235,6 @@ export default function StudentLayout() {
                                         <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
                                             <Zap size={16} /> <span>Saved Snippets</span>
                                         </button>
-                                        <button onClick={() => setShowProfileMenu(false)} className="dropdown-item">
-                                            <Bookmark size={16} /> <span>Bookmarks</span>
-                                        </button>
 
                                         <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
 
