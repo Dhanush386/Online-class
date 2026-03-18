@@ -28,6 +28,10 @@ const STARTER_CODE = {
 export default function CodePlayground() {
     const [language, setLanguage] = useState('python')
     const [code, setCode] = useState(STARTER_CODE.python)
+    const [htmlCode, setHtmlCode] = useState(STARTER_CODE.html)
+    const [cssCode, setCssCode] = useState('/* Write your CSS here */\nbody {\n  font-family: sans-serif;\n}')
+    const [jsCode, setJsCode] = useState('// Write your JS here\nconsole.log("Hello JS!");')
+    const [webTab, setWebTab] = useState('html') // 'html', 'css', 'js'
     const [running, setRunning] = useState(false)
     const [result, setResult] = useState(null)
     const [activeTab, setActiveTab] = useState('output') // 'output', 'preview'
@@ -64,11 +68,15 @@ export default function CodePlayground() {
         if (!snippetTitle.trim() || !profile?.id) return
         setSaving(true)
         try {
+            const codeToSave = language === 'html' 
+                ? JSON.stringify({ html: htmlCode, css: cssCode, js: jsCode })
+                : code
+
             await supabase.from('saved_code_snippets').insert({
                 user_id: profile.id,
                 title: snippetTitle.trim(),
                 language,
-                code
+                code: codeToSave
             })
             setShowSaveModal(false)
             setSnippetTitle('')
@@ -83,11 +91,22 @@ export default function CodePlayground() {
     const handleLoad = (snippet) => {
         if (confirm(`Load "${snippet.title}"? Your current code will be overwritten.`)) {
             setLanguage(snippet.language)
-            setCode(snippet.code)
+            if (snippet.language === 'html') {
+                try {
+                    const parsed = JSON.parse(snippet.code)
+                    setHtmlCode(parsed.html || '')
+                    setCssCode(parsed.css || '')
+                    setJsCode(parsed.js || '')
+                } catch (e) {
+                    setHtmlCode(snippet.code) // Fallback for old simple HTML snippets
+                }
+                setActiveTab('preview')
+            } else {
+                setCode(snippet.code)
+                setActiveTab('output')
+            }
             setShowLoadModal(false)
             setResult(null)
-            if (snippet.language === 'html') setActiveTab('preview')
-            else setActiveTab('output')
         }
     }
 
@@ -108,9 +127,9 @@ export default function CodePlayground() {
                 user_id: profile.id,
                 title: publishTitle.trim(),
                 description: publishDesc.trim() || null,
-                html: code,  // CodePlayground handles web as a single HTML string
-                css: '',
-                js: ''
+                html: htmlCode,
+                css: cssCode,
+                js: jsCode
             }).select('id').single()
 
             if (error) throw error
@@ -129,10 +148,16 @@ export default function CodePlayground() {
     const handleLanguageChange = (newLang) => {
         if (confirm('Switching languages will reset your current code. Continue?')) {
             setLanguage(newLang)
-            setCode(STARTER_CODE[newLang])
+            if (newLang === 'html') {
+                setHtmlCode(STARTER_CODE.html)
+                setCssCode('/* Write your CSS here */\nbody {\n  font-family: sans-serif;\n}')
+                setJsCode('// Write your JS here\nconsole.log("Hello JS!");')
+                setActiveTab('preview')
+            } else {
+                setCode(STARTER_CODE[newLang])
+                setActiveTab('output')
+            }
             setResult(null)
-            if (newLang === 'html') setActiveTab('preview')
-            else setActiveTab('output')
         }
     }
 
@@ -187,11 +212,32 @@ export default function CodePlayground() {
         }
     }
 
+    const getCombinedWebCode = () => {
+        let finalHtml = htmlCode
+        const cssInject = `<style>${cssCode}</style>`
+        const jsInject = `<script>${jsCode}</script>`
+
+        if (finalHtml.includes('</head>')) {
+            finalHtml = finalHtml.replace('</head>', `${cssInject}</head>`)
+        } else if (finalHtml.includes('<body>')) {
+            finalHtml = finalHtml.replace('<body>', `<body>${cssInject}`)
+        } else {
+            finalHtml = cssInject + finalHtml
+        }
+
+        if (finalHtml.includes('</body>')) {
+            finalHtml = finalHtml.replace('</body>', `${jsInject}</body>`)
+        } else {
+            finalHtml = finalHtml + jsInject
+        }
+        return finalHtml
+    }
+
     const updatePreview = () => {
         if (iframeRef.current) {
             const document = iframeRef.current.contentDocument
             document.open()
-            document.write(code)
+            document.write(getCombinedWebCode())
             document.close()
         }
     }
@@ -241,26 +287,77 @@ export default function CodePlayground() {
                 {/* Left: Input (Code and Stdin) */}
                 <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', borderRight: '1px solid #e2e8f0' }}>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#1e293b' }}>
-                        <div style={{ padding: '0.6rem 1rem', background: '#0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
-                                Playground Editor
-                            </span>
-                            <button onClick={() => setCode(STARTER_CODE[language])} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.7rem' }}>
+                        <div style={{ padding: '0', background: '#0f172a', display: 'flex', borderBottom: '1px solid #334155', justifyContent: 'space-between', alignItems: 'center' }}>
+                            {language === 'html' ? (
+                                <div style={{ display: 'flex' }}>
+                                    <button onClick={() => setWebTab('html')} style={{ padding: '0.6rem 1rem', background: webTab === 'html' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'html' ? '#e2e8f0' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'html' ? '2px solid #e34c26' : '2px solid transparent' }}>
+                                        HTML
+                                    </button>
+                                    <button onClick={() => setWebTab('css')} style={{ padding: '0.6rem 1rem', background: webTab === 'css' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'css' ? '#e2e8f0' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'css' ? '2px solid #264de4' : '2px solid transparent' }}>
+                                        CSS
+                                    </button>
+                                    <button onClick={() => setWebTab('js')} style={{ padding: '0.6rem 1rem', background: webTab === 'js' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'js' ? '#e2e8f0' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'js' ? '2px solid #f0db4f' : '2px solid transparent' }}>
+                                        JS
+                                    </button>
+                                </div>
+                            ) : (
+                                <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', paddingLeft: '1rem' }}>
+                                    Playground Editor
+                                </span>
+                            )}
+                            <button onClick={() => {
+                                if (language === 'html') {
+                                    setHtmlCode(STARTER_CODE.html);
+                                    setCssCode('/* Write your CSS here */\nbody {\n  font-family: sans-serif;\n}');
+                                    setJsCode('// Write your JS here\nconsole.log("Hello JS!");');
+                                } else {
+                                    setCode(STARTER_CODE[language]);
+                                }
+                            }} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.7rem', paddingRight: '1rem' }}>
                                 <RotateCcw size={12} /> Reset
                             </button>
                         </div>
-                        <textarea
-                            value={code}
-                            onChange={e => setCode(e.target.value)}
-                            spellCheck={false}
-                            style={{
-                                flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0',
-                                border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem',
-                                fontFamily: 'monospace', lineHeight: 1.5, resize: 'none',
-                                whiteSpace: 'pre',
-                                overflowX: 'auto'
-                            }}
-                        />
+                        {language === 'html' ? (
+                            <>
+                                {webTab === 'html' && (
+                                    <textarea
+                                        value={htmlCode}
+                                        onChange={e => setHtmlCode(e.target.value)}
+                                        spellCheck={false}
+                                        style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }}
+                                    />
+                                )}
+                                {webTab === 'css' && (
+                                    <textarea
+                                        value={cssCode}
+                                        onChange={e => setCssCode(e.target.value)}
+                                        spellCheck={false}
+                                        style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }}
+                                    />
+                                )}
+                                {webTab === 'js' && (
+                                    <textarea
+                                        value={jsCode}
+                                        onChange={e => setJsCode(e.target.value)}
+                                        spellCheck={false}
+                                        style={{ flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0', border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: 1.5, resize: 'none' }}
+                                    />
+                                )}
+                            </>
+                        ) : (
+                            <textarea
+                                value={code}
+                                onChange={e => setCode(e.target.value)}
+                                spellCheck={false}
+                                style={{
+                                    flex: 1, width: '100%', background: '#1e293b', color: '#e2e8f0',
+                                    border: 'none', outline: 'none', padding: '1.5rem', fontSize: '1rem',
+                                    fontFamily: 'monospace', lineHeight: 1.5, resize: 'none',
+                                    whiteSpace: 'pre',
+                                    overflowX: 'auto'
+                                }}
+                            />
+                        )}
                     </div>
                     {language !== 'html' && (
                         <div style={{ height: '120px', borderTop: '4px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>

@@ -28,6 +28,8 @@ export default function CodingManagement() {
     const [error, setError] = useState('')
     const [search, setSearch] = useState('')
     const [editingId, setEditingId] = useState(null)
+    const [starterWebCode, setStarterWebCode] = useState({ html: '', css: '', js: '' })
+    const [webTab, setWebTab] = useState('html')
 
     const [formData, setFormData] = useState({
         title: '', description: '', problem_statement: '',
@@ -116,8 +118,18 @@ export default function CodingManagement() {
         setError('')
 
         try {
+            let finalStarterCode = formData.starter_code
+            if (formData.language === 'html') {
+                finalStarterCode = JSON.stringify({
+                    html: starterWebCode.html,
+                    css: starterWebCode.css,
+                    js: starterWebCode.js
+                })
+            }
+
             const payload = {
                 ...formData,
+                starter_code: finalStarterCode,
                 test_cases: formData.test_cases.filter(tc => tc.expected_output.trim() !== ''),
                 open_time: formData.open_time ? new Date(formData.open_time).toISOString() : null,
                 close_time: formData.close_time ? new Date(formData.close_time).toISOString() : null,
@@ -161,11 +173,30 @@ export default function CodingManagement() {
 
     function openEdit(c) {
         setEditingId(c.id)
+        
+        let initialStarterCode = c.starter_code || ''
+        if (c.language === 'html') {
+            try {
+                const parsed = JSON.parse(c.starter_code || '{}')
+                setStarterWebCode({
+                    html: parsed.html || '',
+                    css: parsed.css || '',
+                    js: parsed.js || ''
+                })
+            } catch (e) {
+                setStarterWebCode({
+                    html: c.starter_code || '',
+                    css: '',
+                    js: ''
+                })
+            }
+        }
+
         setFormData({
             title: c.title, description: c.description || '',
             problem_statement: c.problem_statement, course_id: c.course_id,
             language: c.language, difficulty: c.difficulty,
-            starter_code: c.starter_code || '', constraints: c.constraints || '',
+            starter_code: initialStarterCode, constraints: c.constraints || '',
             input_format: c.input_format || '', output_format: c.output_format || '',
             xp_reward: c.xp_reward || 15,
             open_time: toLocalInput(c.open_time),
@@ -188,6 +219,7 @@ export default function CodingManagement() {
             day_number: 1,
             test_cases: [{ input: '', expected_output: '', is_hidden: false }]
         })
+        setStarterWebCode({ html: '', css: '', js: '' })
         setEditingId(null)
         setError('')
     }
@@ -489,7 +521,26 @@ export default function CodingManagement() {
                                 <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
                                     <div>
                                         <label htmlFor="starter-code" className="form-label">Starter Code</label>
-                                        <textarea id="starter-code" name="starter_code" className="form-input" rows={6} placeholder="Inital code for the student..." value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                        {formData.language === 'html' ? (
+                                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                                                <div style={{ display: 'flex', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1' }}>
+                                                    <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
+                                                    <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
+                                                    <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
+                                                </div>
+                                                {webTab === 'html' && (
+                                                    <textarea value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} className="form-input" rows={6} placeholder="Initial HTML..." style={{ border: 'none', fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                                )}
+                                                {webTab === 'css' && (
+                                                    <textarea value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} className="form-input" rows={6} placeholder="Initial CSS..." style={{ border: 'none', fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                                )}
+                                                {webTab === 'js' && (
+                                                    <textarea value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} className="form-input" rows={6} placeholder="Initial JS..." style={{ border: 'none', fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <textarea id="starter-code" name="starter_code" className="form-input" rows={6} placeholder="Initial code for the student..." value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} style={{ fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                        )}
                                     </div>
                                     <div>
                                         <label htmlFor="constraints" className="form-label">Constraints</label>

@@ -481,21 +481,35 @@ export default function CodeWorkspace() {
 
     const getCombinedWebCode = () => {
         let finalHtml = htmlCode
+        const cssInject = `<style>${cssCode}</style>`
+        const jsInject = `<script>${jsCode}</script>`
 
         // Manual Linking Logic: Only inject CSS if they linked style.css
         const cssLinkRegex = /<link[^>]*href=["']style\.css["'][^>]*>/i
         if (cssLinkRegex.test(finalHtml)) {
-            finalHtml = finalHtml.replace(cssLinkRegex, `<style>${cssCode}</style>`)
+            finalHtml = finalHtml.replace(cssLinkRegex, cssInject)
+        } else {
+            // Auto injection: at end of head or start of body/html
+            if (finalHtml.includes('</head>')) {
+                finalHtml = finalHtml.replace('</head>', `${cssInject}</head>`)
+            } else {
+                finalHtml = cssInject + finalHtml
+            }
         }
 
         // Manual Linking Logic: Only inject JS if they linked script.js
         const jsScriptRegex = /<script[^>]*src=["']script\.js["'][^>]*><\/script>/i
         if (jsScriptRegex.test(finalHtml)) {
-            finalHtml = finalHtml.replace(jsScriptRegex, `<script>${jsCode}<\/script>`)
+            finalHtml = finalHtml.replace(jsScriptRegex, jsInject)
+        } else {
+            // Auto injection: at end of body or end of html
+            if (finalHtml.includes('</body>')) {
+                finalHtml = finalHtml.replace('</body>', `${jsInject}</body>`)
+            } else {
+                finalHtml = finalHtml + jsInject
+            }
         }
 
-        // If it lacks basic wrappers but they're expecting preview, we just return the raw HTML.
-        // It's their responsibility to structure it correctly.
         return finalHtml
     }
 
