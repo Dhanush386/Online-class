@@ -737,15 +737,33 @@ export default function Profile() {
                                         </div>
                                     </div>
 
-                                    <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Parent/Guardian Email ID</label>
-                                        <input 
-                                            name="parent_email"
-                                            value={formData.parent_email}
-                                            onChange={handleChange}
-                                            placeholder="Enter email address"
-                                            style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
-                                        />
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Parent/Guardian Phone Number</label>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}>IN +91</div>
+                                                <input 
+                                                    name="parent_phone"
+                                                    value={formData.parent_phone || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter phone number"
+                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Parent/Guardian WhatsApp Number</label>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}>IN +91</div>
+                                                <input 
+                                                    name="parent_whatsapp"
+                                                    value={formData.parent_whatsapp || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter WhatsApp number"
+                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </section>
                             )}
