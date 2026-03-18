@@ -212,7 +212,7 @@ export default function OrganizerLayout() {
                                             <BookOpen size={16} /> <span>My Courses</span>
                                         </button>
                                         <button onClick={() => setShowProfileMenu(false)} className="dropdown-item-org">
-                                            <User size={16} /> <span>Settings</span>
+                                            <Users size={16} /> <span>Settings</span>
                                         </button>
 
                                         <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />

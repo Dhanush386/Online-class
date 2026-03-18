@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
-import { Send, User as UserIcon, Clock, CheckCheck, MessageSquare, Search } from 'lucide-react'
+import { Send, User as UserIcon, Clock, CheckCheck, MessageSquare, Search, Paperclip, File, X, Image as ImageIcon } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 
@@ -11,6 +10,10 @@ export default function Support() {
     const [newMessage, setNewMessage] = useState('')
     const [loading, setLoading] = useState(true)
     const [sending, setSending] = useState(false)
+    const [attachment, setAttachment] = useState(null)
+    const [uploading, setUploading] = useState(false)
+    
+    const fileInputRef = useRef(null)
     
     // Organizer-only state
     const [conversations, setConversations] = useState([])
@@ -124,28 +127,66 @@ export default function Support() {
 
     const handleSendMessage = async (e) => {
         e.preventDefault()
-        if (!newMessage.trim() || sending) return
+        if ((!newMessage.trim() && !attachment) || sending || uploading) return
         
         const studentId = isOrganizer ? selectedStudent?.id : profile?.id
         if (!studentId) return
 
         setSending(true)
         try {
-            const { data, error } = await supabase
+            let attachmentUrl = null
+            let attachmentName = null
+
+            if (attachment) {
+                setUploading(true)
+                const fileExt = attachment.name.split('.').pop()
+                const fileName = `${Math.random()}.${fileExt}`
+                const filePath = `${studentId}/${fileName}`
+
+                const { error: uploadError } = await supabase.storage
+                    .from('support-attachments')
+                    .upload(filePath, attachment)
+
+                if (uploadError) throw uploadError
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('support-attachments')
+                    .getPublicUrl(filePath)
+                
+                attachmentUrl = publicUrl
+                attachmentName = attachment.name
+            }
+
+            const { error } = await supabase
                 .from('support_messages')
                 .insert({
                     student_id: studentId,
                     organizer_id: isOrganizer ? profile.id : null,
                     message: newMessage.trim(),
-                    is_from_student: !isOrganizer
+                    is_from_student: !isOrganizer,
+                    attachment_url: attachmentUrl,
+                    attachment_name: attachmentName
                 })
 
             if (error) throw error
             setNewMessage('')
+            setAttachment(null)
         } catch (err) {
             alert('Failed to send message: ' + err.message)
         } finally {
             setSending(false)
+            setUploading(false)
+        }
+    }
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0]
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size too large (max 5MB)')
+                return
+            }
+            setAttachment(file)
         }
     }
 
@@ -267,6 +308,41 @@ export default function Support() {
                                                 boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                                                 marginBottom: '0.25rem'
                                             }}>
+                                                {msg.attachment_url && (
+                                                    <div style={{ marginBottom: msg.message ? '0.5rem' : 0 }}>
+                                                        {msg.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                                            <a href={msg.attachment_url} target="_blank" rel="noreferrer">
+                                                                <img 
+                                                                    src={msg.attachment_url} 
+                                                                    alt="attachment" 
+                                                                    style={{ maxWidth: '100%', borderRadius: 8, maxHeight: 200, display: 'block' }} 
+                                                                />
+                                                            </a>
+                                                        ) : (
+                                                            <a 
+                                                                href={msg.attachment_url} 
+                                                                target="_blank" 
+                                                                rel="noreferrer"
+                                                                style={{ 
+                                                                    display: 'flex', 
+                                                                    alignItems: 'center', 
+                                                                    gap: '0.5rem', 
+                                                                    padding: '0.5rem', 
+                                                                    background: fromMe ? 'rgba(255,255,255,0.1)' : '#f8fafc',
+                                                                    borderRadius: 6,
+                                                                    color: 'inherit',
+                                                                    textDecoration: 'none',
+                                                                    fontSize: '0.75rem'
+                                                                }}
+                                                            >
+                                                                <File size={16} />
+                                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>
+                                                                    {msg.attachment_name || 'View Attachment'}
+                                                                </span>
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 {msg.message}
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: fromMe ? 'flex-end' : 'flex-start', gap: '0.4rem', fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
@@ -285,22 +361,72 @@ export default function Support() {
                             </div>
 
                             <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--sidebar-border)', background: 'white' }}>
-                                <div style={{ display: 'flex', gap: '0.75rem', position: 'relative' }}>
+                                {attachment && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: '0.75rem' }}>
+                                        <div style={{ background: 'var(--accent)', color: 'white', padding: '4px', borderRadius: 4 }}>
+                                            {attachment.type.startsWith('image/') ? <ImageIcon size={14} /> : <File size={14} />}
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {attachment.name}
+                                        </span>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setAttachment(null)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                    <input 
+                                        type="file" 
+                                        ref={fileInputRef}
+                                        style={{ display: 'none' }}
+                                        onChange={handleFileChange}
+                                        accept="image/*,application/pdf,.doc,.docx"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => fileInputRef.current.click()}
+                                        style={{ background: '#f1f5f9', border: 'none', color: '#64748b', padding: '0.6rem', borderRadius: 8, cursor: 'pointer' }}
+                                        title="Attach file"
+                                    >
+                                        <Paperclip size={20} />
+                                    </button>
                                     <input 
                                         type="text" 
                                         className="form-input" 
                                         placeholder="Type your message here..." 
                                         value={newMessage}
                                         onChange={(e) => setNewMessage(e.target.value)}
-                                        style={{ background: '#f8fafc' }}
+                                        style={{ background: '#f8fafc', flex: 1 }}
                                     />
                                     <button 
                                         type="submit" 
-                                        disabled={!newMessage.trim() || sending}
+                                        disabled={(!newMessage.trim() && !attachment) || sending || uploading}
                                         className="btn-primary" 
-                                        style={{ width: 'auto', padding: '0 1.25rem' }}
+                                        style={{ 
+                                            width: 'auto', 
+                                            padding: '0.6rem 1.25rem', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            minWidth: 50,
+                                            background: (newMessage.trim() || attachment) ? 'var(--accent)' : '#e2e8f0',
+                                            cursor: (newMessage.trim() || attachment) ? 'pointer' : 'default',
+                                            border: 'none',
+                                            borderRadius: 8,
+                                            color: 'white',
+                                            opacity: 1,
+                                            visibility: 'visible'
+                                        }}
                                     >
-                                        <Send size={18} />
+                                        {sending || uploading ? (
+                                            <div className="animate-spin" style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%' }}></div>
+                                        ) : (
+                                            <Send size={18} />
+                                        )}
                                     </button>
                                 </div>
                             </form>
