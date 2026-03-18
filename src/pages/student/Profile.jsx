@@ -32,6 +32,7 @@ export default function Profile() {
     const [activeSection, setActiveSection] = useState('basic')
     const [activeSubSection, setActiveSubSection] = useState('profile')
     const [toast, setToast] = useState(null)
+    const [isCameraOpen, setIsCameraOpen] = useState(false)
     
     // Form State
     const [formData, setFormData] = useState({
@@ -76,6 +77,9 @@ export default function Profile() {
 
     const fileInputRef = useRef(null)
     const resumeInputRef = useRef(null)
+    const videoRef = useRef(null)
+    const canvasRef = useRef(null)
+    const [stream, setStream] = useState(null)
 
     useEffect(() => {
         loadProfile()
@@ -169,6 +173,44 @@ export default function Profile() {
             console.error('Error uploading file:', err)
             setToast({ type: 'error', message: 'Upload failed' })
         }
+    }
+
+    const startCamera = async () => {
+        try {
+            const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 400, height: 480 } })
+            setStream(s)
+            setIsCameraOpen(true)
+            if (videoRef.current) videoRef.current.srcObject = s
+        } catch (err) {
+            console.error('Camera access denied:', err)
+            setToast({ type: 'error', message: 'Please allow camera access' })
+        }
+    }
+
+    const stopCamera = () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop())
+            setStream(null)
+        }
+        setIsCameraOpen(false)
+    }
+
+    const capturePhoto = () => {
+        if (!videoRef.current || !canvasRef.current) return
+
+        const context = canvasRef.current.getContext('2d')
+        canvasRef.current.width = videoRef.current.videoWidth
+        canvasRef.current.height = videoRef.current.videoHeight
+        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height)
+
+        canvasRef.current.toBlob(async (blob) => {
+            const file = new File([blob], "captured_photo.jpg", { type: "image/jpeg" })
+            
+            // Reuse upload logic with synthetic event
+            const syntheticEvent = { target: { files: [file] } }
+            await handleFileUpload(syntheticEvent, 'photo')
+            stopCamera()
+        }, 'image/jpeg', 0.9)
     }
 
     if (loading) {
@@ -349,8 +391,11 @@ export default function Profile() {
                                                 >
                                                     <Upload size={18} /> Upload Photo
                                                 </button>
-                                                <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', background: 'none', border: 'none', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', color: '#64748b' }}>
-                                                    <Loader2 size={18} /> Take Selfie Again
+                                                <button 
+                                                    onClick={startCamera}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', background: 'rgba(16,185,129,0.08)', border: 'none', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', color: '#10b981' }}
+                                                >
+                                                    <Camera size={18} /> Take Snapshot
                                                 </button>
                                                 <button 
                                                     onClick={() => setFormData(p => ({ ...p, photo_url: '' }))}
@@ -360,6 +405,91 @@ export default function Profile() {
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {isCameraOpen && (
+                                            <div style={{
+                                                position: 'fixed',
+                                                inset: 0,
+                                                background: 'rgba(0,0,0,0.85)',
+                                                backdropFilter: 'blur(8px)',
+                                                zIndex: 3000,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '2rem'
+                                            }}>
+                                                <div style={{
+                                                    background: 'white',
+                                                    borderRadius: 32,
+                                                    width: '100%',
+                                                    maxWidth: 500,
+                                                    padding: '2rem',
+                                                    textAlign: 'center',
+                                                    position: 'relative',
+                                                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+                                                }}>
+                                                    <button 
+                                                        onClick={stopCamera}
+                                                        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#f1f5f9', border: 'none', padding: '0.75rem', borderRadius: '50%', cursor: 'pointer', color: '#64748b' }}
+                                                    >
+                                                        <X size={20} />
+                                                    </button>
+                                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>Capture Profile Photo</h3>
+                                                    <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1.5rem' }}>Position your face in the center for a clear snapshot</p>
+                                                    
+                                                    <div style={{ 
+                                                        width: '100%', 
+                                                        aspectRatio: '3/4', 
+                                                        background: '#000', 
+                                                        borderRadius: 24, 
+                                                        overflow: 'hidden',
+                                                        marginBottom: '2rem',
+                                                        position: 'relative'
+                                                    }}>
+                                                        <video 
+                                                            ref={videoRef} 
+                                                            autoPlay 
+                                                            playsInline 
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
+                                                        />
+                                                        {/* Face Overlay */}
+                                                        <div style={{ position: 'absolute', inset: '15%', border: '2px dashed rgba(255,255,255,0.5)', borderRadius: '50%' }} />
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                                        <button 
+                                                            onClick={stopCamera}
+                                                            style={{ flex: 1, padding: '1rem', borderRadius: 12, background: '#f1f5f9', color: '#64748b', fontWeight: 600, border: 'none', cursor: 'pointer' }}
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                        <button 
+                                                            onClick={capturePhoto}
+                                                            style={{ 
+                                                                flex: 2, 
+                                                                padding: '1rem', 
+                                                                borderRadius: 12, 
+                                                                background: '#10b981', 
+                                                                color: 'white', 
+                                                                fontWeight: 700, 
+                                                                border: 'none', 
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: '0.5rem',
+                                                                boxShadow: '0 10px 15px -3px rgba(16,185,129,0.3)'
+                                                            }}
+                                                        >
+                                                            <Camera size={20} /> Capture Snapshot
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Hidden Canvas for Capturing */}
+                                        <canvas ref={canvasRef} style={{ display: 'none' }} />
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
