@@ -108,6 +108,24 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly })
             }, 0)
         }
 
+        // Handle HTML tag auto-closing
+        if (e.key === '>' && (language === 'html' || language === 'web')) {
+            const before = val.substring(0, start)
+            const tagMatch = before.match(/<([a-z1-6]+)(?:\s+[^>]*?)?$/i)
+            if (tagMatch) {
+                e.preventDefault()
+                const tagName = tagMatch[1]
+                const closingTag = `></${tagName}>`
+                const newVal = val.substring(0, start) + closingTag + val.substring(end)
+                onChange({ target: { value: newVal } })
+                
+                setTimeout(() => {
+                    e.target.selectionStart = e.target.selectionEnd = start + 1
+                }, 0)
+                return
+            }
+        }
+
         // Handle Enter for intelligent indentation
         if (e.key === 'Enter') {
             e.preventDefault()
