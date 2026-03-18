@@ -100,10 +100,10 @@ export default function CourseManagement() {
         if (!confirm('Are you sure? This will PERMANENTLY delete the course and ALL associated materials, enrollments, and sessions. This action cannot be undone.')) return
 
         const { error } = await supabase.from('courses').delete().eq('id', id)
-        if (!error) {
-            setCourses(courses.filter(c => c.id !== id))
-        } else {
+        if (error) {
             alert('Failed to delete course: ' + error.message)
+        } else {
+            loadCourses()
         }
     }
 

@@ -29,7 +29,7 @@ export default function MyCourses() {
                 const rawEnrollmentData = enrollmentRes.data || []
                 const progressData = progressRes.data || []
 
-                // Deduplicate enrollments
+                // Deduplicate and filter out orphaned enrollments
                 const enrollmentData = []
                 const seenIds = new Set()
                 rawEnrollmentData.forEach(e => {

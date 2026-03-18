@@ -23,6 +23,7 @@ export default function StudentDashboard() {
             const enrollments = []
             const uniqueCourseIds = new Set()
                 ; (rawEnrollments || []).forEach(e => {
+                    if (!e.courses) return // Skip orphaned enrollments
                     const startDate = e.courses?.start_date
                     const hasStarted = !startDate || new Date(startDate) <= new Date()
                     
