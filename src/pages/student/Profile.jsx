@@ -6,9 +6,8 @@ import {
     Link as LinkIcon, Github, Twitter, Linkedin, Trophy, 
     Camera, Upload, Trash2, Plus, ChevronDown, ChevronRight,
     Search, Languages, Globe, Calendar, CheckCircle2, AlertCircle,
-    X, Loader2, Save, MessageSquare
+    X, Loader2, Save, MessageSquare, HelpCircle
 } from 'lucide-react'
-import { toast } from 'react-hot-toast'
 
 const sections = [
     { id: 'basic', label: 'Basic Details', icon: CheckCircle2 },
@@ -32,6 +31,7 @@ export default function Profile() {
     const [saving, setSaving] = useState(false)
     const [activeSection, setActiveSection] = useState('basic')
     const [activeSubSection, setActiveSubSection] = useState('profile')
+    const [toast, setToast] = useState(null)
     
     // Form State
     const [formData, setFormData] = useState({
@@ -106,7 +106,7 @@ export default function Profile() {
             }
         } catch (err) {
             console.error('Error loading profile:', err)
-            toast.error('Failed to load profile details')
+            setToast({ type: 'error', message: 'Failed to load profile details' })
         } finally {
             setLoading(false)
         }
@@ -124,10 +124,10 @@ export default function Profile() {
                 })
 
             if (error) throw error
-            toast.success('Profile updated successfully!')
+            setToast({ type: 'success', message: 'Profile updated successfully!' })
         } catch (err) {
             console.error('Error saving profile:', err)
-            toast.error('Failed to save profile')
+            setToast({ type: 'error', message: 'Failed to save profile' })
         } finally {
             setSaving(false)
         }
@@ -164,10 +164,10 @@ export default function Profile() {
                 ...prev,
                 [type === 'photo' ? 'photo_url' : 'resume_url']: publicUrl
             }))
-            toast.success(`${type === 'photo' ? 'Photo' : 'Resume'} uploaded!`)
+            setToast({ type: 'success', message: `${type === 'photo' ? 'Photo' : 'Resume'} uploaded!` })
         } catch (err) {
             console.error('Error uploading file:', err)
-            toast.error('Upload failed')
+            setToast({ type: 'error', message: 'Upload failed' })
         }
     }
 
@@ -180,7 +180,38 @@ export default function Profile() {
     }
 
     return (
-        <div style={{ maxWidth: 1200, margin: '0 auto', paddingBottom: '4rem' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', paddingBottom: '4rem', position: 'relative' }}>
+            {/* Local Toast Notification */}
+            {toast && (
+                <div style={{
+                    position: 'fixed',
+                    top: '2rem',
+                    right: '2rem',
+                    zIndex: 2000,
+                    padding: '1rem 1.5rem',
+                    borderRadius: 12,
+                    background: toast.type === 'success' ? '#10b981' : '#ef4444',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                    animation: 'slideIn 0.3s ease-out'
+                }}>
+                    {toast.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{toast.message}</span>
+                    <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 4 }}>
+                        <X size={16} />
+                    </button>
+                    <style>{`
+                        @keyframes slideIn {
+                            from { transform: translateX(100%); opacity: 0; }
+                            to { transform: translateX(0); opacity: 1; }
+                        }
+                    `}</style>
+                </div>
+            )}
+            
             <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
                 
                 {/* Left Sidebar Navigation */}
