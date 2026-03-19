@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { countries, indiaDistricts } from '../../data/locationData'
 import { 
     User, Mail, Phone, MapPin, Briefcase, GraduationCap, 
     Link as LinkIcon, Github, Twitter, Linkedin, Trophy, 
@@ -803,11 +804,17 @@ export default function Profile() {
                                             <select 
                                                 name="country" 
                                                 value={formData.country} 
-                                                onChange={handleChange}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setFormData(prev => ({ ...prev, country: val, state: '', district: '' }));
+                                                }}
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
                                             >
-                                                <option>India</option>
-                                                <option>Others</option>
+                                                <option value="">Select Country</option>
+                                                {countries.map(c => (
+                                                    <option key={c.name} value={c.name}>{c.name}</option>
+                                                ))}
+                                                <option value="Others">Others</option>
                                             </select>
                                         </div>
                                         <div>
@@ -828,27 +835,44 @@ export default function Profile() {
                                             <select 
                                                 name="state" 
                                                 value={formData.state} 
-                                                onChange={handleChange}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setFormData(prev => ({ ...prev, state: val, district: '' }));
+                                                }}
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
                                             >
-                                                <option>Tamil Nadu</option>
-                                                <option>Karnataka</option>
-                                                <option>Kerala</option>
-                                                <option>Andhra Pradesh</option>
+                                                <option value="">Select State</option>
+                                                {formData.country === 'India' 
+                                                    ? Object.keys(indiaDistricts).map(s => <option key={s} value={s}>{s}</option>)
+                                                    : (countries.find(c => c.name === formData.country)?.states || []).map(s => (
+                                                        <option key={s} value={s}>{s}</option>
+                                                    ))
+                                                }
                                             </select>
                                         </div>
                                         <div>
                                             <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>District</label>
-                                            <select 
-                                                name="district" 
-                                                value={formData.district} 
-                                                onChange={handleChange}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
-                                            >
-                                                <option>Krishnagiri</option>
-                                                <option>Dharmapuri</option>
-                                                <option>Salem</option>
-                                            </select>
+                                            {formData.country === 'India' ? (
+                                                <select 
+                                                    name="district" 
+                                                    value={formData.district} 
+                                                    onChange={handleChange}
+                                                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                >
+                                                    <option value="">Select District</option>
+                                                    {(indiaDistricts[formData.state] || []).map(d => (
+                                                        <option key={d} value={d}>{d}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input 
+                                                    name="district"
+                                                    value={formData.district}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter district"
+                                                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                />
+                                            )}
                                         </div>
                                     </div>
                                 </section>
