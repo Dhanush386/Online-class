@@ -228,10 +228,10 @@ export default function StudentDashboard() {
                                             { name: 'Gold', base: 3500, step: 800 },
                                             { name: 'Diamond', base: 7500, step: 1000 }
                                         ]
-                                        const t = tiers.find(tier => stats.rankName.startsWith(tier.name)) || tiers[0]
+                                        const t = tiers.find(tier => stats.rankName?.startsWith(tier.name)) || tiers[0]
                                         const xpInTier = stats.xp - t.base
                                         const progress = (xpInTier % t.step) / t.step * 100
-                                        return <div style={{ height: '100%', width: `${Math.min(100, progress)}%`, background: stats.rankColor, borderRadius: 3 }} />
+                                        return <div style={{ height: '100%', width: `${Math.min(100, progress)}%`, background: stats.rankColor || '#94a3b8', borderRadius: 3 }} />
                                     })()}
                                 </div>
                                 <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Progress</span>
@@ -251,14 +251,14 @@ export default function StudentDashboard() {
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', padding: '0.5rem 0' }}>
                         {/* Rank Badge */}
                         <div style={{ textAlign: 'center' }}>
-                            <div className="hexagon-container-mini" style={{ color: stats.rankColor, margin: '0 auto' }} title={`Rank: ${stats.rankName}`}>
+                            <div className="hexagon-container-mini" style={{ color: stats.rankColor || '#94a3b8', margin: '0 auto' }} title={`Rank: ${stats.rankName || 'Iron I'}`}>
                                 <div className="hexagon-mini">
                                     <div className="hexagon-inner-mini">
                                         <Trophy size={16} />
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ fontSize: '0.65rem', fontWeight: 800, marginTop: '0.4rem', color: 'var(--text-secondary)' }}>{stats.rankName.split(' ')[0]}</div>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, marginTop: '0.4rem', color: 'var(--text-secondary)' }}>{(stats.rankName || 'Iron').split(' ')[0]}</div>
                         </div>
 
                         {/* Problems Badge */}

@@ -198,16 +198,16 @@ export default function StudentLayout() {
                                     alignItems: 'center', 
                                     gap: '0.35rem', 
                                     padding: '0.4rem 0.75rem', 
-                                    background: `${stats.rankColor}15`, 
+                                    background: `${stats.rankColor || '#94a3b8'}15`, 
                                     borderRadius: 8,
-                                    border: `1px solid ${stats.rankColor}30`,
-                                    color: stats.rankColor,
+                                    border: `1px solid ${stats.rankColor || '#94a3b8'}30`,
+                                    color: stats.rankColor || '#94a3b8',
                                     fontWeight: 800,
                                     fontSize: '0.75rem',
                                     textTransform: 'uppercase'
                                 }}>
                                     <Trophy size={14} fill="currentColor" />
-                                    <span>{stats.rankName}</span>
+                                    <span>{stats.rankName || 'Iron I'}</span>
                                 </div>
 
                                 <div style={{ 
