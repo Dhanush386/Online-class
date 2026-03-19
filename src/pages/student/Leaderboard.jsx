@@ -74,7 +74,7 @@ export default function Leaderboard() {
                 ...s,
                 xp: xpMap[s.id] || 0,
                 ...getRankInfo(xpMap[s.id] || 0)
-            })).sort((a, b) => b.xp - a.xp)
+            })).sort((a, b) => (b.xp - a.xp) || (a.name || '').localeCompare(b.name || ''))
 
             setLeaderboard(leaderboardData)
         } catch (err) {
