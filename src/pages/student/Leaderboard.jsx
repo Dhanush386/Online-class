@@ -35,7 +35,7 @@ export default function Leaderboard() {
         const romanLevels = ['I', 'II', 'III', 'IV', 'V']
         
         return { 
-            name: `${currentTier.name} ${romanLevels[Math.max(0, levelNum - 1)]}`, 
+            rankName: `${currentTier.name} ${romanLevels[Math.max(0, levelNum - 1)]}`, 
             color: currentTier.color, 
             bg: currentTier.bg 
         }
@@ -235,7 +235,7 @@ export default function Leaderboard() {
                                                         textTransform: 'uppercase'
                                                     }}>
                                                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor' }} />
-                                                        {s.name}
+                                                        {s.rankName}
                                                     </div>
                                                 </td>
                                                 <td style={{ padding: '1rem 1.5rem', textAlign: 'right', fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
