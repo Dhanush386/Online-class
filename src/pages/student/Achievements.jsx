@@ -42,11 +42,18 @@ const CATEGORIES = [
         id: 'problems',
         name: 'Problem Solved',
         badges: [
+            { id: 'probs_5', title: 'Code Starter', subtitle: '5 problems solved', threshold: 5, color: '#6366f1' },
             { id: 'probs_10', title: 'Problem Solver', subtitle: '10 problems solved', threshold: 10, color: '#6366f1' },
+            { id: 'probs_20', title: 'Code Climber', subtitle: '20 problems solved', threshold: 20, color: '#6366f1' },
             { id: 'probs_30', title: 'Logic Builder', subtitle: '30 problems solved', threshold: 30, color: '#6366f1' },
+            { id: 'probs_40', title: 'Puzzle Master', subtitle: '40 problems solved', threshold: 40, color: '#6366f1' },
             { id: 'probs_50', title: 'Code Challenger', subtitle: '50 problems solved', threshold: 50, color: '#6366f1' },
+            { id: 'probs_75', title: 'Algorithm Ace', subtitle: '75 problems solved', threshold: 75, color: '#6366f1' },
             { id: 'probs_100', title: 'Algorithm Enthusiast', subtitle: '100 problems solved', threshold: 100, color: '#6b7280' },
+            { id: 'probs_125', title: 'Code Commander', subtitle: '125 problems solved', threshold: 125, color: '#6b7280' },
             { id: 'probs_150', title: 'Bug Buster', subtitle: '150 problems solved', threshold: 150, color: '#6b7280' },
+            { id: 'probs_175', title: 'Script Scientist', subtitle: '175 problems solved', threshold: 175, color: '#6b7280' },
+            { id: 'probs_200', title: 'Logic Legend', subtitle: '200 problems solved', threshold: 200, color: '#6b7280' },
         ]
     },
     {
