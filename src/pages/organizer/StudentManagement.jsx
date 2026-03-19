@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink, Info } from 'lucide-react'
+import { Users, User, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink, Info } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 const toLocalISO = (date) => {
