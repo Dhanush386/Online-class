@@ -187,6 +187,26 @@ export default function Achievements() {
                     gap: 1.5rem;
                     margin-bottom: 3rem;
                 }
+                .badge-scroll-container {
+                    display: flex;
+                    gap: 1.5rem;
+                    overflow-x: auto;
+                    padding: 1rem 0.5rem 2rem 0.5rem;
+                    margin-bottom: 2rem;
+                    scrollbar-width: thin;
+                    scrollbar-color: #cbd5e1 transparent;
+                }
+                .badge-scroll-container::-webkit-scrollbar {
+                    height: 6px;
+                }
+                .badge-scroll-container::-webkit-scrollbar-thumb {
+                    background-color: #cbd5e1;
+                    border-radius: 10px;
+                }
+                .badge-scroll-container .badge-card {
+                    min-width: 160px;
+                    flex-shrink: 0;
+                }
                 .badge-card {
                     padding: 1.5rem 1rem;
                     text-align: center;
@@ -225,8 +245,11 @@ export default function Achievements() {
 
             {CATEGORIES.map(cat => (
                 <div key={cat.id} style={{ marginBottom: '2rem' }}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>{cat.name}</h2>
-                    <div className="badge-grid">
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {cat.name}
+                        {cat.id === 'leaderboard' && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>Scroll right →</span>}
+                    </h2>
+                    <div className={cat.id === 'leaderboard' ? 'badge-scroll-container' : 'badge-grid'}>
                         {cat.badges.map(badge => {
                             const unlocked = isUnlocked(badge, cat.id)
                             return (
