@@ -4,7 +4,8 @@ import { useAuth } from '../contexts/AuthContext'
 import {
     LayoutDashboard, BookOpen, Calendar, ClipboardList, LogOut,
     GraduationCap, Menu, X, Bell, Award, Code, Globe,
-    User, MessageSquare, Zap, Bookmark, HelpCircle, Gift, MessageCircle, Mountain, ChevronRight, ExternalLink
+    User, MessageSquare, Zap, Bookmark, HelpCircle, Gift, MessageCircle, Mountain, ChevronRight, ExternalLink,
+    Flame, Star
 } from 'lucide-react'
 
 const navItems = [
@@ -16,7 +17,7 @@ const navItems = [
 ]
 
 export default function StudentLayout() {
-    const { profile, signOut } = useAuth()
+    const { profile, signOut, stats } = useAuth()
     const navigate = useNavigate()
     const [collapsed, setCollapsed] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -107,6 +108,43 @@ export default function StudentLayout() {
                     </button>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        {/* Streak & XP Display */}
+                        {profile?.role === 'student' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '0.5rem' }}>
+                                <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '0.35rem', 
+                                    padding: '0.4rem 0.75rem', 
+                                    background: stats.streak > 0 ? 'rgba(249,115,22,0.1)' : 'rgba(100,116,139,0.05)', 
+                                    borderRadius: 8,
+                                    border: stats.streak > 0 ? '1px solid rgba(249,115,22,0.2)' : '1px solid rgba(100,116,139,0.1)',
+                                    color: stats.streak > 0 ? '#f97316' : '#64748b',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem'
+                                }}>
+                                    <Flame size={16} fill={stats.streak > 0 ? 'currentColor' : 'none'} />
+                                    <span>{stats.streak}</span>
+                                </div>
+                                
+                                <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '0.35rem', 
+                                    padding: '0.4rem 0.75rem', 
+                                    background: 'rgba(99,102,241,0.08)', 
+                                    borderRadius: 8,
+                                    border: '1px solid rgba(99,102,241,0.15)',
+                                    color: '#6366f1',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem'
+                                }}>
+                                    <Star size={16} fill="currentColor" />
+                                    <span>{stats.xp} <span style={{ fontSize: '0.65rem', fontWeight: 600, opacity: 0.8 }}>XP</span></span>
+                                </div>
+                            </div>
+                        )}
+
                         <button
                             onClick={() => navigate('/student/achievements')}
                             className="hide-mobile"

@@ -63,108 +63,10 @@ const CATEGORIES = [
 ]
 
 export default function Achievements() {
-    const { profile } = useAuth()
-    const [stats, setStats] = useState({ xp: 0, solved: 0, rank: 99, streak: 2 })
-    const [loading, setLoading] = useState(true)
+    const { profile, stats, loading: authLoading } = useAuth()
+    const [loading, setLoading] = useState(false)
 
-    useEffect(() => {
-        async function loadStats() {
-            if (!profile?.id) return
-            try {
-                setLoading(true)
-                
-                // 1. Fetch coding submission stats
-                const { data: codingSubs } = await supabase
-                    .from('coding_submissions')
-                    .select('score, status, created_at')
-                    .eq('student_id', profile.id)
-
-                const codingXp = codingSubs?.filter(s => s.status === 'accepted').reduce((sum, s) => sum + (s.score || 0), 0) || 0
-                const solvedCount = codingSubs?.filter(s => s.status === 'accepted').length || 0
-
-                // 2. Fetch assessment stats
-                const { data: assessSubs } = await supabase
-                    .from('assessment_submissions')
-                    .select('score, created_at')
-                    .eq('student_id', profile.id)
-                
-                const assessXp = assessSubs?.reduce((sum, s) => sum + (s.score || 0), 0) || 0
-                const totalXp = codingXp + assessXp
-
-                // 3. Fetch course completion for Skill Badges
-                const { data: progress } = await supabase
-                    .from('progress')
-                    .select('completed, courses(title)')
-                    .eq('student_id', profile.id)
-                    .eq('completed', true)
-                
-                const completedCourseTitles = progress?.map(p => p.courses?.title?.toLowerCase() || '') || []
-
-                // 4. Calculate Streak
-                // Gather all activity dates
-                const { data: watchedProgs } = await supabase
-                    .from('video_progress')
-                    .select('watched_at')
-                    .eq('student_id', profile.id)
-
-                const activityDates = new Set([
-                    ...(codingSubs?.map(s => s.created_at.split('T')[0]) || []),
-                    ...(assessSubs?.map(s => s.created_at.split('T')[0]) || []),
-                    ...(watchedProgs?.map(s => s.watched_at.split('T')[0]) || [])
-                ])
-
-                const sortedDates = Array.from(activityDates).sort().reverse()
-                let streak = 0
-                if (sortedDates.length > 0) {
-                    const today = new Date().toISOString().split('T')[0]
-                    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-                    
-                    let current = (sortedDates[0] === today || sortedDates[0] === yesterday) ? sortedDates[0] : null
-                    
-                    if (current) {
-                        streak = 1
-                        for (let i = 1; i < sortedDates.length; i++) {
-                            const prevDate = new Date(current)
-                            prevDate.setDate(prevDate.getDate() - 1)
-                            const expected = prevDate.toISOString().split('T')[0]
-                            
-                            if (sortedDates[i] === expected) {
-                                streak++
-                                current = sortedDates[i]
-                            } else {
-                                break
-                            }
-                        }
-                    }
-                }
-
-                // 5. Rank (Simplified check: count students with more XP)
-                // This is a bit heavy, so we limit to a simple count
-                const { count: higherRankCount } = await supabase
-                    .from('users')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('role', 'student')
-                
-                // Note: Real rank calculation usually requires a server-side aggregate 
-                // For now, we'll use a mocked distribution or a small sample if needed
-                // Let's just use a fixed rank logic for demonstration if XP > 0
-                const rank = totalXp > 0 ? (totalXp > 1000 ? 1 : totalXp > 500 ? 5 : totalXp > 100 ? 10 : 25) : 99
-
-                setStats({
-                    xp: totalXp,
-                    solved: solvedCount,
-                    rank: rank,
-                    streak: streak,
-                    completedCourses: completedCourseTitles
-                })
-            } catch (err) {
-                console.error('Error loading stats:', err)
-            } finally {
-                setLoading(false)
-            }
-        }
-        loadStats()
-    }, [profile])
+    // Stats are now loaded globally in AuthContext
 
     const isUnlocked = (badge, categoryId) => {
         if (categoryId === 'xp') return stats.xp >= (badge.threshold || 0)
@@ -178,7 +80,7 @@ export default function Achievements() {
         return false
     }
 
-    if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }}></div></div>
+    if (authLoading || loading) return <div style={{ padding: '4rem', textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }}></div></div>
 
     return (
         <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>

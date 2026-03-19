@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
     const [profile, setProfile] = useState(null)
     const [isProfileComplete, setIsProfileComplete] = useState(true) // Default to true to avoid early redirect
+    const [stats, setStats] = useState({ xp: 0, solved: 0, streak: 0, completedCourses: [] })
     const [loading, setLoading] = useState(true)
     const [browserSessionId] = useState(() => {
         let id = localStorage.getItem('online_class_session_uuid')
@@ -153,10 +154,92 @@ export function AuthProvider({ children }) {
                 .eq('student_id', user.id)
                 .maybeSingle()
             setIsProfileComplete(!!data)
+            loadAchievementStats(user.id)
         } else {
             setIsProfileComplete(true)
         }
     }
+
+    async function loadAchievementStats(userId) {
+        if (!userId) return
+        try {
+            // 1. Fetch coding submission stats
+            const { data: codingSubs } = await supabase
+                .from('coding_submissions')
+                .select('score, status, created_at')
+                .eq('student_id', userId)
+
+            const codingXp = codingSubs?.filter(s => s.status === 'accepted').reduce((sum, s) => sum + (s.score || 0), 0) || 0
+            const solvedCount = codingSubs?.filter(s => s.status === 'accepted').length || 0
+
+            // 2. Fetch assessment stats
+            const { data: assessSubs } = await supabase
+                .from('assessment_submissions')
+                .select('score, created_at')
+                .eq('student_id', userId)
+            
+            const assessXp = assessSubs?.reduce((sum, s) => sum + (s.score || 0), 0) || 0
+            const totalXp = codingXp + assessXp
+
+            // 3. Fetch course completion
+            const { data: progress } = await supabase
+                .from('progress')
+                .select('completed, courses(title)')
+                .eq('student_id', userId)
+                .eq('completed', true)
+            
+            const completedCourseTitles = progress?.map(p => p.courses?.title?.toLowerCase() || '') || []
+
+            // 4. Calculate Streak
+            const { data: watchedProgs } = await supabase
+                .from('video_progress')
+                .select('watched_at')
+                .eq('student_id', userId)
+
+            const activityDates = new Set([
+                ...(codingSubs?.map(s => s.created_at.split('T')[0]) || []),
+                ...(assessSubs?.map(s => s.created_at.split('T')[0]) || []),
+                ...(watchedProgs?.map(s => s.watched_at.split('T')[0]) || [])
+            ])
+
+            const sortedDates = Array.from(activityDates).sort().reverse()
+            let streakCount = 0
+            if (sortedDates.length > 0) {
+                const today = new Date().toISOString().split('T')[0]
+                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+                let current = (sortedDates[0] === today || sortedDates[0] === yesterday) ? sortedDates[0] : null
+                
+                if (current) {
+                    streakCount = 1
+                    for (let i = 1; i < sortedDates.length; i++) {
+                        const prevDate = new Date(current)
+                        prevDate.setDate(prevDate.getDate() - 1)
+                        const expected = prevDate.toISOString().split('T')[0]
+                        if (sortedDates[i] === expected) {
+                            streakCount++
+                            current = sortedDates[i]
+                        } else break
+                    }
+                }
+            }
+
+            setStats({
+                xp: totalXp,
+                solved: solvedCount,
+                streak: streakCount,
+                completedCourses: completedCourseTitles
+            })
+        } catch (err) {
+            console.error('Error loading achievement stats:', err)
+        }
+    }
+
+    // Load stats when profile is ready
+    useEffect(() => {
+        if (profile?.id && profile.role === 'student') {
+            loadAchievementStats(profile.id)
+        }
+    }, [profile?.id, profile?.role])
 
     async function signUp({ email, password, name, role }) {
         // If registering as organizer or admin role, check if invited
@@ -210,7 +293,9 @@ export function AuthProvider({ children }) {
         signOut,
         fetchProfile,
         isProfileComplete,
-        refreshProfileStatus
+        refreshProfileStatus,
+        stats,
+        refreshStats: () => profile?.id && loadAchievementStats(profile.id)
     }
 
     return (
