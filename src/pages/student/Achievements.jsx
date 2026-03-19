@@ -256,9 +256,9 @@ export default function Achievements() {
                 <div key={cat.id} style={{ marginBottom: '2rem' }}>
                     <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         {cat.name}
-                        {cat.id === 'leaderboard' && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>Scroll right →</span>}
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>Scroll right →</span>
                     </h2>
-                    <div className={cat.id === 'leaderboard' ? 'badge-scroll-container' : 'badge-grid'}>
+                    <div className="badge-scroll-container">
                         {cat.badges.map(badge => {
                             const unlocked = isUnlocked(badge, cat.id)
                             return (
