@@ -7,8 +7,8 @@ import 'react-circular-progressbar/dist/styles.css'
 import { Clock, BookOpen, Trophy, Award, Video, Calendar, ExternalLink, Zap, Code as CodeIcon, ChevronRight, Rocket, Flame, FileText } from 'lucide-react'
 
 export default function StudentDashboard() {
-    const { profile } = useAuth()
-    const [data, setData] = useState({ courses: 0, completion: 0, timeSpent: 0, badges: 3, rank: 1, topics: 0, xp: 0, solved: 0 })
+    const { profile, stats } = useAuth()
+    const [data, setData] = useState({ courses: 0, completion: 0, timeSpent: 0, topics: 0 })
     const [upcomingSessions, setUpcomingSessions] = useState([])
     const [loading, setLoading] = useState(true)
 
@@ -33,14 +33,10 @@ export default function StudentDashboard() {
                     }
                 })
 
-            const enrolledIds = enrollments.map(e => e.course_id)
-
             const [
                 { data: progress },
                 { data: sessions },
-                { data: submissions },
                 { data: memberships },
-                { data: locks },
                 { data: locksDay }
             ] = await Promise.all([
                 supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
@@ -48,9 +44,7 @@ export default function StudentDashboard() {
                     .gte('scheduled_time', new Date().toISOString())
                     .order('scheduled_time', { ascending: true })
                     .limit(3),
-                supabase.from('coding_submissions').select('score, status').eq('student_id', profile.id),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
-                supabase.from('resource_access').select('*').eq('is_locked', true),
                 supabase.from('day_access').select('*')
             ])
 
@@ -66,8 +60,6 @@ export default function StudentDashboard() {
                 return false
             }
 
-            const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding').map(l => l.resource_id) || []
-
             const filteredSessions = (sessions || [])
                 .filter(s => !isDayLocked(s.course_id, s.day_number))
                 .slice(0, 3)
@@ -77,17 +69,11 @@ export default function StudentDashboard() {
                 : 0
             const totalTime = progress?.reduce((s, p) => s + (p.time_spent_minutes || 0), 0) || 0
 
-            const totalXp = submissions?.filter(s => s.status === 'accepted').reduce((sum, s) => sum + (s.score || 0), 0) || 0
-            const solvedCount = submissions?.filter(s => s.status === 'accepted').length || 0
-
             setData({
                 courses: enrollments?.length || 0,
                 completion: avgComp,
                 timeSpent: totalTime,
-                badges: 3, rank: 1,
                 topics: enrollments?.length ? enrollments.length * 5 : 0,
-                xp: totalXp,
-                solved: solvedCount
             })
             setUpcomingSessions(filteredSessions)
             setLoading(false)
@@ -205,39 +191,88 @@ export default function StudentDashboard() {
                 </div>
 
 
+                {/* Rank & Leaderboard Card */}
+                <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Trophy size={16} color={stats.rankColor} /> Global Rank
+                        </h3>
+                        <Link to="/student/leaderboard" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                            View Leaderboard <ChevronRight size={14} />
+                        </Link>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '0.5rem 0' }}>
+                        <div style={{ 
+                            width: 80, 
+                            height: 80, 
+                            borderRadius: '50%', 
+                            background: `${stats.rankColor}15`, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            border: `2px solid ${stats.rankColor}40`,
+                            boxShadow: `0 0 20px ${stats.rankColor}20`
+                        }}>
+                            <Trophy size={40} color={stats.rankColor} fill={`${stats.rankColor}40`} />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: stats.rankColor, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1 }}>{stats.rankName}</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '0.4rem' }}>{stats.xp.toLocaleString()} Total XP</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.75rem' }}>
+                                <div style={{ height: 6, width: 100, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
+                                    {(() => {
+                                        const tiers = [
+                                            { name: 'Iron', base: 0, step: 200 },
+                                            { name: 'Bronze', base: 1000, step: 200 },
+                                            { name: 'Silver', base: 2000, step: 300 },
+                                            { name: 'Gold', base: 3500, step: 800 },
+                                            { name: 'Diamond', base: 7500, step: 1000 }
+                                        ]
+                                        const t = tiers.find(tier => stats.rankName.startsWith(tier.name)) || tiers[0]
+                                        const xpInTier = stats.xp - t.base
+                                        const progress = (xpInTier % t.step) / t.step * 100
+                                        return <div style={{ height: '100%', width: `${Math.min(100, progress)}%`, background: stats.rankColor, borderRadius: 3 }} />
+                                    })()}
+                                </div>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Progress</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Achievements Card */}
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Award size={16} color="#f59e0b" /> Earned Badges
+                            <Award size={16} color="#f59e0b" /> Career Badges
                         </h3>
                         <Link to="/student/achievements" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all →</Link>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', padding: '0.5rem 0' }}>
-                        <div className="hexagon-container-mini" style={{ color: '#6366f1' }} title="Early Bird">
+                        <div className="hexagon-container-mini" style={{ color: '#6366f1' }} title="Problem Solver">
                             <div className="hexagon-mini">
                                 <div className="hexagon-inner-mini">
-                                    <Rocket size={16} />
+                                    <CodeIcon size={16} />
                                 </div>
                             </div>
                         </div>
-                        <div className="hexagon-container-mini" style={{ color: '#ef4444' }} title="Fast Learner">
+                        <div className="hexagon-container-mini" style={{ color: '#ef4444' }} title="Learning Streak">
                             <div className="hexagon-mini">
                                 <div className="hexagon-inner-mini">
                                     <Flame size={16} />
                                 </div>
                             </div>
                         </div>
-                        <div className="hexagon-container-mini" style={{ color: '#f59e0b' }} title="Quiz Master">
+                        <div className="hexagon-container-mini" style={{ color: '#3b82f6' }} title="Skill Master">
                             <div className="hexagon-mini">
                                 <div className="hexagon-inner-mini">
-                                    <Trophy size={16} />
+                                    <Zap size={16} />
                                 </div>
                             </div>
                         </div>
                     </div>
                     <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
-                        You have earned **3 badges**!
+                        Unlock more by completing courses!
                     </p>
                 </div>
 

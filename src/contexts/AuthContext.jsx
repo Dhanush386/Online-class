@@ -223,11 +223,37 @@ export function AuthProvider({ children }) {
                 }
             }
 
+            // 5. Calculate Rank Tier & Level
+            const tiers = [
+                { name: 'Iron', color: '#94a3b8', base: 0, step: 200 },
+                { name: 'Bronze', color: '#b45309', base: 1000, step: 200 },
+                { name: 'Silver', color: '#64748b', base: 2000, step: 300 },
+                { name: 'Gold', color: '#f59e0b', base: 3500, step: 800 },
+                { name: 'Diamond', color: '#a855f7', base: 7500, step: 1000 }
+            ]
+
+            let currentTier = tiers[0]
+            for (let i = tiers.length - 1; i >= 0; i--) {
+                if (totalXp >= tiers[i].base) {
+                    currentTier = tiers[i]
+                    break
+                }
+            }
+
+            const xpInTier = totalXp - currentTier.base
+            const levelNum = Math.min(5, Math.floor(xpInTier / currentTier.step) + 1)
+            const romanLevels = ['I', 'II', 'III', 'IV', 'V']
+            
+            const rankName = `${currentTier.name} ${romanLevels[Math.max(0, levelNum - 1)]}`
+            const rankColor = currentTier.color
+
             setStats({
                 xp: totalXp,
                 solved: solvedCount,
                 streak: streakCount,
-                completedCourses: completedCourseTitles
+                completedCourses: completedCourseTitles,
+                rankName,
+                rankColor
             })
         } catch (err) {
             console.error('Error loading achievement stats:', err)

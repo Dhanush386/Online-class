@@ -12,6 +12,7 @@ import {
 const navItems = [
     { to: '/student', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/student/courses', icon: BookOpen, label: 'My Courses' },
+    { to: '/student/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/student/achievements', icon: Award, label: 'Achievements' },
     { to: '/student/playground', icon: Globe, label: 'Code Playground' },
     { to: '/student/schedule', icon: Calendar, label: 'Schedule' },
@@ -192,6 +193,23 @@ export default function StudentLayout() {
                         {/* Streak & XP Display */}
                         {profile?.role === 'student' && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '0.5rem' }}>
+                                <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '0.35rem', 
+                                    padding: '0.4rem 0.75rem', 
+                                    background: `${stats.rankColor}15`, 
+                                    borderRadius: 8,
+                                    border: `1px solid ${stats.rankColor}30`,
+                                    color: stats.rankColor,
+                                    fontWeight: 800,
+                                    fontSize: '0.75rem',
+                                    textTransform: 'uppercase'
+                                }}>
+                                    <Trophy size={14} fill="currentColor" />
+                                    <span>{stats.rankName}</span>
+                                </div>
+
                                 <div style={{ 
                                     display: 'flex', 
                                     alignItems: 'center', 

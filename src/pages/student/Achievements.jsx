@@ -4,17 +4,39 @@ import { supabase } from '../../lib/supabase'
 import { Award, Trophy, Star, Target, Zap, Shield, Rocket, Heart, Flame, Code, BookOpen, Database, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+const generateRankBadges = () => {
+    const tiers = [
+        { name: 'Iron', color: '#94a3b8', base: 0, step: 200 },
+        { name: 'Bronze', color: '#b45309', base: 1000, step: 200 },
+        { name: 'Silver', color: '#64748b', base: 2000, step: 300 },
+        { name: 'Gold', color: '#f59e0b', base: 3500, step: 800 },
+        { name: 'Diamond', color: '#a855f7', base: 7500, step: 1000 }
+    ]
+    const roman = ['I', 'II', 'III', 'IV', 'V']
+    const badges = []
+    
+    tiers.forEach(tier => {
+        for (let i = 0; i < 5; i++) {
+            const threshold = tier.base + (i * tier.step)
+            badges.push({
+                id: `rank_${tier.name.toLowerCase()}_${i+1}`,
+                title: `${tier.name} ${roman[i]}`,
+                subtitle: `${threshold}+ XP`,
+                threshold: threshold,
+                color: tier.color,
+                tierName: tier.name,
+                levelRoman: roman[i]
+            })
+        }
+    })
+    return badges
+}
+
 const CATEGORIES = [
     {
         id: 'leaderboard',
-        name: 'Leaderboard',
-        badges: [
-            { id: 'iron_1', title: 'Iron Champion', subtitle: 'Rank - 1', color: '#64748b' },
-            { id: 'iron_2', title: 'Iron Master', subtitle: 'Rank - 2', color: '#64748b' },
-            { id: 'iron_3', title: 'Iron Prodigy', subtitle: 'Rank - 3', color: '#64748b' },
-            { id: 'iron_4', title: 'Iron Achiever', subtitle: 'Rank - 4', color: '#64748b' },
-            { id: 'iron_5', title: 'Iron Challenger', subtitle: 'Rank - 5', color: '#64748b' },
-        ]
+        name: 'Ranks & Tiers',
+        badges: generateRankBadges()
     },
     {
         id: 'problems',
@@ -25,7 +47,6 @@ const CATEGORIES = [
             { id: 'probs_50', title: 'Code Challenger', subtitle: '50 problems solved', threshold: 50, color: '#6366f1' },
             { id: 'probs_100', title: 'Algorithm Enthusiast', subtitle: '100 problems solved', threshold: 100, color: '#6b7280' },
             { id: 'probs_150', title: 'Bug Buster', subtitle: '150 problems solved', threshold: 150, color: '#6b7280' },
-            { id: 'probs_200', title: 'Coding Prodigy', subtitle: '200 problems solved', threshold: 200, color: '#6b7280' },
         ]
     },
     {
@@ -58,6 +79,7 @@ const CATEGORIES = [
             { id: 'streak_7', title: 'Streaks- 7 Days', subtitle: '7-day learning streak', threshold: 7, color: '#f97316' },
             { id: 'streak_14', title: 'Streak - 14 Days', subtitle: '14-day learning streak', threshold: 14, color: '#f97316' },
             { id: 'streak_30', title: 'Streak - 30 Days', subtitle: '30-day learning streak', threshold: 30, color: '#f97316' },
+            { id: 'streak_45', title: 'Streak - 45 Days', subtitle: '45-day learning streak', threshold: 45, color: '#f97316' },
         ]
     }
 ]
@@ -72,7 +94,7 @@ export default function Achievements() {
         if (categoryId === 'xp') return stats.xp >= (badge.threshold || 0)
         if (categoryId === 'problems') return stats.solved >= (badge.threshold || 0)
         if (categoryId === 'streak') return stats.streak >= (badge.threshold || 0)
-        if (categoryId === 'leaderboard') return stats.rank <= parseInt(badge.id.split('_')[1])
+        if (categoryId === 'leaderboard') return stats.xp >= (badge.threshold || 0)
         if (categoryId === 'skills') {
             const keyword = badge.id.split('_')[1] // html, js, etc.
             return stats.completedCourses?.some(title => title.includes(keyword))
@@ -199,7 +221,7 @@ export default function Achievements() {
                                                 {cat.id === 'leaderboard' ? (
                                                     <div style={{ color: badge.color }}>
                                                         <Trophy size={18} style={{ marginBottom: 2 }} />
-                                                        <div style={{ fontSize: '0.7rem', fontWeight: 800 }}>#{badge.id.split('_')[1]}</div>
+                                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>{badge.levelRoman}</div>
                                                     </div>
                                                 ) : cat.id === 'problems' ? (
                                                     <div style={{ color: badge.color }}>
