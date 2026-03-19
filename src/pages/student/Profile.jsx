@@ -27,7 +27,7 @@ const basicSubSections = [
 ]
 
 const COMMON_SKILLS = [
-    ".NET", "AI / ML", "Ajax", "Android App", "Angular", "AngularJS", "API Testing", "ASP.NET MVC", 
+    "NA", ".NET", "AI / ML", "Ajax", "Android App", "Angular", "AngularJS", "API Testing", "ASP.NET MVC", 
     "Automation Testing", "AWS", "Big Data Hadoop", "Blockchain", "Bootstrap", "C", "C#", "C++", 
     "CSS", "Cyber Security", "Data Analytics", "Data Science", "Data Structures & Algorithms", 
     "DevOps", "Django / Flask", "Docker", "Express(node)", "Express.js", "Flexbox", "Flutter", 
@@ -35,7 +35,9 @@ const COMMON_SKILLS = [
     "JavaScript", "JIRA", "jQuery", "Kubernetes", "Laravel", "Linux", "Manual Testing", 
     "Microsoft Azure", "Microsoft Power BI", "Microsoft SQL Server", "Mobile Application Development", 
     "MongoDB", "MySQL", "Node.js", "NumPy", "OOPs", "Oracle", "PHP", "PL/SQL", "Pytest", 
-    "Python", "R", "Rails", "React", "ReactJS", "SAP", "SQL", "Tailwind CSS", "TypeScript"
+    "Python", "R", "Rails", "React", "ReactJS", "SAP", "SAP ABAP", "Selenium", "Selenium Testing", 
+    "Space Technology", "Spring", "SQL", "SQLite", "Swift", "Tableau Software", "Tailwind CSS", 
+    "TypeScript", "Unity", "User Interface (UI) Design", "UX design", "Vue", "WordPress", "XR (AR, VR, MR)"
 ]
 
 export default function Profile() {
