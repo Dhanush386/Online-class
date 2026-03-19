@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
     Bell, Send, Trash2, Users, Info, AlertTriangle, CheckCircle, 
-    MessageSquare, History, Plus, Filter, Search, Clock
+    MessageSquare, History, Plus, Filter, Search, Clock, X
 } from 'lucide-react'
 
 export default function Notifications() {
