@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import {
     LayoutDashboard, Radio, Calendar, Users, LogOut,
-    GraduationCap, Menu, X, Bell, ChevronDown, BookOpen, ClipboardList, Code, Globe, MessageSquare
+    GraduationCap, Menu, X, Bell, ChevronDown, BookOpen, ClipboardList, Code, Globe, MessageSquare,
+    Info, AlertTriangle, CheckCircle, Clock
 } from 'lucide-react'
 
 const navItems = [
@@ -27,7 +29,8 @@ export default function OrganizerLayout() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
     const [showNotifications, setShowNotifications] = useState(false)
-    const [unreadCount, setUnreadCount] = useState(1) // Simulate 1 unread notification
+    const [notifications, setNotifications] = useState([])
+    const [unreadCount, setUnreadCount] = useState(0)
     const [showProfileMenu, setShowProfileMenu] = useState(false)
 
     useEffect(() => {
@@ -35,6 +38,85 @@ export default function OrganizerLayout() {
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
     }, [])
+
+    useEffect(() => {
+        if (profile?.id) {
+            fetchNotifications()
+            
+            // Subscribe to real-time notifications
+            const channel = supabase
+                .channel('organizer-notifications')
+                .on('postgres_changes', { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'notifications' 
+                }, (payload) => {
+                    if (payload.new.target === 'all' || payload.new.target === 'organizers') {
+                        setNotifications(prev => [payload.new, ...prev])
+                        setUnreadCount(prev => prev + 1)
+                    }
+                })
+                .subscribe()
+
+            return () => supabase.removeChannel(channel)
+        }
+    }, [profile?.id])
+
+    async function fetchNotifications() {
+        if (!profile?.id) return
+        try {
+            // 1. Fetch relevant notifications
+            const { data: notes, error: notesError } = await supabase
+                .from('notifications')
+                .select('*')
+                .or(`target.eq.all,target.eq.organizers`)
+                .order('created_at', { ascending: false })
+                .limit(10)
+            
+            if (notesError) throw notesError
+
+            // 2. Fetch read status
+            const { data: reads, error: readsError } = await supabase
+                .from('notification_reads')
+                .select('notification_id')
+                .eq('user_id', profile.id)
+            
+            if (readsError) throw readsError
+
+            const readIds = new Set(reads.map(r => r.notification_id))
+            const notesWithReadStatus = notes.map(n => ({
+                ...n,
+                isRead: readIds.has(n.id)
+            }))
+
+            setNotifications(notesWithReadStatus)
+            setUnreadCount(notesWithReadStatus.filter(n => !n.isRead).length)
+        } catch (err) {
+            console.error('Error fetching notifications:', err)
+        }
+    }
+
+    async function handleMarkAllAsRead() {
+        if (!profile?.id || unreadCount === 0) return
+        try {
+            const unreadNotes = notifications.filter(n => !n.isRead)
+            const newReads = unreadNotes.map(n => ({
+                notification_id: n.id,
+                user_id: profile.id
+            }))
+
+            const { error } = await supabase
+                .from('notification_reads')
+                .upsert(newReads)
+            
+            if (error) throw error
+            
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+            setUnreadCount(0)
+        } catch (err) {
+            console.error('Error marking as read:', err)
+        }
+    }
 
     async function handleSignOut() {
         await signOut()
@@ -131,19 +213,60 @@ export default function OrganizerLayout() {
                                     <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: 280, background: 'white', borderRadius: 12, boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--sidebar-border)', zIndex: 50, padding: '1rem', overflow: 'hidden' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                             <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</span>
-                                            <button
-                                                onClick={() => setUnreadCount(0)}
-                                                style={{ border: 'none', background: 'none', fontSize: '0.7rem', color: '#6366f1', fontWeight: 600, cursor: 'pointer', padding: 0 }}
-                                            >
-                                                Mark all as read
-                                            </button>
+                                            {unreadCount > 0 && (
+                                                <button
+                                                    onClick={handleMarkAllAsRead}
+                                                    style={{ border: 'none', background: 'none', fontSize: '0.7rem', color: '#6366f1', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                                                >
+                                                    Mark all as read
+                                                </button>
+                                            )}
                                         </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center', padding: '1rem 0' }}>
-                                            <Bell size={24} color="var(--text-muted)" style={{ margin: '0 auto', opacity: 0.2 }} />
-                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                {unreadCount > 0 ? 'You have new notifications' : 'No new notifications'}
-                                            </p>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto' }}>
+                                            {notifications.length === 0 ? (
+                                                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                                                    <Bell size={24} color="var(--text-muted)" style={{ margin: '0 auto', opacity: 0.2 }} />
+                                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>No notifications</p>
+                                                </div>
+                                            ) : (
+                                                notifications.map(n => (
+                                                    <div key={n.id} style={{ 
+                                                        padding: '0.75rem', 
+                                                        borderRadius: 8, 
+                                                        background: n.isRead ? 'transparent' : 'rgba(99,102,241,0.05)',
+                                                        border: n.isRead ? '1px solid transparent' : '1px solid rgba(99,102,241,0.1)',
+                                                        display: 'flex',
+                                                        gap: '0.75rem',
+                                                        position: 'relative'
+                                                    }}>
+                                                        <div style={{ marginTop: '0.2rem' }}>
+                                                            {n.type === 'warning' ? <AlertTriangle size={16} color="#f59e0b" /> : 
+                                                             n.type === 'success' ? <CheckCircle size={16} color="#10b981" /> : 
+                                                             <Info size={16} color="#3b82f6" />}
+                                                        </div>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{n.title}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem', lineHeight: 1.4 }}>{n.message}</div>
+                                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                <Clock size={10} />
+                                                                {new Date(n.created_at).toLocaleDateString()}
+                                                            </div>
+                                                        </div>
+                                                        {!n.isRead && <div style={{ position: 'absolute', top: 12, right: 12, width: 6, height: 6, background: '#6366f1', borderRadius: '50%' }} />}
+                                                    </div>
+                                                ))
+                                            )}
                                         </div>
+                                        {notifications.length > 0 && (
+                                            <div style={{ borderTop: '1px solid var(--sidebar-border)', padding: '0.75rem 0 0', marginTop: '0.75rem', textAlign: 'center' }}>
+                                                <button 
+                                                    onClick={() => { setShowNotifications(false); navigate('/organizer/notifications') }}
+                                                    style={{ border: 'none', background: 'none', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500, cursor: 'pointer' }}
+                                                >
+                                                    View all history
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             )}

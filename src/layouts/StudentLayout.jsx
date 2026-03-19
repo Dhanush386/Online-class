@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import {
     LayoutDashboard, BookOpen, Calendar, ClipboardList, LogOut,
