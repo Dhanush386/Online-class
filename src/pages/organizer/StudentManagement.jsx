@@ -156,11 +156,11 @@ export default function StudentManagement() {
 
             setStudents(studentsWithData)
 
-            // Fetch other organizers
+            // Fetch other administrative users (organizers, main_admins, sub_admins)
             const { data: allOrganizers } = await supabase
                 .from('users')
                 .select('*')
-                .eq('role', 'organizer')
+                .in('role', ['organizer', 'main_admin', 'sub_admin'])
             setOrganizers(allOrganizers || [])
 
             // Fetch invites

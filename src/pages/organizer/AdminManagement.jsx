@@ -33,7 +33,7 @@ export default function AdminManagement() {
             supabase.from('courses').select('*', { count: 'exact', head: true }),
             supabase.from('coding_challenges').select('*', { count: 'exact', head: true }),
             supabase.from('assessments').select('*', { count: 'exact', head: true }),
-            supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'sub_admin')
+            supabase.from('users').select('*', { count: 'exact', head: true }).in('role', ['sub_admin', 'organizer'])
         ])
 
         setStats({
@@ -50,7 +50,7 @@ export default function AdminManagement() {
             { data: crs },
             { data: assignments }
         ] = await Promise.all([
-            supabase.from('users').select('*').eq('role', 'sub_admin'),
+            supabase.from('users').select('*').in('role', ['sub_admin', 'organizer']),
             supabase.from('courses').select('id, title'),
             supabase.from('admin_course_assignments').select('*')
         ])
@@ -137,15 +137,15 @@ export default function AdminManagement() {
                     <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>{stats.totalQuestions}</div>
                 </div>
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Sub Admins</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Team Members</div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f59e0b' }}>{stats.totalSubAdmins}</div>
                 </div>
             </div>
 
-            {/* Sub Admin Table */}
+            {/* Admin Table */}
             <div className="glass-card" style={{ overflow: 'hidden' }}>
                 <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sub Administrators</h2>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Administrative Team</h2>
                     <button onClick={() => setShowInviteModal(true)} className="btn-primary" style={{ gap: '0.5rem' }}>
                         <Plus size={18} /> Invite Sub Admin
                     </button>
@@ -159,7 +159,8 @@ export default function AdminManagement() {
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr style={{ textAlign: 'left', background: '#f8fafc', borderBottom: '1px solid var(--card-border)' }}>
-                                <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ADMIN NAME</th>
+                                <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>NAME</th>
+                                <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ROLE</th>
                                 <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>EMAIL</th>
                                 <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ASSIGNED COURSES</th>
                                 <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'right' }}>ACTIONS</th>
@@ -173,8 +174,13 @@ export default function AdminManagement() {
                                             <div style={{ width: 32, height: 32, background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
                                                 {admin.name?.[0]?.toUpperCase()}
                                             </div>
-                                            <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{admin.name}</span>
+                                            <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{admin.name} {admin.id === profile.id && '(You)'}</span>
                                         </div>
+                                    </td>
+                                    <td style={{ padding: '1rem 1.5rem' }}>
+                                        <span className="badge" style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 4, background: admin.role === 'main_admin' ? '#fee2e2' : admin.role === 'sub_admin' ? '#e0e7ff' : '#f1f5f9', color: admin.role === 'main_admin' ? '#991b1b' : admin.role === 'sub_admin' ? '#3730a3' : '#475569' }}>
+                                            {admin.role.replace('_', ' ')}
+                                        </span>
                                     </td>
                                     <td style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{admin.email}</td>
                                     <td style={{ padding: '1rem 1.5rem' }}>
