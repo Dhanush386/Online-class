@@ -6,7 +6,7 @@ import {
     LayoutDashboard, BookOpen, Calendar, ClipboardList, LogOut,
     GraduationCap, Menu, X, Bell, Award, Code, Globe,
     User, MessageSquare, Zap, Bookmark, HelpCircle, Gift, MessageCircle, Mountain, ChevronRight, ExternalLink,
-    Flame, Star, Info, AlertTriangle, CheckCircle, Clock
+    Flame, Star, Info, AlertTriangle, CheckCircle, Clock, Trophy
 } from 'lucide-react'
 
 const navItems = [
