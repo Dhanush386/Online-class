@@ -64,11 +64,20 @@ const CATEGORIES = [
         id: 'xp',
         name: 'Total XP',
         badges: [
+            { id: 'xp_100', title: 'XP Beginner', subtitle: 'Earn 100 XP points', threshold: 100, color: '#f59e0b' },
+            { id: 'xp_200', title: 'XP Novice', subtitle: 'Earn 200 XP points', threshold: 200, color: '#f59e0b' },
             { id: 'xp_500', title: 'XP Explorer', subtitle: 'Earn 500 XP points', threshold: 500, color: '#f59e0b' },
+            { id: 'xp_700', title: 'XP Scout', subtitle: 'Earn 700 XP points', threshold: 700, color: '#f59e0b' },
+            { id: 'xp_800', title: 'XP Voyager', subtitle: 'Earn 800 XP points', threshold: 800, color: '#f59e0b' },
             { id: 'xp_1000', title: 'XP Challenger', subtitle: 'Earn 1000 XP points', threshold: 1000, color: '#f59e0b' },
+            { id: 'xp_1200', title: 'XP Warrior', subtitle: 'Earn 1200 XP points', threshold: 1200, color: '#f59e0b' },
+            { id: 'xp_1500', title: 'XP Veteran', subtitle: 'Earn 1500 XP points', threshold: 1500, color: '#f59e0b' },
+            { id: 'xp_2000', title: 'XP Elite', subtitle: 'Earn 2000 XP points', threshold: 2000, color: '#f59e0b' },
             { id: 'xp_2500', title: 'XP Achiever', subtitle: 'Earn 2500 XP points', threshold: 2500, color: '#f59e0b' },
-            { id: 'xp_5000', title: 'XP Master', subtitle: 'Earn 5000 XP points', threshold: 5000, color: '#f59e0b' },
-            { id: 'xp_8000', title: 'XP Prodigy', subtitle: 'Earn 8000 XP points', threshold: 8000, color: '#f59e0b' },
+            { id: 'xp_3000', title: 'XP Master', subtitle: 'Earn 3000 XP points', threshold: 3000, color: '#f59e0b' },
+            { id: 'xp_3500', title: 'XP Grandmaster', subtitle: 'Earn 3500 XP points', threshold: 3500, color: '#f59e0b' },
+            { id: 'xp_4000', title: 'XP Legend', subtitle: 'Earn 4000 XP points', threshold: 4000, color: '#f59e0b' },
+            { id: 'xp_7000', title: 'XP Prodigy', subtitle: 'Earn 7000 XP points', threshold: 7000, color: '#f59e0b' },
         ]
     },
     {
