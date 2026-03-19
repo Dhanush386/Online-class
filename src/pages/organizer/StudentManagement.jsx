@@ -295,6 +295,47 @@ export default function StudentManagement() {
         }
     }
 
+    async function handleDeleteAllStudents() {
+        const studentsToRemove = students.filter(s => s.role === 'student')
+        if (studentsToRemove.length === 0) {
+            alert('No students found to remove.')
+            return
+        }
+
+        if (!confirm(`CRITICAL WARNING: You are about to PERMANENTLY delete ALL ${studentsToRemove.length} students. This will remove their accounts, courses, and all progress. THIS CANNOT BE UNDONE.`)) return
+        if (!confirm('FINAL CONFIRMATION: Are you absolutely sure you want to purge the entire student roster?')) return
+        
+        const verification = prompt('To confirm mass deletion, type "PURGE ALL STUDENTS" below:')
+        if (verification !== 'PURGE ALL STUDENTS') {
+            alert('Mass deletion cancelled. Verification text did not match.')
+            return
+        }
+
+        setSaving(true)
+        try {
+            let successCount = 0
+            let failCount = 0
+
+            for (const student of studentsToRemove) {
+                const { error } = await supabase.rpc('delete_user_permanently', { target_user_id: student.id })
+                if (error) {
+                    console.error(`Failed to delete ${student.email}:`, error)
+                    failCount++
+                } else {
+                    successCount++
+                }
+            }
+
+            alert(`Cleanup complete: ${successCount} students removed. ${failCount} failures.`)
+            loadData(true)
+        } catch (err) {
+            console.error('Error in mass deletion:', err)
+            setError('Mass deletion failed. Check console for details.')
+        } finally {
+            setSaving(false)
+        }
+    }
+
     async function handleUpdateExpiry(studentId, expiryDate) {
         setSaving(true)
         try {
@@ -519,18 +560,30 @@ export default function StudentManagement() {
                         {students.length} registered student{students.length !== 1 ? 's' : ''}
                     </p>
                 </div>
-                <div style={{ position: 'relative' }}>
-                    <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input
-                        id="student-search"
-                        name="student-search"
-                        type="text"
-                        placeholder="Search students by name or email..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="form-input"
-                        style={{ paddingLeft: '2.5rem' }}
-                    />
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                        <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input
+                            id="student-search"
+                            name="student-search"
+                            type="text"
+                            placeholder="Search students by name or email..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="form-input"
+                            style={{ paddingLeft: '2.5rem' }}
+                        />
+                    </div>
+                    {(profile?.role === 'main_admin' || profile?.role === 'organizer') && (
+                        <button
+                            onClick={handleDeleteAllStudents}
+                            disabled={saving}
+                            className="btn-secondary"
+                            style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)', padding: '0.6rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        >
+                            <Trash2 size={16} /> {saving ? 'Purging...' : 'Delete All Students'}
+                        </button>
+                    )}
                 </div>
             </div>
 
