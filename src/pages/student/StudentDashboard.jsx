@@ -248,28 +248,54 @@ export default function StudentDashboard() {
                         </h3>
                         <Link to="/student/achievements" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all →</Link>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', padding: '0.5rem 0' }}>
-                        <div className="hexagon-container-mini" style={{ color: '#6366f1' }} title="Problem Solver">
-                            <div className="hexagon-mini">
-                                <div className="hexagon-inner-mini">
-                                    <CodeIcon size={16} />
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                        {/* Rank Badge */}
+                        <div style={{ textAlign: 'center' }}>
+                            <div className="hexagon-container-mini" style={{ color: stats.rankColor, margin: '0 auto' }} title={`Rank: ${stats.rankName}`}>
+                                <div className="hexagon-mini">
+                                    <div className="hexagon-inner-mini">
+                                        <Trophy size={16} />
+                                    </div>
                                 </div>
                             </div>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, marginTop: '0.4rem', color: 'var(--text-secondary)' }}>{stats.rankName.split(' ')[0]}</div>
                         </div>
-                        <div className="hexagon-container-mini" style={{ color: '#ef4444' }} title="Learning Streak">
-                            <div className="hexagon-mini">
-                                <div className="hexagon-inner-mini">
-                                    <Flame size={16} />
+
+                        {/* Problems Badge */}
+                        {(() => {
+                            const thresholds = [5, 10, 20, 30, 40, 50, 75, 100, 125, 150, 175, 200]
+                            const highest = thresholds.reverse().find(t => stats.problemsSolved >= t) || 0
+                            return (
+                                <div style={{ textAlign: 'center' }}>
+                                    <div className="hexagon-container-mini" style={{ color: '#6366f1', opacity: highest > 0 ? 1 : 0.3, margin: '0 auto' }} title={`${highest} Problems Solved`}>
+                                        <div className="hexagon-mini">
+                                            <div className="hexagon-inner-mini">
+                                                <CodeIcon size={16} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, marginTop: '0.4rem', color: 'var(--text-secondary)' }}>{highest} Solved</div>
                                 </div>
-                            </div>
-                        </div>
-                        <div className="hexagon-container-mini" style={{ color: '#3b82f6' }} title="Skill Master">
-                            <div className="hexagon-mini">
-                                <div className="hexagon-inner-mini">
-                                    <Zap size={16} />
+                            )
+                        })()}
+
+                        {/* Streak Badge */}
+                        {(() => {
+                            const thresholds = [3, 7, 14, 21, 30, 45, 60, 90, 120, 150, 180, 240, 300, 365]
+                            const highest = thresholds.reverse().find(t => stats.streak >= t) || 0
+                            return (
+                                <div style={{ textAlign: 'center' }}>
+                                    <div className="hexagon-container-mini" style={{ color: '#f97316', opacity: highest > 0 ? 1 : 0.3, margin: '0 auto' }} title={`${highest}-Day Streak`}>
+                                        <div className="hexagon-mini">
+                                            <div className="hexagon-inner-mini">
+                                                <Flame size={16} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, marginTop: '0.4rem', color: 'var(--text-secondary)' }}>Day {highest}</div>
                                 </div>
-                            </div>
-                        </div>
+                            )
+                        })()}
                     </div>
                     <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
                         Unlock more by completing courses!
