@@ -25,6 +25,7 @@ import CodingManagement from './pages/organizer/CodingManagement'
 import UploadVideo from './pages/organizer/UploadVideo'
 import ScheduleManager from './pages/organizer/ScheduleManager'
 import StudentManagement from './pages/organizer/StudentManagement'
+import Notifications from './pages/organizer/Notifications'
 import CodePlayground from './pages/shared/CodePlayground'
 import Support from './pages/shared/Support'
 
@@ -68,6 +69,7 @@ export default function App() {
             <Route path="upload" element={<UploadVideo />} />
             <Route path="schedule" element={<ScheduleManager />} />
             <Route path="students" element={<StudentManagement />} />
+            <Route path="notifications" element={<Notifications />} />
             <Route path="playground" element={<CodePlayground />} />
             <Route path="support" element={<Support />} />
           </Route>

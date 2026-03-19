@@ -423,3 +423,46 @@ BEGIN
     RETURN TRUE;
 END;
 $$;
+
+-- ============ NOTIFICATIONS ============
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type TEXT DEFAULT 'info',
+  target TEXT DEFAULT 'all' CHECK (target IN ('all', 'students', 'organizers')),
+  sender_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS for Notifications
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view relevant notifications" ON public.notifications;
+CREATE POLICY "Users can view relevant notifications" ON public.notifications
+  FOR SELECT USING (
+    target = 'all' OR 
+    (target = 'students' AND EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'student')) OR
+    (target = 'organizers' AND EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('organizer', 'main_admin', 'sub_admin')))
+  );
+
+DROP POLICY IF EXISTS "Organizers can manage notifications" ON public.notifications;
+CREATE POLICY "Organizers can manage notifications" ON public.notifications
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('organizer', 'main_admin', 'sub_admin'))
+  );
+
+-- ============ NOTIFICATION READS ============
+CREATE TABLE IF NOT EXISTS public.notification_reads (
+  notification_id UUID REFERENCES public.notifications(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+  read_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (notification_id, user_id)
+);
+
+-- RLS for Notification Reads
+ALTER TABLE public.notification_reads ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own read status" ON public.notification_reads;
+CREATE POLICY "Users can manage own read status" ON public.notification_reads
+  FOR ALL USING (auth.uid() = user_id);

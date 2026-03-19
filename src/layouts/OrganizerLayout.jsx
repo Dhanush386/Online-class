@@ -16,6 +16,7 @@ const navItems = [
     { to: '/organizer/upload', icon: Radio, label: 'Live Class' },
     { to: '/organizer/schedule', icon: Calendar, label: 'Schedule' },
     { to: '/organizer/students', icon: Users, label: 'Students' },
+    { to: '/organizer/notifications', icon: Bell, label: 'Notifications' },
     { to: '/organizer/support', icon: MessageSquare, label: 'Support' },
 ]
 
