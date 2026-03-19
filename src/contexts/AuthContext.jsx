@@ -104,44 +104,38 @@ export function AuthProvider({ children }) {
                 .eq('id', userId)
                 .maybeSingle()
 
-            if (!data) {
-                // User not found in public.users, try to recover from auth metadata
-                const { data: { user: authUser } } = await supabase.auth.getUser()
-                if (authUser) {
-                    const fallbackProfile = {
-                        id: authUser.id,
-                        name: authUser.user_metadata?.name || 'New User',
-                        email: authUser.email,
-                        role: authUser.user_metadata?.role || 'student',
-                        status: authUser.user_metadata?.role === 'student' ? 'pending' : 'approved',
-                        current_session_id: sessionIdRef.current
-                    }
-                    console.log('Using metadata fallback profile:', fallbackProfile)
-                    setProfile(fallbackProfile)
-                }
-            } else {
-                // Check if expired on load
-                if (checkExpiry(data)) return
+            const finalProfile = data || {
+                id: userId,
+                name: (await supabase.auth.getUser()).data.user?.user_metadata?.name || 'New User',
+                email: (await supabase.auth.getUser()).data.user?.email,
+                role: (await supabase.auth.getUser()).data.user?.user_metadata?.role || 'student',
+                status: (await supabase.auth.getUser()).data.user?.user_metadata?.role === 'student' ? 'pending' : 'approved',
+                current_session_id: sessionIdRef.current
+            }
 
-                // Update DB with current session ID if different
-                if (data.current_session_id !== sessionIdRef.current) {
-                    await supabase
-                        .from('users')
-                        .update({ current_session_id: sessionIdRef.current })
-                        .eq('id', userId)
-                }
-                setProfile(data)
-                // Check if profile is complete (exists in student_profiles)
-                if (data.role === 'student') {
-                    const { data: spData } = await supabase
-                        .from('student_profiles')
-                        .select('student_id')
-                        .eq('student_id', userId)
-                        .maybeSingle()
-                    setIsProfileComplete(!!spData)
-                } else {
-                    setIsProfileComplete(true)
-                }
+            // Check if expired on load
+            if (checkExpiry(finalProfile)) return
+
+            // Update DB with current session ID if different
+            if (data && data.current_session_id !== sessionIdRef.current) {
+                await supabase
+                    .from('users')
+                    .update({ current_session_id: sessionIdRef.current })
+                    .eq('id', userId)
+            }
+
+            setProfile(finalProfile)
+
+            // Determine if profile is complete
+            if (finalProfile.role === 'student') {
+                const { data: spData } = await supabase
+                    .from('student_profiles')
+                    .select('student_id')
+                    .eq('student_id', userId)
+                    .maybeSingle()
+                setIsProfileComplete(!!spData)
+            } else {
+                setIsProfileComplete(true)
             }
         } catch (err) {
             console.error('Error in fetchProfile:', err)

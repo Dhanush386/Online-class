@@ -27,14 +27,31 @@ export function ProtectedRoute({ children, requiredRole }) {
     const isAdmin = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
     const isStudent = profile?.role === 'student'
 
+    // If we have a user but NO profile record/role after loading is finished,
+    // don't enter a redirect loop. Show a sync issue message.
+    if (!profile || (!isAdmin && !isStudent)) {
+        return (
+            <div style={{ padding: '2rem', textAlign: 'center', background: '#0a0d1a', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="glass-card" style={{ padding: '2rem', maxWidth: 400 }}>
+                    <div style={{ width: 64, height: 64, background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>⚠️</div>
+                    <h2 style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 700 }}>Profile Sync Issue</h2>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                        We found your account but couldn't determine your role or load your profile.
+                        Try refreshing the page or signing out and back in.
+                    </p>
+                    <button onClick={() => window.location.reload()} className="btn-primary" style={{ width: '100%', marginBottom: '0.75rem' }}>Refresh Page</button>
+                    <button onClick={() => signOut()} className="btn-secondary" style={{ width: '100%' }}>Sign Out</button>
+                </div>
+            </div>
+        )
+    }
+
     // Strict Role Enforcement
     if (requiredRole === 'organizer' && !isAdmin) {
-        // Student trying to access organizer pages
         return <Navigate to="/student" replace />
     }
 
     if (requiredRole === 'student' && !isStudent) {
-        // Organizer trying to access student pages
         return <Navigate to="/organizer" replace />
     }
 
