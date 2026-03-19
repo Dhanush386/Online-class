@@ -1319,7 +1319,13 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                                 <h5 style={{ fontWeight: 700, color: '#6366f1', fontSize: '0.85rem', textTransform: 'uppercase' }}>Student Contact</h5>
                                                 <InfoItem label="WhatsApp Number" value={profile.whatsapp_number} icon={Phone} />
-                                                <InfoItem label="Location" value={`${profile.city}, ${profile.district}, ${profile.state}, ${profile.country}`} icon={MapPin} />
+                                                <InfoItem 
+                                                    label="Location" 
+                                                    value={[profile.address_line1, profile.address_line2, profile.city, profile.district, profile.state, profile.country]
+                                                        .filter(val => val && val !== 'null')
+                                                        .join(', ')} 
+                                                    icon={MapPin} 
+                                                />
                                                 <InfoItem label="Pincode" value={profile.pincode} />
                                                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                                                     {profile.github_url && <a href={profile.github_url} target="_blank" rel="noreferrer" style={{ color: '#334155' }}><Github size={20} /></a>}
