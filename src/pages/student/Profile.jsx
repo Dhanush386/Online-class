@@ -27,7 +27,7 @@ const basicSubSections = [
 ]
 
 const COMMON_SKILLS = [
-    "NA", ".NET", "AI / ML", "Ajax", "Android App", "Angular", "AngularJS", "API Testing", "ASP.NET MVC", 
+    "None", ".NET", "AI / ML", "Ajax", "Android App", "Angular", "AngularJS", "API Testing", "ASP.NET MVC", 
     "Automation Testing", "AWS", "Big Data Hadoop", "Blockchain", "Bootstrap", "C", "C#", "C++", 
     "CSS", "Cyber Security", "Data Analytics", "Data Science", "Data Structures & Algorithms", 
     "DevOps", "Django / Flask", "Docker", "Express(node)", "Express.js", "Flexbox", "Flutter", 
