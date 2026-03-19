@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { countries, indiaDistricts } from '../../data/locationData'
@@ -42,6 +43,7 @@ const COMMON_SKILLS = [
 
 export default function Profile() {
     const { profile, user, refreshProfileStatus } = useAuth()
+    const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [activeSection, setActiveSection] = useState('basic')
@@ -129,6 +131,11 @@ export default function Profile() {
             if (error) throw error
             await refreshProfileStatus()
             setToast({ type: 'success', message: 'Profile updated successfully!' })
+            
+            // Redirect to dashboard after a short delay to allow the toast to be seen
+            setTimeout(() => {
+                navigate('/student')
+            }, 1500)
         } catch (err) {
             console.error('Error saving profile:', err)
             setToast({ type: 'error', message: 'Failed to save profile' })
