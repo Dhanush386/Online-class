@@ -41,7 +41,7 @@ const COMMON_SKILLS = [
 ]
 
 export default function Profile() {
-    const { profile, user } = useAuth()
+    const { profile, user, refreshProfileStatus } = useAuth()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [activeSection, setActiveSection] = useState('basic')
