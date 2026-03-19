@@ -24,40 +24,22 @@ export function ProtectedRoute({ children, requiredRole }) {
         return <Navigate to="/login" state={{ from: location }} replace />
     }
 
-    if (requiredRole && profile?.role !== requiredRole) {
-        // Hierarchical role checks
-        const isAdmin = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
-        
-        if (requiredRole === 'organizer' && isAdmin) return children
-        if (requiredRole === 'student' && (isAdmin || profile?.role === 'student')) return children
+    const isAdmin = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
+    const isStudent = profile?.role === 'student'
 
-        // Redirect to correct dashboard IF a role exists
-        if (isAdmin) return <Navigate to="/organizer" replace />
-        if (profile?.role === 'student') return <Navigate to="/student" replace />
-
-        // If we have a user but NO profile record, don't loop back to login.
-        // Show a helpful message instead.
-        if (!profile) {
-            return (
-                <div style={{ padding: '2rem', textAlign: 'center', background: '#0a0d1a', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="glass-card" style={{ padding: '2rem', maxWidth: 400 }}>
-                        <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Profile Sync Issue</h2>
-                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                            We found your account but couldn't load your profile record.
-                            If you just registered, try refreshing. If you are using an old account,
-                            please contact support.
-                        </p>
-                        <button onClick={() => window.location.reload()} className="btn-primary" style={{ width: '100%', marginBottom: '0.75rem' }}>Refresh Page</button>
-                        <button onClick={() => signOut()} className="btn-secondary" style={{ width: '100%' }}>Sign Out</button>
-                    </div>
-                </div>
-            )
-        }
-
-        return <Navigate to="/login" replace />
+    // Strict Role Enforcement
+    if (requiredRole === 'organizer' && !isAdmin) {
+        // Student trying to access organizer pages
+        return <Navigate to="/student" replace />
     }
 
-    if (profile?.role === 'student') {
+    if (requiredRole === 'student' && !isStudent) {
+        // Organizer trying to access student pages
+        return <Navigate to="/organizer" replace />
+    }
+
+    // Role-specific secondary checks
+    if (isStudent) {
         if (profile.status === 'pending') {
             return (
                 <div style={{ padding: '2rem', textAlign: 'center', background: '#0a0d1a', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -94,5 +76,6 @@ export function ProtectedRoute({ children, requiredRole }) {
         }
     }
 
+    // Default: allow access
     return children
 }
