@@ -26,6 +26,16 @@ const basicSubSections = [
     { id: 'preference', label: 'Your Preference' }
 ]
 
+const COMMON_SKILLS = [
+    ".NET", "AI / ML", "Ajax", "Android App", "Angular", "AngularJS", "API Testing", "ASP.NET MVC", 
+    "Automation Testing", "AWS", "Big Data Hadoop", "Blockchain", "Bootstrap", "C", "C#", "C++", 
+    "CSS", "Cyber Security", "Data Analytics", "Data Science", "Data Structures & Algorithms", 
+    "DevOps", "Django / Flask", "Docker", "Express(node)", "Express.js", "Flexbox", "Flutter", 
+    "Git", "Google Cloud Platform (GCP)", "Hadoop", "Hibernate", "HTML", "IOT", "Java", 
+    "JavaScript", "JIRA", "jQuery", "Kubernetes", "Laravel", "React", "Node.js", "Python", 
+    "SQL", "MongoDB", "Tailwind CSS", "TypeScript"
+]
+
 export default function Profile() {
     const { profile, user } = useAuth()
     const [loading, setLoading] = useState(true)
@@ -34,6 +44,8 @@ export default function Profile() {
     const [activeSubSection, setActiveSubSection] = useState('profile')
     const [toast, setToast] = useState(null)
     const [isCameraOpen, setIsCameraOpen] = useState(false)
+    const [skillInput, setSkillInput] = useState('')
+    const [showSkillSuggestions, setShowSkillSuggestions] = useState(false)
     
     // Form State
     const [formData, setFormData] = useState({
@@ -126,6 +138,19 @@ export default function Profile() {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }))
+    }
+
+    const toggleSkill = (skill) => {
+        setFormData(prev => {
+            const skills = prev.technical_skills || []
+            if (skills.includes(skill)) {
+                return { ...prev, technical_skills: skills.filter(s => s !== skill) }
+            } else {
+                return { ...prev, technical_skills: [...skills, skill] }
+            }
+        })
+        setSkillInput('')
+        setShowSkillSuggestions(false)
     }
 
     const handleFileUpload = async (e, type) => {
@@ -920,16 +945,97 @@ export default function Profile() {
                                                 <Search size={18} />
                                             </div>
                                             <input 
-                                                placeholder="Add skills/frameworks you know"
+                                                value={skillInput}
+                                                onChange={(e) => {
+                                                    setSkillInput(e.target.value)
+                                                    setShowSkillSuggestions(true)
+                                                }}
+                                                onFocus={() => setShowSkillSuggestions(true)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && skillInput.trim()) {
+                                                        e.preventDefault()
+                                                        if (!formData.technical_skills.includes(skillInput.trim())) {
+                                                            toggleSkill(skillInput.trim())
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder="Search or add skills (e.g. React, Python)"
                                                 style={{ width: '100%', padding: '0.8rem 1rem 0.8rem 3rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                             />
+                                            
+                                            {showSkillSuggestions && (
+                                                <div style={{ 
+                                                    position: 'absolute', 
+                                                    top: '110%', 
+                                                    left: 0, 
+                                                    right: 0, 
+                                                    background: 'white', 
+                                                    borderRadius: 12, 
+                                                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
+                                                    zIndex: 100, 
+                                                    maxHeight: 250, 
+                                                    overflowY: 'auto',
+                                                    border: '1px solid #f1f5f9',
+                                                    padding: '0.5rem'
+                                                }}>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0.5rem' }}>
+                                                        {COMMON_SKILLS
+                                                            .filter(s => s.toLowerCase().includes(skillInput.toLowerCase()) && !formData.technical_skills.includes(s))
+                                                            .map(skill => (
+                                                                <button
+                                                                    key={skill}
+                                                                    onClick={() => toggleSkill(skill)}
+                                                                    style={{ 
+                                                                        padding: '0.4rem 0.8rem', 
+                                                                        borderRadius: 20, 
+                                                                        background: '#f1f5f9', 
+                                                                        border: 'none', 
+                                                                        fontSize: '0.85rem', 
+                                                                        color: '#475569', 
+                                                                        cursor: 'pointer',
+                                                                        fontWeight: 500,
+                                                                        transition: 'all 0.2s'
+                                                                    }}
+                                                                    onMouseOver={(e) => { e.target.style.background = '#e2e8f0' }}
+                                                                    onMouseOut={(e) => { e.target.style.background = '#f1f5f9' }}
+                                                                >
+                                                                    + {skill}
+                                                                </button>
+                                                            ))
+                                                        }
+                                                        {skillInput && !COMMON_SKILLS.some(s => s.toLowerCase() === skillInput.toLowerCase()) && (
+                                                            <button
+                                                                onClick={() => toggleSkill(skillInput)}
+                                                                style={{ padding: '0.4rem 0.8rem', borderRadius: 20, background: '#10b981', border: 'none', fontSize: '0.85rem', color: 'white', cursor: 'pointer', fontWeight: 600 }}
+                                                            >
+                                                                Add "{skillInput}"
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>Mention NA if you don't have any skills</p>
-                                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600 }}>
-                                                NA <X size={14} style={{ cursor: 'pointer' }} />
-                                            </div>
+                                        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>Click a suggestion or type and press Enter to add</p>
+                                        
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.25rem' }}>
+                                            {(formData.technical_skills || []).length > 0 ? (
+                                                formData.technical_skills.map(skill => (
+                                                    <div key={skill} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.85rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600 }}>
+                                                        {skill}
+                                                        <X size={14} style={{ cursor: 'pointer' }} onClick={() => toggleSkill(skill)} />
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p style={{ fontSize: '0.9rem', color: '#94a3b8', italic: true }}>No skills added yet</p>
+                                            )}
                                         </div>
+                                        
+                                        {showSkillSuggestions && (
+                                            <div 
+                                                style={{ position: 'fixed', inset: 0, zIndex: 90 }} 
+                                                onClick={() => setShowSkillSuggestions(false)} 
+                                            />
+                                        )}
                                     </div>
                                 </section>
                             )}
