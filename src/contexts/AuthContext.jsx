@@ -209,6 +209,10 @@ export function AuthProvider({ children }) {
     const value = {
         user,
         profile,
+        role: profile?.role,
+        loading,
+        signUp,
+        signIn,
         signOut,
         fetchProfile,
         isProfileComplete,
