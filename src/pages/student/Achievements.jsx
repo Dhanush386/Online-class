@@ -91,11 +91,20 @@ const CATEGORIES = [
         id: 'streak',
         name: 'Streak',
         badges: [
-            { id: 'streak_3', title: 'Streak - 3 Days', subtitle: '3-day learning streak', threshold: 3, color: '#f97316' },
-            { id: 'streak_7', title: 'Streaks- 7 Days', subtitle: '7-day learning streak', threshold: 7, color: '#f97316' },
-            { id: 'streak_14', title: 'Streak - 14 Days', subtitle: '14-day learning streak', threshold: 14, color: '#f97316' },
-            { id: 'streak_30', title: 'Streak - 30 Days', subtitle: '30-day learning streak', threshold: 30, color: '#f97316' },
-            { id: 'streak_45', title: 'Streak - 45 Days', subtitle: '45-day learning streak', threshold: 45, color: '#f97316' },
+            { id: 'streak_3', title: 'Momentum Starter', subtitle: '3-day learning streak', threshold: 3, color: '#f97316' },
+            { id: 'streak_7', title: 'Weekly Warrior', subtitle: '7-day learning streak', threshold: 7, color: '#f97316' },
+            { id: 'streak_14', title: 'Fortnight Fighter', subtitle: '14-day learning streak', threshold: 14, color: '#f97316' },
+            { id: 'streak_21', title: 'Habit Former', subtitle: '21-day learning streak', threshold: 21, color: '#f97316' },
+            { id: 'streak_30', title: 'Monthly Master', subtitle: '30-day learning streak', threshold: 30, color: '#f97316' },
+            { id: 'streak_45', title: 'Consistent Learner', subtitle: '45-day learning streak', threshold: 45, color: '#f97316' },
+            { id: 'streak_60', title: 'Quarter Challenger', subtitle: '60-day learning streak', threshold: 60, color: '#f97316' },
+            { id: 'streak_90', title: 'Seasoned Pro', subtitle: '90-day learning streak', threshold: 90, color: '#f97316' },
+            { id: 'streak_120', title: 'Dedicated Student', subtitle: '120-day learning streak', threshold: 120, color: '#f97316' },
+            { id: 'streak_150', title: 'Code Devotee', subtitle: '150-day learning streak', threshold: 150, color: '#f97316' },
+            { id: 'streak_180', title: 'Half-Year Hero', subtitle: '180-day learning streak', threshold: 180, color: '#f97316' },
+            { id: 'streak_240', title: 'Unstoppable Force', subtitle: '240-day learning streak', threshold: 240, color: '#f97316' },
+            { id: 'streak_300', title: 'Elite Streaker', subtitle: '300-day learning streak', threshold: 300, color: '#f97316' },
+            { id: 'streak_365', title: 'Year of Code', subtitle: '365-day learning streak', threshold: 365, color: '#f97316' },
         ]
     }
 ]
