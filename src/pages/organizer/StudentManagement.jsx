@@ -1230,145 +1230,154 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                         </div>
 
                         {/* Content Area */}
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '2.5rem', background: 'white' }}>
-                            {activeTab === 'basic' && (
-                                <div className="zoom-in">
-                                    <SectionHeader icon={User} title="Basic Information" subtitle="Personal details and platform preferences" />
-                                    <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '2.5rem', alignItems: 'flex-start' }}>
-                                        <div style={{ width: 150, height: 180, borderRadius: 16, overflow: 'hidden', border: '4px solid #f1f5f9' }}>
-                                            {profile.photo_url ? (
-                                                <img src={profile.photo_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            ) : (
-                                                <div style={{ width: '100%', height: '100%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
-                                                    <Camera size={40} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                            <InfoItem label="Full Name" value={`${profile.first_name} ${profile.last_name}`} />
-                                            <InfoItem label="Certificate Name" value={profile.certificate_name} />
-                                            <InfoItem label="Gender" value={profile.gender} />
-                                            <InfoItem label="Date of Birth" value={profile.dob} />
-                                            <InfoItem label="Coding Level" value={profile.coding_level} />
-                                            <InfoItem label="Owns Laptop" value={profile.has_laptop ? 'Yes' : 'No'} />
-                                            <InfoItem label="Teaching Language" value={profile.language_teaching} />
-                                            <InfoItem label="Watching Language" value={profile.language_watching} />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'contact' && (
-                                <div className="zoom-in">
-                                    <SectionHeader icon={Phone} title="Contact & Guardian Details" subtitle="Ways to reach the student and their parent" />
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                            <h5 style={{ fontWeight: 700, color: '#6366f1', fontSize: '0.85rem', textTransform: 'uppercase' }}>Student Contact</h5>
-                                            <InfoItem label="WhatsApp Number" value={profile.whatsapp_number} icon={Phone} />
-                                            <InfoItem label="Location" value={`${profile.city}, ${profile.district}, ${profile.state}, ${profile.country}`} icon={MapPin} />
-                                            <InfoItem label="Pincode" value={profile.pincode} />
-                                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                                {profile.github_url && <a href={profile.github_url} target="_blank" rel="noreferrer" style={{ color: '#334155' }}><Github size={20} /></a>}
-                                                {profile.linkedin_url && <a href={profile.linkedin_url} target="_blank" rel="noreferrer" style={{ color: '#0077b5' }}><Linkedin size={20} /></a>}
-                                                {profile.twitter_url && <a href={profile.twitter_url} target="_blank" rel="noreferrer" style={{ color: '#1DA1F2' }}><Twitter size={20} /></a>}
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.5rem', background: '#f8fafc', borderRadius: 16 }}>
-                                            <h5 style={{ fontWeight: 700, color: '#6366f1', fontSize: '0.85rem', textTransform: 'uppercase' }}>Guardian Info</h5>
-                                            <InfoItem label="Name" value={`${profile.parent_first_name} ${profile.parent_last_name}`} />
-                                            <InfoItem label="Relation" value={profile.parent_relation} />
-                                            <InfoItem label="Occupation" value={profile.parent_occupation} />
-                                            <InfoItem label="Contact" value={profile.parent_phone} />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'edu_work' && (
-                                <div className="zoom-in">
-                                    <div style={{ marginBottom: '3rem' }}>
-                                        <SectionHeader icon={GraduationCap} title="Education History" subtitle="Academic background and qualifications" />
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                            {profile.education_details?.length > 0 ? profile.education_details.map((edu, idx) => (
-                                                <div key={idx} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12, display: 'flex', justifyContent: 'space-between' }}>
-                                                    <div>
-                                                        <div style={{ fontWeight: 700, color: '#1e293b' }}>{edu.school}</div>
-                                                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{edu.degree}</div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white' }}>
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '2.5rem' }}>
+                                {activeTab === 'basic' && (
+                                    <div className="zoom-in">
+                                        <SectionHeader icon={User} title="Basic Information" subtitle="Personal details and platform preferences" />
+                                        <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '2.5rem', alignItems: 'flex-start' }}>
+                                            <div style={{ width: 150, height: 180, borderRadius: 16, overflow: 'hidden', border: '4px solid #f1f5f9' }}>
+                                                {profile.photo_url ? (
+                                                    <img src={profile.photo_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <div style={{ width: '100%', height: '100%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
+                                                        <Camera size={40} />
                                                     </div>
-                                                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '0.25rem 0.75rem', borderRadius: 20, height: 'fit-content' }}>
-                                                        {edu.year || 'N/A'}
-                                                    </div>
-                                                </div>
-                                            )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No education details added</p>}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <SectionHeader icon={Briefcase} title="Work Experience" subtitle="Professional journey and internships" />
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                            {profile.work_experience?.length > 0 ? profile.work_experience.map((work, idx) => (
-                                                <div key={idx} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12 }}>
-                                                    <div style={{ fontWeight: 700, color: '#1e293b' }}>{work.company}</div>
-                                                    <div style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: 600 }}>{work.role}</div>
-                                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>{work.duration}</div>
-                                                </div>
-                                            )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No work experience added</p>}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'skills' && (
-                                <div className="zoom-in">
-                                    <SectionHeader icon={Briefcase} title="Technical Expertise" subtitle="Searchable skills and technology stack" />
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                                        {profile.technical_skills?.length > 0 ? profile.technical_skills.map((skill, idx) => (
-                                            <span key={idx} style={{ padding: '0.6rem 1.2rem', background: '#f1f5f9', color: '#475569', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600, border: '1px solid #e2e8f0' }}>
-                                                {skill}
-                                            </span>
-                                        )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No technical skills listed</p>}
-                                    </div>
-                                    {profile.resume_url && (
-                                        <div style={{ marginTop: '3rem', padding: '1.5rem', background: '#eef2ff', borderRadius: 16, border: '1px dashed #6366f1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                <div style={{ width: 48, height: 48, background: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
-                                                    <Globe size={24} />
-                                                </div>
-                                                <div>
-                                                    <div style={{ fontWeight: 700, color: '#1e293b' }}>Professional Resume</div>
-                                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Resume / Portfolio document is available</div>
-                                                </div>
-                                            </div>
-                                            <a href={profile.resume_url} target="_blank" rel="noreferrer" className="btn-primary" style={{ gap: '0.5rem', padding: '0.6rem 1.2rem' }}>
-                                                <ExternalLink size={16} /> View Resume
-                                            </a>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {activeTab === 'projects' && (
-                                <div className="zoom-in">
-                                    <SectionHeader icon={Trophy} title="Projects & Achievements" subtitle="Key accomplishments and certifications" />
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
-                                        {profile.projects_achievements?.length > 0 ? profile.projects_achievements.map((proj, idx) => (
-                                            <div key={idx} style={{ padding: '1.5rem', background: '#fbfcfe', border: '1px solid #eef2ff', borderRadius: 20 }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                                    <h6 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>{proj.title}</h6>
-                                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.1)', padding: '0.3rem 0.8rem', borderRadius: 20 }}>
-                                                        PROJECT
-                                                    </span>
-                                                </div>
-                                                <p style={{ fontSize: '0.9rem', color: '#64748b', mb: '1.5rem', lineHeight: 1.6 }}>{proj.description}</p>
-                                                {proj.link && (
-                                                    <a href={proj.link} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#6366f1', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none' }}>
-                                                        <ExternalLink size={14} /> View Project Link
-                                                    </a>
                                                 )}
                                             </div>
-                                        )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No projects or achievements listed</p>}
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                                <InfoItem label="Full Name" value={`${profile.first_name} ${profile.last_name}`} />
+                                                <InfoItem label="Certificate Name" value={profile.certificate_name} />
+                                                <InfoItem label="Gender" value={profile.gender} />
+                                                <InfoItem label="Date of Birth" value={profile.dob} />
+                                                <InfoItem label="Coding Level" value={profile.coding_level} />
+                                                <InfoItem label="Owns Laptop" value={profile.has_laptop ? 'Yes' : 'No'} />
+                                                <InfoItem label="Teaching Language" value={profile.language_teaching} />
+                                                <InfoItem label="Watching Language" value={profile.language_watching} />
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+
+                                {activeTab === 'contact' && (
+                                    <div className="zoom-in">
+                                        <SectionHeader icon={Phone} title="Contact & Guardian Details" subtitle="Ways to reach the student and their parent" />
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                                <h5 style={{ fontWeight: 700, color: '#6366f1', fontSize: '0.85rem', textTransform: 'uppercase' }}>Student Contact</h5>
+                                                <InfoItem label="WhatsApp Number" value={profile.whatsapp_number} icon={Phone} />
+                                                <InfoItem label="Location" value={`${profile.city}, ${profile.district}, ${profile.state}, ${profile.country}`} icon={MapPin} />
+                                                <InfoItem label="Pincode" value={profile.pincode} />
+                                                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                                                    {profile.github_url && <a href={profile.github_url} target="_blank" rel="noreferrer" style={{ color: '#334155' }}><Github size={20} /></a>}
+                                                    {profile.linkedin_url && <a href={profile.linkedin_url} target="_blank" rel="noreferrer" style={{ color: '#0077b5' }}><Linkedin size={20} /></a>}
+                                                    {profile.twitter_url && <a href={profile.twitter_url} target="_blank" rel="noreferrer" style={{ color: '#1DA1F2' }}><Twitter size={20} /></a>}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.5rem', background: '#f8fafc', borderRadius: 16 }}>
+                                                <h5 style={{ fontWeight: 700, color: '#6366f1', fontSize: '0.85rem', textTransform: 'uppercase' }}>Guardian Info</h5>
+                                                <InfoItem label="Name" value={`${profile.parent_first_name} ${profile.parent_last_name}`} />
+                                                <InfoItem label="Relation" value={profile.parent_relation} />
+                                                <InfoItem label="Occupation" value={profile.parent_occupation} />
+                                                <InfoItem label="Contact" value={profile.parent_phone} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'edu_work' && (
+                                    <div className="zoom-in">
+                                        <div style={{ marginBottom: '3rem' }}>
+                                            <SectionHeader icon={GraduationCap} title="Education History" subtitle="Academic background and qualifications" />
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                {profile.education_details?.length > 0 ? profile.education_details.map((edu, idx) => (
+                                                    <div key={idx} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12, display: 'flex', justifyContent: 'space-between' }}>
+                                                        <div>
+                                                            <div style={{ fontWeight: 700, color: '#1e293b' }}>{edu.school}</div>
+                                                            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{edu.degree}</div>
+                                                        </div>
+                                                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '0.25rem 0.75rem', borderRadius: 20, height: 'fit-content' }}>
+                                                            {edu.year || 'N/A'}
+                                                        </div>
+                                                    </div>
+                                                )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No education details added</p>}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <SectionHeader icon={Briefcase} title="Work Experience" subtitle="Professional journey and internships" />
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                {profile.work_experience?.length > 0 ? profile.work_experience.map((work, idx) => (
+                                                    <div key={idx} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12 }}>
+                                                        <div style={{ fontWeight: 700, color: '#1e293b' }}>{work.company}</div>
+                                                        <div style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: 600 }}>{work.role}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>{work.duration}</div>
+                                                    </div>
+                                                )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No work experience added</p>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'skills' && (
+                                    <div className="zoom-in">
+                                        <SectionHeader icon={Briefcase} title="Technical Expertise" subtitle="Searchable skills and technology stack" />
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                            {profile.technical_skills?.length > 0 ? profile.technical_skills.map((skill, idx) => (
+                                                <span key={idx} style={{ padding: '0.6rem 1.2rem', background: '#f1f5f9', color: '#475569', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600, border: '1px solid #e2e8f0' }}>
+                                                    {skill}
+                                                </span>
+                                            )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No technical skills listed</p>}
+                                        </div>
+                                        {profile.resume_url && (
+                                            <div style={{ marginTop: '3rem', padding: '1.5rem', background: '#eef2ff', borderRadius: 16, border: '1px dashed #6366f1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <div style={{ width: 48, height: 48, background: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
+                                                        <Globe size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontWeight: 700, color: '#1e293b' }}>Professional Resume</div>
+                                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Resume / Portfolio document is available</div>
+                                                    </div>
+                                                </div>
+                                                <a href={profile.resume_url} target="_blank" rel="noreferrer" className="btn-primary" style={{ gap: '0.5rem', padding: '0.6rem 1.2rem' }}>
+                                                    <ExternalLink size={16} /> View Resume
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'projects' && (
+                                    <div className="zoom-in">
+                                        <SectionHeader icon={Trophy} title="Projects & Achievements" subtitle="Key accomplishments and certifications" />
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+                                            {profile.projects_achievements?.length > 0 ? profile.projects_achievements.map((proj, idx) => (
+                                                <div key={idx} style={{ padding: '1.5rem', background: '#fbfcfe', border: '1px solid #eef2ff', borderRadius: 20 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                                        <h6 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>{proj.title}</h6>
+                                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.1)', padding: '0.3rem 0.8rem', borderRadius: 20 }}>
+                                                            PROJECT
+                                                        </span>
+                                                    </div>
+                                                    <p style={{ fontSize: '0.9rem', color: '#64748b', mb: '1.5rem', lineHeight: 1.6 }}>{proj.description}</p>
+                                                    {proj.link && (
+                                                        <a href={proj.link} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#6366f1', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none' }}>
+                                                            <ExternalLink size={14} /> View Project Link
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No projects or achievements listed</p>}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Sticky Footer for current tab */}
+                            <div style={{ padding: '1rem 2rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button onClick={onClose} className="btn-secondary" style={{ padding: '0.6rem 1.5rem' }}>
+                                    Close Profile
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
