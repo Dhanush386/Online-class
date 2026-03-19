@@ -2,7 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export function ProtectedRoute({ children, requiredRole }) {
-    const { user, profile, loading, signOut } = useAuth()
+    const { user, profile, loading, signOut, isProfileComplete } = useAuth()
     const location = useLocation()
 
     if (loading) {
@@ -86,6 +86,11 @@ export function ProtectedRoute({ children, requiredRole }) {
                     </div>
                 </div>
             )
+        }
+
+        // Mandatory Profile Check for Students
+        if (!isProfileComplete && location.pathname !== '/student/profile') {
+            return <Navigate to="/student/profile" replace />
         }
     }
 

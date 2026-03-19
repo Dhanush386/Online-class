@@ -64,7 +64,7 @@ export default function Register() {
         try {
             await signUp({ ...form, email: cleanEmail, name: cleanName })
             const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(form.role)
-            navigate(isAdmin ? '/organizer' : '/student')
+            navigate(isAdmin ? '/organizer' : '/student/profile')
         } catch (err) {
             setError(err.message || 'Registration failed')
         } finally {

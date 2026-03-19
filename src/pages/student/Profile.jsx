@@ -127,6 +127,7 @@ export default function Profile() {
                 })
 
             if (error) throw error
+            await refreshProfileStatus()
             setToast({ type: 'success', message: 'Profile updated successfully!' })
         } catch (err) {
             console.error('Error saving profile:', err)

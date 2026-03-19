@@ -6,6 +6,7 @@ const AuthContext = createContext({})
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
     const [profile, setProfile] = useState(null)
+    const [isProfileComplete, setIsProfileComplete] = useState(true) // Default to true to avoid early redirect
     const [loading, setLoading] = useState(true)
     const [browserSessionId] = useState(() => {
         let id = localStorage.getItem('online_class_session_uuid')
@@ -130,11 +131,36 @@ export function AuthProvider({ children }) {
                         .eq('id', userId)
                 }
                 setProfile(data)
+                // Check if profile is complete (exists in student_profiles)
+                if (data.role === 'student') {
+                    const { data: spData } = await supabase
+                        .from('student_profiles')
+                        .select('student_id')
+                        .eq('student_id', userId)
+                        .maybeSingle()
+                    setIsProfileComplete(!!spData)
+                } else {
+                    setIsProfileComplete(true)
+                }
             }
         } catch (err) {
             console.error('Error in fetchProfile:', err)
         } finally {
             setLoading(false)
+        }
+    }
+
+    async function refreshProfileStatus() {
+        if (!user) return
+        if (profile?.role === 'student') {
+            const { data } = await supabase
+                .from('student_profiles')
+                .select('student_id')
+                .eq('student_id', user.id)
+                .maybeSingle()
+            setIsProfileComplete(!!data)
+        } else {
+            setIsProfileComplete(true)
         }
     }
 
@@ -183,12 +209,10 @@ export function AuthProvider({ children }) {
     const value = {
         user,
         profile,
-        role: profile?.role,
-        loading,
-        signUp,
-        signIn,
         signOut,
         fetchProfile,
+        isProfileComplete,
+        refreshProfileStatus
     }
 
     return (
