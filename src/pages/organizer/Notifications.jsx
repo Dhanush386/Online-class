@@ -108,19 +108,7 @@ export default function Notifications() {
                 </div>
                 <button 
                     onClick={() => setShowCreateModal(true)}
-                    style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.5rem', 
-                        padding: '0.75rem 1.25rem', 
-                        background: 'var(--accent-main)', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: 12, 
-                        fontWeight: 600, 
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(99,102,241,0.2)'
-                    }}
+                    className="btn-primary"
                 >
                     <Plus size={20} />
                     New Broadcast
@@ -210,7 +198,7 @@ export default function Notifications() {
             {showCreateModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
                     <div className="animate-scale-in" style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: '500px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
-                        <div style={{ padding: '1.5rem', background: 'var(--accent-main)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ padding: '1.5rem', background: 'var(--accent)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                 <Send size={24} />
                                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Send New Broadcast</h2>
@@ -288,21 +276,8 @@ export default function Notifications() {
                                 <button 
                                     type="submit"
                                     disabled={sending}
-                                    style={{ 
-                                        flex: 2, 
-                                        padding: '0.8rem', 
-                                        border: 'none', 
-                                        borderRadius: 12, 
-                                        background: 'var(--accent-main)', 
-                                        color: 'white', 
-                                        fontWeight: 600, 
-                                        cursor: 'pointer',
-                                        opacity: sending ? 0.7 : 1,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem'
-                                    }}
+                                    className="btn-primary"
+                                    style={{ flex: 2, justifyContent: 'center' }}
                                 >
                                     {sending ? <div className="spinner-white"></div> : <><Send size={18} /> Send Broadcast</>}
                                 </button>
