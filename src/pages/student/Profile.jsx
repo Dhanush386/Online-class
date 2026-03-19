@@ -40,42 +40,16 @@ export default function Profile() {
         first_name: '',
         last_name: '',
         certificate_name: '',
-        gender: 'Male',
-        languages_communication: [],
-        language_teaching: 'Tamil',
-        language_watching: 'Tamil',
-        dob: '',
-        linkedin_url: '',
-        twitter_url: '',
-        github_url: '',
-        codechef_url: '',
-        hackerrank_url: '',
-        leetcode_url: '',
-        resume_url: '',
-        photo_url: '',
-        phone: '',
-        whatsapp_number: '',
-        parent_first_name: '',
-        parent_last_name: '',
-        parent_relation: 'Mother',
-        parent_occupation: 'Farmer',
-        parent_email: '',
-        parent_phone: '',
-        parent_whatsapp: '',
-        address_line1: '',
-        address_line2: '',
-        country: 'India',
-        pincode: '',
-        state: 'Tamil Nadu',
-        district: 'Krishnagiri',
-        city: 'Krishnagiri',
-        coding_level: "I don't have knowledge in coding",
-        has_laptop: true,
+        coding_level: "",
+        has_laptop: null,
         technical_skills: [],
         education_details: [],
         work_experience: [],
         projects_achievements: [],
-        whatsapp_updates: true
+        whatsapp_updates: true,
+        language_teaching: '',
+        language_watching: '',
+        gender: ''
     })
 
     const fileInputRef = useRef(null)
@@ -539,6 +513,20 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
+                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Gender</label>
+                                            <select 
+                                                name="gender" 
+                                                value={formData.gender} 
+                                                onChange={handleChange}
+                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                            >
+                                                <option value="">Select Gender</option>
+                                                <option>Male</option>
+                                                <option>Female</option>
+                                                <option>Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
                                             <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Date of Birth</label>
                                             <input 
                                                 type="date"
@@ -548,6 +536,9 @@ export default function Profile() {
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                             />
                                         </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
                                             <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>LinkedIn Profile URL</label>
                                             <div style={{ position: 'relative' }}>
@@ -705,8 +696,9 @@ export default function Profile() {
                                                 onChange={handleChange}
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
                                             >
-                                                <option>Mother</option>
+                                                <option value="">Select Relation</option>
                                                 <option>Father</option>
+                                                <option>Mother</option>
                                                 <option>Guardian</option>
                                             </select>
                                         </div>
@@ -718,6 +710,7 @@ export default function Profile() {
                                                 onChange={handleChange}
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
                                             >
+                                                <option value="">Select Occupation</option>
                                                 <option>Teacher</option>
                                                 <option>Professor/Faculty</option>
                                                 <option>Private Employee</option>
@@ -894,6 +887,7 @@ export default function Profile() {
                                                 onChange={handleChange}
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
                                             >
+                                                <option value="">Select Coding Level</option>
                                                 <option>I don't have knowledge in coding</option>
                                                 <option>Beginner</option>
                                                 <option>Intermediate</option>
@@ -956,6 +950,7 @@ export default function Profile() {
                                                 onChange={handleChange}
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
                                             >
+                                                <option value="">Select Language</option>
                                                 <option>Tamil</option>
                                                 <option>English</option>
                                                 <option>Hindi</option>
@@ -969,6 +964,7 @@ export default function Profile() {
                                                 onChange={handleChange}
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
                                             >
+                                                <option value="">Select Language</option>
                                                 <option>Tamil</option>
                                                 <option>English</option>
                                             </select>
