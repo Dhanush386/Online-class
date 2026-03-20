@@ -255,17 +255,21 @@ export default function CourseManagement() {
                                     {course.description || 'No description provided.'}
                                 </p>
                             </div>
-                            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                                    Created {new Date(course.created_at).toLocaleDateString()}
-                                </span>
-                                <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Course</span>
-                                <button onClick={() => navigate(`/student/courses/${course.id}`)} className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem' }}>
-                                    <Globe size={14} /> Open Portal
-                                </button>
-                                <button onClick={() => openResources(course)} className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem' }}>
-                                    <FileText size={14} /> Materials
-                                </button>
+                            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                        Created {new Date(course.created_at).toLocaleDateString()}
+                                    </span>
+                                    <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Course</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <button onClick={() => navigate(`/student/courses/${course.id}`)} className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                                        <Globe size={14} /> Open Portal
+                                    </button>
+                                    <button onClick={() => openResources(course)} className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                                        <FileText size={14} /> Materials
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}
