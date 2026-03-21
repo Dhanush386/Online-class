@@ -33,7 +33,8 @@ export default function Login() {
         setLoading(true)
         setError('')
         try {
-            const { user: authUser } = await signIn(form)
+            const cleanEmail = form.email.trim().toLowerCase()
+            const { user: authUser } = await signIn({ ...form, email: cleanEmail })
             const { data } = await supabase
                 .from('users')
                 .select('role')
