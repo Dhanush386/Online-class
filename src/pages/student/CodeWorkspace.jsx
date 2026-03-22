@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import html2canvas from 'html2canvas'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
@@ -65,6 +66,65 @@ export default function CodeWorkspace() {
             handleAutoSubmit()
         }
     }, [violationCount, isStarted])
+
+    async function getVisualSimilarity(targetUrl) {
+        const previewFrame = document.getElementById('preview-iframe')
+        if (!previewFrame) return 0
+
+        try {
+            // 1. Capture student preview
+            const studentCanvas = await html2canvas(previewFrame.contentDocument.body, {
+                useCORS: true,
+                scale: 0.5, // Reduce size for faster comparison
+                logging: false,
+                backgroundColor: '#ffffff'
+            })
+
+            // 2. Load target image
+            const targetImg = new Image()
+            targetImg.crossOrigin = "anonymous"
+            targetImg.src = targetUrl
+            
+            await new Promise((resolve, reject) => {
+                targetImg.onload = resolve
+                targetImg.onerror = reject
+            })
+
+            // 3. Compare on a fixed-size canvas
+            const width = 300
+            const height = 225
+            
+            const canvas1 = document.createElement('canvas')
+            const canvas2 = document.createElement('canvas')
+            canvas1.width = width; canvas1.height = height
+            canvas2.width = width; canvas2.height = height
+            
+            const ctx1 = canvas1.getContext('2d')
+            const ctx2 = canvas2.getContext('2d')
+            
+            ctx1.drawImage(studentCanvas, 0, 0, width, height)
+            ctx2.drawImage(targetImg, 0, 0, width, height)
+            
+            const data1 = ctx1.getImageData(0, 0, width, height).data
+            const data2 = ctx2.getImageData(0, 0, width, height).data
+            
+            let diff = 0
+            // Compare every 4th pixel (RGBA) to be efficient
+            for (let i = 0; i < data1.length; i += 16) {
+                const rDiff = Math.abs(data1[i] - data2[i])
+                const gDiff = Math.abs(data1[i+1] - data2[i+1])
+                const bDiff = Math.abs(data1[i+2] - data2[i+2])
+                if (rDiff + gDiff + bDiff > 60) diff++
+            }
+            
+            const totalPixels = data1.length / 16
+            const similarity = 1 - (diff / totalPixels)
+            return similarity
+        } catch (err) {
+            console.error("Visual comparison error:", err)
+            return 0
+        }
+    }
 
     async function handleAutoSubmit() {
         setIsAutoSubmitted(true)
@@ -375,21 +435,46 @@ export default function CodeWorkspace() {
                 const tc = challenge.test_cases[i]
                 const config = LANGUAGE_CONFIG[challenge.language] || { id: 100 }
                 const baseUrl = config.useExtra ? 'https://extra-ce.judge0.com' : 'https://ce.judge0.com'
+                let passed = false
+                let stdout = ''
 
-                const response = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        source_code: challenge.language === 'html' ? getCombinedWebCode() : code,
-                        language_id: config.id,
-                        stdin: tc.input || ''
+                if (challenge.language === 'html' && tc.output_image_url) {
+                    updatePreview() // Ensure the preview is up-to-date before capturing
+                    await new Promise(resolve => setTimeout(resolve, 500)) // Give iframe a moment to render
+                    const similarity = await getVisualSimilarity(tc.output_image_url)
+                    passed = similarity > 0.85 // 85% similarity threshold
+                    stdout = `Visual Similarity: ${(similarity * 100).toFixed(2)}%`
+                } else if (challenge.language === 'html') {
+                    // Fallback to basic submission if no image
+                    const res = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            language_id: 100, // generic for web
+                            source_code: getCombinedWebCode(),
+                            stdin: tc.input || '',
+                            expected_output: tc.expected_output || ''
+                        })
                     })
-                })
-
-                const data = await response.json()
-                const stdout = (data.stdout || '').trim()
-                const expected = (tc.expected_output || '').trim()
-                const passed = data.status?.id === 3 && stdout === expected
+                    const data = await res.json()
+                    stdout = data.stdout || ''
+                    passed = data.status?.id === 3
+                } else {
+                    const res = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            language_id: LANGUAGE_CONFIG[challenge.language].id,
+                            source_code: code,
+                            stdin: tc.input || '',
+                            expected_output: tc.expected_output || ''
+                        })
+                    })
+                    const data = await res.json()
+                    stdout = (data.stdout || '').trim()
+                    const expected = (tc.expected_output || '').trim()
+                    passed = data.status?.id === 3 && stdout === expected
+                }
 
                 testResults.push({
                     id: i + 1,
@@ -398,8 +483,8 @@ export default function CodeWorkspace() {
                     input: tc.input,
                     expected: tc.expected_output,
                     actual: stdout,
-                    status: data.status?.description,
-                    error: data.stderr || data.compile_output,
+                    status: passed ? 'Accepted' : 'Wrong Answer',
+                    error: '',
                     input_image_url: tc.input_image_url || '',
                     output_image_url: tc.output_image_url || ''
                 })
