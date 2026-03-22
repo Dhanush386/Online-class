@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import CodeEditor from '../../components/CodeEditor'
-import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock } from 'lucide-react'
+import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image, Upload } from 'lucide-react'
 import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
 const LANGUAGES = [
@@ -40,7 +40,7 @@ export default function CodingManagement() {
         xp_reward: 15, open_time: '', close_time: '',
         target_visual_url: '', allowed_assets: '',
         day_number: 1,
-        test_cases: [{ input: '', expected_output: '', is_hidden: false }]
+        test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }]
     })
 
     const [groups, setGroups] = useState([])
@@ -83,6 +83,33 @@ export default function CodingManagement() {
         setGroups(groupData || [])
         setResourceAccess(accessData || [])
         setLoading(false)
+    }
+
+    async function handleTCImageUpload(e, idx, field) {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+        const filePath = `challenges/test-cases/${fileName}`
+
+        try {
+            const { error: uploadError } = await supabase.storage
+                .from('study-materials')
+                .upload(filePath, file)
+
+            if (uploadError) throw uploadError
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('study-materials')
+                .getPublicUrl(filePath)
+
+            const newTCData = [...formData.test_cases]
+            newTCData[idx][field] = publicUrl
+            setFormData(p => ({ ...p, test_cases: newTCData }))
+        } catch (err) {
+            alert('Error uploading image: ' + err.message)
+        }
     }
 
     async function toggleResourceLock(groupId, resourceId) {
@@ -199,7 +226,7 @@ export default function CodingManagement() {
             close_time: toLocalInput(c.close_time),
             target_visual_url: c.target_visual_url || '',
             allowed_assets: Array.isArray(c.allowed_assets) ? c.allowed_assets.join('\n') : (c.allowed_assets || ''),
-            test_cases: c.test_cases || [{ input: '', expected_output: '', is_hidden: false }],
+            test_cases: c.test_cases || [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }],
             day_number: c.day_number || 1
         })
         setShowModal(true)
@@ -213,7 +240,7 @@ export default function CodingManagement() {
             xp_reward: 15, open_time: '', close_time: '',
             target_visual_url: '', allowed_assets: '',
             day_number: 1,
-            test_cases: [{ input: '', expected_output: '', is_hidden: false }]
+            test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }]
         })
         setStarterWebCode({ html: '', css: '', js: '' })
         setEditingId(null)
@@ -612,34 +639,103 @@ export default function CodingManagement() {
                                         </button>
                                     </div>
                                     {formData.test_cases.map((tc, idx) => (
-                                        <div key={idx} className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.75rem', marginBottom: '0.75rem', alignItems: 'center' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>INPUT</label>
-                                                <textarea id={`tc-input-${idx}`} name={`tc_input_${idx}`} className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => {
-                                                    const newTCData = [...formData.test_cases]; newTCData[idx].input = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                                }} style={{ fontSize: '0.8rem' }} />
+                                        <div key={idx} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '1rem', marginBottom: '1rem', background: 'white' }}>
+                                            <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.75rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                    <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>INPUT (STDIN)</label>
+                                                    <textarea id={`tc-input-${idx}`} className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => {
+                                                        const newTCData = [...formData.test_cases]; newTCData[idx].input = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
+                                                    }} style={{ fontSize: '0.8rem' }} />
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                    <label htmlFor={`tc-output-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>EXPECTED OUTPUT (STDOUT)</label>
+                                                    <textarea id={`tc-output-${idx}`} className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => {
+                                                        const newTCData = [...formData.test_cases]; newTCData[idx].expected_output = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
+                                                    }} style={{ fontSize: '0.8rem' }} />
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', paddingTop: '1.25rem' }}>
+                                                    <label htmlFor={`tc-hidden-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>HIDDEN</label>
+                                                    <input
+                                                        id={`tc-hidden-${idx}`}
+                                                        type="checkbox"
+                                                        checked={tc.is_hidden}
+                                                        onChange={e => {
+                                                            const newTCData = [...formData.test_cases]; newTCData[idx].is_hidden = e.target.checked; setFormData(p => ({ ...p, test_cases: newTCData }))
+                                                        }}
+                                                    />
+                                                </div>
+                                                <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: p.test_cases.filter((_, i) => i !== idx) }))} style={{ background: 'none', border: 'none', color: '#ef4444', padding: '0.5rem', cursor: 'pointer', alignSelf: 'flex-start', marginTop: '1.25rem' }}>
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                <label htmlFor={`tc-output-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>OUTPUT</label>
-                                                <textarea id={`tc-output-${idx}`} name={`tc_output_${idx}`} className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => {
-                                                    const newTCData = [...formData.test_cases]; newTCData[idx].expected_output = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                                }} style={{ fontSize: '0.8rem' }} />
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: window.innerWidth <= 768 ? 'row' : 'column', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                                                <label htmlFor={`tc-hidden-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>HIDDEN</label>
-                                                <input
-                                                    id={`tc-hidden-${idx}`}
-                                                    name={`tc_hidden_${idx}`}
-                                                    type="checkbox"
-                                                    checked={tc.is_hidden}
-                                                    onChange={e => {
-                                                        const newTCData = [...formData.test_cases]; newTCData[idx].is_hidden = e.target.checked; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                                    }}
-                                                />
-                                            </div>
-                                            <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: p.test_cases.filter((_, i) => i !== idx) }))} style={{ background: 'none', border: 'none', color: '#ef4444', padding: '0.5rem', cursor: 'pointer', alignSelf: 'center' }}>
-                                                <Trash2 size={16} />
-                                            </button>
+
+                                            {formData.language === 'html' && (
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', paddingTop: '0.75rem', borderTop: '1px dashed #e2e8f0' }}>
+                                                    {['input_image_url', 'output_image_url'].map(field => (
+                                                        <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' }}>
+                                                                {field === 'input_image_url' ? 'Input Design Mockup' : 'Target Result Image'}
+                                                            </span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                                <div style={{ 
+                                                                    width: 60, 
+                                                                    height: 60, 
+                                                                    borderRadius: 8, 
+                                                                    background: '#f1f5f9', 
+                                                                    display: 'flex', 
+                                                                    alignItems: 'center', 
+                                                                    justifyContent: 'center', 
+                                                                    border: '1px solid #e2e8f0', 
+                                                                    overflow: 'hidden',
+                                                                    flexShrink: 0
+                                                                }}>
+                                                                    {tc[field] ? (
+                                                                        <img src={tc[field]} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                    ) : (
+                                                                        <Image size={24} color="#94a3b8" />
+                                                                    )}
+                                                                </div>
+                                                                <div style={{ flex: 1 }}>
+                                                                    <input
+                                                                        type="file"
+                                                                        id={`${field}-${idx}`}
+                                                                        accept="image/*"
+                                                                        style={{ display: 'none' }}
+                                                                        onChange={e => handleTCImageUpload(e, idx, field)}
+                                                                    />
+                                                                    <label 
+                                                                        htmlFor={`${field}-${idx}`}
+                                                                        className="btn-secondary"
+                                                                        style={{ 
+                                                                            display: 'inline-flex', 
+                                                                            alignItems: 'center', 
+                                                                            gap: '0.4rem', 
+                                                                            fontSize: '0.7rem', 
+                                                                            padding: '0.4rem 0.6rem',
+                                                                            cursor: 'pointer'
+                                                                        }}
+                                                                    >
+                                                                        <Upload size={12} /> {tc[field] ? 'Change Image' : 'Upload Image'}
+                                                                    </label>
+                                                                    {tc[field] && (
+                                                                        <button 
+                                                                            type="button" 
+                                                                            onClick={() => {
+                                                                                const newTCData = [...formData.test_cases];
+                                                                                newTCData[idx][field] = '';
+                                                                                setFormData(p => ({ ...p, test_cases: newTCData }));
+                                                                            }}
+                                                                            style={{ fontSize: '0.65rem', color: '#ef4444', background: 'none', border: 'none', marginLeft: '0.5rem', cursor: 'pointer' }}
+                                                                        >
+                                                                            Remove
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

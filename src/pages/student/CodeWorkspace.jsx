@@ -399,7 +399,9 @@ export default function CodeWorkspace() {
                     expected: tc.expected_output,
                     actual: stdout,
                     status: data.status?.description,
-                    error: data.stderr || data.compile_output
+                    error: data.stderr || data.compile_output,
+                    input_image_url: tc.input_image_url || '',
+                    output_image_url: tc.output_image_url || ''
                 })
 
                 if (passed) passedCount++
@@ -797,9 +799,55 @@ export default function CodeWorkspace() {
                                     )}
                                 </div>
                                 {!result ? (
-                                    <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>
-                                        <Clock size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-                                        <p>Click Run to test your solution</p>
+                                    <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <div style={{ textAlign: 'center', padding: '1rem', color: '#94a3b8' }}>
+                                            <Clock size={24} style={{ margin: '0 auto 0.5rem', opacity: 0.5 }} />
+                                            <p style={{ fontSize: '0.85rem' }}>Test Cases & Mockups</p>
+                                        </div>
+                                        {challenge.test_cases?.map((tc, idx) => (
+                                            <div key={idx} style={{ padding: '1rem', borderRadius: 12, background: 'white', border: '1px solid #e2e8f0' }}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <Info size={14} color="#6366f1" /> Case {idx + 1} {tc.is_hidden && <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>(HIDDEN)</span>}
+                                                </div>
+                                                
+                                                {(!tc.is_hidden || canBypass) ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                        {tc.input && (
+                                                            <div>
+                                                                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>INPUT</div>
+                                                                <pre style={{ background: '#f8fafc', padding: '0.5rem', borderRadius: 6, fontSize: '0.75rem', overflowX: 'auto' }}>{tc.input}</pre>
+                                                            </div>
+                                                        )}
+                                                        {challenge.language === 'html' && (tc.input_image_url || tc.output_image_url) && (
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                                                {tc.input_image_url && (
+                                                                    <div>
+                                                                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6366f1', marginBottom: 4 }}>INPUT MOCKUP</div>
+                                                                        <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                                            <img src={tc.input_image_url} alt="Input" style={{ width: '100%', display: 'block' }} />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {tc.output_image_url && (
+                                                                    <div>
+                                                                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#10b981', marginBottom: 4 }}>TARGET DESIGN</div>
+                                                                        <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                                            <img src={tc.output_image_url} alt="Target" style={{ width: '100%', display: 'block' }} />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>EXPECTED OUTPUT</div>
+                                                            <pre style={{ background: '#f8fafc', padding: '0.5rem', borderRadius: 6, fontSize: '0.75rem', overflowX: 'auto' }}>{tc.expected_output}</pre>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic' }}>Details hidden for security. This test case will be evaluated upon submission.</p>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -836,6 +884,26 @@ export default function CodeWorkspace() {
 
                                                         {(!tc.isHidden || !tc.passed || canBypass) && (
                                                             <div style={{ fontSize: '0.75rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                                {challenge.language === 'html' && (tc.input_image_url || tc.output_image_url) && (
+                                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                                                        {tc.input_image_url && (
+                                                                            <div>
+                                                                                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6366f1', marginBottom: 4 }}>INPUT MOCKUP</div>
+                                                                                <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                                                    <img src={tc.input_image_url} alt="Input" style={{ width: '100%', display: 'block' }} />
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        {tc.output_image_url && (
+                                                                            <div>
+                                                                                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#10b981', marginBottom: 4 }}>TARGET DESIGN</div>
+                                                                                <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                                                    <img src={tc.output_image_url} alt="Target" style={{ width: '100%', display: 'block' }} />
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                                 <div>
                                                                     <div style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.65rem', marginBottom: 2 }}>INPUT</div>
                                                                     <pre style={{ background: '#f8fafc', padding: '0.5rem', borderRadius: 4, margin: 0, overflowX: 'auto' }}>{tc.input || '(empty)'}</pre>
