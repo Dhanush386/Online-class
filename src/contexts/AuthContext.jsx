@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
     // Use a ref to store the stable session ID to avoid dependency cycle in useEffect
     // but keep the state for the initial value consistency.
     const sessionIdRef = useRef(browserSessionId)
+    const isUpdatingSession = useRef(false)
     useEffect(() => { sessionIdRef.current = browserSessionId }, [browserSessionId])
 
     useEffect(() => {
@@ -76,9 +77,13 @@ export function AuthProvider({ children }) {
             }, (payload) => {
                 // Check session ID
                 if (payload.new.current_session_id && payload.new.current_session_id !== sessionIdRef.current) {
-                    console.warn('Session replaced by another device.')
+                    if (isUpdatingSession.current) {
+                        console.log('Ignored self-triggered session update.')
+                        isUpdatingSession.current = false
+                        return
+                    }
+                    console.warn('Session replaced. DB ID:', payload.new.current_session_id, 'Local ID:', sessionIdRef.current)
                     signOut()
-                    // Use a query param to tell the login page why it happened
                     window.location.href = '/login?reason=replaced'
                     return
                 }
@@ -119,6 +124,7 @@ export function AuthProvider({ children }) {
 
             // Update DB with current session ID if different
             if (data && data.current_session_id !== sessionIdRef.current) {
+                isUpdatingSession.current = true
                 await supabase
                     .from('users')
                     .update({ current_session_id: sessionIdRef.current })
