@@ -123,6 +123,9 @@ export function AuthProvider({ children }) {
                     .from('users')
                     .update({ current_session_id: sessionIdRef.current })
                     .eq('id', userId)
+                
+                // Ensure local profile has the new session ID immediately
+                finalProfile.current_session_id = sessionIdRef.current
             }
 
             setProfile(finalProfile)
