@@ -4,82 +4,110 @@ import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar'
 import 'react-circular-progressbar/dist/styles.css'
-import { Clock, BookOpen, Trophy, Award, Video, Calendar, ExternalLink, Zap, Code as CodeIcon, ChevronRight, Rocket, Flame, FileText } from 'lucide-react'
+import { Clock, BookOpen, Trophy, Award, Video, Calendar, ExternalLink, Zap, Code as CodeIcon, ChevronRight, Rocket, Flame, FileText, Plus, Layout, Globe } from 'lucide-react'
+import { subscribeToPush, checkPushSubscription } from '../../utils/pushService'
 
 export default function StudentDashboard() {
     const { profile, stats } = useAuth()
     const [data, setData] = useState({ courses: 0, completion: 0, timeSpent: 0, topics: 0 })
     const [upcomingSessions, setUpcomingSessions] = useState([])
-    const [loading, setLoading] = useState(true)
+    const [isCheckingSub, setIsCheckingSub] = useState(true)
+    const [isSubscribed, setIsSubscribed] = useState(false)
 
     useEffect(() => {
-        async function load() {
-            const { data: rawEnrollments } = await supabase
-                .from('enrollments')
-                .select('course_id, courses(start_date)')
-                .eq('student_id', profile.id)
-
-            // Deduplicate enrollments to fix duplicate course cards
-            const enrollments = []
-            const uniqueCourseIds = new Set()
-                ; (rawEnrollments || []).forEach(e => {
-                    if (!e.courses) return // Skip orphaned enrollments
-                    const startDate = e.courses?.start_date
-                    const hasStarted = !startDate || new Date(startDate) <= new Date()
-                    
-                    if (hasStarted && !uniqueCourseIds.has(e.course_id)) {
-                        uniqueCourseIds.add(e.course_id)
-                        enrollments.push(e)
-                    }
-                })
-
-            const [
-                { data: progress },
-                { data: sessions },
-                { data: memberships },
-                { data: locksDay }
-            ] = await Promise.all([
-                supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
-                supabase.from('videos').select('id, title, scheduled_time, duration_minutes, video_url, courses(title)')
-                    .gte('scheduled_time', new Date().toISOString())
-                    .order('scheduled_time', { ascending: true })
-                    .limit(3),
-                supabase.from('group_members').select('group_id').eq('student_id', profile.id),
-                supabase.from('day_access').select('*')
-            ])
-
-            const userGroupIds = memberships?.map(m => m.group_id) || []
-            const now = new Date()
-
-            const isDayLocked = (courseId, dayNum) => {
-                if (!dayNum) return false
-                const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && userGroupIds.includes(a.group_id))
-                if (!access) return false
-                if (access.is_locked) return true
-                if (access.open_time && new Date(access.open_time) > now) return true
-                return false
-            }
-
-            const filteredSessions = (sessions || [])
-                .filter(s => !isDayLocked(s.course_id, s.day_number))
-                .slice(0, 3)
-
-            const avgComp = progress?.length
-                ? Math.round(progress.reduce((s, p) => s + (p.completion_percentage || 0), 0) / progress.length)
-                : 0
-            const totalTime = progress?.reduce((s, p) => s + (p.time_spent_minutes || 0), 0) || 0
-
-            setData({
-                courses: enrollments?.length || 0,
-                completion: avgComp,
-                timeSpent: totalTime,
-                topics: enrollments?.length ? enrollments.length * 5 : 0,
-            })
-            setUpcomingSessions(filteredSessions)
-            setLoading(false)
-        }
-        load()
+        fetchDashboardData()
+        checkSubscription()
     }, [profile])
+
+    async function checkSubscription() {
+        try {
+            const sub = await checkPushSubscription()
+            setIsSubscribed(sub)
+        } catch (err) {
+            console.error('Error checking subscription:', err)
+        } finally {
+            setIsCheckingSub(false)
+        }
+    }
+
+    async function handleEnableNotifications() {
+        try {
+            const sub = await subscribeToPush(profile.id)
+            if (sub) {
+                setIsSubscribed(true)
+                alert('Notifications enabled! You will now receive alerts even when the app is closed.')
+            }
+        } catch (err) {
+            console.error('Error enabling notifications:', err)
+            alert('Failed to enable notifications. Please ensure you allow permissions in your browser.')
+        }
+    }
+
+    async function fetchDashboardData() {
+        const { data: rawEnrollments } = await supabase
+            .from('enrollments')
+            .select('course_id, courses(start_date)')
+            .eq('student_id', profile.id)
+
+        // Deduplicate enrollments to fix duplicate course cards
+        const enrollments = []
+        const uniqueCourseIds = new Set()
+            ; (rawEnrollments || []).forEach(e => {
+                if (!e.courses) return // Skip orphaned enrollments
+                const startDate = e.courses?.start_date
+                const hasStarted = !startDate || new Date(startDate) <= new Date()
+
+                if (hasStarted && !uniqueCourseIds.has(e.course_id)) {
+                    uniqueCourseIds.add(e.course_id)
+                    enrollments.push(e)
+                }
+            })
+
+        const [
+            { data: progress },
+            { data: sessions },
+            { data: memberships },
+            { data: locksDay }
+        ] = await Promise.all([
+            supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
+            supabase.from('videos').select('id, title, scheduled_time, duration_minutes, video_url, courses(title)')
+                .gte('scheduled_time', new Date().toISOString())
+                .order('scheduled_time', { ascending: true })
+                .limit(3),
+            supabase.from('group_members').select('group_id').eq('student_id', profile.id),
+            supabase.from('day_access').select('*')
+        ])
+
+        const userGroupIds = memberships?.map(m => m.group_id) || []
+        const now = new Date()
+
+        const isDayLocked = (courseId, dayNum) => {
+            if (!dayNum) return false
+            const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && userGroupIds.includes(a.group_id))
+            if (!access) return false
+            if (access.is_locked) return true
+            if (access.open_time && new Date(access.open_time) > now) return true
+            return false
+        }
+
+        const filteredSessions = (sessions || [])
+            .filter(s => !isDayLocked(s.course_id, s.day_number))
+            .slice(0, 3)
+
+        const avgComp = progress?.length
+            ? Math.round(progress.reduce((s, p) => s + (p.completion_percentage || 0), 0) / progress.length)
+            : 0
+        const totalTime = progress?.reduce((s, p) => s + (p.time_spent_minutes || 0), 0) || 0
+
+        setData({
+            courses: enrollments?.length || 0,
+            completion: avgComp,
+            timeSpent: totalTime,
+            topics: enrollments?.length ? enrollments.length * 5 : 0,
+        })
+        setUpcomingSessions(filteredSessions)
+        // setLoading(false) // setLoading is not defined in the provided snippet
+    }
 
     return (
         <div className="animate-fade-in">
@@ -128,6 +156,22 @@ export default function StudentDashboard() {
                         </h3>
                         <Link to="/student/schedule" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all →</Link>
                     </div>
+                    {!isCheckingSub && !isSubscribed && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                            <button
+                                onClick={handleEnableNotifications}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                    padding: '0.5rem 0.8rem', borderRadius: 10, background: '#f0fdf4',
+                                    border: '1px solid #10b981', color: '#166534', fontSize: '0.8rem',
+                                    fontWeight: 600, cursor: 'pointer'
+                                }}
+                            >
+                                <Globe size={14} />
+                                Enable Notifications
+                            </button>
+                        </div>
+                    )}
                     {upcomingSessions.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)' }}>
                             <Calendar size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.3, display: 'block' }} />

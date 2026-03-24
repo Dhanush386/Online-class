@@ -3,8 +3,9 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
     Bell, Send, Trash2, Users, Info, AlertTriangle, CheckCircle, 
-    MessageSquare, History, Plus, Filter, Search, Clock, X
+    MessageSquare, History, Plus, Filter, Search, Clock, X, Globe
 } from 'lucide-react'
+import { subscribeToPush, checkPushSubscription } from '../../utils/pushService'
 
 export default function Notifications() {
     const { profile } = useAuth()
@@ -12,6 +13,8 @@ export default function Notifications() {
     const [loading, setLoading] = useState(true)
     const [sending, setSending] = useState(false)
     const [showCreateModal, setShowCreateModal] = useState(false)
+    const [isSubscribed, setIsSubscribed] = useState(false)
+    const [isCheckingSub, setIsCheckingSub] = useState(true)
     
     // Form state
     const [formData, setFormData] = useState({
@@ -23,7 +26,32 @@ export default function Notifications() {
 
     useEffect(() => {
         fetchNotifications()
+        checkSubscription()
     }, [])
+
+    async function checkSubscription() {
+        try {
+            const sub = await checkPushSubscription()
+            setIsSubscribed(sub)
+        } catch (err) {
+            console.error('Error checking subscription:', err)
+        } finally {
+            setIsCheckingSub(false)
+        }
+    }
+
+    async function handleEnableNotifications() {
+        try {
+            const sub = await subscribeToPush(profile.id)
+            if (sub) {
+                setIsSubscribed(true)
+                alert('Notifications enabled successfully! You will now receive alerts even when the app is closed.')
+            }
+        } catch (err) {
+            console.error('Error enabling notifications:', err)
+            alert('Failed to enable notifications. Please ensure you allow permissions in your browser.')
+        }
+    }
 
     async function fetchNotifications() {
         try {
@@ -106,13 +134,30 @@ export default function Notifications() {
                     <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Global Notifications</h1>
                     <p style={{ color: 'var(--text-secondary)' }}>Broadcast announcements and alerts to all platform users.</p>
                 </div>
-                <button 
-                    onClick={() => setShowCreateModal(true)}
-                    className="btn-primary"
-                >
-                    <Plus size={20} />
-                    New Broadcast
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    {!isCheckingSub && !isSubscribed && (
+                        <button 
+                            onClick={handleEnableNotifications}
+                            style={{ 
+                                display: 'flex', alignItems: 'center', gap: '0.6rem', 
+                                padding: '0.5rem 1rem', borderRadius: 10, background: '#f0fdf4', 
+                                border: '1px solid #10b981', color: '#166534', fontSize: '0.85rem', 
+                                fontWeight: 600, cursor: 'pointer' 
+                            }}
+                            className="nav-item-hover"
+                        >
+                            <Globe size={16} />
+                            Enable App Notifications
+                        </button>
+                    )}
+                    <button 
+                        onClick={() => setShowCreateModal(true)}
+                        className="btn-primary"
+                    >
+                        <Plus size={20} />
+                        New Broadcast
+                    </button>
+                </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
