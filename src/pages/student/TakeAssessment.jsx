@@ -296,9 +296,14 @@ export default function TakeAssessment() {
                         </div>
                     </div>
 
-                    <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                        Back to Course
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <button onClick={() => navigate(`/student/assessments/${assessmentId}/review`)} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                            View Detailed Results
+                        </button>
+                        <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                            Back to Course
+                        </button>
+                    </div>
                 </div>
             </div>
         )
