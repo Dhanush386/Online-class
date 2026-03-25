@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock } from 'lucide-react'
 
-const MAX_ATTEMPTS = 2
+const MAX_ATTEMPTS = 1
 
 export default function TakeAssessment() {
     const { assessmentId } = useParams()

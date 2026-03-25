@@ -7,7 +7,7 @@ import { ClipboardList, Calendar, ChevronRight, Eye, Lock } from 'lucide-react'
 const TABS = ['daily', 'weekly', 'final']
 const TAB_LABELS = { daily: 'Daily Assessment', weekly: 'Weekly Assessment', final: 'Final Assessment' }
 const TAB_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
-const MAX_ATTEMPTS = 2
+const MAX_ATTEMPTS = 1
 
 export default function Assessments() {
     const { profile } = useAuth()
