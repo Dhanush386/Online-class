@@ -125,17 +125,10 @@ export default function CourseDetail() {
         const completedCoding = (chls || []).filter(c => (subData || []).some(s => s.challenge_id === c.id && s.status === 'accepted')).length
         const completedAssess = (assessData || []).filter(a => (allAssessSubs || []).some(s => s.assessment_id === a.id)).length
 
-        const sessionPct = totalSessions > 0 ? (completedSessions / totalSessions) : 0
-        const codingPct = totalCoding > 0 ? (completedCoding / totalCoding) : 0
-        const assessPct = totalAssessments > 0 ? (completedAssess / totalAssessments) : 0
+        const totalTopics = totalSessions + totalCoding + totalAssessments
+        const completedTopics = completedSessions + completedCoding + completedAssess
 
-        let activeCategories = 0
-        let sumPct = 0
-        if (totalSessions > 0) { activeCategories++; sumPct += sessionPct }
-        if (totalCoding > 0) { activeCategories++; sumPct += codingPct }
-        if (totalAssessments > 0) { activeCategories++; sumPct += assessPct }
-
-        const finalPct = activeCategories > 0 ? Math.round((sumPct / activeCategories) * 100) : 0
+        const finalPct = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0
         console.log(`Progress Update [${courseId}]: ${finalPct}% (V:${completedSessions}/${totalSessions}, C:${completedCoding}/${totalCoding}, A:${completedAssess}/${totalAssessments})`)
 
         const { error: upError } = await supabase.from('progress').upsert({
