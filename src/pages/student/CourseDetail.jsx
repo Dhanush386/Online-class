@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List } from 'lucide-react'
 import ReactPlayer from 'react-player'
 
-const MAX_ATTEMPTS = 2
+const MAX_ATTEMPTS = 1
 const ASSESS_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
 
 export default function CourseDetail() {
@@ -465,8 +465,8 @@ export default function CourseDetail() {
                                                                                     <div style={{ fontSize: '0.65rem', fontWeight: 800, color: ASSESS_COLORS[type], textTransform: 'uppercase' }}>{type}</div>
                                                                                     <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{a.title}</div>
                                                                                 </div>
-                                                                                <button onClick={() => navigate(`/student/assessments/${a.id}/take`)} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
-                                                                                    {attempts > 0 ? 'Retry' : 'Start'}
+                                                                                <button onClick={() => navigate(`/student/assessments/${a.id}/${attempts > 0 ? 'review' : 'take'}`)} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
+                                                                                    {attempts > 0 ? 'Review' : 'Start'}
                                                                                 </button>
                                                                             </div>
                                                                         )
