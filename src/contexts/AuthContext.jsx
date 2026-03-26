@@ -28,11 +28,16 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null)
-            if (session?.user) fetchProfile(session.user.id)
-            else setLoading(false)
-        })
+        supabase.auth.getSession()
+            .then(({ data: { session } }) => {
+                setUser(session?.user ?? null)
+                if (session?.user) fetchProfile(session.user.id)
+                else setLoading(false)
+            })
+            .catch(err => {
+                console.error('Initial session fetch failed:', err)
+                setLoading(false)
+            })
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -74,7 +79,7 @@ export function AuthProvider({ children }) {
                 schema: 'public',
                 table: 'users',
                 filter: `id=eq.${user.id}`
-            }, (payload) => {
+            }, async (payload) => {
                 // Check session ID
                 if (payload.new.current_session_id && payload.new.current_session_id !== sessionIdRef.current) {
                     if (isUpdatingSession.current) {
@@ -83,7 +88,7 @@ export function AuthProvider({ children }) {
                         return
                     }
                     console.warn('Session replaced. DB ID:', payload.new.current_session_id, 'Local ID:', sessionIdRef.current)
-                    signOut()
+                    await signOut()
                     window.location.href = '/login?reason=replaced'
                     return
                 }
@@ -317,9 +322,17 @@ export function AuthProvider({ children }) {
     }
 
     async function signOut() {
-        await supabase.auth.signOut()
-        setUser(null)
-        setProfile(null)
+        try {
+            await supabase.auth.signOut()
+        } catch (err) {
+            console.warn('Sign out error (session might already be invalid):', err)
+        } finally {
+            setUser(null)
+            setProfile(null)
+            // Manual cleanup of local state in case SDK doesn't
+            setIsProfileComplete(true)
+            setStats({ xp: 0, solved: 0, streak: 0, completedCourses: [] })
+        }
     }
 
     const value = {
