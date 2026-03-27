@@ -91,15 +91,13 @@ export default function CodeWorkspace() {
                 targetImg.onerror = reject
             })
 
-            // 3. Compare on a fixed-size canvas            // VER-4.0 Fix: Dynamic resolution scaling
+            // 3. Compare on a fixed-size canvas
             const width = studentCanvas.width
             const height = studentCanvas.height
             const canvas1 = document.createElement('canvas')
             const canvas2 = document.createElement('canvas')
-            canvas1.width = width
-            canvas1.height = height
-            canvas2.width = width
-            canvas2.height = height
+            canvas1.width = width; canvas1.height = height
+            canvas2.width = width; canvas2.height = height
             
             const ctx1 = canvas1.getContext('2d')
             const ctx2 = canvas2.getContext('2d')
@@ -110,6 +108,12 @@ export default function CodeWorkspace() {
             
             const data1 = ctx1.getImageData(0, 0, width, height).data
             const data2 = ctx2.getImageData(0, 0, width, height).data
+
+            const diffCanvas = document.createElement('canvas')
+            diffCanvas.width = width
+            diffCanvas.height = height
+            const diffCtx = diffCanvas.getContext('2d')
+            const diffData = diffCtx.createImageData(width, height)
             
             let diff = 0
             let foregroundDiff = 0
@@ -123,16 +127,20 @@ export default function CodeWorkspace() {
                 const r1 = data1[i], g1 = data1[i+1], b1 = data1[i+2]
                 const r2 = data2[i], g2 = data2[i+1], b2 = data2[i+2]
                 
-                const rDiff = Math.abs(r1 - r2)
-                const gDiff = Math.abs(g1 - g2)
-                const bDiff = Math.abs(b1 - b2)
-                const isMatch = (rDiff + gDiff + bDiff <= 30)
+                const dr = Math.abs(r1 - r2), dg = Math.abs(g1 - g2), db = Math.abs(b1 - b2)
+                const isMatch = (dr + dg + db <= 40) // Slightly more lenient color threshold
                 
                 if (!isMatch) diff++
                 
-                // Foreground Sensitivity: Check if the TARGET pixel is NOT white/transparent
-                // A typical "White" pixel is 255, 255, 255.
-                const isTargetWhite = (r2 > 245 && g2 > 245 && b2 > 245)
+                // Difference Map Generation
+                if (isMatch) {
+                    diffData.data[i] = 200; diffData.data[i+1] = 255; diffData.data[i+2] = 200; diffData.data[i+3] = 255 // Greenish for match
+                } else {
+                    diffData.data[i] = 255; diffData.data[i+1] = 100; diffData.data[i+2] = 100; diffData.data[i+3] = 255 // Reddish for diff
+                }
+
+                // Foreground Sensitivity: Check if TARGET is NOT white/transparent
+                const isTargetWhite = (r2 > 240 && g2 > 240 && b2 > 240)
                 const isTargetTransparent = (data2[i+3] < 10)
                 
                 if (!isTargetWhite && !isTargetTransparent) {
@@ -141,14 +149,15 @@ export default function CodeWorkspace() {
                 }
             }
             
+            diffCtx.putImageData(diffData, 0, 0)
+            
             const totalSimilarity = 1 - (diff / totalChecked)
             const foregroundSimilarity = foregroundTotal > 0 ? (1 - (foregroundDiff / foregroundTotal)) : 1.0
             
-            console.log(`Visual Match - Total: ${(totalSimilarity*100).toFixed(2)}%, Foreground: ${(foregroundSimilarity*100).toFixed(2)}%`)
-            
             return {
                 total: totalSimilarity,
-                foreground: foregroundSimilarity
+                foreground: foregroundSimilarity,
+                diffImage: diffCanvas.toDataURL('image/png')
             }
         } catch (err) {
             console.error("Visual comparison error:", err)
@@ -472,9 +481,10 @@ export default function CodeWorkspace() {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const result = await getVisualSimilarity(tc.output_image_url)
-                    // VER-4.0 Thresholds: Robust Foreground Check
-                    passed = result.total > 0.85 && result.foreground > 0.15
-                    stdout = `[VER-4.0] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground Match: ${(result.foreground * 100).toFixed(2)}% (Target: 15%+)`
+                    // VER-4.5 Thresholds: Lenient for Alignment Issues
+                    passed = result.total > 0.80 && result.foreground > 0.10
+                    stdout = `[VER-4.5] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground: ${(result.foreground * 100).toFixed(2)}% (Goal: 10%+)`
+                    tc.actual_image = result.diffImage
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
                     const res = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
@@ -707,8 +717,8 @@ export default function CodeWorkspace() {
                         <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
                         {challenge.language === 'html' ? 'Web Mode' : 'Standard Mode'}
                     </span>
-                    <span style={{ fontSize: '0.65rem', background: '#3b82f6', color: '#ffffff', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
-                        VER 4.0
+                    <span style={{ fontSize: '0.65rem', background: '#ec4899', color: '#ffffff', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
+                        VER 4.5 (DEBUG)
                     </span>
                     <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: 4, color: '#64748b' }}>{challenge.difficulty}</span>
                     </div>
@@ -1053,8 +1063,14 @@ export default function CodeWorkspace() {
                                                                 </div>
                                                                  {(true) && (
                                                                     <div>
-                                                                        <div style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.65rem', marginBottom: 2 }}>ACTUAL</div>
-                                                                        <pre style={{ background: tc.passed ? '#f0fdf4' : '#fee2e2', padding: '0.5rem', borderRadius: 4, margin: 0, overflowX: 'auto', color: tc.passed ? '#166534' : '#991b1b' }}>{tc.actual || tc.status || '(no output)'}</pre>
+                                                                        <div style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.65rem', marginBottom: 2 }}>ACTUAL</div>                                                                         <pre style={{ background: tc.passed ? '#f0fdf4' : '#fee2e2', padding: '0.5rem', borderRadius: 4, margin: 0, overflowX: 'auto', color: tc.passed ? '#166534' : '#991b1b', fontSize: '0.7rem' }}>{tc.actual || tc.status || '(no output)'}</pre>
+                                                                         {tc.actual_image && (
+                                                                             <div style={{ marginTop: '0.5rem' }}>
+                                                                                 <div style={{ fontSize: '0.6rem', color: '#94a3b8', marginBottom: 4, fontWeight: 700 }}>DIFFERENCE MAP (RED = MISMATCH)</div>
+                                                                                 <img src={tc.actual_image} alt="Diff" style={{ width: '100%', borderRadius: 4, border: '1px solid #e2e8f0' }} />
+                                                                             </div>
+                                                                         )}
+
                                                                     </div>
                                                                 )}
                                                                  {tc.error && (
