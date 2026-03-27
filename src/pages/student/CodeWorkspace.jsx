@@ -76,8 +76,8 @@ export default function CodeWorkspace() {
             const studentCanvas = await html2canvas(previewFrame.contentDocument.body, {
                 useCORS: true,
                 allowTaint: true,
-                scale: 0.5, // Reduce size for faster comparison
-                logging: false,
+                scale: 0.5,
+                logging: true, // Enable logging for debugging
                 backgroundColor: '#ffffff'
             })
 
@@ -103,6 +103,12 @@ export default function CodeWorkspace() {
             const ctx1 = canvas1.getContext('2d')
             const ctx2 = canvas2.getContext('2d')
             
+            // Fill with a distinct base color to prevent "Empty matches Empty" false positives
+            ctx1.fillStyle = '#f8fafc'
+            ctx1.fillRect(0, 0, width, height)
+            ctx2.fillStyle = '#f8fafc'
+            ctx2.fillRect(0, 0, width, height)
+            
             ctx1.drawImage(studentCanvas, 0, 0, width, height)
             ctx2.drawImage(targetImg, 0, 0, width, height)
             
@@ -110,16 +116,18 @@ export default function CodeWorkspace() {
             const data2 = ctx2.getImageData(0, 0, width, height).data
             
             let diff = 0
+            let totalChecked = 0
             // Compare every 4th pixel (RGBA) to be efficient
             for (let i = 0; i < data1.length; i += 16) {
+                totalChecked++
                 const rDiff = Math.abs(data1[i] - data2[i])
                 const gDiff = Math.abs(data1[i+1] - data2[i+1])
                 const bDiff = Math.abs(data1[i+2] - data2[i+2])
                 if (rDiff + gDiff + bDiff > 60) diff++
             }
             
-            const totalPixels = data1.length / 16
-            const similarity = 1 - (diff / totalPixels)
+            const similarity = 1 - (diff / totalChecked)
+            console.log(`Visual Match Info - Diff: ${diff}, Total: ${totalChecked}, Similarity: ${similarity}`)
             return similarity
         } catch (err) {
             console.error("Visual comparison error:", err)
