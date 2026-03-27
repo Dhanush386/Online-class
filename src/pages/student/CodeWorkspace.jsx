@@ -103,10 +103,11 @@ export default function CodeWorkspace() {
             const ctx1 = canvas1.getContext('2d')
             const ctx2 = canvas2.getContext('2d')
             
-            // Fill with a neutral background to prevent "Empty matches Empty" false positives
-            ctx1.fillStyle = '#e2e8f0'
+            // Fill with contrasting colors to prevent "Empty matches Empty" false positives
+            // If capture/draw fails, Red vs Blue = 0% match.
+            ctx1.fillStyle = '#ff0000' // Red for Student
             ctx1.fillRect(0, 0, width, height)
-            ctx2.fillStyle = '#e2e8f0'
+            ctx2.fillStyle = '#0000ff' // Blue for Target
             ctx2.fillRect(0, 0, width, height)
             
             ctx1.drawImage(studentCanvas, 0, 0, width, height)
@@ -452,7 +453,7 @@ export default function CodeWorkspace() {
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const similarity = await getVisualSimilarity(tc.output_image_url)
                     passed = similarity > 0.87 // Adjusted similarity threshold
-                    stdout = `Visual Similarity: ${(similarity * 100).toFixed(2)}%`
+                    stdout = `Visual Similarity: ${(similarity * 100).toFixed(2)}% (Target: 87.00%+)`
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
                     const res = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
@@ -577,34 +578,41 @@ export default function CodeWorkspace() {
     }
 
     const getCombinedWebCode = () => {
-        let finalHtml = htmlCode
-        const cssInject = `<style>${cssCode}</style>`
+        const cssInject = `<style>
+            body { margin: 0; min-height: 100vh; background: white; }
+            ${cssCode}
+        </style>`
         const jsInject = `<script>${jsCode}</script>`
+        
+        let finalHtml = htmlCode.trim() || '<div style="padding: 20px; color: #64748b; font-family: sans-serif;">Empty HTML</div>'
+
+        // Wrap in a full scaffold if it's not already there
+        if (!finalHtml.toLowerCase().includes('<html')) {
+            finalHtml = `
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        ${cssInject}
+                    </head>
+                    <body>
+                        ${finalHtml}
+                        ${jsInject}
+                    </body>
+                </html>
+            `
+        }
 
         // Manual Linking Logic: Only inject CSS if they linked style.css
         const cssLinkRegex = /<link[^>]*href=["']style\.css["'][^>]*>/i
         if (cssLinkRegex.test(finalHtml)) {
             finalHtml = finalHtml.replace(cssLinkRegex, cssInject)
-        } else {
-            // Auto injection: at end of head or start of body/html
-            if (finalHtml.includes('</head>')) {
-                finalHtml = finalHtml.replace('</head>', `${cssInject}</head>`)
-            } else {
-                finalHtml = cssInject + finalHtml
-            }
         }
 
         // Manual Linking Logic: Only inject JS if they linked script.js
         const jsScriptRegex = /<script[^>]*src=["']script\.js["'][^>]*><\/script>/i
         if (jsScriptRegex.test(finalHtml)) {
             finalHtml = finalHtml.replace(jsScriptRegex, jsInject)
-        } else {
-            // Auto injection: at end of body or end of html
-            if (finalHtml.includes('</body>')) {
-                finalHtml = finalHtml.replace('</body>', `${jsInject}</body>`)
-            } else {
-                finalHtml = finalHtml + jsInject
-            }
         }
 
         return finalHtml
