@@ -68,6 +68,7 @@ export default function App() {
             <Route path="upload" element={<UploadVideo />} />
             <Route path="schedule" element={<ScheduleManager />} />
             <Route path="students" element={<StudentManagement />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="playground" element={<CodePlayground />} />
             <Route path="support" element={<Support />} />

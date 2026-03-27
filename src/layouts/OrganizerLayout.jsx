@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import {
     LayoutDashboard, Radio, Calendar, Users, LogOut,
     GraduationCap, Menu, X, Bell, ChevronDown, BookOpen, ClipboardList, Code, Globe, MessageSquare,
-    Info, AlertTriangle, CheckCircle, Clock
+    Info, AlertTriangle, CheckCircle, Clock, Trophy
 } from 'lucide-react'
 
 const navItems = [
@@ -18,6 +18,7 @@ const navItems = [
     { to: '/organizer/upload', icon: Radio, label: 'Live Class' },
     { to: '/organizer/schedule', icon: Calendar, label: 'Schedule' },
     { to: '/organizer/students', icon: Users, label: 'Students' },
+    { to: '/organizer/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/organizer/notifications', icon: Bell, label: 'Notifications' },
     { to: '/organizer/support', icon: MessageSquare, label: 'Support' },
 ]
