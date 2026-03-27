@@ -91,26 +91,21 @@ export default function CodeWorkspace() {
                 targetImg.onerror = reject
             })
 
-            // 3. Compare on a fixed-size canvas
-            const width = 300
-            const height = 225
-            
+            // 3. Compare on a fixed-size canvas            // VER-4.0 Fix: Dynamic resolution scaling
+            const width = studentCanvas.width
+            const height = studentCanvas.height
             const canvas1 = document.createElement('canvas')
             const canvas2 = document.createElement('canvas')
-            canvas1.width = width; canvas1.height = height
-            canvas2.width = width; canvas2.height = height
+            canvas1.width = width
+            canvas1.height = height
+            canvas2.width = width
+            canvas2.height = height
             
             const ctx1 = canvas1.getContext('2d')
             const ctx2 = canvas2.getContext('2d')
             
-            // Fill with contrasting colors to prevent "Empty matches Empty" false positives
-            // If capture/draw fails, Red vs Blue = 0% match.
-            ctx1.fillStyle = '#ff0000' // Red for Student
-            ctx1.fillRect(0, 0, width, height)
-            ctx2.fillStyle = '#0000ff' // Blue for Target
-            ctx2.fillRect(0, 0, width, height)
-            
-            ctx1.drawImage(studentCanvas, 0, 0, width, height)
+            // Draw both into the SAME pixel dimensions to ensure alignment
+            ctx1.drawImage(studentCanvas, 0, 0)
             ctx2.drawImage(targetImg, 0, 0, width, height)
             
             const data1 = ctx1.getImageData(0, 0, width, height).data
@@ -477,9 +472,9 @@ export default function CodeWorkspace() {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const result = await getVisualSimilarity(tc.output_image_url)
-                    // Must match 87% overall AND at least 15% of the UI elements (foreground)
-                    passed = result.total > 0.87 && result.foreground > 0.15
-                    stdout = `[VER-3.6] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground Match: ${(result.foreground * 100).toFixed(2)}% (Target: 15%+)`
+                    // VER-4.0 Thresholds: Robust Foreground Check
+                    passed = result.total > 0.85 && result.foreground > 0.15
+                    stdout = `[VER-4.0] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground Match: ${(result.foreground * 100).toFixed(2)}% (Target: 15%+)`
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
                     const res = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
@@ -712,8 +707,8 @@ export default function CodeWorkspace() {
                         <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
                         {challenge.language === 'html' ? 'Web Mode' : 'Standard Mode'}
                     </span>
-                    <span style={{ fontSize: '0.65rem', background: '#e2e8f0', color: '#475569', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
-                        VER 3.6
+                    <span style={{ fontSize: '0.65rem', background: '#3b82f6', color: '#ffffff', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
+                        VER 4.0
                     </span>
                     <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: 4, color: '#64748b' }}>{challenge.difficulty}</span>
                     </div>
