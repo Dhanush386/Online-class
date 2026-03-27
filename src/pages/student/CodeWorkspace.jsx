@@ -120,32 +120,47 @@ export default function CodeWorkspace() {
             let foregroundTotal = 0
             let totalChecked = 0
             
-            // Compare EVERY pixel (RGBA) for maximum accuracy
-            for (let i = 0; i < data1.length; i += 4) {
-                totalChecked++
-                
-                const r1 = data1[i], g1 = data1[i+1], b1 = data1[i+2]
-                const r2 = data2[i], g2 = data2[i+1], b2 = data2[i+2]
-                
-                const dr = Math.abs(r1 - r2), dg = Math.abs(g1 - g2), db = Math.abs(b1 - b2)
-                const isMatch = (dr + dg + db <= 40) // Slightly more lenient color threshold
-                
-                if (!isMatch) diff++
-                
-                // Difference Map Generation
-                if (isMatch) {
-                    diffData.data[i] = 200; diffData.data[i+1] = 255; diffData.data[i+2] = 200; diffData.data[i+3] = 255 // Greenish for match
-                } else {
-                    diffData.data[i] = 255; diffData.data[i+1] = 100; diffData.data[i+2] = 100; diffData.data[i+3] = 255 // Reddish for diff
-                }
+            // Fuzzy Matching: Check 3x3 neighbors to allow for 1px shifts
+            const getPixel = (data, x, y, w) => {
+                const idx = (y * w + x) * 4
+                return [data[idx], data[idx+1], data[idx+2]]
+            }
 
-                // Foreground Sensitivity: Check if TARGET is NOT white/transparent
-                const isTargetWhite = (r2 > 240 && g2 > 240 && b2 > 240)
-                const isTargetTransparent = (data2[i+3] < 10)
-                
-                if (!isTargetWhite && !isTargetTransparent) {
-                    foregroundTotal++
-                    if (!isMatch) foregroundDiff++
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    totalChecked++
+                    const idx = (y * width + x) * 4
+                    const r2 = data2[idx], g2 = data2[idx+1], b2 = data2[idx+2]
+                    
+                    // Check if current pixel is a match
+                    const r1_center = data1[idx], g1_center = data1[idx+1], b1_center = data1[idx+2]
+                    let bestDiff = Math.abs(r1_center - r2) + Math.abs(g1_center - g2) + Math.abs(b1_center - b2)
+                    
+                    // Search 3x3 neighborhood in student canvas for a better match
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const [nr1, ng1, nb1] = getPixel(data1, x + dx, y + dy, width)
+                            const currentDiff = Math.abs(nr1 - r2) + Math.abs(ng1 - g2) + Math.abs(nb1 - b2)
+                            if (currentDiff < bestDiff) bestDiff = currentDiff
+                        }
+                    }
+
+                    const isMatch = (bestDiff <= 60) // Lenient fuzzy threshold
+                    if (!isMatch) diff++
+                    
+                    // Difference Map
+                    if (isMatch) {
+                        diffData.data[idx] = 200; diffData.data[idx+1] = 255; diffData.data[idx+2] = 200; diffData.data[idx+3] = 255
+                    } else {
+                        diffData.data[idx] = 255; diffData.data[idx+1] = 100; diffData.data[idx+2] = 100; diffData.data[idx+3] = 255
+                    }
+
+                    const isTargetWhite = (r2 > 240 && g2 > 240 && b2 > 240)
+                    const isTargetTransparent = (data2[idx+3] < 10)
+                    if (!isTargetWhite && !isTargetTransparent) {
+                        foregroundTotal++
+                        if (!isMatch) foregroundDiff++
+                    }
                 }
             }
             
@@ -481,9 +496,9 @@ export default function CodeWorkspace() {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const result = await getVisualSimilarity(tc.output_image_url)
-                    // VER-4.5 Thresholds: Lenient for Alignment Issues
-                    passed = result.total > 0.80 && result.foreground > 0.10
-                    stdout = `[VER-4.5] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground: ${(result.foreground * 100).toFixed(2)}% (Goal: 10%+)`
+                    // VER-5.0 Thresholds: Very Lenient Fuzzy Check
+                    passed = result.total > 0.75 && result.foreground > 0.08
+                    stdout = `[VER-5.0] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground: ${(result.foreground * 100).toFixed(2)}% (Goal: 8%+)`
                     tc.actual_image = result.diffImage
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
@@ -717,8 +732,8 @@ export default function CodeWorkspace() {
                         <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
                         {challenge.language === 'html' ? 'Web Mode' : 'Standard Mode'}
                     </span>
-                    <span style={{ fontSize: '0.65rem', background: '#ec4899', color: '#ffffff', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
-                        VER 4.5 (DEBUG)
+                    <span style={{ fontSize: '0.65rem', background: '#f59e0b', color: '#ffffff', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
+                        VER 5.0 (FUZZY)
                     </span>
                     <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: 4, color: '#64748b' }}>{challenge.difficulty}</span>
                     </div>
