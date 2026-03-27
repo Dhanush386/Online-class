@@ -477,9 +477,9 @@ export default function CodeWorkspace() {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const result = await getVisualSimilarity(tc.output_image_url)
-                    // Must match 87% overall AND at least 50% of the UI elements (foreground)
-                    passed = result.total > 0.87 && result.foreground > 0.50
-                    stdout = `[VER-3.5] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground Match: ${(result.foreground * 100).toFixed(2)}% (Target: 50%+)`
+                    // Must match 87% overall AND at least 15% of the UI elements (foreground)
+                    passed = result.total > 0.87 && result.foreground > 0.15
+                    stdout = `[VER-3.6] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground Match: ${(result.foreground * 100).toFixed(2)}% (Target: 15%+)`
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
                     const res = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
@@ -605,7 +605,7 @@ export default function CodeWorkspace() {
 
     const getCombinedWebCode = () => {
         const cssInject = `<style>
-            body { margin: 0; min-height: 100vh; background: white; }
+            body { background: white; }
             ${cssCode}
         </style>`
         const jsInject = `<script>${jsCode}</script>`
@@ -713,7 +713,7 @@ export default function CodeWorkspace() {
                         {challenge.language === 'html' ? 'Web Mode' : 'Standard Mode'}
                     </span>
                     <span style={{ fontSize: '0.65rem', background: '#e2e8f0', color: '#475569', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
-                        VER 3.0
+                        VER 3.6
                     </span>
                     <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: 4, color: '#64748b' }}>{challenge.difficulty}</span>
                     </div>
