@@ -498,9 +498,9 @@ export default function CodeWorkspace() {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const result = await getVisualSimilarity(tc.output_image_url)
-                    // VER-7.0 Thresholds: Resilient matching across different screens
-                    passed = result.total > 0.85 && result.foreground > 0.12
-                    stdout = `[VER-7.0] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground: ${(result.foreground * 100).toFixed(2)}% (Target: 12%+)`
+                    // VER-7.1 Thresholds: User requested 5% foreground
+                    passed = result.total > 0.85 && result.foreground > 0.05
+                    stdout = `[VER-7.1] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground: ${(result.foreground * 100).toFixed(2)}% (Target: 5%+)`
                     tc.actual_image = result.diffImage
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
