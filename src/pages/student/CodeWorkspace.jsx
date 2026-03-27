@@ -453,7 +453,7 @@ export default function CodeWorkspace() {
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const similarity = await getVisualSimilarity(tc.output_image_url)
                     passed = similarity > 0.87 // Adjusted similarity threshold
-                    stdout = `Visual Similarity: ${(similarity * 100).toFixed(2)}% (Target: 87.00%+)`
+                    stdout = `[VER-2.0] Visual Similarity: ${(similarity * 100).toFixed(2)}% (Target: 87.00%+)`
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
                     const res = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
@@ -683,8 +683,13 @@ export default function CodeWorkspace() {
                         <ChevronLeft size={16} /> Back to {canBypass ? "Management" : "Challenges"}
                     </Link>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1' }}>{challenge.language.toUpperCase()}</span>
-                        <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: 4, color: '#64748b' }}>{challenge.difficulty}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
+                        {challenge.language === 'html' ? 'Web Mode' : 'Standard Mode'}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', background: '#e2e8f0', color: '#475569', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                        VER 3.0
+                    </span>
+                    <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: 4, color: '#64748b' }}>{challenge.difficulty}</span>
                     </div>
                     <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.25rem' }}>
                         QUESTION {currentIndex + 1} OF {allChallenges.length}
@@ -1025,13 +1030,13 @@ export default function CodeWorkspace() {
                                                                     <div style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.65rem', marginBottom: 2 }}>EXPECTED</div>
                                                                     <pre style={{ background: '#f8fafc', padding: '0.5rem', borderRadius: 4, margin: 0, overflowX: 'auto' }}>{tc.expected}</pre>
                                                                 </div>
-                                                                {!tc.passed && (
+                                                                 {(true) && (
                                                                     <div>
                                                                         <div style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.65rem', marginBottom: 2 }}>ACTUAL</div>
                                                                         <pre style={{ background: tc.passed ? '#f0fdf4' : '#fee2e2', padding: '0.5rem', borderRadius: 4, margin: 0, overflowX: 'auto', color: tc.passed ? '#166534' : '#991b1b' }}>{tc.actual || tc.status || '(no output)'}</pre>
                                                                     </div>
                                                                 )}
-                                                                {tc.error && (
+                                                                 {tc.error && (
                                                                     <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: 4, fontFamily: 'monospace' }}>{tc.error}</div>
                                                                 )}
                                                             </div>
