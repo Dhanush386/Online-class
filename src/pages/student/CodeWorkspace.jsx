@@ -117,19 +117,44 @@ export default function CodeWorkspace() {
             const data2 = ctx2.getImageData(0, 0, width, height).data
             
             let diff = 0
+            let foregroundDiff = 0
+            let foregroundTotal = 0
             let totalChecked = 0
+            
             // Compare EVERY pixel (RGBA) for maximum accuracy
             for (let i = 0; i < data1.length; i += 4) {
                 totalChecked++
-                const rDiff = Math.abs(data1[i] - data2[i])
-                const gDiff = Math.abs(data1[i+1] - data2[i+1])
-                const bDiff = Math.abs(data1[i+2] - data2[i+2])
-                if (rDiff + gDiff + bDiff > 30) diff++
+                
+                const r1 = data1[i], g1 = data1[i+1], b1 = data1[i+2]
+                const r2 = data2[i], g2 = data2[i+1], b2 = data2[i+2]
+                
+                const rDiff = Math.abs(r1 - r2)
+                const gDiff = Math.abs(g1 - g2)
+                const bDiff = Math.abs(b1 - b2)
+                const isMatch = (rDiff + gDiff + bDiff <= 30)
+                
+                if (!isMatch) diff++
+                
+                // Foreground Sensitivity: Check if the TARGET pixel is NOT white/transparent
+                // A typical "White" pixel is 255, 255, 255.
+                const isTargetWhite = (r2 > 245 && g2 > 245 && b2 > 245)
+                const isTargetTransparent = (data2[i+3] < 10)
+                
+                if (!isTargetWhite && !isTargetTransparent) {
+                    foregroundTotal++
+                    if (!isMatch) foregroundDiff++
+                }
             }
             
-            const similarity = 1 - (diff / totalChecked)
-            console.log(`Visual Match Info - Diff: ${diff}, Total: ${totalChecked}, Similarity: ${similarity}`)
-            return similarity
+            const totalSimilarity = 1 - (diff / totalChecked)
+            const foregroundSimilarity = foregroundTotal > 0 ? (1 - (foregroundDiff / foregroundTotal)) : 1.0
+            
+            console.log(`Visual Match - Total: ${(totalSimilarity*100).toFixed(2)}%, Foreground: ${(foregroundSimilarity*100).toFixed(2)}%`)
+            
+            return {
+                total: totalSimilarity,
+                foreground: foregroundSimilarity
+            }
         } catch (err) {
             console.error("Visual comparison error:", err)
             return 0
@@ -451,9 +476,10 @@ export default function CodeWorkspace() {
                 if (challenge.language === 'html' && tc.output_image_url) {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
-                    const similarity = await getVisualSimilarity(tc.output_image_url)
-                    passed = similarity > 0.87 // Adjusted similarity threshold
-                    stdout = `[VER-2.0] Visual Similarity: ${(similarity * 100).toFixed(2)}% (Target: 87.00%+)`
+                    const result = await getVisualSimilarity(tc.output_image_url)
+                    // Must match 87% overall AND at least 50% of the UI elements (foreground)
+                    passed = result.total > 0.87 && result.foreground > 0.50
+                    stdout = `[VER-3.5] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground Match: ${(result.foreground * 100).toFixed(2)}% (Target: 50%+)`
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
                     const res = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
