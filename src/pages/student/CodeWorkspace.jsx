@@ -91,9 +91,9 @@ export default function CodeWorkspace() {
                 targetImg.onerror = reject
             })
 
-            // 3. Compare on a fixed-size canvas
-            const width = studentCanvas.width
-            const height = studentCanvas.height
+            // 3. Normalized Resilient Comparison (VER-7.0)
+            const width = 200
+            const height = 150
             const canvas1 = document.createElement('canvas')
             const canvas2 = document.createElement('canvas')
             canvas1.width = width; canvas1.height = height
@@ -102,8 +102,9 @@ export default function CodeWorkspace() {
             const ctx1 = canvas1.getContext('2d')
             const ctx2 = canvas2.getContext('2d')
             
-            // Draw both into the SAME pixel dimensions to ensure alignment
-            ctx1.drawImage(studentCanvas, 0, 0)
+            // Normalize both to the exact same 200x150 space
+            // This acts as a low-pass filter to ignore minor shifts and font rendering diffs
+            ctx1.drawImage(studentCanvas, 0, 0, width, height)
             ctx2.drawImage(targetImg, 0, 0, width, height)
             
             const data1 = ctx1.getImageData(0, 0, width, height).data
@@ -497,9 +498,9 @@ export default function CodeWorkspace() {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const result = await getVisualSimilarity(tc.output_image_url)
-                    // VER-6.0 Thresholds: Strict Foreground Match
-                    passed = result.total > 0.82 && result.foreground > 0.20
-                    stdout = `[VER-6.0] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground Match: ${(result.foreground * 100).toFixed(2)}% (Target: 20%+)`
+                    // VER-7.0 Thresholds: Resilient matching across different screens
+                    passed = result.total > 0.85 && result.foreground > 0.12
+                    stdout = `[VER-7.0] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground: ${(result.foreground * 100).toFixed(2)}% (Target: 12%+)`
                     tc.actual_image = result.diffImage
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
@@ -733,8 +734,8 @@ export default function CodeWorkspace() {
                         <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
                         {challenge.language === 'html' ? 'Web Mode' : 'Standard Mode'}
                     </span>
-                    <span style={{ fontSize: '0.65rem', background: '#6366f1', color: '#ffffff', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
-                        VER 6.0 (STRICT)
+                    <span style={{ fontSize: '0.65rem', background: '#10b981', color: '#ffffff', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
+                        VER 7.0 (RESILIENT)
                     </span>
                     <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: 4, color: '#64748b' }}>{challenge.difficulty}</span>
                     </div>
