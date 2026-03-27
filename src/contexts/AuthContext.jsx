@@ -177,23 +177,17 @@ export function AuthProvider({ children }) {
     async function loadAchievementStats(userId) {
         if (!userId) return
         try {
+            // xp and level are now directly available on the profile via triggers
+            const { data: userProfile } = await supabase.from('users').select('xp').eq('id', userId).single()
+            const totalXp = userProfile?.xp || 0
+
             // 1. Fetch coding submission stats
             const { data: codingSubs } = await supabase
                 .from('coding_submissions')
-                .select('score, status, created_at')
+                .select('status')
                 .eq('student_id', userId)
 
-            const codingXp = codingSubs?.filter(s => s.status === 'accepted').reduce((sum, s) => sum + (s.score || 0), 0) || 0
             const solvedCount = codingSubs?.filter(s => s.status === 'accepted').length || 0
-
-            // 2. Fetch assessment stats
-            const { data: assessSubs } = await supabase
-                .from('assessment_submissions')
-                .select('score, created_at')
-                .eq('student_id', userId)
-            
-            const assessXp = assessSubs?.reduce((sum, s) => sum + (s.score || 0), 0) || 0
-            const totalXp = codingXp + assessXp
 
             // 3. Fetch course completion
             const { data: progress } = await supabase

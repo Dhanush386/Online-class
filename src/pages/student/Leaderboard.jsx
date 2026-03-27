@@ -12,20 +12,14 @@ export default function Leaderboard() {
     useEffect(() => {
         fetchLeaderboard()
 
-        // Subscribe to real-time updates for submissions
-        const codingChannel = supabase
-            .channel('lb-coding-updates')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'coding_submissions' }, () => fetchLeaderboard())
-            .subscribe()
-
-        const assessChannel = supabase
-            .channel('lb-assess-updates')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'assessment_submissions' }, () => fetchLeaderboard())
+        // Subscribe to real-time updates for users (where XP resides now)
+        const userChannel = supabase
+            .channel('lb-user-updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchLeaderboard())
             .subscribe()
 
         return () => {
-            supabase.removeChannel(codingChannel)
-            supabase.removeChannel(assessChannel)
+            supabase.removeChannel(userChannel)
         }
     }, [])
 
@@ -60,37 +54,21 @@ export default function Leaderboard() {
     async function fetchLeaderboard() {
         try {
             setLoading(true)
-            // 1. Fetch all students
-            const { data: students } = await supabase
+            // Fetch all students with their denormalized XP
+            const { data: students, error } = await supabase
                 .from('users')
-                .select('id, name, avatar_url')
+                .select('id, name, avatar_url, xp')
                 .eq('role', 'student')
+                .order('xp', { ascending: false })
             
-            // 2. Fetch all coding submissions
-            const { data: codingSubs } = await supabase
-                .from('coding_submissions')
-                .select('student_id, score')
-                .eq('status', 'accepted')
-            
-            // 3. Fetch all assessment submissions
-            const { data: assessSubs } = await supabase
-                .from('assessment_submissions')
-                .select('student_id, score')
+            if (error) throw error
 
-            // Aggregate XP
-            const xpMap = {}
-            codingSubs?.forEach(s => {
-                xpMap[s.student_id] = (xpMap[s.student_id] || 0) + (s.score || 0)
-            })
-            assessSubs?.forEach(s => {
-                xpMap[s.student_id] = (xpMap[s.student_id] || 0) + (s.score || 0)
-            })
-
-            const leaderboardData = (students || []).map(s => ({
+            const leaderboardData = (students || []).map((s, index) => ({
                 ...s,
-                xp: xpMap[s.id] || 0,
-                ...getRankInfo(xpMap[s.id] || 0)
-            })).sort((a, b) => (b.xp - a.xp) || (a.name || '').localeCompare(b.name || ''))
+                xp: s.xp || 0,
+                rank: index + 1,
+                ...getRankInfo(s.xp || 0)
+            }))
 
             setLeaderboard(leaderboardData)
         } catch (err) {
@@ -239,8 +217,8 @@ export default function Leaderboard() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {others.map((s, i) => {
-                                        const rank = leaderboard.findIndex(item => item.id === s.id) + 1
+                                    {others.map((s) => {
+                                        const rank = s.rank
                                         const isCurrentUser = s.id === profile.id
                                         return (
                                             <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9', background: isCurrentUser ? 'rgba(99,102,241,0.05)' : 'white' }}>
