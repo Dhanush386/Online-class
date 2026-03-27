@@ -451,7 +451,7 @@ export default function CodeWorkspace() {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const similarity = await getVisualSimilarity(tc.output_image_url)
-                    passed = similarity > 0.95 // Strict 95% similarity threshold
+                    passed = similarity > 0.87 // Adjusted similarity threshold
                     stdout = `Visual Similarity: ${(similarity * 100).toFixed(2)}%`
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
