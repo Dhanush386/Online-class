@@ -51,7 +51,8 @@ export function ProtectedRoute({ children, requiredRole }) {
         return <Navigate to="/student" replace />
     }
 
-    if (requiredRole === 'student' && !isStudent) {
+    // Allow admins to access student routes for testing/previewing
+    if (requiredRole === 'student' && !isStudent && !isAdmin) {
         return <Navigate to="/organizer" replace />
     }
 

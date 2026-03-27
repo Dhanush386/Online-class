@@ -12,12 +12,11 @@ create or replace function public.trigger_push_notification()
 returns trigger as $$
 begin
   -- Call your Supabase Edge Function whenever a notification is created
-  -- Replace 'YOUR_PROJECT_REF' and 'YOUR_ANON_KEY' with your project details
   perform net.http_post(
-    url := 'https://YOUR_PROJECT_REF.functions.supabase.co/push-notifier',
+    url := 'https://pdkkznkwybvilkpmxqmx.functions.supabase.co/push-notifier',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer YOUR_ANON_KEY'
+      'Authorization', 'Bearer sb_publishable_NiZLRkJZBepyKee0WpTf-A_fj2OTIBj'
     ),
     body := jsonb_build_object(
       'id', new.id,
