@@ -145,7 +145,7 @@ export default function CodeWorkspace() {
                         }
                     }
 
-                    const isMatch = (bestDiff <= 60) // Lenient fuzzy threshold
+                    const isMatch = (bestDiff <= 25) // Strict color threshold for content
                     if (!isMatch) diff++
                     
                     // Difference Map
@@ -155,7 +155,8 @@ export default function CodeWorkspace() {
                         diffData.data[idx] = 255; diffData.data[idx+1] = 100; diffData.data[idx+2] = 100; diffData.data[idx+3] = 255
                     }
 
-                    const isTargetWhite = (r2 > 240 && g2 > 240 && b2 > 240)
+                    // Foreground Sensitivity: Check if TARGET is NOT white/transparent
+                    const isTargetWhite = (r2 > 248 && g2 > 248 && b2 > 248)
                     const isTargetTransparent = (data2[idx+3] < 10)
                     if (!isTargetWhite && !isTargetTransparent) {
                         foregroundTotal++
@@ -496,9 +497,9 @@ export default function CodeWorkspace() {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const result = await getVisualSimilarity(tc.output_image_url)
-                    // VER-5.0 Thresholds: Very Lenient Fuzzy Check
-                    passed = result.total > 0.75 && result.foreground > 0.08
-                    stdout = `[VER-5.0] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground: ${(result.foreground * 100).toFixed(2)}% (Goal: 8%+)`
+                    // VER-6.0 Thresholds: Strict Foreground Match
+                    passed = result.total > 0.82 && result.foreground > 0.20
+                    stdout = `[VER-6.0] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground Match: ${(result.foreground * 100).toFixed(2)}% (Target: 20%+)`
                     tc.actual_image = result.diffImage
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
@@ -630,7 +631,7 @@ export default function CodeWorkspace() {
         </style>`
         const jsInject = `<script>${jsCode}</script>`
         
-        let finalHtml = htmlCode.trim() || '<div style="padding: 20px; color: #64748b; font-family: sans-serif;">Empty HTML</div>'
+        let finalHtml = htmlCode.trim() || '<!-- Empty -->'
 
         // Wrap in a full scaffold if it's not already there
         if (!finalHtml.toLowerCase().includes('<html')) {
@@ -732,8 +733,8 @@ export default function CodeWorkspace() {
                         <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
                         {challenge.language === 'html' ? 'Web Mode' : 'Standard Mode'}
                     </span>
-                    <span style={{ fontSize: '0.65rem', background: '#f59e0b', color: '#ffffff', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
-                        VER 5.0 (FUZZY)
+                    <span style={{ fontSize: '0.65rem', background: '#6366f1', color: '#ffffff', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
+                        VER 6.0 (STRICT)
                     </span>
                     <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: 4, color: '#64748b' }}>{challenge.difficulty}</span>
                     </div>
