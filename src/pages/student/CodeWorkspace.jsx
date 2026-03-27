@@ -103,10 +103,10 @@ export default function CodeWorkspace() {
             const ctx1 = canvas1.getContext('2d')
             const ctx2 = canvas2.getContext('2d')
             
-            // Fill with a distinct base color to prevent "Empty matches Empty" false positives
-            ctx1.fillStyle = '#f8fafc'
+            // Fill with a neutral background to prevent "Empty matches Empty" false positives
+            ctx1.fillStyle = '#e2e8f0'
             ctx1.fillRect(0, 0, width, height)
-            ctx2.fillStyle = '#f8fafc'
+            ctx2.fillStyle = '#e2e8f0'
             ctx2.fillRect(0, 0, width, height)
             
             ctx1.drawImage(studentCanvas, 0, 0, width, height)
@@ -117,13 +117,13 @@ export default function CodeWorkspace() {
             
             let diff = 0
             let totalChecked = 0
-            // Compare every 4th pixel (RGBA) to be efficient
-            for (let i = 0; i < data1.length; i += 16) {
+            // Compare EVERY pixel (RGBA) for maximum accuracy
+            for (let i = 0; i < data1.length; i += 4) {
                 totalChecked++
                 const rDiff = Math.abs(data1[i] - data2[i])
                 const gDiff = Math.abs(data1[i+1] - data2[i+1])
                 const bDiff = Math.abs(data1[i+2] - data2[i+2])
-                if (rDiff + gDiff + bDiff > 60) diff++
+                if (rDiff + gDiff + bDiff > 30) diff++
             }
             
             const similarity = 1 - (diff / totalChecked)
@@ -451,7 +451,7 @@ export default function CodeWorkspace() {
                     updatePreview() // Ensure the preview is up-to-date before capturing
                     await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const similarity = await getVisualSimilarity(tc.output_image_url)
-                    passed = similarity > 0.85 // 85% similarity threshold
+                    passed = similarity > 0.95 // Strict 95% similarity threshold
                     stdout = `Visual Similarity: ${(similarity * 100).toFixed(2)}%`
                 } else if (challenge.language === 'html') {
                     // Fallback to basic submission if no image
