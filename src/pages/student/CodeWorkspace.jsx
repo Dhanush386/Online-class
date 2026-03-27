@@ -68,7 +68,7 @@ export default function CodeWorkspace() {
     }, [violationCount, isStarted])
 
     async function getVisualSimilarity(targetUrl) {
-        const previewFrame = document.getElementById('preview-iframe')
+        const previewFrame = iframeRef.current
         if (!previewFrame) return 0
 
         try {
@@ -865,15 +865,21 @@ export default function CodeWorkspace() {
                         padding: '1.5rem',
                         background: '#fcfdfe'
                     }}>
-                        {activeTab === 'preview' ? (
-                            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                                    <Eye size={16} color="#6366f1" />
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Visual Output</span>
-                                </div>
-                                <iframe ref={iframeRef} style={{ flex: 1, width: '100%', border: '1px solid #e2e8f0', borderRadius: 12, background: 'white' }} />
+                        {/* Preview Tab (Always rendered to allow background similarity checks) */}
+                        <div style={{ 
+                            height: '100%', 
+                            display: activeTab === 'preview' ? 'flex' : 'none', 
+                            flexDirection: 'column' 
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                <Eye size={16} color="#6366f1" />
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Visual Output</span>
                             </div>
-                        ) : (
+                            <iframe ref={iframeRef} style={{ flex: 1, width: '100%', border: '1px solid #e2e8f0', borderRadius: 12, background: 'white' }} />
+                        </div>
+
+                        {/* Console Tab */}
+                        {activeTab !== 'preview' && (
                             <div className="animate-fade-in">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                     <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>Console Output</h4>
