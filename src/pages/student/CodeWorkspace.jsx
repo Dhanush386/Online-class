@@ -75,6 +75,7 @@ export default function CodeWorkspace() {
             // 1. Capture student preview
             const studentCanvas = await html2canvas(previewFrame.contentDocument.body, {
                 useCORS: true,
+                allowTaint: true,
                 scale: 0.5, // Reduce size for faster comparison
                 logging: false,
                 backgroundColor: '#ffffff'
@@ -440,7 +441,7 @@ export default function CodeWorkspace() {
 
                 if (challenge.language === 'html' && tc.output_image_url) {
                     updatePreview() // Ensure the preview is up-to-date before capturing
-                    await new Promise(resolve => setTimeout(resolve, 500)) // Give iframe a moment to render
+                    await new Promise(resolve => setTimeout(resolve, 1500)) // Give iframe a moment to render
                     const similarity = await getVisualSimilarity(tc.output_image_url)
                     passed = similarity > 0.85 // 85% similarity threshold
                     stdout = `Visual Similarity: ${(similarity * 100).toFixed(2)}%`
@@ -868,7 +869,12 @@ export default function CodeWorkspace() {
                         {/* Preview Tab (Always rendered to allow background similarity checks) */}
                         <div style={{ 
                             height: '100%', 
-                            display: activeTab === 'preview' ? 'flex' : 'none', 
+                            opacity: activeTab === 'preview' ? 1 : 0,
+                            pointerEvents: activeTab === 'preview' ? 'auto' : 'none',
+                            position: activeTab === 'preview' ? 'relative' : 'absolute',
+                            zIndex: activeTab === 'preview' ? 1 : -1,
+                            width: '100%',
+                            display: 'flex',
                             flexDirection: 'column' 
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
