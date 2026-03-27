@@ -159,7 +159,10 @@ export default function CodingManagement() {
             const payload = {
                 ...formData,
                 starter_code: finalStarterCode,
-                test_cases: formData.test_cases.filter(tc => tc.expected_output.trim() !== ''),
+                test_cases: formData.test_cases.filter(tc => 
+                    tc.expected_output?.trim() !== '' || 
+                    (formData.language === 'html' && tc.output_image_url?.trim() !== '')
+                ),
                 open_time: toISOWithOffset(formData.open_time),
                 close_time: toISOWithOffset(formData.close_time),
                 allowed_assets: (formData.allowed_assets || '').split('\n').map(l => l.trim()).filter(Boolean)
