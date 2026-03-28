@@ -299,29 +299,61 @@ export default function CodeWorkspace() {
                                     </div>
                                 )}
 
-                                <div style={{ marginTop: '2.5rem', borderTop: '1px solid #334155', paddingTop: '1.5rem' }}>
-                                    <h4 style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '1rem' }}>Verification Checklist</h4>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                        {(!result ? challenge.test_cases : result.testResults)?.map((tc, idx) => {
-                                            const tcData = !result ? tc : challenge.test_cases[idx]
-                                            const passed = result ? tc.passed : null
-                                            return (
-                                                <div key={idx} style={{ padding: '0.85rem', borderRadius: 8, background: '#111827', border: `1px solid ${passed === true ? '#05966940' : passed === false ? '#dc262640' : '#334155'}` }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: 0 }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                            {passed === true ? <CheckCircle2 size={14} color="#10b981" /> : passed === false ? <XCircle size={14} color="#ef4444" /> : <Info size={14} color="#6366f1" />}
-                                                            <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Case {idx + 1}</span>
-                                                        </div>
-                                                        {(tcData.is_hidden || tc.isHidden) && <span style={{ fontSize: '0.6rem', color: '#64748b' }}>HIDDEN</span>}
-                                                    </div>
-                                                    {result && tc.actual && (
-                                                        <pre style={{ background: '#0f172a', padding: '0.4rem', borderRadius: 4, marginTop: 8, fontSize: '0.65rem', color: passed ? '#10b981' : '#f87171', overflowX: 'auto', border: '1px solid #1f2937' }}>{tc.actual}</pre>
-                                                    )}
+                                {/* Testcases Section */}
+                                {(() => {
+                                    const cases = !result ? challenge.test_cases : result.testResults
+                                    const total = cases?.length || 0
+                                    const passedCount = result ? cases.filter(t => t.passed).length : 0
+                                    const failedCount = result ? total - passedCount : 0
+                                    return (
+                                        <div style={{ marginTop: '2.5rem', borderTop: '1px solid #334155', paddingTop: '1.5rem' }}>
+                                            {/* Collapsible Header */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', cursor: 'default' }}>
+                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#e2e8f0', margin: 0 }}>Testcases</h4>
+                                                <ChevronLeft size={16} style={{ transform: 'rotate(-90deg)', color: '#64748b' }} />
+                                            </div>
+
+                                            {/* Summary Badges */}
+                                            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #334155', background: '#111827' }}>
+                                                    <CodeIcon size={14} color="#94a3b8" />
+                                                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>Total</span>
+                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#e2e8f0' }}>{total}</span>
                                                 </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
+                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #05966930', background: '#05966910' }}>
+                                                    <CheckCircle2 size={14} color="#10b981" />
+                                                    <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>Passed</span>
+                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#10b981' }}>{result ? passedCount : '-'}</span>
+                                                </div>
+                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #ef444430', background: '#ef444410' }}>
+                                                    <XCircle size={14} color="#ef4444" />
+                                                    <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Failed</span>
+                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#ef4444' }}>{result ? failedCount : '-'}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Individual Test Case Cards */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                {cases?.map((tc, idx) => {
+                                                    const tcData = !result ? tc : challenge.test_cases[idx]
+                                                    const passed = result ? tc.passed : null
+                                                    const description = tcData.description || tcData.expected_output || `Test Case ${idx + 1}`
+                                                    return (
+                                                        <div key={idx} style={{ padding: '1rem 1.25rem', borderRadius: 8, background: '#111827', borderLeft: `3px solid ${passed === true ? '#10b981' : passed === false ? '#ef4444' : '#334155'}`, transition: 'all 0.2s ease' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                                                                {passed === true ? <CheckCircle2 size={18} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} /> : passed === false ? <XCircle size={18} color="#ef4444" style={{ marginTop: 2, flexShrink: 0 }} /> : <Info size={18} color="#475569" style={{ marginTop: 2, flexShrink: 0 }} />}
+                                                                <span style={{ fontSize: '0.85rem', color: passed === true ? '#cbd5e1' : passed === false ? '#fca5a5' : '#94a3b8', lineHeight: 1.5, fontWeight: 500 }}>{description}</span>
+                                                            </div>
+                                                            {result && tc.actual && (
+                                                                <pre style={{ background: '#0f172a', padding: '0.5rem 0.75rem', borderRadius: 6, marginTop: 10, fontSize: '0.65rem', color: passed ? '#10b981' : '#f87171', overflowX: 'auto', border: '1px solid #1f2937', marginLeft: '2rem' }}>{tc.actual}</pre>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', color: '#64748b', marginTop: '4rem' }}>
