@@ -110,6 +110,7 @@ export default function FaceVerificationOverlay({ user, onVerified, onCancel }) 
                 
                 if (distance < 0.5) { // Confidence threshold
                     setStatus('success')
+                    stopCamera() // Close camera immediately on success
                     setTimeout(() => onVerified(), 1000)
                 } else {
                     setError('Face mismatch. Identity not verified.')
@@ -126,6 +127,7 @@ export default function FaceVerificationOverlay({ user, onVerified, onCancel }) 
                 if (updateError) throw updateError
                 
                 setStatus('success')
+                stopCamera() // Close camera immediately on success
                 setTimeout(() => onVerified(), 1500)
             }
         } catch (err) {
@@ -159,7 +161,10 @@ export default function FaceVerificationOverlay({ user, onVerified, onCancel }) 
                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
             }}>
                 <button 
-                    onClick={onCancel}
+                    onClick={() => {
+                        stopCamera()
+                        onCancel()
+                    }}
                     style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.05)', border: 'none', padding: '0.75rem', borderRadius: '50%', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}
                 >
                     <X size={20} />
@@ -248,7 +253,10 @@ export default function FaceVerificationOverlay({ user, onVerified, onCancel }) 
 
                 <div style={{ display: 'flex', gap: '1rem' }}>
                     <button 
-                        onClick={onCancel}
+                        onClick={() => {
+                            stopCamera()
+                            onCancel()
+                        }}
                         disabled={status === 'scanning' || status === 'matching'}
                         style={{ flex: 1, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 600, border: 'none', cursor: 'pointer' }}
                     >
