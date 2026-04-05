@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Calendar, Edit2, Trash2, Clock, X, Save, Plus } from 'lucide-react'
+import { Calendar, Edit2, Trash2, Clock, X, Save, Plus, ExternalLink } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
@@ -39,6 +39,7 @@ export default function ScheduleManager() {
             duration_minutes: parseInt(editVideo.duration_minutes) || null,
             day_number: parseInt(editVideo.day_number) || 1,
             course_id: editVideo.course_id,
+            video_url: editVideo.video_url,
         }).eq('id', editVideo.id)
         if (!error) {
             await loadData()
@@ -116,6 +117,15 @@ export default function ScheduleManager() {
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            {v.video_url && (
+                                                <button 
+                                                    onClick={() => window.open(v.video_url, '_blank')} 
+                                                    className={`btn-primary ${isLive(v.scheduled_time) ? 'btn-live-pulse' : ''}`}
+                                                    style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: isLive(v.scheduled_time) ? '#ef4444' : '#6366f1' }}
+                                                >
+                                                    <ExternalLink size={13} /> Join Class
+                                                </button>
+                                            )}
                                             <button onClick={() => setEditVideo({ ...v })} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}>
                                                 <Edit2 size={13} /> Edit
                                             </button>
@@ -167,6 +177,10 @@ export default function ScheduleManager() {
                                 </div>
                             </div>
                             <div>
+                                <label htmlFor="edit-url" className="form-label">Meeting URL (Google Meet / Zoom)</label>
+                                <input id="edit-url" name="video_url" type="url" className="form-input" placeholder="https://meet.google.com/..." value={editVideo.video_url || ''} onChange={e => setEditVideo(p => ({ ...p, video_url: e.target.value }))} />
+                            </div>
+                            <div>
                                 <label htmlFor="edit-day" className="form-label">Day Number</label>
                                 <input id="edit-day" name="day_number" type="number" className="form-input" min="1" value={editVideo.day_number || 1} onChange={e => setEditVideo(p => ({ ...p, day_number: e.target.value }))} required />
                             </div>
@@ -180,6 +194,17 @@ export default function ScheduleManager() {
                     </div>
                 </div>
             )}
+            <style>{`
+                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+                .btn-live-pulse {
+                    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+                    transition: all 0.3s ease;
+                }
+                .btn-live-pulse:hover {
+                    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+                }
+            `}</style>
         </div>
     )
 }
