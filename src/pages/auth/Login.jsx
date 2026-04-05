@@ -13,7 +13,7 @@ export default function Login() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
-    const [isLampOn, setIsLampOn] = useState(false)
+
     const [infoMessage, setInfoMessage] = useState('')
 
     // Face Verification State
@@ -27,10 +27,7 @@ export default function Login() {
             setInfoMessage('You have been logged out because someone else logged into your account from a different device.')
         }
 
-        const timer = setTimeout(() => {
-            setIsLampOn(true)
-        }, 3000)
-        return () => clearTimeout(timer)
+
     }, [])
 
     async function handleSubmit(e) {
@@ -76,7 +73,7 @@ export default function Login() {
     return (
         <div style={{
             minHeight: '100vh',
-            background: isLampOn ? '#0f172a' : '#020617',
+            background: '#0f172a',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -92,7 +89,7 @@ export default function Login() {
                     position: 'absolute',
                     inset: 0,
                     zIndex: 0,
-                    filter: isLampOn ? 'saturate(1.2) contrast(1.1)' : 'brightness(0.15) grayscale(0.5)',
+                    filter: 'saturate(1.2) contrast(1.1)',
                     transition: 'filter 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     overflow: 'hidden'
                 }}>
@@ -104,7 +101,7 @@ export default function Login() {
                             height: '100%', 
                             objectFit: 'cover', 
                             display: 'block',
-                            opacity: isLampOn ? 0.7 : 0.4,
+                            opacity: 0.7,
                             transition: 'opacity 1.2s ease'
                         }} 
                     />
@@ -119,55 +116,13 @@ export default function Login() {
                     width: '150vw',
                     height: '150vw',
                     background: 'radial-gradient(circle at 50% 50%, rgba(253, 224, 71, 0.15) 0%, rgba(253, 224, 71, 0.08) 25%, transparent 60%)',
-                    opacity: isLampOn ? 1 : 0,
+                    opacity: 1,
                     transition: 'opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
                     zIndex: 1
                 }} />
             </div>
 
-            {/* The Switch Component */}
-            <div style={{
-                position: 'fixed',
-                top: 40,
-                right: 40,
-                zIndex: 100,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 12
-            }}>
-                <button
-                    onClick={() => setIsLampOn(!isLampOn)}
-                    aria-label="Toggle cinematic lamp"
-                    style={{
-                        width: 64,
-                        height: 32,
-                        borderRadius: '20px',
-                        background: isLampOn ? '#6366f1' : '#1e293b',
-                        border: '2px solid rgba(255,255,255,0.1)',
-                        position: 'relative',
-                        cursor: 'pointer',
-                        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                        padding: 2,
-                        boxShadow: isLampOn ? '0 0 20px rgba(99, 102, 241, 0.4)' : 'none'
-                    }}
-                >
-                    <div style={{
-                        width: 24,
-                        height: 24,
-                        background: 'white',
-                        borderRadius: '50%',
-                        position: 'absolute',
-                        left: isLampOn ? 'calc(100% - 28px)' : 4,
-                        top: 2,
-                        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                    }} />
-                </button>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                    {isLampOn ? 'Light On' : 'Light Off'}
-                </span>
-            </div>
+
 
             {/* Login Interface */}
             <div style={{
@@ -175,10 +130,10 @@ export default function Login() {
                 zIndex: 50,
                 width: '100%',
                 maxWidth: 420,
-                opacity: isLampOn ? 1 : 0,
-                transform: isLampOn ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+                opacity: 1,
+                transform: 'translateY(0) scale(1)',
                 transition: 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                pointerEvents: isLampOn ? 'all' : 'none'
+                pointerEvents: 'all'
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 10px 30px rgba(99,102,241,0.2)' }}>
