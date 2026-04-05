@@ -63,6 +63,8 @@ export default function StudentDashboard() {
                 }
             })
 
+        const enrolledCourseIds = Array.from(uniqueCourseIds)
+
         const [
             { data: progress },
             { data: sessions },
@@ -70,10 +72,13 @@ export default function StudentDashboard() {
             { data: locksDay }
         ] = await Promise.all([
             supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
-            supabase.from('videos').select('id, title, scheduled_time, duration_minutes, video_url, courses(title)')
-                .gte('scheduled_time', new Date().toISOString())
-                .order('scheduled_time', { ascending: true })
-                .limit(3),
+            enrolledCourseIds.length > 0
+                ? supabase.from('videos').select('id, title, scheduled_time, duration_minutes, video_url, course_id, courses(title)')
+                    .in('course_id', enrolledCourseIds)
+                    .gte('scheduled_time', new Date().toISOString())
+                    .order('scheduled_time', { ascending: true })
+                    .limit(3)
+                : Promise.resolve({ data: [] }),
             supabase.from('group_members').select('group_id').eq('student_id', profile.id),
             supabase.from('day_access').select('*')
         ])
