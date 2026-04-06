@@ -39,7 +39,39 @@ export default function Login() {
             const cleanEmail = form.email.trim().toLowerCase()
             const { user: authedUser } = await signIn({ ...form, email: cleanEmail })
             
-            // Instead of navigating, trigger Face Verification
+            // 1. Fetch user role
+            const { data: userData, error: roleError } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', authedUser.id)
+                .single()
+            
+            if (roleError) throw roleError
+            
+            const role = userData?.role || 'student'
+            const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(role)
+            
+            // 2. If it's a student, check if they've already verified for this shift
+            if (!isAdmin) {
+                const period = getCurrentFacePeriod()
+                const date = getFaceCheckDate()
+                
+                const { data: shiftVerified } = await supabase
+                    .from('face_verifications')
+                    .select('id')
+                    .eq('user_id', authedUser.id)
+                    .eq('period', period)
+                    .eq('date', date)
+                    .maybeSingle()
+
+                if (shiftVerified) {
+                    // Already verified for this shift, skip face lock and go to dashboard
+                    navigate('/student')
+                    return
+                }
+            }
+
+            // Otherwise, trigger Face Verification (standard 2FA or mandatory periodic shift)
             setPendingUser(authedUser)
             setShowFaceVerification(true)
         } catch (err) {
