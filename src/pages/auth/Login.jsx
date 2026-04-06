@@ -227,17 +227,6 @@ export default function Login() {
                 .form-input::placeholder { color: rgba(255,255,255,0.2); }
             `}</style>
 
-            {showFaceVerification && pendingUser && (
-                <FaceVerificationOverlay 
-                    user={pendingUser} 
-                    onVerified={handleFaceVerified}
-                    onCancel={() => {
-                        setShowFaceVerification(false)
-                        setPendingUser(null)
-                        setLoading(false)
-                    }}
-                />
-            )}
         </div>
     )
 }
