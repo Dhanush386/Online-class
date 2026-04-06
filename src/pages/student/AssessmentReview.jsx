@@ -106,7 +106,7 @@ export default function AssessmentReview() {
 
             {/* Questions Review */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {questions.map((q, idx) => {
+                {questions.filter(q => answersMap[q.id]).map((q, idx) => {
                     const answer = answersMap[q.id]
                     const selected = answer?.selected_option || ''
                     const isCorrect = answer?.is_correct === true
