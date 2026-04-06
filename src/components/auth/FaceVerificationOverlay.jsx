@@ -3,7 +3,7 @@ import * as faceapi from '@vladmandic/face-api'
 import { Camera, ShieldCheck, Loader2, X, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
-export default function FaceVerificationOverlay({ user, onVerified, onCancel }) {
+export default function FaceVerificationOverlay({ user, onVerified, onCancel, isMandatory = false }) {
     const videoRef = useRef(null)
     const [status, setStatus] = useState('initializing') // initializing, loading_models, ready, scanning, matching, success, failed
     const [error, setError] = useState('')
@@ -160,15 +160,17 @@ export default function FaceVerificationOverlay({ user, onVerified, onCancel }) 
                 position: 'relative',
                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
             }}>
-                <button 
-                    onClick={() => {
-                        stopCamera()
-                        onCancel()
-                    }}
-                    style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.05)', border: 'none', padding: '0.75rem', borderRadius: '50%', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}
-                >
-                    <X size={20} />
-                </button>
+                {!isMandatory && (
+                    <button 
+                        onClick={() => {
+                            stopCamera()
+                            onCancel()
+                        }}
+                        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.05)', border: 'none', padding: '0.75rem', borderRadius: '50%', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}
+                    >
+                        <X size={20} />
+                    </button>
+                )}
 
                 <div style={{ marginBottom: '2rem' }}>
                     <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
@@ -252,16 +254,18 @@ export default function FaceVerificationOverlay({ user, onVerified, onCancel }) 
                 )}
 
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button 
-                        onClick={() => {
-                            stopCamera()
-                            onCancel()
-                        }}
-                        disabled={status === 'scanning' || status === 'matching'}
-                        style={{ flex: 1, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 600, border: 'none', cursor: 'pointer' }}
-                    >
-                        Cancel
-                    </button>
+                    {!isMandatory && (
+                        <button 
+                            onClick={() => {
+                                stopCamera()
+                                onCancel()
+                            }}
+                            disabled={status === 'scanning' || status === 'matching'}
+                            style={{ flex: 1, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 600, border: 'none', cursor: 'pointer' }}
+                        >
+                            Cancel
+                        </button>
+                    )}
                     <button 
                         onClick={handleScan}
                         disabled={status !== 'ready' && status !== 'scanning' && status !== 'matching'}

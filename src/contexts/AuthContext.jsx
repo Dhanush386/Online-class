@@ -188,6 +188,12 @@ export function AuthProvider({ children }) {
                 .eq('student_id', userId)
 
             const solvedCount = codingSubs?.filter(s => s.status === 'accepted').length || 0
+            
+            // 2. Fetch assessment stats
+            const { data: assessSubs } = await supabase
+                .from('assessment_submissions')
+                .select('created_at')
+                .eq('student_id', userId)
 
             // 3. Fetch course completion
             const { data: progress } = await supabase

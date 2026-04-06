@@ -18,6 +18,8 @@ const navItems = [
     { to: '/student/schedule', icon: Calendar, label: 'Schedule' },
 ]
 
+import FaceCheckGuard from '../components/auth/FaceCheckGuard'
+
 export default function StudentLayout() {
     const { profile, signOut, stats } = useAuth()
     const navigate = useNavigate()
@@ -119,7 +121,10 @@ export default function StudentLayout() {
         navigate('/login')
     }
 
-    return (
+    // Only students are subject to periodic face verification
+    const isStudent = profile?.role === 'student'
+
+    const LayoutContent = (
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-main)', position: 'relative' }}>
             {/* Sidebar Overlay (Mobile) */}
             {isMobile && mobileMenuOpen && (
@@ -174,8 +179,6 @@ export default function StudentLayout() {
                         </NavLink>
                     ))}
                 </nav>
-
-                {/* Sign Out removed from sidebar footer as it is already in the top header profile menu */}
             </aside>
 
             {/* Main */}
@@ -445,4 +448,10 @@ export default function StudentLayout() {
             </div>
         </div>
     )
+
+    if (isStudent) {
+        return <FaceCheckGuard>{LayoutContent}</FaceCheckGuard>
+    }
+
+    return LayoutContent
 }

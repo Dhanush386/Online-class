@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { GraduationCap, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import FaceVerificationOverlay from '../../components/auth/FaceVerificationOverlay'
+import { getCurrentFacePeriod, getFaceCheckDate } from '../../utils/facePeriodUtils'
 
 export default function Login() {
     const { signIn, user: authUser, role: authRole, loading: authLoading } = useAuth()
@@ -60,6 +61,20 @@ export default function Login() {
             const role = data?.role || 'student'
             const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(role)
             
+            // Sync with periodic verification table for students
+            if (!isAdmin) {
+                const period = getCurrentFacePeriod()
+                const date = getFaceCheckDate()
+                
+                await supabase
+                    .from('face_verifications')
+                    .upsert({
+                        user_id: pendingUser.id,
+                        period: period,
+                        date: date
+                    }, { onConflict: 'user_id,period,date' })
+            }
+
             if (isAdmin) navigate('/organizer')
             else navigate('/student')
         } catch (err) {
