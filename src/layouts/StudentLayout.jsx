@@ -18,7 +18,6 @@ const navItems = [
     { to: '/student/schedule', icon: Calendar, label: 'Schedule' },
 ]
 
-import FaceCheckGuard from '../components/auth/FaceCheckGuard'
 
 export default function StudentLayout() {
     const { profile, signOut, stats } = useAuth()
@@ -121,8 +120,6 @@ export default function StudentLayout() {
         navigate('/login')
     }
 
-    // Only students are subject to periodic face verification
-    const isStudent = profile?.role === 'student'
 
     const LayoutContent = (
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-main)', position: 'relative' }}>
@@ -448,10 +445,6 @@ export default function StudentLayout() {
             </div>
         </div>
     )
-
-    if (isStudent) {
-        return <FaceCheckGuard>{LayoutContent}</FaceCheckGuard>
-    }
 
     return LayoutContent
 }

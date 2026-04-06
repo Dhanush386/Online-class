@@ -3,8 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { GraduationCap, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
-import FaceVerificationOverlay from '../../components/auth/FaceVerificationOverlay'
-import { getCurrentFacePeriod, getFaceCheckDate } from '../../utils/facePeriodUtils'
 
 export default function Login() {
     const { signIn, user: authUser, role: authRole, loading: authLoading } = useAuth()
@@ -17,9 +15,6 @@ export default function Login() {
 
     const [infoMessage, setInfoMessage] = useState('')
 
-    // Face Verification State
-    const [showFaceVerification, setShowFaceVerification] = useState(false)
-    const [pendingUser, setPendingUser] = useState(null)
  
     useEffect(() => {
         // Check for session replacement reason
@@ -51,71 +46,14 @@ export default function Login() {
             const role = userData?.role || 'student'
             const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(role)
             
-            // 2. If it's a student, check if they've already verified for this shift
-            if (!isAdmin) {
-                const period = getCurrentFacePeriod()
-                const date = getFaceCheckDate()
-                
-                const { data: shiftVerified } = await supabase
-                    .from('face_verifications')
-                    .select('id')
-                    .eq('user_id', authedUser.id)
-                    .eq('period', period)
-                    .eq('date', date)
-                    .maybeSingle()
-
-                if (shiftVerified) {
-                    // Already verified for this shift, skip face lock and go to dashboard
-                    navigate('/student')
-                    return
-                }
-            }
-
-            // Otherwise, trigger Face Verification (standard 2FA or mandatory periodic shift)
-            setPendingUser(authedUser)
-            setShowFaceVerification(true)
+            if (isAdmin) navigate('/organizer')
+            else navigate('/student')
         } catch (err) {
             setError(err.message || 'Invalid email or password')
             setLoading(false)
         }
     }
 
-    async function handleFaceVerified() {
-        if (!pendingUser) return
-        
-        try {
-            const { data } = await supabase
-                .from('users')
-                .select('role')
-                .eq('id', pendingUser.id)
-                .maybeSingle()
-            
-            const role = data?.role || 'student'
-            const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(role)
-            
-            // Sync with periodic verification table for students
-            if (!isAdmin) {
-                const period = getCurrentFacePeriod()
-                const date = getFaceCheckDate()
-                
-                await supabase
-                    .from('face_verifications')
-                    .upsert({
-                        user_id: pendingUser.id,
-                        period: period,
-                        date: date
-                    }, { onConflict: 'user_id,period,date' })
-            }
-
-            if (isAdmin) navigate('/organizer')
-            else navigate('/student')
-        } catch (err) {
-            setError('Verification succeeded but failed to determine role.')
-        } finally {
-            setLoading(false)
-            setShowFaceVerification(false)
-        }
-    }
 
     return (
         <div style={{
