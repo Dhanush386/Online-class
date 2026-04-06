@@ -53,11 +53,12 @@ export default function ScheduleManager() {
         try { return format(parseISO(t), 'MMM d, yyyy • h:mm a') } catch { return t }
     }
 
-    function isLive(t) {
+    function isLive(t, duration) {
         if (!t) return false
         const now = new Date()
         const s = parseISO(t)
-        return Math.abs(now - s) < 3600000
+        const durationMs = (duration || 60) * 60000
+        return now >= s && (now - s) < durationMs
     }
 
     return (
@@ -107,7 +108,7 @@ export default function ScheduleManager() {
                                         </div>
                                     </td>
                                     <td>
-                                        {isLive(v.scheduled_time) ? (
+                                        {isLive(v.scheduled_time, v.duration_minutes) ? (
                                             <span className="badge badge-danger" style={{ animation: 'pulse 2s infinite' }}>🔴 LIVE</span>
                                         ) : v.scheduled_time && new Date(v.scheduled_time) > new Date() ? (
                                             <span className="badge badge-warning">Upcoming</span>
@@ -120,8 +121,8 @@ export default function ScheduleManager() {
                                             {v.video_url && (
                                                 <button 
                                                     onClick={() => window.open(v.video_url, '_blank')} 
-                                                    className={`btn-primary ${isLive(v.scheduled_time) ? 'btn-live-pulse' : ''}`}
-                                                    style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: isLive(v.scheduled_time) ? '#ef4444' : '#6366f1' }}
+                                                    className={`btn-primary ${isLive(v.scheduled_time, v.duration_minutes) ? 'btn-live-pulse' : ''}`}
+                                                    style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: isLive(v.scheduled_time, v.duration_minutes) ? '#ef4444' : '#6366f1' }}
                                                 >
                                                     <ExternalLink size={13} /> Join Class
                                                 </button>

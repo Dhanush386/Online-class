@@ -183,7 +183,9 @@ export default function StudentDashboard() {
                             <p style={{ fontSize: '0.85rem' }}>No upcoming sessions</p>
                         </div>
                     ) : upcomingSessions.map(s => {
-                        const isNow = Math.abs(new Date() - new Date(s.scheduled_time)) < 3600000
+                        const schedTime = new Date(s.scheduled_time)
+                        const durationMs = (s.duration_minutes || 60) * 60000
+                        const isNow = new Date() >= schedTime && (new Date() - schedTime) < durationMs
                         return (
                             <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: 12, border: `1px solid ${isNow ? 'rgba(239,68,68,0.2)' : '#e2e8f0'}`, marginBottom: '0.75rem' }}>
                                 <div style={{ width: 40, height: 40, background: isNow ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

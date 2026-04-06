@@ -66,12 +66,20 @@ export default function StudentSchedule() {
     const filtered = sessions.filter(s => {
         if (!s.scheduled_time) return filter === 'all'
         const t = new Date(s.scheduled_time)
-        if (filter === 'upcoming') return t >= now || Math.abs(now - t) < 3600000
-        if (filter === 'past') return t < now && Math.abs(now - t) >= 3600000
+        const durationMs = (s.duration_minutes || 60) * 60000
+        const isCurrentlyLive = now >= t && (now - t) < durationMs
+        
+        if (filter === 'upcoming') return t > now || isCurrentlyLive
+        if (filter === 'past') return (now - t) >= durationMs && !isCurrentlyLive
         return true
     })
 
-    const isLive = (t) => t && Math.abs(now - new Date(t)) < 3600000 && new Date(t) <= now
+    const isLive = (t, duration) => {
+        if (!t) return false
+        const s = new Date(t)
+        const durationMs = (duration || 60) * 60000
+        return now >= s && (now - s) < durationMs
+    }
     const formatDate = (t) => {
         if (!t) return 'TBD'
         const d = new Date(t)
@@ -134,7 +142,7 @@ export default function StudentSchedule() {
                             {/* Session cards */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                                 {sessionList.map(s => {
-                                    const live = isLive(s.scheduled_time)
+                                    const live = isLive(s.scheduled_time, s.duration_minutes)
                                     return (
                                         <div key={s.id} className="glass-card" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', border: live ? '1px solid rgba(239,68,68,0.2)' : undefined, background: live ? 'rgba(239,68,68,0.04)' : '#ffffff' }}>
                                             {/* Time column */}
