@@ -14,19 +14,19 @@ export default function FaceCheckGuard({ children }) {
     const [showOverlay, setShowOverlay] = useState(false)
     const [error, setError] = useState(null)
 
-    // Bypass for profile setup
-    if (location.pathname === '/student/profile') {
-        return children
-    }
-
     const period = getCurrentFacePeriod()
     const date = getFaceCheckDate()
 
     useEffect(() => {
-        if (user && profile) {
+        if (user && profile && location.pathname !== '/student/profile') {
             checkVerification()
         }
-    }, [user, profile, period, date])
+    }, [user, profile, period, date, location.pathname])
+
+    // Bypass for profile setup
+    if (location.pathname === '/student/profile') {
+        return children
+    }
 
     async function checkVerification() {
         try {
