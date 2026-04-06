@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getCurrentFacePeriod, getFaceCheckDate } from '../../utils/facePeriodUtils'
@@ -7,10 +8,16 @@ import { ShieldCheck, Camera, AlertCircle } from 'lucide-react'
 
 export default function FaceCheckGuard({ children }) {
     const { profile, user } = useAuth()
+    const location = useLocation()
     const [isVerified, setIsVerified] = useState(false)
     const [loading, setLoading] = useState(true)
     const [showOverlay, setShowOverlay] = useState(false)
     const [error, setError] = useState(null)
+
+    // Bypass for profile setup
+    if (location.pathname === '/student/profile') {
+        return children
+    }
 
     const period = getCurrentFacePeriod()
     const date = getFaceCheckDate()
