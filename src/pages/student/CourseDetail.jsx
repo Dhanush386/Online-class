@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List } from 'lucide-react'
 import ReactPlayer from 'react-player'
+import ProtectedViewer from '../../components/shared/ProtectedViewer'
 
 const MAX_ATTEMPTS = 1
 const ASSESS_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
@@ -30,6 +31,7 @@ export default function CourseDetail() {
     const [selectedDay, setSelectedDay] = useState(1)
     const [loading, setLoading] = useState(true)
     const [activeVideo, setActiveVideo] = useState(null)
+    const [activeResource, setActiveResource] = useState(null)
 
     useEffect(() => {
         async function load() {
@@ -485,10 +487,22 @@ export default function CourseDetail() {
                                                         </div>
                                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '0.75rem' }}>
                                                             {dayResources.map(r => (
-                                                                <div key={r.id} className="glass-card" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#f8fafc' }}>
+                                                                <div 
+                                                                    key={r.id} 
+                                                                    onClick={() => setActiveResource(r)}
+                                                                    className="glass-card" 
+                                                                    style={{ 
+                                                                        padding: '0.75rem 1rem', 
+                                                                        display: 'flex', 
+                                                                        alignItems: 'center', 
+                                                                        gap: '0.75rem', 
+                                                                        background: '#f8fafc',
+                                                                        cursor: 'pointer'
+                                                                    }}
+                                                                >
                                                                     <FileText size={16} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
                                                                     <div style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
-                                                                    <a href={r.file_url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-light)' }}><ExternalLink size={14} /></a>
+                                                                    <div style={{ color: 'var(--accent-light)' }}><Eye size={14} /></div>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -503,6 +517,15 @@ export default function CourseDetail() {
                     )
                 })}
             </div>
+            {/* Protected Document Viewer */}
+            {activeResource && (
+                <ProtectedViewer
+                    url={activeResource.file_url}
+                    type={activeResource.resource_type}
+                    title={activeResource.title}
+                    onClose={() => setActiveResource(null)}
+                />
+            )}
         </div>
     )
 }
