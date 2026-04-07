@@ -323,7 +323,7 @@ export function AuthProvider({ children }) {
 
     async function signOut() {
         try {
-            await supabase.auth.signOut()
+            await supabase.auth.signOut({ scope: 'local' })
         } catch (err) {
             console.warn('Sign out error (session might already be invalid):', err)
         } finally {
@@ -332,6 +332,8 @@ export function AuthProvider({ children }) {
             // Manual cleanup of local state in case SDK doesn't
             setIsProfileComplete(true)
             setStats({ xp: 0, solved: 0, streak: 0, completedCourses: [] })
+            // Ensure any stale supabase auth info is cleared from storage
+            localStorage.removeItem('online_class_session_uuid')
         }
     }
 
