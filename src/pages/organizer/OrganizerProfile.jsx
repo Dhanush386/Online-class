@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 
 export default function OrganizerProfile() {
-    const { profile, user } = useAuth()
+    const { profile, user, refreshProfileStatus } = useAuth()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -111,6 +111,13 @@ export default function OrganizerProfile() {
                 .eq('id', profile.id)
 
             if (error) throw error
+            
+             // 2. Sync with Auth Metadata (Source of truth for Supabase)
+             await supabase.auth.updateUser({
+                data: { name: formData.name }
+            })
+
+            await refreshProfileStatus()
             setToast({ type: 'success', message: 'Profile updated successfully!' })
         } catch (err) {
             console.error('Error saving:', err)
