@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { 
     MessageSquare, X, Send, Bot, User, Loader2, Sparkles, 
     PlusCircle, History, Ticket, Home, ExternalLink, ChevronRight,
-    MessageCircle
+    MessageCircle, Trash2, Clock
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -11,67 +11,109 @@ export default function AIChatbot() {
     const { profile } = useAuth()
     const location = useLocation()
     const [isOpen, setIsOpen] = useState(false)
-    const [activeTab, setActiveTab] = useState('home') // 'home', 'past', 'tickets'
+    const [activeTab, setActiveTab] = useState('home') 
     const [isChatting, setIsChatting] = useState(false)
-    const [messages, setMessages] = useState([])
+    const [sessions, setSessions] = useState([])
+    const [activeSessionId, setActiveSessionId] = useState(null)
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const scrollRef = useRef(null)
 
-    // Unique storage key for the current user
-    const storageKey = profile?.id ? `edustream_chat_history_${profile.id}` : 'edustream_chat_history_guest'
+    // Storage Key
+    const storageKey = profile?.id ? `edustream_sessions_${profile.id}` : 'edustream_sessions_guest'
 
-    // Load history on mount
+    // Load ALL sessions on mount
     useEffect(() => {
-        const savedMessages = localStorage.getItem(storageKey)
-        if (savedMessages) {
+        const saved = localStorage.getItem(storageKey)
+        if (saved) {
             try {
-                setMessages(JSON.parse(savedMessages))
+                const parsed = JSON.parse(saved)
+                setSessions(Array.isArray(parsed) ? parsed : [])
             } catch (e) {
-                console.error('Error loading chat history:', e)
+                console.error('Error loading sessions:', e)
+                setSessions([])
             }
         }
     }, [profile?.id, storageKey])
 
-    // Auto-save history whenever messages change
+    // Save ALL sessions whenever any session changes
     useEffect(() => {
-        if (messages.length > 0) {
-            localStorage.setItem(storageKey, JSON.stringify(messages))
+        if (sessions.length > 0) {
+            localStorage.setItem(storageKey, JSON.stringify(sessions))
         }
-    }, [messages, storageKey])
+    }, [sessions, storageKey])
+
+    const getActiveMessages = () => {
+        const session = sessions.find(s => s.id === activeSessionId)
+        return session?.messages || []
+    }
+
+    const setMessages = (updateFn) => {
+        setSessions(prev => prev.map(s => {
+            if (s.id === activeSessionId) {
+                const currentMsgs = s.messages || []
+                const newMsgs = typeof updateFn === 'function' ? updateFn(currentMsgs) : updateFn
+                return { ...s, messages: newMsgs, timestamp: Date.now() }
+            }
+            return s
+        }))
+    }
 
     const handleStartNewChat = () => {
+        const newId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`
+        const initialMsg = profile?.name 
+            ? { role: 'assistant', content: `Hello ${profile.name}! I'm your EduStream AI assistant. How can I help you today?` }
+            : { role: 'assistant', content: `Hello! I'm your EduStream AI assistant. How can I help you today?` }
+        
+        const newSession = {
+            id: newId,
+            timestamp: Date.now(),
+            messages: [initialMsg]
+        }
+        
+        setSessions(prev => [newSession, ...prev])
+        setActiveSessionId(newId)
         setIsChatting(true)
-        if (messages.length === 0) {
-            const initialMsg = profile?.name 
-                ? { role: 'assistant', content: `Hello ${profile.name}! I'm your EduStream AI assistant. How can I help you today?` }
-                : { role: 'assistant', content: `Hello! I'm your EduStream AI assistant. How can I help you today?` }
-            setMessages([initialMsg])
+    }
+
+    const handleResumeChat = (sessionId) => {
+        setActiveSessionId(sessionId)
+        setIsChatting(true)
+    }
+
+    const handleDeleteSession = (e, sessionId) => {
+        e.stopPropagation()
+        if (window.confirm('Delete this chat history?')) {
+            const updatedSessions = sessions.filter(s => s.id !== sessionId)
+            setSessions(updatedSessions)
+            if (activeSessionId === sessionId) {
+                setIsChatting(false)
+                setActiveSessionId(null)
+            }
+            localStorage.setItem(storageKey, JSON.stringify(updatedSessions))
         }
     }
 
     const handleClearChat = () => {
-        if (window.confirm('Clear current conversation?')) {
-            localStorage.removeItem(storageKey)
+        if (window.confirm('Clear all messages in this session?')) {
             setMessages([])
-            setIsChatting(false)
         }
     }
 
-    // Visibility Logic: Hide on assessments and coding practice
+    // Visibility Logic
     const isHidden = location.pathname.includes('/take') || location.pathname.includes('/student/coding/')
     
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight
         }
-    }, [messages, isOpen, isChatting])
+    }, [sessions, isOpen, isChatting])
 
     if (isHidden) return null
 
     const handleSend = async (e) => {
         e.preventDefault()
-        if (!input.trim() || isLoading) return
+        if (!input.trim() || isLoading || !activeSessionId) return
 
         const userMessage = { role: 'user', content: input.trim() }
         setMessages(prev => [...prev, userMessage])
@@ -97,7 +139,7 @@ export default function AIChatbot() {
                             signal: controller.signal,
                             body: JSON.stringify({
                                 contents: [{
-                                    parts: [{ text: `You are EduStream Assistant. Help the user with: ${input.trim()}. Platform Info: EduStream is an e-learning platform with courses, assessments, and coding practice. Be concise and friendly.` }]
+                                    parts: [{ text: `You are EduStream Assistant. Help the user with: ${input.trim()}. Platform Info: EduStream is an e-learning platform. Be concise and friendly.` }]
                                 }]
                             })
                         })
@@ -119,25 +161,15 @@ export default function AIChatbot() {
                         lastError = err.message
                     }
                 }
-
                 if (!success) throw new Error(lastError || "All models busy.")
             } else {
-                // Mock AI Response fallback
                 setTimeout(() => {
-                    const aiResponse = { 
-                        role: 'assistant', 
-                        content: getMockResponse(input.trim().toLowerCase()) 
-                    }
-                    setMessages(prev => [...prev, aiResponse])
+                    setMessages(prev => [...prev, { role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
                 }, 1000)
             }
         } catch (error) {
-            console.warn('Real AI Failed, falling back to mock:', error)
             setTimeout(() => {
-                setMessages(prev => [...prev, { 
-                    role: 'assistant', 
-                    content: getMockResponse(input.trim().toLowerCase()) 
-                }])
+                setMessages(prev => [...prev, { role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
             }, 500)
         } finally {
             setIsLoading(false)
@@ -151,68 +183,28 @@ export default function AIChatbot() {
         return "I'm here to help with your EduStream platform questions! How else can I assist you?"
     }
 
-    // --- RENDER HELPERS ---
-
     const renderHeader = () => (
-        <div style={{
-            padding: '1rem 1.25rem',
-            background: 'white',
-            borderBottom: '1px solid #f1f5f9',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-        }}>
+        <div style={{ padding: '1rem 1.25rem', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ padding: '6px', background: '#eff6ff', borderRadius: '8px', color: '#6366f1' }}>
                     <MessageCircle size={20} />
                 </div>
                 <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b', margin: 0 }}>Virtual Assistant</h3>
             </div>
-            <button 
-                onClick={() => setIsOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-            >
-                <X size={20} />
-            </button>
+            <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}><X size={20} /></button>
         </div>
     )
 
     const renderTabs = () => (
-        <div style={{
-            display: 'flex',
-            background: 'white',
-            borderBottom: '1px solid #f1f5f9',
-            padding: '0 0.5rem'
-        }}>
+        <div style={{ display: 'flex', background: 'white', borderBottom: '1px solid #f1f5f9', padding: '0 0.5rem' }}>
             {['home', 'past', 'tickets'].map((tab) => (
                 <button
                     key={tab}
                     onClick={() => { setActiveTab(tab); setIsChatting(false); }}
-                    style={{
-                        padding: '0.75rem 1rem',
-                        background: 'none',
-                        border: 'none',
-                        fontSize: '0.85rem',
-                        fontWeight: activeTab === tab ? 600 : 500,
-                        color: activeTab === tab ? '#6366f1' : '#64748b',
-                        position: 'relative',
-                        cursor: 'pointer',
-                        flex: 1,
-                        textTransform: 'capitalize'
-                    }}
+                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366f1' : '#64748b', position: 'relative', cursor: 'pointer', flex: 1, textTransform: 'capitalize' }}
                 >
                     {tab === 'home' ? 'Home' : tab === 'past' ? 'Past chats' : 'Ticket history'}
-                    {activeTab === tab && (
-                        <div style={{ 
-                            position: 'absolute', 
-                            bottom: 0, 
-                            left: '20%', 
-                            right: '20%', 
-                            height: '3px', 
-                            background: '#1e293b',
-                            borderRadius: '3px 3px 0 0'
-                        }} />
-                    )}
+                    {activeTab === tab && <div style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: '3px', background: '#1e293b', borderRadius: '3px 3px 0 0' }} />}
                 </button>
             ))}
         </div>
@@ -224,50 +216,13 @@ export default function AIChatbot() {
             <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {profile?.name || 'Guest'} <span style={{ fontSize: '1.75rem' }}>👋</span>
             </h2>
-
-            <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
-                How can I help you?<br />
-                Browse our Help Center or start a chat.
-            </p>
-
-            <button style={{
-                width: '100%',
-                padding: '1rem',
-                background: 'white',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                color: '#6366f1',
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginBottom: 'auto'
-            }}>
-                Help Center
-                <ExternalLink size={18} />
+            <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>How can I help you?<br />Browse our Help Center or start a chat.</p>
+            <button style={{ width: '100%', padding: '1rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#6366f1', fontWeight: 600, cursor: 'pointer', marginBottom: 'auto' }}>
+                Help Center <ExternalLink size={18} />
             </button>
-
             <button 
                 onClick={handleStartNewChat}
-                style={{
-                    width: '100%',
-                    padding: '1rem',
-                    background: '#7c3aed',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '14px',
-                    fontWeight: 600,
-                    fontSize: '1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    boxShadow: '0 10px 20px rgba(124, 58, 237, 0.2)',
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s',
-                    marginTop: '2rem'
-                }}
+                style={{ width: '100%', padding: '1rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '14px', fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 10px 20px rgba(124, 58, 237, 0.2)', cursor: 'pointer', transition: 'transform 0.2s', marginTop: '2rem' }}
                 onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
@@ -278,34 +233,25 @@ export default function AIChatbot() {
 
     const renderChatArea = () => (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1, overflow: 'hidden' }}>
-            {/* Header back button for chat */}
             <div style={{ padding: '0.5rem 1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button 
-                    onClick={() => setIsChatting(false)}
+                    onClick={() => { setIsChatting(false); setActiveSessionId(null); }}
                     style={{ background: 'none', border: 'none', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
                 >
                     <ChevronRight size={14} style={{ transform: 'rotate(180deg)' }} /> Back to Home
                 </button>
-                <button onClick={handleClearChat} style={{ color: '#ef4444', background: 'none', border: 'none', fontSize: '0.75rem', cursor: 'pointer' }}>Clear</button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={handleClearChat} style={{ color: '#64748b', background: 'none', border: 'none', fontSize: '0.75rem', cursor: 'pointer' }}>Reset</button>
+                </div>
             </div>
 
             <div 
                 ref={scrollRef}
                 style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'white' }}
             >
-                {messages.map((msg, i) => (
-                    <div 
-                        key={i}
-                        style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}
-                    >
-                        <div style={{
-                            padding: '0.75rem 1rem',
-                            borderRadius: '16px',
-                            background: msg.role === 'user' ? '#7c3aed' : '#f1f5f9',
-                            color: msg.role === 'user' ? 'white' : '#1e293b',
-                            fontSize: '0.9rem',
-                            lineHeight: 1.5
-                        }}>
+                {getActiveMessages().map((msg, i) => (
+                    <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                        <div style={{ padding: '0.75rem 1rem', borderRadius: '16px', background: msg.role === 'user' ? '#7c3aed' : '#f1f5f9', color: msg.role === 'user' ? 'white' : '#1e293b', fontSize: '0.9rem', lineHeight: 1.5 }}>
                             {msg.content}
                         </div>
                     </div>
@@ -333,10 +279,53 @@ export default function AIChatbot() {
         </div>
     )
 
+    const renderPastChats = () => (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+            {sessions.length === 0 ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                    <History size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                    <p style={{ margin: 0 }}>No past conversations yet.</p>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {sessions.map(s => {
+                        const lastMsg = s.messages[s.messages.length - 1]?.content || 'Empty Chat'
+                        const date = new Date(s.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })
+                        return (
+                            <div 
+                                key={s.id}
+                                onClick={() => handleResumeChat(s.id)}
+                                style={{ padding: '1rem', borderRadius: '16px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
+                                onMouseOver={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                                onMouseOut={(e) => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.transform = 'translateY(0)' }}
+                            >
+                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
+                                    <div style={{ padding: '8px', background: '#f8fafc', borderRadius: '10px', color: '#6366f1' }}><MessageSquare size={18} /></div>
+                                    <div style={{ overflow: 'hidden', flex: 1 }}>
+                                        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}><Clock size={12} /> {date}</div>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={(e) => handleDeleteSession(e, s.id)}
+                                    style={{ padding: '8px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
+                                    onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                                    onMouseOut={(e) => e.currentTarget.style.color = '#94a3b8'}
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
+        </div>
+    )
+
     const renderPlaceholder = (title) => (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', padding: '2rem' }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-                {title === 'Past' ? <History size={32} /> : <Ticket size={32} />}
+                <Ticket size={32} />
             </div>
             <p style={{ margin: 0 }}>No {title.toLowerCase()} found.</p>
         </div>
@@ -348,75 +337,26 @@ export default function AIChatbot() {
                 <button 
                     onClick={() => setIsOpen(true)}
                     className="fab-shadow animate-bounce"
-                    style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '20px', // Teardrop/Square rounded FAB
-                        background: '#7c3aed',
-                        border: 'none',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s'
-                    }}
+                    style={{ width: '64px', height: '64px', borderRadius: '20px', background: '#7c3aed', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s' }}
                 >
                     <MessageSquare size={30} />
                 </button>
             )}
 
             {isOpen && (
-                <div 
-                    className="animate-scale-in"
-                    style={{
-                        width: '400px',
-                        height: '660px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                        background: 'white',
-                        borderRadius: '28px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        border: '1px solid #f1f5f9'
-                    }}
-                >
+                <div className="animate-scale-in" style={{ width: '400px', height: '660px', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #f1f5f9' }}>
                     {renderHeader()}
-                    
                     {!isChatting && renderTabs()}
-
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-                        {isChatting ? (
-                            renderChatArea()
-                        ) : (
+                        {isChatting ? renderChatArea() : (
                             <>
                                 {activeTab === 'home' && renderHome()}
-                                {activeTab === 'past' && renderPlaceholder('Past')}
+                                {activeTab === 'past' && renderPastChats()}
                                 {activeTab === 'tickets' && renderPlaceholder('Tickets')}
                             </>
                         )}
-                        
-                        {/* Mock Background Curves */}
-                        <div style={{ 
-                            position: 'absolute', 
-                            bottom: 0, 
-                            left: 0, 
-                            right: 0, 
-                            height: '200px', 
-                            background: 'radial-gradient(circle at 100% 100%, rgba(124,58,237,0.03) 0%, transparent 70%)',
-                            pointerEvents: 'none',
-                            zIndex: -1
-                        }} />
-                        <div style={{ 
-                            position: 'absolute', 
-                            top: 0, 
-                            left: 0, 
-                            right: 0, 
-                            height: '200px', 
-                            background: 'radial-gradient(circle at 0% 0%, rgba(99,102,241,0.03) 0%, transparent 70%)',
-                            pointerEvents: 'none',
-                            zIndex: -1
-                        }} />
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '200px', background: 'radial-gradient(circle at 100% 100%, rgba(124,58,237,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: -1 }} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '200px', background: 'radial-gradient(circle at 0% 0%, rgba(99,102,241,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: -1 }} />
                     </div>
                 </div>
             )}
@@ -426,16 +366,9 @@ export default function AIChatbot() {
                     from { transform: scale(0.95) translateY(10px); opacity: 0; }
                     to { transform: scale(1) translateY(0); opacity: 1; }
                 }
-                .animate-scale-in {
-                    animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-                }
-                .fab-shadow {
-                    box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
-                }
-                .chat-input-new:focus {
-                    border-color: #7c3aed !important;
-                    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
-                }
+                .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+                .fab-shadow { box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4); }
+                .chat-input-new:focus { border-color: #7c3aed !important; box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1); }
             `}</style>
         </div>
     )
