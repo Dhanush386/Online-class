@@ -129,6 +129,16 @@ export default function Profile() {
                 })
 
             if (error) throw error
+
+            // SYNC: Update the primary name in the 'users' table so it reflects globally
+            const fullName = `${formData.first_name} ${formData.last_name}`.trim()
+            if (fullName) {
+                await supabase
+                    .from('users')
+                    .update({ name: fullName })
+                    .eq('id', user.id)
+            }
+
             await refreshProfileStatus()
             setToast({ type: 'success', message: 'Profile updated successfully!' })
             
