@@ -47,10 +47,8 @@ export default function AIChatbot() {
 
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
         const modelsToTry = [
-            'gemini-flash-latest', 
-            'gemini-2.0-flash-lite', 
-            'gemini-pro-latest',
-            'gemini-1.5-flash-8b'
+            'gemini-2.5-flash', 
+            'gemini-2.0-flash'
         ]
 
         try {
@@ -60,10 +58,10 @@ export default function AIChatbot() {
 
                 for (const model of modelsToTry) {
                     const controller = new AbortController()
-                    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout per model
+                    const timeoutId = setTimeout(() => controller.abort(), 20000) // 20s timeout per model
 
                     try {
-                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             signal: controller.signal,
