@@ -7,6 +7,7 @@ import {
     GraduationCap, Menu, X, Bell, ChevronDown, BookOpen, ClipboardList, Code, Globe, MessageSquare,
     Info, AlertTriangle, CheckCircle, Clock, Trophy
 } from 'lucide-react'
+import AIChatbot from '../components/shared/AIChatbot'
 
 const navItems = [
     { to: '/organizer', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -372,6 +373,7 @@ export default function OrganizerLayout() {
                     <Outlet />
                 </main>
             </div>
+            <AIChatbot />
         </div>
     )
 }

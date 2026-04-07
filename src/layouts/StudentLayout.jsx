@@ -8,6 +8,7 @@ import {
     User, MessageSquare, Zap, Bookmark, HelpCircle, Gift, MessageCircle, Mountain, ChevronRight, ExternalLink,
     Flame, Star, Info, AlertTriangle, CheckCircle, Clock, Trophy
 } from 'lucide-react'
+import AIChatbot from '../components/shared/AIChatbot'
 
 const navItems = [
     { to: '/student', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -443,6 +444,7 @@ export default function StudentLayout() {
                     <Outlet />
                 </main>
             </div>
+            <AIChatbot />
         </div>
     )
 
