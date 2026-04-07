@@ -46,28 +46,51 @@ export default function AIChatbot() {
         setIsLoading(true)
 
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        const modelsToTry = [
+            'gemini-flash-latest', 
+            'gemini-2.0-flash-lite', 
+            'gemini-pro-latest',
+            'gemini-1.5-flash-8b'
+        ]
 
         try {
             if (apiKey) {
-                // Real Gemini AI Integration
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: `You are EduStream Assistant. Help the user with: ${input.trim()}. Platform Info: EduStream is an e-learning platform with courses, assessments, and coding practice. Be concise and friendly.` }]
-                        }]
-                    })
-                })
+                let lastError = null
+                let success = false
 
-                if (!response.ok) {
-                    const errorData = await response.json()
-                    throw new Error(errorData.error?.message || `API Error: ${response.status}`)
+                for (const model of modelsToTry) {
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{
+                                    parts: [{ text: `You are EduStream Assistant. Help the user with: ${input.trim()}. Platform Info: EduStream is an e-learning platform with courses, assessments, and coding practice. Be concise and friendly.` }]
+                                }]
+                            })
+                        })
+
+                        if (response.ok) {
+                            const data = await response.json()
+                            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that response. It might have been blocked or was empty."
+                            setMessages(prev => [...prev, { role: 'assistant', content: aiText }])
+                            success = true
+                            break 
+                        } else {
+                            const errorData = await response.json()
+                            const errMsg = errorData.error?.message || `Error ${response.status}`
+                            console.warn(`Model ${model} failed: ${errMsg}`)
+                            lastError = errMsg
+                        }
+                    } catch (err) {
+                        console.warn(`Fetch error for model ${model}:`, err)
+                        lastError = err.message
+                    }
                 }
 
-                const data = await response.json()
-                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that response. It might have been blocked or was empty."
-                setMessages(prev => [...prev, { role: 'assistant', content: aiText }])
+                if (!success) {
+                    throw new Error(lastError || "All models failed or were unavailable.")
+                }
             } else {
                 // Mock AI Response fallback
                 setTimeout(() => {
@@ -80,7 +103,7 @@ export default function AIChatbot() {
             }
         } catch (error) {
             console.error('Chatbot Error:', error)
-            setMessages(prev => [...prev, { role: 'assistant', content: `Connection Error: ${error.message}. Please check your internet or Vercel environment variables.` }])
+            setMessages(prev => [...prev, { role: 'assistant', content: `Connection Error: ${error.message}. All models are currently at high demand. Please try again in 30 seconds.` }])
         } finally {
             setIsLoading(false)
         }
