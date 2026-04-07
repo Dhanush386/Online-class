@@ -59,8 +59,14 @@ export default function AIChatbot() {
                         }]
                     })
                 })
+
+                if (!response.ok) {
+                    const errorData = await response.json()
+                    throw new Error(errorData.error?.message || `API Error: ${response.status}`)
+                }
+
                 const data = await response.json()
-                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that. Please try again."
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that response. It might have been blocked or was empty."
                 setMessages(prev => [...prev, { role: 'assistant', content: aiText }])
             } else {
                 // Mock AI Response fallback
