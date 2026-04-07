@@ -6,6 +6,7 @@ import {
     MessageCircle, Trash2, Clock
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabase'
 
 export default function AIChatbot() {
     const { profile } = useAuth()
