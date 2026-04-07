@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { 
     MessageSquare, X, Send, Bot, User, Loader2, Sparkles, 
     PlusCircle, History, Ticket, Home, ExternalLink, ChevronRight,
-    MessageCircle, Trash2, Clock
+    MessageCircle, Trash2, Clock, Paperclip, File, Image as ImageIcon
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -24,6 +24,8 @@ export default function AIChatbot() {
     const [newTicketSubject, setNewTicketSubject] = useState('')
     const [newTicketMessage, setNewTicketMessage] = useState('')
     const [isTicketLoading, setIsTicketLoading] = useState(false)
+    const [screenshot, setScreenshot] = useState(null)
+    const fileInputRef = useRef(null)
     const scrollRef = useRef(null)
 
     // Storage Key
@@ -93,20 +95,46 @@ export default function AIChatbot() {
 
             if (ticketError) throw ticketError
 
-            // 2. Create Initial Message
+            // 2. Upload Screenshot if exists
+            let attachmentUrl = null
+            let attachmentName = null
+
+            if (screenshot) {
+                const fileExt = screenshot.name.split('.').pop()
+                const fileName = `${Math.random()}.${fileExt}`
+                const filePath = `${profile.id}/${fileName}`
+
+                const { error: uploadError } = await supabase.storage
+                    .from('support-attachments')
+                    .upload(filePath, screenshot)
+
+                if (uploadError) throw uploadError
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('support-attachments')
+                    .getPublicUrl(filePath)
+                
+                attachmentUrl = publicUrl
+                attachmentName = screenshot.name
+            }
+
+            // 3. Create Initial Message
             const { error: msgError } = await supabase
                 .from('support_messages')
                 .insert({
                     ticket_id: ticket.id,
                     student_id: profile.id,
                     message: newTicketMessage.trim(),
-                    is_from_student: true
+                    is_from_student: true,
+                    attachment_url: attachmentUrl,
+                    attachment_name: attachmentName
                 })
 
             if (msgError) throw msgError
 
             setNewTicketSubject('')
             setNewTicketMessage('')
+            setScreenshot(null)
             setIsCreatingTicket(false)
             fetchTickets()
             alert('Ticket created successfully!')
@@ -447,10 +475,54 @@ export default function AIChatbot() {
                                 placeholder="Provide more details..."
                                 value={newTicketMessage}
                                 onChange={(e) => setNewTicketMessage(e.target.value)}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', minHeight: '120px', resize: 'none' }}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', minHeight: '100px', resize: 'none' }}
                                 required
                             />
                         </div>
+
+                        {/* File Upload UI */}
+                        <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files[0]
+                                    if (file && file.size <= 5 * 1024 * 1024) {
+                                        setScreenshot(file)
+                                    } else if (file) {
+                                        alert('File size too large (max 5MB)')
+                                    }
+                                }}
+                                accept="image/*"
+                            />
+                            {screenshot ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'white', padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ background: '#7c3aed', color: 'white', padding: '4px', borderRadius: '4px' }}>
+                                        <ImageIcon size={14} />
+                                    </div>
+                                    <span style={{ fontSize: '0.7rem', color: '#1e293b', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {screenshot.name}
+                                    </span>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setScreenshot(null)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <button 
+                                    type="button" 
+                                    onClick={() => fileInputRef.current.click()}
+                                    style={{ width: '100%', background: 'none', border: 'none', color: '#6366f1', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '4px' }}
+                                >
+                                    <Paperclip size={16} /> Add Screenshot
+                                </button>
+                            )}
+                        </div>
+
                         <button 
                             type="submit"
                             disabled={isTicketLoading}
