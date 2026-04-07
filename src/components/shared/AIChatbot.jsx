@@ -1,12 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles, PlusCircle, RefreshCw } from 'lucide-react'
+import { 
+    MessageSquare, X, Send, Bot, User, Loader2, Sparkles, 
+    PlusCircle, History, Ticket, Home, ExternalLink, ChevronRight,
+    MessageCircle
+} from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function AIChatbot() {
     const { profile } = useAuth()
     const location = useLocation()
     const [isOpen, setIsOpen] = useState(false)
+    const [activeTab, setActiveTab] = useState('home') // 'home', 'past', 'tickets'
+    const [isChatting, setIsChatting] = useState(false)
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -15,7 +21,7 @@ export default function AIChatbot() {
     // Unique storage key for the current user
     const storageKey = profile?.id ? `edustream_chat_history_${profile.id}` : 'edustream_chat_history_guest'
 
-    // Load history on mount or when user changes
+    // Load history on mount
     useEffect(() => {
         const savedMessages = localStorage.getItem(storageKey)
         if (savedMessages) {
@@ -23,17 +29,6 @@ export default function AIChatbot() {
                 setMessages(JSON.parse(savedMessages))
             } catch (e) {
                 console.error('Error loading chat history:', e)
-            }
-        } else {
-            // Default initial greeting if no history
-            if (profile?.name) {
-                setMessages([
-                    { role: 'assistant', content: `Hello ${profile.name}! I'm your EduStream AI assistant. How can I help you today?` }
-                ])
-            } else if (!profile) {
-                 setMessages([
-                    { role: 'assistant', content: `Hello there! I'm your EduStream AI assistant. How can I help you today?` }
-                ])
             }
         }
     }, [profile?.id, storageKey])
@@ -45,13 +40,21 @@ export default function AIChatbot() {
         }
     }, [messages, storageKey])
 
-    const handleNewChat = () => {
-        if (window.confirm('Clear this conversation and start a new chat?')) {
-            localStorage.removeItem(storageKey)
+    const handleStartNewChat = () => {
+        setIsChatting(true)
+        if (messages.length === 0) {
             const initialMsg = profile?.name 
-                ? { role: 'assistant', content: `Hello again ${profile.name}! Starting a fresh chat. How can I help you?` }
-                : { role: 'assistant', content: `Hello! Starting a fresh chat. How can I help you?` }
+                ? { role: 'assistant', content: `Hello ${profile.name}! I'm your EduStream AI assistant. How can I help you today?` }
+                : { role: 'assistant', content: `Hello! I'm your EduStream AI assistant. How can I help you today?` }
             setMessages([initialMsg])
+        }
+    }
+
+    const handleClearChat = () => {
+        if (window.confirm('Clear current conversation?')) {
+            localStorage.removeItem(storageKey)
+            setMessages([])
+            setIsChatting(false)
         }
     }
 
@@ -62,7 +65,7 @@ export default function AIChatbot() {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight
         }
-    }, [messages, isOpen])
+    }, [messages, isOpen, isChatting])
 
     if (isHidden) return null
 
@@ -76,11 +79,7 @@ export default function AIChatbot() {
         setIsLoading(true)
 
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-        const modelsToTry = [
-            'gemini-flash-latest', 
-            'gemini-2.5-flash',
-            'gemma-3-27b-it'
-        ]
+        const modelsToTry = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemma-3-27b-it']
 
         try {
             if (apiKey) {
@@ -89,7 +88,7 @@ export default function AIChatbot() {
 
                 for (const model of modelsToTry) {
                     const controller = new AbortController()
-                    const timeoutId = setTimeout(() => controller.abort(), 15000) // 15s timeout per model
+                    const timeoutId = setTimeout(() => controller.abort(), 15000) 
 
                     try {
                         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -107,32 +106,21 @@ export default function AIChatbot() {
 
                         if (response.ok) {
                             const data = await response.json()
-                            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that response. It might have been blocked or was empty."
+                            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that response."
                             setMessages(prev => [...prev, { role: 'assistant', content: aiText }])
                             success = true
                             break 
                         } else {
                             const errorData = await response.json()
-                            const errMsg = errorData.error?.message || `Error ${response.status}`
-                            console.warn(`Model ${model} failed: ${errMsg}`)
-                            lastError = errMsg
+                            lastError = errorData.error?.message || `Error ${response.status}`
                         }
                     } catch (err) {
                         clearTimeout(timeoutId)
-                        if (err.name === 'AbortError') {
-                            console.warn(`Model ${model} timed out after 15s. Trying next...`)
-                            lastError = "Model timed out."
-                        } else {
-                            console.warn(`Fetch error for model ${model}:`, err)
-                            lastError = err.message
-                        }
+                        lastError = err.message
                     }
                 }
 
-                if (!success) {
-                    // Failover to Mock if AI is blocked or busy
-                    throw new Error(lastError || "All models busy.")
-                }
+                if (!success) throw new Error(lastError || "All models busy.")
             } else {
                 // Mock AI Response fallback
                 setTimeout(() => {
@@ -144,13 +132,12 @@ export default function AIChatbot() {
                 }, 1000)
             }
         } catch (error) {
-            console.warn('Real AI Failed, falling back to built-in smart support:', error)
+            console.warn('Real AI Failed, falling back to mock:', error)
             setTimeout(() => {
-                const aiResponse = { 
+                setMessages(prev => [...prev, { 
                     role: 'assistant', 
                     content: getMockResponse(input.trim().toLowerCase()) 
-                }
-                setMessages(prev => [...prev, aiResponse])
+                }])
             }, 500)
         } finally {
             setIsLoading(false)
@@ -158,205 +145,296 @@ export default function AIChatbot() {
     }
 
     const getMockResponse = (query) => {
-        if (query.includes('assessment')) return "Assessments are timed tests. Make sure you're in a quiet place and have a stable internet connection. You can find your pending assessments in the 'Assessments' tab."
-        if (query.includes('coding') || query.includes('practice')) return "The Coding Practice section allows you to solve real-world problems. You can use any of the supported languages in our integrated workspace."
-        if (query.includes('course')) return "You can view your enrolled courses in 'My Courses'. To explore new topics, check out the Course Management section."
-        if (query.includes('support')) return "If you have a technical issue, you can reach out to our team via the Support page in the sidebar."
-        return `I'm here to help with questions about ${query}. For platform-specific issues, you can also check the Support section!`
+        if (query.includes('assessment')) return "Assessments are timed tests. Find them in the 'Assessments' tab."
+        if (query.includes('coding')) return "The Coding Practice section has real-world tests."
+        if (query.includes('course')) return "View enrolled courses in 'My Courses'."
+        return "I'm here to help with your EduStream platform questions! How else can I assist you?"
     }
+
+    // --- RENDER HELPERS ---
+
+    const renderHeader = () => (
+        <div style={{
+            padding: '1rem 1.25rem',
+            background: 'white',
+            borderBottom: '1px solid #f1f5f9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ padding: '6px', background: '#eff6ff', borderRadius: '8px', color: '#6366f1' }}>
+                    <MessageCircle size={20} />
+                </div>
+                <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b', margin: 0 }}>Virtual Assistant</h3>
+            </div>
+            <button 
+                onClick={() => setIsOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+            >
+                <X size={20} />
+            </button>
+        </div>
+    )
+
+    const renderTabs = () => (
+        <div style={{
+            display: 'flex',
+            background: 'white',
+            borderBottom: '1px solid #f1f5f9',
+            padding: '0 0.5rem'
+        }}>
+            {['home', 'past', 'tickets'].map((tab) => (
+                <button
+                    key={tab}
+                    onClick={() => { setActiveTab(tab); setIsChatting(false); }}
+                    style={{
+                        padding: '0.75rem 1rem',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '0.85rem',
+                        fontWeight: activeTab === tab ? 600 : 500,
+                        color: activeTab === tab ? '#6366f1' : '#64748b',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        flex: 1,
+                        textTransform: 'capitalize'
+                    }}
+                >
+                    {tab === 'home' ? 'Home' : tab === 'past' ? 'Past chats' : 'Ticket history'}
+                    {activeTab === tab && (
+                        <div style={{ 
+                            position: 'absolute', 
+                            bottom: 0, 
+                            left: '20%', 
+                            right: '20%', 
+                            height: '3px', 
+                            background: '#1e293b',
+                            borderRadius: '3px 3px 0 0'
+                        }} />
+                    )}
+                </button>
+            ))}
+        </div>
+    )
+
+    const renderHome = () => (
+        <div style={{ padding: '2rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '1rem', color: '#64748b', marginBottom: '0.25rem' }}>Welcome</span>
+            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {profile?.name || 'Guest'} <span style={{ fontSize: '1.75rem' }}>👋</span>
+            </h2>
+
+            <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+                How can I help you?<br />
+                Browse our Help Center or start a chat.
+            </p>
+
+            <button style={{
+                width: '100%',
+                padding: '1rem',
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                color: '#6366f1',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginBottom: 'auto'
+            }}>
+                Help Center
+                <ExternalLink size={18} />
+            </button>
+
+            <button 
+                onClick={handleStartNewChat}
+                style={{
+                    width: '100%',
+                    padding: '1rem',
+                    background: '#7c3aed',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '14px',
+                    fontWeight: 600,
+                    fontSize: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 10px 20px rgba(124, 58, 237, 0.2)',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s',
+                    marginTop: '2rem'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+                <PlusCircle size={20} fill="white" color="#7c3aed" /> Start New Chat
+            </button>
+        </div>
+    )
+
+    const renderChatArea = () => (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1, overflow: 'hidden' }}>
+            {/* Header back button for chat */}
+            <div style={{ padding: '0.5rem 1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button 
+                    onClick={() => setIsChatting(false)}
+                    style={{ background: 'none', border: 'none', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                >
+                    <ChevronRight size={14} style={{ transform: 'rotate(180deg)' }} /> Back to Home
+                </button>
+                <button onClick={handleClearChat} style={{ color: '#ef4444', background: 'none', border: 'none', fontSize: '0.75rem', cursor: 'pointer' }}>Clear</button>
+            </div>
+
+            <div 
+                ref={scrollRef}
+                style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'white' }}
+            >
+                {messages.map((msg, i) => (
+                    <div 
+                        key={i}
+                        style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}
+                    >
+                        <div style={{
+                            padding: '0.75rem 1rem',
+                            borderRadius: '16px',
+                            background: msg.role === 'user' ? '#7c3aed' : '#f1f5f9',
+                            color: msg.role === 'user' ? 'white' : '#1e293b',
+                            fontSize: '0.9rem',
+                            lineHeight: 1.5
+                        }}>
+                            {msg.content}
+                        </div>
+                    </div>
+                ))}
+                {isLoading && (
+                    <div style={{ alignSelf: 'flex-start', padding: '1rem', background: '#f1f5f9', borderRadius: '16px' }}>
+                        <Loader2 className="animate-spin" size={18} color="#6366f1" />
+                    </div>
+                )}
+            </div>
+
+            <form onSubmit={handleSend} style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.5rem', background: 'white' }}>
+                <input 
+                    className="chat-input-new"
+                    type="text" 
+                    placeholder="Type your message..." 
+                    value={input} 
+                    onChange={(e) => setInput(e.target.value)}
+                    style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', background: '#f8fafc' }}
+                />
+                <button type="submit" disabled={!input.trim() || isLoading} style={{ width: 44, height: 44, borderRadius: '10px', background: '#7c3aed', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Send size={20} />
+                </button>
+            </form>
+        </div>
+    )
+
+    const renderPlaceholder = (title) => (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', padding: '2rem' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                {title === 'Past' ? <History size={32} /> : <Ticket size={32} />}
+            </div>
+            <p style={{ margin: 0 }}>No {title.toLowerCase()} found.</p>
+        </div>
+    )
 
     return (
         <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 1000 }}>
-            {/* Floating Action Button */}
             {!isOpen && (
                 <button 
                     onClick={() => setIsOpen(true)}
-                    className="animate-bounce"
+                    className="fab-shadow animate-bounce"
                     style={{
                         width: '64px',
                         height: '64px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                        borderRadius: '20px', // Teardrop/Square rounded FAB
+                        background: '#7c3aed',
                         border: 'none',
                         color: 'white',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 10px 25px rgba(139, 92, 246, 0.4)',
                         cursor: 'pointer',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                        transition: 'all 0.3s'
                     }}
                 >
-                    <MessageSquare size={32} />
+                    <MessageSquare size={30} />
                 </button>
             )}
 
-            {/* Chat Window */}
             {isOpen && (
                 <div 
-                    className="glass-card animate-scale-in"
+                    className="animate-scale-in"
                     style={{
                         width: '400px',
-                        height: '600px',
+                        height: '660px',
                         display: 'flex',
                         flexDirection: 'column',
                         overflow: 'hidden',
-                        background: 'rgba(255, 255, 255, 0.95)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(139, 92, 246, 0.2)',
-                        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
-                        borderRadius: '24px'
+                        background: 'white',
+                        borderRadius: '28px',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid #f1f5f9'
                     }}
                 >
-                    {/* Header */}
-                    <div style={{
-                        padding: '1.5rem',
-                        background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.2)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Sparkles size={20} />
-                            </div>
-                            <div>
-                                <h3 style={{ fontWeight: 700, fontSize: '1rem', margin: 0 }}>EduStream AI</h3>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80' }}></span>
-                                    <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>Ready to Help</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <button 
-                                onClick={handleNewChat}
-                                title="New Chat"
-                                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '0.5rem', transition: 'transform 0.2s', display: 'flex' }}
-                                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                            >
-                                <PlusCircle size={20} />
-                            </button>
-                            <button 
-                                onClick={() => setIsOpen(false)}
-                                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '0.5rem' }}
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                    </div>
+                    {renderHeader()}
+                    
+                    {!isChatting && renderTabs()}
 
-                    {/* Messages Area */}
-                    <div 
-                        ref={scrollRef}
-                        style={{
-                            flex: 1,
-                            overflowY: 'auto',
-                            padding: '1.5rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '1rem',
-                            background: '#f8fafc'
-                        }}
-                    >
-                        {messages.map((msg, i) => (
-                            <div 
-                                key={i}
-                                style={{
-                                    display: 'flex',
-                                    gap: '0.75rem',
-                                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                                    maxWidth: '85%'
-                                }}
-                            >
-                                {msg.role === 'assistant' && (
-                                    <div style={{ width: 32, height: 32, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <Bot size={18} />
-                                    </div>
-                                )}
-                                <div style={{
-                                    padding: '0.75rem 1rem',
-                                    borderRadius: msg.role === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
-                                    background: msg.role === 'user' ? '#8b5cf6' : 'white',
-                                    color: msg.role === 'user' ? 'white' : '#1e293b',
-                                    fontSize: '0.9rem',
-                                    boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                                    lineHeight: 1.5
-                                }}>
-                                    {msg.content}
-                                </div>
-                            </div>
-                        ))}
-                        {isLoading && (
-                            <div style={{ display: 'flex', gap: '0.75rem', alignSelf: 'flex-start' }}>
-                                <div style={{ width: 32, height: 32, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Bot size={18} />
-                                </div>
-                                <div style={{ padding: '1rem', background: 'white', borderRadius: '16px 16px 16px 2px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-                                    <Loader2 className="animate-spin" size={18} color="#8b5cf6" />
-                                </div>
-                            </div>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                        {isChatting ? (
+                            renderChatArea()
+                        ) : (
+                            <>
+                                {activeTab === 'home' && renderHome()}
+                                {activeTab === 'past' && renderPlaceholder('Past')}
+                                {activeTab === 'tickets' && renderPlaceholder('Tickets')}
+                            </>
                         )}
+                        
+                        {/* Mock Background Curves */}
+                        <div style={{ 
+                            position: 'absolute', 
+                            bottom: 0, 
+                            left: 0, 
+                            right: 0, 
+                            height: '200px', 
+                            background: 'radial-gradient(circle at 100% 100%, rgba(124,58,237,0.03) 0%, transparent 70%)',
+                            pointerEvents: 'none',
+                            zIndex: -1
+                        }} />
+                        <div style={{ 
+                            position: 'absolute', 
+                            top: 0, 
+                            left: 0, 
+                            right: 0, 
+                            height: '200px', 
+                            background: 'radial-gradient(circle at 0% 0%, rgba(99,102,241,0.03) 0%, transparent 70%)',
+                            pointerEvents: 'none',
+                            zIndex: -1
+                        }} />
                     </div>
-
-                    {/* Input Area */}
-                    <form 
-                        onSubmit={handleSend}
-                        style={{
-                            padding: '1.25rem',
-                            borderTop: '1px solid #e2e8f0',
-                            display: 'flex',
-                            gap: '0.75rem',
-                            background: 'white'
-                        }}
-                    >
-                        <input 
-                            type="text"
-                            placeholder="Ask me anything..."
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            style={{
-                                flex: 1,
-                                padding: '0.75rem 1rem',
-                                borderRadius: '12px',
-                                border: '1px solid #e2e8f0',
-                                background: '#f8fafc',
-                                fontSize: '0.9rem',
-                                outline: 'none'
-                            }}
-                        />
-                        <button 
-                            type="submit"
-                            disabled={!input.trim() || isLoading}
-                            style={{
-                                width: '42px',
-                                height: '42px',
-                                borderRadius: '10px',
-                                background: input.trim() ? '#8b5cf6' : '#e2e8f0',
-                                color: 'white',
-                                border: 'none',
-                                cursor: input.trim() ? 'pointer' : 'default',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <Send size={20} />
-                        </button>
-                    </form>
                 </div>
             )}
 
             <style>{`
                 @keyframes scaleIn {
-                    from { transform: scale(0.9); opacity: 0; }
-                    to { transform: scale(1); opacity: 1; }
+                    from { transform: scale(0.95) translateY(10px); opacity: 0; }
+                    to { transform: scale(1) translateY(0); opacity: 1; }
                 }
                 .animate-scale-in {
                     animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                }
+                .fab-shadow {
+                    box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
+                }
+                .chat-input-new:focus {
+                    border-color: #7c3aed !important;
+                    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
                 }
             `}</style>
         </div>
