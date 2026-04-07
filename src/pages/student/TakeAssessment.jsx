@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock, ShieldAlert } from 'lucide-react'
 
 const MAX_ATTEMPTS = 1
 
@@ -25,6 +25,7 @@ export default function TakeAssessment() {
     const [isStarted, setIsStarted] = useState(false)
     const [violationCount, setViolationCount] = useState(0)
     const [isAutoSubmitted, setIsAutoSubmitted] = useState(false)
+    const [requiresReentry, setRequiresReentry] = useState(false)
     const containerRef = useRef(null)
 
     useEffect(() => {
@@ -51,8 +52,7 @@ export default function TakeAssessment() {
                 setViolationCount(prev => {
                     const next = prev + 1
                     if (next < 3) {
-                        alert(`Security Warning (${next}/3): Fullscreen mode is required. Please reentry fullscreen.`)
-                        enterFullScreen()
+                        setRequiresReentry(true)
                     }
                     return next
                 })
@@ -106,6 +106,7 @@ export default function TakeAssessment() {
             elem.msRequestFullscreen()
         }
         setIsStarted(true)
+        setRequiresReentry(false)
     }
 
     useEffect(() => {
@@ -274,6 +275,26 @@ export default function TakeAssessment() {
 
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading assessment...</div>
     if (error && !assessment) return <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>Error: {error}</div>
+
+    if (requiresReentry && !submitted) {
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.98)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                <div className="glass-card animate-scale-in" style={{ maxWidth: 500, padding: '3rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <div style={{ width: 80, height: 80, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#ef4444' }}>
+                        <ShieldAlert size={40} />
+                    </div>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>Security Block</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem', lineHeight: 1.6 }}>
+                        You have exited <strong>Secure Mode</strong>. This is a security violation ({violationCount}/3). 
+                        You must re-enter fullscreen to continue your assessment.
+                    </p>
+                    <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', height: '3.5rem', fontSize: '1.1rem', background: '#ef4444', border: 'none' }}>
+                        Re-enter Secure Mode
+                    </button>
+                </div>
+            </div>
+        )
+    }
 
     if (submitted) {
         return (
