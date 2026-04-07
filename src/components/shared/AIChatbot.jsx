@@ -59,16 +59,22 @@ export default function AIChatbot() {
                 let success = false
 
                 for (const model of modelsToTry) {
+                    const controller = new AbortController()
+                    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout per model
+
                     try {
                         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
+                            signal: controller.signal,
                             body: JSON.stringify({
                                 contents: [{
                                     parts: [{ text: `You are EduStream Assistant. Help the user with: ${input.trim()}. Platform Info: EduStream is an e-learning platform with courses, assessments, and coding practice. Be concise and friendly.` }]
                                 }]
                             })
                         })
+
+                        clearTimeout(timeoutId)
 
                         if (response.ok) {
                             const data = await response.json()
@@ -83,8 +89,14 @@ export default function AIChatbot() {
                             lastError = errMsg
                         }
                     } catch (err) {
-                        console.warn(`Fetch error for model ${model}:`, err)
-                        lastError = err.message
+                        clearTimeout(timeoutId)
+                        if (err.name === 'AbortError') {
+                            console.warn(`Model ${model} timed out after 10s. Trying next...`)
+                            lastError = "Model timed out."
+                        } else {
+                            console.warn(`Fetch error for model ${model}:`, err)
+                            lastError = err.message
+                        }
                     }
                 }
 
