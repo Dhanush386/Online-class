@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { 
     MessageSquare, X, Send, Bot, User, Loader2, Sparkles, 
     PlusCircle, History, Ticket, Home, ExternalLink, ChevronRight,
@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext'
 export default function AIChatbot() {
     const { profile } = useAuth()
     const location = useLocation()
+    const navigate = useNavigate()
     const [isOpen, setIsOpen] = useState(false)
     const [activeTab, setActiveTab] = useState('home') 
     const [isChatting, setIsChatting] = useState(false)
@@ -217,7 +218,26 @@ export default function AIChatbot() {
                 {profile?.name || 'Guest'} <span style={{ fontSize: '1.75rem' }}>👋</span>
             </h2>
             <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>How can I help you?<br />Browse our Help Center or start a chat.</p>
-            <button style={{ width: '100%', padding: '1rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#6366f1', fontWeight: 600, cursor: 'pointer', marginBottom: 'auto' }}>
+            <button 
+                onClick={() => {
+                    setIsOpen(false)
+                    navigate('/student/support')
+                }}
+                style={{
+                    width: '100%',
+                    padding: '1rem',
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    color: '#6366f1',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    marginBottom: 'auto'
+                }}
+            >
                 Help Center <ExternalLink size={18} />
             </button>
             <button 
