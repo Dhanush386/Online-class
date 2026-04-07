@@ -221,7 +221,8 @@ export default function AIChatbot() {
             <button 
                 onClick={() => {
                     setIsOpen(false)
-                    navigate('/student/support')
+                    const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
+                    navigate(supportPath)
                 }}
                 style={{
                     width: '100%',
