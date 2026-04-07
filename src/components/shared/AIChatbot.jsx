@@ -18,6 +18,11 @@ export default function AIChatbot() {
     const [activeSessionId, setActiveSessionId] = useState(null)
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+    const [tickets, setTickets] = useState([])
+    const [isCreatingTicket, setIsCreatingTicket] = useState(false)
+    const [newTicketSubject, setNewTicketSubject] = useState('')
+    const [newTicketMessage, setNewTicketMessage] = useState('')
+    const [isTicketLoading, setIsTicketLoading] = useState(false)
     const scrollRef = useRef(null)
 
     // Storage Key
@@ -43,6 +48,73 @@ export default function AIChatbot() {
             localStorage.setItem(storageKey, JSON.stringify(sessions))
         }
     }, [sessions, storageKey])
+
+    // Load Tickets when tab changes
+    useEffect(() => {
+        if (activeTab === 'tickets' && profile?.id) {
+            fetchTickets()
+        }
+    }, [activeTab, profile?.id])
+
+    const fetchTickets = async () => {
+        setIsTicketLoading(true)
+        try {
+            const { data, error } = await supabase
+                .from('support_tickets')
+                .select('*')
+                .order('created_at', { ascending: false })
+            
+            if (error) throw error
+            setTickets(data || [])
+        } catch (err) {
+            console.error('Error fetching tickets:', err)
+        } finally {
+            setIsTicketLoading(false)
+        }
+    }
+
+    const handleCreateTicket = async (e) => {
+        e.preventDefault()
+        if (!newTicketSubject.trim() || !newTicketMessage.trim() || isTicketLoading) return
+
+        setIsTicketLoading(true)
+        try {
+            // 1. Create Ticket
+            const { data: ticket, error: ticketError } = await supabase
+                .from('support_tickets')
+                .insert({
+                    student_id: profile.id,
+                    subject: newTicketSubject.trim(),
+                    status: 'open'
+                })
+                .select()
+                .single()
+
+            if (ticketError) throw ticketError
+
+            // 2. Create Initial Message
+            const { error: msgError } = await supabase
+                .from('support_messages')
+                .insert({
+                    ticket_id: ticket.id,
+                    student_id: profile.id,
+                    message: newTicketMessage.trim(),
+                    is_from_student: true
+                })
+
+            if (msgError) throw msgError
+
+            setNewTicketSubject('')
+            setNewTicketMessage('')
+            setIsCreatingTicket(false)
+            fetchTickets()
+            alert('Ticket created successfully!')
+        } catch (err) {
+            alert('Failed to create ticket: ' + err.message)
+        } finally {
+            setIsTicketLoading(false)
+        }
+    }
 
     const getActiveMessages = () => {
         const session = sessions.find(s => s.id === activeSessionId)
@@ -343,14 +415,112 @@ export default function AIChatbot() {
         </div>
     )
 
-    const renderPlaceholder = (title) => (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', padding: '2rem' }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-                <Ticket size={32} />
+    const renderTicketHistory = () => {
+        if (isCreatingTicket) {
+            return (
+                <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>New Support Ticket</h4>
+                        <button 
+                            onClick={() => setIsCreatingTicket(false)}
+                            style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.8rem', cursor: 'pointer' }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                    <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.4rem' }}>Subject</label>
+                            <input 
+                                type="text"
+                                placeholder="What's the issue about?"
+                                value={newTicketSubject}
+                                onChange={(e) => setNewTicketSubject(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none' }}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.4rem' }}>Description</label>
+                            <textarea 
+                                placeholder="Provide more details..."
+                                value={newTicketMessage}
+                                onChange={(e) => setNewTicketMessage(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', minHeight: '120px', resize: 'none' }}
+                                required
+                            />
+                        </div>
+                        <button 
+                            type="submit"
+                            disabled={isTicketLoading}
+                            style={{ width: '100%', padding: '0.85rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, marginTop: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                        >
+                            {isTicketLoading ? <Loader2 className="animate-spin" size={18} /> : <>Submit Ticket <Send size={16} /></>}
+                        </button>
+                    </form>
+                </div>
+            )
+        }
+
+        return (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>Support Tickets</h4>
+                    <button 
+                        onClick={() => setIsCreatingTicket(true)}
+                        style={{ padding: '0.5rem 0.8rem', background: '#eff6ff', color: '#6366f1', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                        <PlusCircle size={14} /> New Ticket
+                    </button>
+                </div>
+
+                {isTicketLoading && tickets.length === 0 ? (
+                    <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Loader2 className="animate-spin" size={24} color="#6366f1" />
+                    </div>
+                ) : tickets.length === 0 ? (
+                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                        <Ticket size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                        <p style={{ margin: 0, fontSize: '0.85rem' }}>No tickets found yet.</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {tickets.map(t => (
+                            <div 
+                                key={t.id}
+                                onClick={() => {
+                                    setIsOpen(false)
+                                    const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
+                                    navigate(supportPath)
+                                }}
+                                style={{ padding: '1rem', borderRadius: '14px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
+                                onMouseOver={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                                onMouseOut={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+                                    <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
+                                    <span style={{ 
+                                        padding: '4px 8px', 
+                                        borderRadius: '6px', 
+                                        fontSize: '0.6rem', 
+                                        fontWeight: 700, 
+                                        textTransform: 'uppercase',
+                                        background: t.status === 'open' ? '#ecfdf5' : '#fef2f2',
+                                        color: t.status === 'open' ? '#10b981' : '#ef4444'
+                                    }}>
+                                        {t.status}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: '#94a3b8' }}>
+                                    <Clock size={12} /> {new Date(t.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
-            <p style={{ margin: 0 }}>No {title.toLowerCase()} found.</p>
-        </div>
-    )
+        )
+    }
 
     return (
         <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 1000 }}>
@@ -373,7 +543,7 @@ export default function AIChatbot() {
                             <>
                                 {activeTab === 'home' && renderHome()}
                                 {activeTab === 'past' && renderPastChats()}
-                                {activeTab === 'tickets' && renderPlaceholder('Tickets')}
+                                {activeTab === 'tickets' && renderTicketHistory()}
                             </>
                         )}
                         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '200px', background: 'radial-gradient(circle at 100% 100%, rgba(124,58,237,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: -1 }} />
