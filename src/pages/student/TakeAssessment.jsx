@@ -129,7 +129,7 @@ export default function TakeAssessment() {
                 supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true }),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
                 supabase.from('resource_access').select('*').eq('resource_id', assessmentId).eq('resource_type', 'assessment').eq('is_locked', true),
-                supabase.from('day_access').select('*').eq('resource_type', 'assessment') // although we use course_id and day_number mostly
+                supabase.from('day_access').select('*') // although we use course_id and day_number mostly
             ])
 
             if (aErr) throw aErr
