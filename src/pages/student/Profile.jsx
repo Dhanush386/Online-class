@@ -129,14 +129,25 @@ export default function Profile() {
                 })
 
             if (error) throw error
-
-            // SYNC: Update the primary name in the 'users' table so it reflects globally
+            
+            // SYNC: Update the primary name in the 'users' table and Auth metadata so it reflects globally
+            // We combine first and last name for the users table
             const fullName = `${formData.first_name} ${formData.last_name}`.trim()
             if (fullName) {
-                await supabase
+                // 1. Update Auth Metadata (Best practice for Supabase)
+                await supabase.auth.updateUser({
+                    data: { name: fullName }
+                })
+
+                // 2. Update Public Users Table
+                const { error: syncError } = await supabase
                     .from('users')
                     .update({ name: fullName })
                     .eq('id', user.id)
+                
+                if (syncError) {
+                    console.error('Failed to sync name to users table:', syncError)
+                }
             }
 
             await refreshProfileStatus()

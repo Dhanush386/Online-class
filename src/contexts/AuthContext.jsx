@@ -161,16 +161,16 @@ export function AuthProvider({ children }) {
 
     async function refreshProfileStatus() {
         if (!user) return
-        if (profile?.role === 'student') {
+        await fetchProfile(user.id) // Re-fetch name, role, etc.
+        
+        if (profile?.role === 'student' || user) {
             const { data } = await supabase
                 .from('student_profiles')
                 .select('student_id')
                 .eq('student_id', user.id)
                 .maybeSingle()
             setIsProfileComplete(!!data)
-            loadAchievementStats(user.id)
-        } else {
-            setIsProfileComplete(true)
+            if (user.id) loadAchievementStats(user.id)
         }
     }
 
