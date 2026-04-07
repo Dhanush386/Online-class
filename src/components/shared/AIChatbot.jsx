@@ -7,12 +7,23 @@ export default function AIChatbot() {
     const { profile } = useAuth()
     const location = useLocation()
     const [isOpen, setIsOpen] = useState(false)
-    const [messages, setMessages] = useState([
-        { role: 'assistant', content: `Hello ${profile?.name || 'there'}! I'm your EduStream AI assistant. How can I help you today?` }
-    ])
+    const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const scrollRef = useRef(null)
+
+    // Ensure initial greeting is set with correct name
+    useEffect(() => {
+        if (profile?.name && messages.length === 0) {
+            setMessages([
+                { role: 'assistant', content: `Hello ${profile.name}! I'm your EduStream AI assistant. How can I help you today?` }
+            ])
+        } else if (!profile && messages.length === 0) {
+             setMessages([
+                { role: 'assistant', content: `Hello there! I'm your EduStream AI assistant. How can I help you today?` }
+            ])
+        }
+    }, [profile, messages.length])
 
     // Visibility Logic: Hide on assessments and coding practice
     const isHidden = location.pathname.includes('/take') || location.pathname.includes('/student/coding/')
