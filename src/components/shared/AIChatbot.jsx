@@ -80,7 +80,7 @@ export default function AIChatbot() {
             }
         } catch (error) {
             console.error('Chatbot Error:', error)
-            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble connecting right now. Make sure your API key is valid." }])
+            setMessages(prev => [...prev, { role: 'assistant', content: `Connection Error: ${error.message}. Please check your internet or Vercel environment variables.` }])
         } finally {
             setIsLoading(false)
         }
