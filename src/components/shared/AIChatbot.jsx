@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles, PlusCircle, RefreshCw } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function AIChatbot() {
@@ -12,18 +12,48 @@ export default function AIChatbot() {
     const [isLoading, setIsLoading] = useState(false)
     const scrollRef = useRef(null)
 
-    // Ensure initial greeting is set with correct name
+    // Unique storage key for the current user
+    const storageKey = profile?.id ? `edustream_chat_history_${profile.id}` : 'edustream_chat_history_guest'
+
+    // Load history on mount or when user changes
     useEffect(() => {
-        if (profile?.name && messages.length === 0) {
-            setMessages([
-                { role: 'assistant', content: `Hello ${profile.name}! I'm your EduStream AI assistant. How can I help you today?` }
-            ])
-        } else if (!profile && messages.length === 0) {
-             setMessages([
-                { role: 'assistant', content: `Hello there! I'm your EduStream AI assistant. How can I help you today?` }
-            ])
+        const savedMessages = localStorage.getItem(storageKey)
+        if (savedMessages) {
+            try {
+                setMessages(JSON.parse(savedMessages))
+            } catch (e) {
+                console.error('Error loading chat history:', e)
+            }
+        } else {
+            // Default initial greeting if no history
+            if (profile?.name) {
+                setMessages([
+                    { role: 'assistant', content: `Hello ${profile.name}! I'm your EduStream AI assistant. How can I help you today?` }
+                ])
+            } else if (!profile) {
+                 setMessages([
+                    { role: 'assistant', content: `Hello there! I'm your EduStream AI assistant. How can I help you today?` }
+                ])
+            }
         }
-    }, [profile, messages.length])
+    }, [profile?.id, storageKey])
+
+    // Auto-save history whenever messages change
+    useEffect(() => {
+        if (messages.length > 0) {
+            localStorage.setItem(storageKey, JSON.stringify(messages))
+        }
+    }, [messages, storageKey])
+
+    const handleNewChat = () => {
+        if (window.confirm('Clear this conversation and start a new chat?')) {
+            localStorage.removeItem(storageKey)
+            const initialMsg = profile?.name 
+                ? { role: 'assistant', content: `Hello again ${profile.name}! Starting a fresh chat. How can I help you?` }
+                : { role: 'assistant', content: `Hello! Starting a fresh chat. How can I help you?` }
+            setMessages([initialMsg])
+        }
+    }
 
     // Visibility Logic: Hide on assessments and coding practice
     const isHidden = location.pathname.includes('/take') || location.pathname.includes('/student/coding/')
@@ -51,8 +81,6 @@ export default function AIChatbot() {
             'gemini-2.5-flash',
             'gemma-3-27b-it'
         ]
-
-
 
         try {
             if (apiKey) {
@@ -92,7 +120,7 @@ export default function AIChatbot() {
                     } catch (err) {
                         clearTimeout(timeoutId)
                         if (err.name === 'AbortError') {
-                            console.warn(`Model ${model} timed out after 10s. Trying next...`)
+                            console.warn(`Model ${model} timed out after 15s. Trying next...`)
                             lastError = "Model timed out."
                         } else {
                             console.warn(`Fetch error for model ${model}:`, err)
@@ -102,7 +130,8 @@ export default function AIChatbot() {
                 }
 
                 if (!success) {
-                    throw new Error(lastError || "All models failed or were unavailable.")
+                    // Failover to Mock if AI is blocked or busy
+                    throw new Error(lastError || "All models busy.")
                 }
             } else {
                 // Mock AI Response fallback
@@ -115,8 +144,14 @@ export default function AIChatbot() {
                 }, 1000)
             }
         } catch (error) {
-            console.error('Chatbot Error:', error)
-            setMessages(prev => [...prev, { role: 'assistant', content: `Connection Error: ${error.message}. All models are currently at high demand. Please try again in 30 seconds.` }])
+            console.warn('Real AI Failed, falling back to built-in smart support:', error)
+            setTimeout(() => {
+                const aiResponse = { 
+                    role: 'assistant', 
+                    content: getMockResponse(input.trim().toLowerCase()) 
+                }
+                setMessages(prev => [...prev, aiResponse])
+            }, 500)
         } finally {
             setIsLoading(false)
         }
@@ -188,15 +223,29 @@ export default function AIChatbot() {
                             </div>
                             <div>
                                 <h3 style={{ fontWeight: 700, fontSize: '1rem', margin: 0 }}>EduStream AI</h3>
-                                <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>Online & Ready to Help</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80' }}></span>
+                                    <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>Ready to Help</span>
+                                </div>
                             </div>
                         </div>
-                        <button 
-                            onClick={() => setIsOpen(false)}
-                            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '0.5rem' }}
-                        >
-                            <X size={20} />
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <button 
+                                onClick={handleNewChat}
+                                title="New Chat"
+                                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '0.5rem', transition: 'transform 0.2s', display: 'flex' }}
+                                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                <PlusCircle size={20} />
+                            </button>
+                            <button 
+                                onClick={() => setIsOpen(false)}
+                                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '0.5rem' }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Messages Area */}
