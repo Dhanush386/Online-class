@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
     const [isProfileComplete, setIsProfileComplete] = useState(true) // Default to true to avoid early redirect
     const [stats, setStats] = useState({ xp: 0, solved: 0, streak: 0, completedCourses: [] })
     const [loading, setLoading] = useState(true)
+    const [isExpired, setIsExpired] = useState(false)
     const [browserSessionId] = useState(() => {
         let id = localStorage.getItem('online_class_session_uuid')
         if (!id) {
@@ -53,13 +54,16 @@ export function AuthProvider({ children }) {
     }, [])
 
     const checkExpiry = (prof) => {
-        if (!prof || prof.role !== 'student' || !prof.access_expires_at) return false
+        if (!prof || prof.role !== 'student' || !prof.access_expires_at) {
+            setIsExpired(false)
+            return false
+        }
         const expiry = new Date(prof.access_expires_at)
         if (expiry < new Date()) {
-            alert('Access Expired: Your account access period has ended. Please contact your organizer.')
-            signOut()
+            setIsExpired(true)
             return true
         }
+        setIsExpired(false)
         return false
     }
 
@@ -349,6 +353,7 @@ export function AuthProvider({ children }) {
         isProfileComplete,
         refreshProfileStatus,
         stats,
+        isExpired,
         refreshStats: () => profile?.id && loadAchievementStats(profile.id)
     }
 

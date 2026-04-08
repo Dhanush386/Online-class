@@ -2,7 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export function ProtectedRoute({ children, requiredRole }) {
-    const { user, profile, loading, signOut, isProfileComplete } = useAuth()
+    const { user, profile, loading, signOut, isProfileComplete, isExpired } = useAuth()
     const location = useLocation()
 
     if (loading) {
@@ -91,6 +91,16 @@ export function ProtectedRoute({ children, requiredRole }) {
         // Mandatory Profile Check for Students
         if (!isProfileComplete && location.pathname !== '/student/profile') {
             return <Navigate to="/student/profile" replace />
+        }
+
+        // Account Expiry Check
+        if (isExpired && location.pathname !== '/student/renew') {
+            return <Navigate to="/student/renew" replace />
+        }
+
+        // Prevent non-expired students from accessing renewal page
+        if (!isExpired && location.pathname === '/student/renew') {
+            return <Navigate to="/student" replace />
         }
     }
 
