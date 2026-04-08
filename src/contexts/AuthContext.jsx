@@ -128,8 +128,8 @@ export function AuthProvider({ children }) {
                 current_session_id: sessionIdRef.current
             }
 
-            // Check if expired on load
-            if (checkExpiry(finalProfile)) return
+            // Determine if expired (updates isExpired state)
+            checkExpiry(finalProfile)
 
             // Update DB with current session ID if different
             if (data && data.current_session_id !== sessionIdRef.current) {
