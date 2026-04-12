@@ -111,12 +111,17 @@ export default function SharedProject() {
                 flexShrink: 0
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    {/* EduStream Branding */}
+                    {/* Learnova Branding */}
                     <Link to="/login" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
-                        <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <GraduationCap size={18} color="white" />
-                        </div>
-                        <span style={{ color: 'white', fontWeight: 800, letterSpacing: '-0.5px' }}>Learnova</span>
+                        <img 
+                            src="/logo.png" 
+                            alt="Learnova" 
+                            style={{ 
+                                height: 32, 
+                                width: 'auto',
+                                objectFit: 'contain'
+                            }} 
+                        />
                     </Link>
 
                     {/* Divider */}

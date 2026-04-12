@@ -148,15 +148,18 @@ export default function StudentLayout() {
                 zIndex: 50,
             }}>
                 {/* Logo */}
-                <div style={{ padding: '1.25rem 1rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: 36, height: 36, background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <GraduationCap size={20} color="white" />
-                    </div>
+                <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+                    <img 
+                        src="/logo.png" 
+                        alt="Learnova Logo" 
+                        style={{ 
+                            height: 60, 
+                            width: 'auto',
+                            objectFit: 'contain'
+                        }} 
+                    />
                     {(!collapsed || isMobile) && (
-                        <div>
-                            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Learnova</div>
-                            <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 500 }}>STUDENT</div>
-                        </div>
+                        <div style={{ fontSize: '0.6rem', color: '#10b981', fontWeight: 800, letterSpacing: '0.15em', marginTop: '-8px' }}>STUDENT</div>
                     )}
                 </div>
 

@@ -120,12 +120,18 @@ export default function Login() {
                 transition: 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 pointerEvents: 'all'
             }}>
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 10px 30px rgba(99,102,241,0.2)' }}>
-                        <GraduationCap size={32} color="white" />
-                    </div>
-                    <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'white' }} className="gradient-text">Learnova</h1>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Welcome back to the stream</p>
+                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                    <img 
+                        src="/logo.png" 
+                        alt="Learnova Logo" 
+                        style={{ 
+                            height: 100, 
+                            width: 'auto',
+                            margin: '0 auto 0.5rem',
+                            display: 'block'
+                        }} 
+                    />
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: '0rem' }}>Welcome back to the stream</p>
                 </div>
 
                 <div className="glass-card" style={{
