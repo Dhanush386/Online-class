@@ -392,9 +392,19 @@ export default function CourseManagement() {
                                         required
                                     />
                                 </div>
-                                <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', gridColumn: '1 / -1' }}>
-                                    <Plus size={16} /> Add Material
-                                </button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', gridColumn: '1 / -1' }}>
+                                    <button type="submit" className="btn-primary" disabled={saving} style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}>
+                                        {saving ? 'Adding...' : <><Plus size={16} /> Add Material</>}
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowResourceModal(false)} 
+                                        className="btn-secondary" 
+                                        style={{ width: '100%', justifyContent: 'center', background: 'white' }}
+                                    >
+                                        Close
+                                    </button>
+                                </div>
                             </form>
 
                             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Existing Materials (Grouped by Day)</h4>
