@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Video, Link, Calendar, Clock, FolderOpen, CheckCircle, AlertCircle, Plus, Upload, PlayCircle, Radio } from 'lucide-react'
+import { Video, Link, Calendar, Clock, FolderOpen, CheckCircle, AlertCircle, Plus, Upload, PlayCircle, Radio, ArrowLeft } from 'lucide-react'
 import { toISOWithOffset } from '../../lib/dateUtils'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 export default function ScheduleLiveClass() {
     const { profile } = useAuth()
     const location = useLocation()
+    const navigate = useNavigate()
     const [courses, setCourses] = useState([])
     const [mode, setMode] = useState('live') // 'live' or 'upload'
     const [form, setForm] = useState({
@@ -128,11 +129,21 @@ export default function ScheduleLiveClass() {
 
     return (
         <div className="animate-fade-in" style={{ maxWidth: 680, margin: '0 auto' }}>
-            <div style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Content Creator</h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                    Upload recorded videos or schedule live sessions
-                </p>
+            <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <button 
+                    onClick={() => navigate('/organizer/courses')}
+                    style={{ background: '#f1f5f9', border: 'none', width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}
+                    className="hover-scale"
+                    title="Back to Courses"
+                >
+                    <ArrowLeft size={20} />
+                </button>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Content Creator</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                        Upload recorded videos or schedule live sessions
+                    </p>
+                </div>
             </div>
 
             {/* Mode Toggle */}

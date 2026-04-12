@@ -431,6 +431,12 @@ export default function CourseManagement() {
                                     ))}
                                 </div>
                             )}
+
+                            <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button type="button" onClick={() => setShowResourceModal(false)} className="btn-secondary" style={{ padding: '0.6rem 1.5rem' }}>
+                                    Close Window
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
