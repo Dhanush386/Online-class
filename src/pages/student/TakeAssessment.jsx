@@ -240,8 +240,18 @@ export default function TakeAssessment() {
         try {
             let correctCount = 0
             const submissionAnswers = questions.map(q => {
-                const selected = answers[q.id] || ''
-                const isCorrect = selected === q.correct_answer
+                const selected = answers[q.id] || (isMulti(q) ? [] : '')
+                
+                let isCorrect = false
+                if (isMulti(q)) {
+                    const correctArr = getCorrectArray(q)
+                    const selectedArr = Array.isArray(selected) ? selected : [selected]
+                    isCorrect = correctArr.length === selectedArr.length && 
+                               correctArr.every(opt => selectedArr.includes(opt))
+                } else {
+                    isCorrect = selected === q.correct_answer
+                }
+
                 if (isCorrect) correctCount++
                 return {
                     question_id: q.id,
@@ -366,6 +376,36 @@ export default function TakeAssessment() {
     const currentQ = questions[currentIdx]
     const progress = Math.round(((currentIdx + 1) / questions.length) * 100)
 
+    const isMulti = (q) => {
+        return q?.correct_answer?.startsWith('[') && q?.correct_answer?.endsWith(']')
+    }
+
+    const getCorrectArray = (q) => {
+        try {
+            if (isMulti(q)) return JSON.parse(q.correct_answer)
+            return [q.correct_answer]
+        } catch (e) {
+            return [q.correct_answer]
+        }
+    }
+
+    const handleOptionClick = (opt) => {
+        if (isMulti(currentQ)) {
+            const currentAnswers = Array.isArray(answers[currentQ.id]) ? answers[currentQ.id] : []
+            const isSelected = currentAnswers.includes(opt)
+            
+            let newAnswers
+            if (isSelected) {
+                newAnswers = currentAnswers.filter(a => a !== opt)
+            } else {
+                newAnswers = [...currentAnswers, opt]
+            }
+            setAnswers(p => ({ ...p, [currentQ.id]: newAnswers }))
+        } else {
+            setAnswers(p => ({ ...p, [currentQ.id]: opt }))
+        }
+    }
+
     return (
         <div className="animate-fade-in" style={{ maxWidth: 800, margin: '0 auto' }}>
             {/* Header */}
@@ -399,11 +439,14 @@ export default function TakeAssessment() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {currentQ?.options.map((opt, i) => {
-                        const isSelected = answers[currentQ.id] === opt
+                        const isSelected = isMulti(currentQ) 
+                            ? (Array.isArray(answers[currentQ.id]) && answers[currentQ.id].includes(opt))
+                            : answers[currentQ.id] === opt
+
                         return (
                             <button
                                 key={i}
-                                onClick={() => setAnswers(p => ({ ...p, [currentQ.id]: opt }))}
+                                onClick={() => handleOptionClick(opt)}
                                 style={{
                                     padding: '1.25rem 1.5rem',
                                     borderRadius: 12,
@@ -421,7 +464,7 @@ export default function TakeAssessment() {
                             >
                                 <div style={{
                                     width: 24, height: 24,
-                                    borderRadius: '50%',
+                                    borderRadius: isMulti(currentQ) ? '6px' : '50%',
                                     border: `2px solid ${isSelected ? '#6366f1' : '#cbd5e1'}`,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     background: isSelected ? '#6366f1' : 'transparent',

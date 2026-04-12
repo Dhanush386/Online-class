@@ -108,9 +108,9 @@ export default function AssessmentReview() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {questions.filter(q => answersMap[q.id]).map((q, idx) => {
                     const answer = answersMap[q.id]
-                    const selected = answer?.selected_option || ''
+                    const selected = answer?.selected_option || '' // Can be string or array
                     const isCorrect = answer?.is_correct === true
-                    const wasAnswered = !!selected
+                    const wasAnswered = Array.isArray(selected) ? selected.length > 0 : !!selected
 
                     return (
                         <div key={q.id} className="glass-card" style={{
@@ -136,8 +136,18 @@ export default function AssessmentReview() {
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                                 {q.options.map((opt, i) => {
-                                    const isThisCorrect = opt === q.correct_answer
-                                    const isThisSelected = opt === selected
+                                    let isThisCorrect = false
+                                    try {
+                                        if (q.correct_answer?.startsWith('[') && q.correct_answer?.endsWith(']')) {
+                                            isThisCorrect = JSON.parse(q.correct_answer).includes(opt)
+                                        } else {
+                                            isThisCorrect = opt === q.correct_answer
+                                        }
+                                    } catch (e) {
+                                        isThisCorrect = opt === q.correct_answer
+                                    }
+
+                                    const isThisSelected = Array.isArray(selected) ? selected.includes(opt) : opt === selected
                                     let bg = '#f8fafc', border = '#e2e8f0', textColor = 'var(--text-primary)'
 
                                     if (isThisCorrect) { bg = '#ecfdf5'; border = '#10b98140'; textColor = '#065f46' }

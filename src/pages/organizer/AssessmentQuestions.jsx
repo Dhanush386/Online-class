@@ -15,7 +15,7 @@ export default function AssessmentQuestions() {
     const [formData, setFormData] = useState({
         question_text: '',
         options: ['', '', '', ''],
-        correct_answer: ''
+        correct_answer: [] // Changed to array for multi-select support
     })
     const [editingId, setEditingId] = useState(null)
     const [groups, setGroups] = useState([])
@@ -84,7 +84,7 @@ export default function AssessmentQuestions() {
     async function handleSubmit(e) {
         e.preventDefault()
         if (formData.options.some(opt => !opt.trim())) { setError('All options are required'); return }
-        if (!formData.correct_answer) { setError('Please select a correct answer'); return }
+        if (formData.correct_answer.length === 0) { setError('Please select at least one correct answer'); return }
 
         setSaving(true)
         setError('')
@@ -94,7 +94,8 @@ export default function AssessmentQuestions() {
                 assessment_id: assessmentId,
                 question_text: formData.question_text,
                 options: formData.options,
-                correct_answer: formData.correct_answer
+                // Store as JSON string if it's an array to support multi-choice cleanly
+                correct_answer: JSON.stringify(formData.correct_answer)
             }
 
             if (editingId) {
@@ -124,19 +125,30 @@ export default function AssessmentQuestions() {
             alert('Error deleting: ' + error.message)
         }
     }
-
     function openEdit(q) {
+        let correctAnswers = []
+        try {
+            // Support both old string format and new JSON array format
+            if (q.correct_answer?.startsWith('[') && q.correct_answer?.endsWith(']')) {
+                correctAnswers = JSON.parse(q.correct_answer)
+            } else if (q.correct_answer) {
+                correctAnswers = [q.correct_answer]
+            }
+        } catch (e) {
+            correctAnswers = [q.correct_answer]
+        }
+
         setEditingId(q.id)
         setFormData({
             question_text: q.question_text,
             options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
-            correct_answer: q.correct_answer
+            correct_answer: correctAnswers
         })
         setShowModal(true)
     }
 
     function resetForm() {
-        setFormData({ question_text: '', options: ['', '', '', ''], correct_answer: '' })
+        setFormData({ question_text: '', options: ['', '', '', ''], correct_answer: [] })
         setEditingId(null)
         setError('')
     }
@@ -218,7 +230,17 @@ export default function AssessmentQuestions() {
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginLeft: '2.75rem' }}>
                                 {q.options.map((opt, i) => {
-                                    const isCorrect = opt === q.correct_answer
+                                    let isCorrect = false
+                                    try {
+                                        if (q.correct_answer?.startsWith('[') && q.correct_answer?.endsWith(']')) {
+                                            isCorrect = JSON.parse(q.correct_answer).includes(opt)
+                                        } else {
+                                            isCorrect = opt === q.correct_answer
+                                        }
+                                    } catch (e) {
+                                        isCorrect = opt === q.correct_answer
+                                    }
+
                                     return (
                                         <div key={i} style={{
                                             padding: '0.75rem 1rem',
@@ -292,40 +314,72 @@ export default function AssessmentQuestions() {
                             </div>
 
                             <div style={{ marginBottom: '1rem' }}>
-                                <label htmlFor="opt-0-radio" className="form-label">Options (Choose one as correct)</label>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                    <label className="form-label" style={{ marginBottom: 0 }}>Options & Correct Answers</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(p => ({ ...p, options: [...p.options, ''] }))}
+                                        style={{ fontSize: '0.75rem', color: '#6366f1', background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                    >
+                                        <Plus size={14} /> Add Option
+                                    </button>
+                                </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     {formData.options.map((opt, i) => (
                                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                             <div style={{ flexShrink: 0 }}>
                                                 <input
-                                                    id={`opt-${i}-radio`}
-                                                    type="radio"
-                                                    name="correct_answer"
-                                                    checked={formData.correct_answer === opt && opt !== ''}
-                                                    onChange={() => setFormData(p => ({ ...p, correct_answer: opt }))}
+                                                    type="checkbox"
+                                                    checked={formData.correct_answer.includes(opt) && opt !== ''}
+                                                    onChange={(e) => {
+                                                        const isChecked = e.target.checked
+                                                        setFormData(p => {
+                                                            const newAnswers = isChecked 
+                                                                ? [...p.correct_answer, opt]
+                                                                : p.correct_answer.filter(val => val !== opt)
+                                                            return { ...p, correct_answer: newAnswers }
+                                                        })
+                                                    }}
                                                     disabled={!opt.trim()}
                                                     style={{ width: 18, height: 18, cursor: opt.trim() ? 'pointer' : 'default' }}
                                                 />
                                             </div>
-                                            <input
-                                                id={`opt-${i}-text`}
-                                                name={`option_${i}`}
-                                                type="text"
-                                                className="form-input"
-                                                placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                                                value={opt}
-                                                onChange={e => {
-                                                    const newOpts = [...formData.options]
-                                                    const oldVal = newOpts[i]
-                                                    newOpts[i] = e.target.value
-                                                    setFormData(p => ({
-                                                        ...p,
-                                                        options: newOpts,
-                                                        correct_answer: p.correct_answer === oldVal ? e.target.value : p.correct_answer
-                                                    }))
-                                                }}
-                                                required
-                                            />
+                                            <div style={{ flex: 1, position: 'relative' }}>
+                                                <input
+                                                    type="text"
+                                                    className="form-input"
+                                                    placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                                                    value={opt}
+                                                    onChange={e => {
+                                                        const newOpts = [...formData.options]
+                                                        const oldVal = newOpts[i]
+                                                        newOpts[i] = e.target.value
+                                                        
+                                                        setFormData(p => ({
+                                                            ...p,
+                                                            options: newOpts,
+                                                            correct_answer: p.correct_answer.map(val => val === oldVal ? e.target.value : val)
+                                                        }))
+                                                    }}
+                                                    required
+                                                />
+                                                {formData.options.length > 2 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newOpts = formData.options.filter((_, idx) => idx !== i)
+                                                            setFormData(p => ({
+                                                                ...p,
+                                                                options: newOpts,
+                                                                correct_answer: p.correct_answer.filter(val => val !== opt)
+                                                            }))
+                                                        }}
+                                                        style={{ position: 'absolute', right: -30, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
