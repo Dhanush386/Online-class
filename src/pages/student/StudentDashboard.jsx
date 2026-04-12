@@ -64,16 +64,10 @@ export default function StudentDashboard() {
 
         const enrolledCourseIds = Array.from(uniqueCourseIds)
 
-        const [
-            { data: progress },
-            { data: sessions },
-            { data: memberships },
-            { data: locksDay }
-        ] = await Promise.all([
-            supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
-            supabase.from('group_members').select('group_id').eq('student_id', profile.id),
-            supabase.from('day_access').select('*')
-        ])
+        const { data: progress } = await supabase
+            .from('progress')
+            .select('completion_percentage, time_spent_minutes')
+            .eq('student_id', profile.id)
 
         // Removed live sessions filtering
 
