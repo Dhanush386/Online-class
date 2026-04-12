@@ -253,7 +253,6 @@ export default function AssessmentQuestions() {
                         </button>
                     </div>
                 </div>
->
             )}
 
             {/* Modal */}
