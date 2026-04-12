@@ -158,8 +158,11 @@ export default function OrganizerLayout() {
                         alt="Learnova Logo" 
                         style={{ 
                             height: 60, 
-                            width: 'auto',
-                            objectFit: 'contain'
+                            width: 60,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid rgba(99,102,241,0.2)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                         }} 
                     />
                     {(!collapsed || isMobile) && (

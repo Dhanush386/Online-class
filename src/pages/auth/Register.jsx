@@ -134,10 +134,14 @@ export default function Register() {
                         src="/logo.png" 
                         alt="Learnova Logo" 
                         style={{ 
-                            height: 80, 
-                            width: 'auto',
-                            margin: '0 auto 0.5rem',
-                            display: 'block'
+                            height: 100, 
+                            width: 100,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            margin: '0 auto 1rem',
+                            display: 'block',
+                            border: '3px solid rgba(255,255,255,0.1)',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
                         }} 
                     />
                     <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white' }} className="gradient-text">Create Account</h1>

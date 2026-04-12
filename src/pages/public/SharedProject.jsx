@@ -118,8 +118,10 @@ export default function SharedProject() {
                             alt="Learnova" 
                             style={{ 
                                 height: 32, 
-                                width: 'auto',
-                                objectFit: 'contain'
+                                width: 32,
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: '1px solid rgba(255,255,255,0.2)'
                             }} 
                         />
                     </Link>

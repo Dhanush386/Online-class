@@ -154,8 +154,11 @@ export default function StudentLayout() {
                         alt="Learnova Logo" 
                         style={{ 
                             height: 60, 
-                            width: 'auto',
-                            objectFit: 'contain'
+                            width: 60,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid rgba(16,185,129,0.2)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                         }} 
                     />
                     {(!collapsed || isMobile) && (

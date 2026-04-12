@@ -125,10 +125,14 @@ export default function Login() {
                         src="/logo.png" 
                         alt="Learnova Logo" 
                         style={{ 
-                            height: 100, 
-                            width: 'auto',
-                            margin: '0 auto 0.5rem',
-                            display: 'block'
+                            height: 120, 
+                            width: 120,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            margin: '0 auto 1rem',
+                            display: 'block',
+                            border: '3px solid rgba(255,255,255,0.1)',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
                         }} 
                     />
                     <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: '0rem' }}>Welcome back to the stream</p>
