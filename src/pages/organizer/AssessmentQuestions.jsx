@@ -146,7 +146,17 @@ export default function AssessmentQuestions() {
     return (
         <div className="animate-fade-in">
             {/* Header */}
-            <div style={{ marginBottom: '2rem' }}>
+            {/* Header */}
+            <div style={{ 
+                position: 'sticky', 
+                top: 0, 
+                zIndex: 30, 
+                background: 'rgba(248, 250, 252, 0.8)', 
+                backdropFilter: 'blur(8px)',
+                padding: '1.5rem 2rem',
+                margin: '-1.5rem -2rem 2rem -2rem',
+                borderBottom: '1px solid var(--card-border)'
+            }}>
                 <Link to="/organizer/assessments" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6366f1', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem' }}>
                     <ChevronLeft size={16} /> Back to Assessments
                 </Link>
@@ -157,20 +167,22 @@ export default function AssessmentQuestions() {
                             {assessment?.courses?.title} • {questions.length} Questions
                         </p>
                     </div>
-                    <button
-                        onClick={() => { resetForm(); setShowModal(true) }}
-                        className="btn-primary"
-                        style={{ gap: '0.5rem' }}
-                    >
-                        <Plus size={18} /> Add Question
-                    </button>
-                    <button
-                        onClick={() => setShowLockModal(true)}
-                        className="btn-secondary"
-                        style={{ gap: '0.5rem', marginLeft: '0.75rem' }}
-                    >
-                        <Clock size={18} /> Access Control
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <button
+                            onClick={() => { resetForm(); setShowModal(true) }}
+                            className="btn-primary"
+                            style={{ gap: '0.5rem' }}
+                        >
+                            <Plus size={18} /> Add Question
+                        </button>
+                        <button
+                            onClick={() => setShowLockModal(true)}
+                            className="btn-secondary"
+                            style={{ gap: '0.5rem' }}
+                        >
+                            <Clock size={18} /> Access Control
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -204,7 +216,6 @@ export default function AssessmentQuestions() {
                                     </button>
                                 </div>
                             </div>
-
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginLeft: '2.75rem' }}>
                                 {q.options.map((opt, i) => {
                                     const isCorrect = opt === q.correct_answer
@@ -230,7 +241,19 @@ export default function AssessmentQuestions() {
                             </div>
                         </div>
                     ))}
+                    
+                    {/* Add Question Button at the Bottom */}
+                    <div style={{ textAlign: 'center', marginTop: '1rem', padding: '2rem', border: '2px dashed var(--card-border)', borderRadius: 16 }}>
+                        <button
+                            onClick={() => { resetForm(); setShowModal(true) }}
+                            className="btn-secondary"
+                            style={{ gap: '0.5rem', padding: '0.75rem 2rem' }}
+                        >
+                            <Plus size={18} /> Add Next Question
+                        </button>
+                    </div>
                 </div>
+>
             )}
 
             {/* Modal */}
