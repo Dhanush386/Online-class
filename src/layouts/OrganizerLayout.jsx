@@ -315,6 +315,10 @@ export default function OrganizerLayout() {
                                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{profile?.role?.replace('_', ' ').toUpperCase()}</div>
                                         </div>
 
+                                        <button onClick={() => { navigate('/student'); setShowProfileMenu(false) }} className="dropdown-item-org" style={{ background: 'rgba(16,185,129,0.05)', color: '#10b981', fontWeight: 700 }}>
+                                            <GraduationCap size={16} /> <span>Student View</span>
+                                        </button>
+
                                         <button onClick={() => { navigate('/organizer'); setShowProfileMenu(false) }} className="dropdown-item-org">
                                             <LayoutDashboard size={16} /> <span>Dashboard</span>
                                         </button>

@@ -370,6 +370,12 @@ export default function StudentLayout() {
                                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{profile?.email}</div>
                                         </div>
 
+                                        {['organizer', 'sub_admin', 'main_admin'].includes(profile?.role) && (
+                                            <button onClick={() => { navigate('/organizer'); setShowProfileMenu(false) }} className="dropdown-item" style={{ background: 'rgba(99,102,241,0.05)', color: '#6366f1', fontWeight: 700 }}>
+                                                <LayoutDashboard size={16} /> <span>Organizer Panel</span>
+                                            </button>
+                                        )}
+
                                         <button onClick={() => { navigate('/student'); setShowProfileMenu(false) }} className="dropdown-item">
                                             <Mountain size={16} /> <span>My Journey</span>
                                         </button>
