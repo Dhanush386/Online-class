@@ -29,7 +29,7 @@ export default function AIChatbot() {
     const scrollRef = useRef(null)
 
     // Storage Key
-    const storageKey = profile?.id ? `edustream_sessions_${profile.id}` : 'edustream_sessions_guest'
+    const storageKey = profile?.id ? `learnova_sessions_${profile.id}` : 'learnova_sessions_guest'
 
     // Load ALL sessions on mount
     useEffect(() => {
@@ -242,7 +242,7 @@ export default function AIChatbot() {
                             signal: controller.signal,
                             body: JSON.stringify({
                                 contents: [{
-                                    parts: [{ text: `You are EduStream Assistant. Help the user with: ${input.trim()}. Platform Info: EduStream is an e-learning platform. Be concise and friendly.` }]
+                                    parts: [{ text: `You are Learnova Assistant. Help the user with: ${input.trim()}. Platform Info: Learnova is an e-learning platform. Be concise and friendly.` }]
                                 }]
                             })
                         })
@@ -283,7 +283,7 @@ export default function AIChatbot() {
         if (query.includes('assessment')) return "Assessments are timed tests. Find them in the 'Assessments' tab."
         if (query.includes('coding')) return "The Coding Practice section has real-world tests."
         if (query.includes('course')) return "View enrolled courses in 'My Courses'."
-        return "I'm here to help with your EduStream platform questions! How else can I assist you?"
+        return "I'm here to help with your Learnova platform questions! How else can I assist you?"
     }
 
     const renderHeader = () => (
