@@ -152,6 +152,13 @@ export default function TakeAssessment() {
                 return
             }
 
+            // CHECK: Deadline Expiry
+            if (assess.due_date && new Date(assess.due_date) < new Date()) {
+                alert('This assessment is no longer available as the deadline has passed.')
+                navigate(`/student/courses/${assess.course_id}`, { replace: true })
+                return
+            }
+
             if ((existingSubs || []).length >= MAX_ATTEMPTS) {
                 navigate(`/student/assessments/${assessmentId}/review`, { replace: true })
                 return

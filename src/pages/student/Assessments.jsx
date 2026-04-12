@@ -196,6 +196,14 @@ export default function Assessments() {
                                     >
                                         <Eye size={15} /> Review Attempts
                                     </button>
+                                ) : isOverdue ? (
+                                    <button
+                                        disabled
+                                        className="btn-secondary"
+                                        style={{ width: '100%', justifyContent: 'center', opacity: 0.6, cursor: 'not-allowed', gap: '0.5rem' }}
+                                    >
+                                        <Lock size={15} /> Deadline Passed
+                                    </button>
                                 ) : (
                                     <button
                                         onClick={() => navigate(`/student/assessments/${a.id}/take`)}
