@@ -163,9 +163,10 @@ export default function AIChatbot() {
 
     const handleStartNewChat = () => {
         const newId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`
-        const initialMsg = profile?.name 
-            ? { role: 'assistant', content: `Hello ${profile.name}! I'm your EduStream AI assistant. How can I help you today?` }
-            : { role: 'assistant', content: `Hello! I'm your EduStream AI assistant. How can I help you today?` }
+        const initialMsg = { 
+            role: 'assistant', 
+            content: "Hello! welcome to Learnova. I'm your learning assistant. You can ask me questions about your course, coding challenges, or any support issues. How can I help you today?" 
+        }
         
         const newSession = {
             id: newId,

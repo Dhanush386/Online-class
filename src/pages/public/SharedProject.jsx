@@ -91,7 +91,7 @@ export default function SharedProject() {
                     </div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Project Unavailable</h1>
                     <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>This web project link is invalid or the project has been removed.</p>
-                    <Link to="/login" className="btn-primary" style={{ display: 'inline-flex' }}>Return to EduStream</Link>
+                    <Link to="/login" className="btn-primary" style={{ display: 'inline-flex' }}>Return to Learnova</Link>
                 </div>
             </div>
         )
@@ -116,7 +116,7 @@ export default function SharedProject() {
                         <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <GraduationCap size={18} color="white" />
                         </div>
-                        <span style={{ color: 'white', fontWeight: 800, letterSpacing: '-0.5px' }}>EduStream</span>
+                        <span style={{ color: 'white', fontWeight: 800, letterSpacing: '-0.5px' }}>Learnova</span>
                     </Link>
 
                     {/* Divider */}
@@ -157,7 +157,7 @@ export default function SharedProject() {
                     >
                         <ExternalLink size={14} /> Share
                     </button>
-                    <Link to="/register" className="btn-primary" style={{ padding: '0.4rem 1.25rem' }}>Join EduStream</Link>
+                    <Link to="/register" className="btn-primary" style={{ padding: '0.4rem 1.25rem' }}>Join Learnova</Link>
                 </div>
             </header>
 

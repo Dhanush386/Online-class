@@ -13,10 +13,10 @@ export default function MobileBlocker() {
                     </div>
                 </div>
 
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>Mobile Not Supported</h1>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Learnova is optimized for Desktop</h1>
 
                 <p style={{ color: '#64748b', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '2rem' }}>
-                    EduStream's coding environment requires a larger screen. Please switch to one of the following devices:
+                    Learnova's coding environment requires a larger screen. Please switch to one of the following devices:
                 </p>
 
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', color: '#6366f1' }}>

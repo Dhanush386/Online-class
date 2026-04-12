@@ -69,7 +69,7 @@ export default function ProtectedViewer({ url, type, title, onClose }) {
                     </div>
                     <div>
                         <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{title}</h3>
-                        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '2px 0 0' }}>Protected Mode Active • EduStream Viewer</p>
+                        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '2px 0 0' }}>Protected Mode Active • Learnova Viewer</p>
                     </div>
                 </div>
 

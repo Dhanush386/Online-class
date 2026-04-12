@@ -158,7 +158,7 @@ export default function OrganizerLayout() {
                     </div>
                     {(!collapsed || isMobile) && (
                         <div>
-                            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>EduStream</div>
+                            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Learnova</div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--accent-light)', fontWeight: 500 }}>ORGANIZER</div>
                         </div>
                     )}

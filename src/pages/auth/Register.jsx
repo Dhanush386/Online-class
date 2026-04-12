@@ -134,7 +134,7 @@ export default function Register() {
                         <GraduationCap size={32} color="white" />
                     </div>
                     <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'white' }} className="gradient-text">Create Account</h1>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Join the EduStream community</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Join the Learnova community</p>
                 </div>
 
                 <div className="glass-card" style={{ 

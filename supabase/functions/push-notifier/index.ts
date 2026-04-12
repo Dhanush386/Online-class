@@ -13,7 +13,7 @@ const PRIVATE_VAPID_KEY = 'T4vhToYTygHAvBh0hA-nrbJWMItFyg2lcghmL2lLBOw';
 const PUBLIC_VAPID_KEY = 'BMoLIbjN-o7XHbkgBYXBLdpno9Css3OtoY0oIJ44W296xrxhwKy_q6zbudE3v2ZQXTRGLT50cy5vlaGuG9zR2MY';
 
 webpush.setVapidDetails(
-  'mailto:admin@edustream.com',
+  'mailto:admin@learnova.com',
   PUBLIC_VAPID_KEY,
   PRIVATE_VAPID_KEY
 );
