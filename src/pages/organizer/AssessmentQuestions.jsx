@@ -287,6 +287,7 @@ export default function AssessmentQuestions() {
                                     onChange={e => setFormData(p => ({ ...p, question_text: e.target.value }))}
                                     required
                                     style={{ resize: 'none' }}
+                                    autoFocus
                                 />
                             </div>
 
