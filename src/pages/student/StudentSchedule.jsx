@@ -167,9 +167,12 @@ export default function StudentSchedule() {
                                                 {(() => {
                                                     const sTime = new Date(s.scheduled_time)
                                                     const dMs = (s.duration_minutes || 60) * 60000
-                                                    const isEnded = new Date() >= new Date(sTime.getTime() + dMs)
+                                                    const now = new Date()
+                                                    const isEnded = now >= new Date(sTime.getTime() + dMs)
+                                                    const isFuture = now < sTime
 
                                                     if (isEnded) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Ended</span>
+                                                    if (isFuture) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Upcoming</span>
                                                     if (!s.video_url) return null
 
                                                     return (

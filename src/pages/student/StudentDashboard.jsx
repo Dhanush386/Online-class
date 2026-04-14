@@ -186,11 +186,13 @@ export default function StudentDashboard() {
                         const schedTime = new Date(s.scheduled_time)
                         const durationMs = (s.duration_minutes || 60) * 60000
                         const endTime = new Date(schedTime.getTime() + durationMs)
-                        const isNow = new Date() >= schedTime && new Date() < endTime
-                        const isPast = new Date() >= endTime
+                        const now = new Date()
+                        const isNow = now >= schedTime && now < endTime
+                        const isPast = now >= endTime
+                        const isFuture = now < schedTime
 
                         return (
-                            <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: 12, border: `1px solid ${isNow ? 'rgba(239,68,68,0.2)' : '#e2e8f0'}`, marginBottom: '0.75rem' }}>
+                            <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: isNow ? 'rgba(239,68,68,0.03)' : '#f8fafc', borderRadius: 12, border: `1px solid ${isNow ? 'rgba(239,68,68,0.2)' : '#e2e8f0'}`, marginBottom: '0.75rem' }}>
                                 <div style={{ width: 40, height: 40, background: isNow ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                     <Video size={18} color={isNow ? '#f87171' : '#818cf8'} />
                                 </div>
@@ -200,18 +202,14 @@ export default function StudentDashboard() {
                                         {new Date(s.scheduled_time).toLocaleString()} · {s.duration_minutes || '?'} min
                                     </div>
                                 </div>
-                                {!isPast ? (
-                                    isNow ? (
-                                        <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem', textDecoration: 'none', background: 'linear-gradient(135deg,#ef4444,#dc2626)' }}>
-                                            🔴 Join
-                                        </a>
-                                    ) : (
-                                        <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem', textDecoration: 'none' }}>
-                                            <ExternalLink size={13} /> Join
-                                        </a>
-                                    )
-                                ) : (
+                                {isPast ? (
                                     <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 0.9rem' }}>Ended</span>
+                                ) : isFuture ? (
+                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 0.9rem' }}>Upcoming</span>
+                                ) : (
+                                    <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem', textDecoration: 'none', background: 'linear-gradient(135deg,#ef4444,#dc2626)' }}>
+                                        🔴 Join
+                                    </a>
                                 )}
                             </div>
                         )

@@ -392,9 +392,12 @@ export default function CourseDetail() {
                                                                             ) : s.video_url && (() => {
                                                                                 const sTime = new Date(s.scheduled_time)
                                                                                 const dMs = (s.duration_minutes || 60) * 60000
-                                                                                const isPast = new Date() >= new Date(sTime.getTime() + dMs)
+                                                                                const now = new Date()
+                                                                                const isPast = now >= new Date(sTime.getTime() + dMs)
+                                                                                const isFuture = now < sTime
                                                                                 
                                                                                 if (isPast) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 1rem' }}>Ended</span>
+                                                                                if (isFuture) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 1rem' }}>Upcoming</span>
                                                                                 
                                                                                 return (
                                                                                     <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>Join</a>
