@@ -104,19 +104,25 @@ export default function RenewAccess() {
                     <div style={{ 
                         width: 64, 
                         height: 64, 
-                        background: 'rgba(239,68,68,0.1)', 
-                        color: '#ef4444', 
+                        background: isExpired ? 'rgba(239,68,68,0.1)' : 'rgba(99,102,241,0.1)', 
+                        color: isExpired ? '#ef4444' : '#6366f1', 
                         borderRadius: '16px', 
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'center', 
                         margin: '0 auto 1.5rem',
-                        border: '1px solid rgba(239,68,68,0.2)'
+                        border: `1px solid ${isExpired ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.2)'}`
                     }}>
-                        <AlertCircle size={32} />
+                        {isExpired ? <AlertCircle size={32} /> : <Zap size={32} />}
                     </div>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>Access Expired</h1>
-                    <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>Your current subscription phase has ended. Renew now to continue your learning journey.</p>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+                        {isExpired ? 'Access Expired' : 'Extend Access'}
+                    </h1>
+                    <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
+                        {isExpired 
+                            ? 'Your current subscription phase has ended. Renew now to continue your learning journey.' 
+                            : 'Want more learning time? Extend your access ahead of time to keep your streak going!'}
+                    </p>
                 </div>
 
                 <div style={{ 

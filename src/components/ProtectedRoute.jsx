@@ -93,14 +93,8 @@ export function ProtectedRoute({ children, requiredRole }) {
             return <Navigate to="/student/profile" replace />
         }
 
-        // Account Expiry Check
         if (isExpired && location.pathname !== '/student/renew') {
             return <Navigate to="/student/renew" replace />
-        }
-
-        // Prevent non-expired students from accessing renewal page
-        if (!isExpired && location.pathname === '/student/renew') {
-            return <Navigate to="/student" replace />
         }
     }
 
