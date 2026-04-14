@@ -83,7 +83,21 @@ export default function StudentDashboard() {
             supabase.from('day_access').select('*')
         ])
 
-        // Removed live sessions filtering
+        const userGroupIds = memberships?.map(m => m.group_id) || []
+        const now = new Date()
+
+        const isDayLocked = (courseId, dayNum) => {
+            if (!dayNum) return false
+            const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && userGroupIds.includes(a.group_id))
+            if (!access) return false
+            if (access.is_locked) return true
+            if (access.open_time && new Date(access.open_time) > now) return true
+            return false
+        }
+
+        const filteredSessions = (sessions || [])
+            .filter(s => !isDayLocked(s.course_id, s.day_number))
+            .slice(0, 3)
 
         const avgComp = progress?.length
             ? Math.round(progress.reduce((s, p) => s + (p.completion_percentage || 0), 0) / progress.length)
