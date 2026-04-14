@@ -6,7 +6,7 @@ import {
     LayoutDashboard, BookOpen, Calendar, ClipboardList, LogOut,
     GraduationCap, Menu, X, Bell, Award, Code, Globe,
     User, MessageSquare, Zap, Bookmark, HelpCircle, Gift, MessageCircle, Mountain, ChevronRight, ExternalLink,
-    Flame, Star, Info, AlertTriangle, CheckCircle, Clock, Trophy
+    Flame, Star, Info, AlertTriangle, CheckCircle, Clock, Trophy, CreditCard
 } from 'lucide-react'
 import AIChatbot from '../components/shared/AIChatbot'
 
@@ -396,6 +396,9 @@ export default function StudentLayout() {
 
                                         <button onClick={() => { navigate('/student/profile'); setShowProfileMenu(false) }} className="dropdown-item">
                                             <User size={16} /> <span>Profile</span>
+                                        </button>
+                                        <button onClick={() => { navigate('/student/renew'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: '#6366f1' }}>
+                                            <CreditCard size={16} /> <span>Renew Access</span>
                                         </button>
 
                                         <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
