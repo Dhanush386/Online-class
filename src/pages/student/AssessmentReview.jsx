@@ -121,7 +121,7 @@ export default function AssessmentReview() {
                                 <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: '#64748b', flexShrink: 0 }}>
                                     {idx + 1}
                                 </div>
-                                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                                     {q.question_text}
                                 </h3>
                                 <div style={{ marginLeft: 'auto', flexShrink: 0 }}>

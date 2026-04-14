@@ -217,7 +217,7 @@ export default function AssessmentQuestions() {
                                     <div style={{ width: 28, height: 28, background: '#f1f5f9', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: '#64748b' }}>
                                         {idx + 1}
                                     </div>
-                                    <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>{q.question_text}</h4>
+                                    <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{q.question_text}</h4>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.25rem', alignSelf: 'flex-start' }}>
                                     <button onClick={() => openEdit(q)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>

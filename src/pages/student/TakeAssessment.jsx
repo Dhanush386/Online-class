@@ -433,7 +433,7 @@ export default function TakeAssessment() {
 
             {/* Question Card */}
             <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '2rem' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2rem', lineHeight: 1.5 }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                     {currentQ?.question_text}
                 </h2>
 
