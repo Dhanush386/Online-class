@@ -396,8 +396,8 @@ export default function CourseDetail() {
                                                                                 const isPast = now >= new Date(sTime.getTime() + dMs)
                                                                                 const isFuture = now < sTime
                                                                                 
-                                                                                if (isPast) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 1rem' }}>Ended</span>
-                                                                                if (isFuture) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 1rem' }}>Upcoming</span>
+                                                                                if (isPast) return <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, padding: '0.4rem 1rem', background: 'rgba(16,185,129,0.1)', borderRadius: 8 }}>Ended</span>
+                                                                                if (isFuture) return <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, padding: '0.4rem 1rem', background: 'rgba(59,130,246,0.1)', borderRadius: 8 }}>Upcoming</span>
                                                                                 
                                                                                 return (
                                                                                     <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>Join</a>

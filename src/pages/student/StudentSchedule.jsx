@@ -171,8 +171,8 @@ export default function StudentSchedule() {
                                                     const isEnded = now >= new Date(sTime.getTime() + dMs)
                                                     const isFuture = now < sTime
 
-                                                    if (isEnded) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Ended</span>
-                                                    if (isFuture) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Upcoming</span>
+                                                    if (isEnded) return <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, padding: '0.4rem 0.9rem', background: 'rgba(16,185,129,0.1)', borderRadius: 8 }}>Ended</span>
+                                                    if (isFuture) return <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, padding: '0.4rem 0.9rem', background: 'rgba(59,130,246,0.1)', borderRadius: 8 }}>Upcoming</span>
                                                     if (!s.video_url) return null
 
                                                     return (

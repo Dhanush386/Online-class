@@ -203,9 +203,9 @@ export default function StudentDashboard() {
                                     </div>
                                 </div>
                                 {isPast ? (
-                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 0.9rem' }}>Ended</span>
+                                    <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, padding: '0.4rem 0.9rem', background: 'rgba(16,185,129,0.1)', borderRadius: 8 }}>Ended</span>
                                 ) : isFuture ? (
-                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 0.9rem' }}>Upcoming</span>
+                                    <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, padding: '0.4rem 0.9rem', background: 'rgba(59,130,246,0.1)', borderRadius: 8 }}>Upcoming</span>
                                 ) : (
                                     <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem', textDecoration: 'none', background: 'linear-gradient(135deg,#ef4444,#dc2626)' }}>
                                         🔴 Join
