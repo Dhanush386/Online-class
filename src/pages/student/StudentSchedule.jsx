@@ -164,17 +164,26 @@ export default function StudentSchedule() {
                                             {/* Status + Join */}
                                             <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center', flexShrink: 0 }}>
                                                 {live && <span className="badge badge-danger">🔴 LIVE</span>}
-                                                {s.video_url && (
-                                                    <a
-                                                        href={s.video_url}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className={live ? 'btn-primary' : 'btn-secondary'}
-                                                        style={{ textDecoration: 'none', padding: '0.45rem 1rem', fontSize: '0.8rem', background: live ? 'linear-gradient(135deg,#ef4444,#dc2626)' : undefined }}
-                                                    >
-                                                        <ExternalLink size={13} /> {live ? 'Join Now' : 'Join'}
-                                                    </a>
-                                                )}
+                                                {(() => {
+                                                    const sTime = new Date(s.scheduled_time)
+                                                    const dMs = (s.duration_minutes || 60) * 60000
+                                                    const isEnded = new Date() >= new Date(sTime.getTime() + dMs)
+
+                                                    if (isEnded) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Ended</span>
+                                                    if (!s.video_url) return null
+
+                                                    return (
+                                                        <a
+                                                            href={s.video_url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className={live ? 'btn-primary' : 'btn-secondary'}
+                                                            style={{ textDecoration: 'none', padding: '0.45rem 1rem', fontSize: '0.8rem', background: live ? 'linear-gradient(135deg,#ef4444,#dc2626)' : undefined }}
+                                                        >
+                                                            <ExternalLink size={13} /> {live ? 'Join Now' : 'Join'}
+                                                        </a>
+                                                    )
+                                                })()}
                                             </div>
                                         </div>
                                     )

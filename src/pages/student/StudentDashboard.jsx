@@ -10,6 +10,7 @@ import { subscribeToPush, checkPushSubscription } from '../../utils/pushService'
 export default function StudentDashboard() {
     const { profile, stats } = useAuth()
     const [data, setData] = useState({ courses: 0, completion: 0, timeSpent: 0, topics: 0 })
+    const [upcomingSessions, setUpcomingSessions] = useState([])
     const [isCheckingSub, setIsCheckingSub] = useState(true)
     const [isSubscribed, setIsSubscribed] = useState(false)
 
@@ -64,10 +65,23 @@ export default function StudentDashboard() {
 
         const enrolledCourseIds = Array.from(uniqueCourseIds)
 
-        const { data: progress } = await supabase
-            .from('progress')
-            .select('completion_percentage, time_spent_minutes')
-            .eq('student_id', profile.id)
+        const [
+            { data: progress },
+            { data: sessions },
+            { data: memberships },
+            { data: locksDay }
+        ] = await Promise.all([
+            supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id),
+            enrolledCourseIds.length > 0
+                ? supabase.from('videos').select('*, courses(title)')
+                    .in('course_id', enrolledCourseIds)
+                    .gte('scheduled_time', new Date(Date.now() - 3600000 * 4).toISOString()) // Show sessions from last 4 hours
+                    .order('scheduled_time', { ascending: true })
+                    .limit(3)
+                : Promise.resolve({ data: [] }),
+            supabase.from('group_members').select('group_id').eq('student_id', profile.id),
+            supabase.from('day_access').select('*')
+        ])
 
         // Removed live sessions filtering
 
@@ -82,6 +96,7 @@ export default function StudentDashboard() {
             timeSpent: totalTime,
             topics: enrollments?.length ? enrollments.length * 5 : 0,
         })
+        setUpcomingSessions(filteredSessions)
         // setLoading(false) // setLoading is not defined in the provided snippet
     }
 
@@ -123,6 +138,71 @@ export default function StudentDashboard() {
             </div>
 
             <div className="dashboard-grid" style={{ alignItems: 'stretch', gridTemplateColumns: window.innerWidth <= 1024 ? '1fr' : '1fr 1fr' }}>
+
+                {/* Upcoming Sessions */}
+                <div className="glass-card" style={{ padding: '1.5rem', gridColumn: window.innerWidth > 1024 ? '1 / -1' : 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Zap size={16} color="#f59e0b" /> Upcoming Live Sessions
+                        </h3>
+                        <Link to="/student/schedule" style={{ fontSize: '0.78rem', color: 'var(--accent-light)', textDecoration: 'none' }}>View all →</Link>
+                    </div>
+                    {!isCheckingSub && !isSubscribed && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                            <button
+                                onClick={handleEnableNotifications}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                    padding: '0.5rem 0.8rem', borderRadius: 10, background: '#f0fdf4',
+                                    border: '1px solid #10b981', color: '#166534', fontSize: '0.8rem',
+                                    fontWeight: 600, cursor: 'pointer'
+                                }}
+                            >
+                                <Globe size={14} />
+                                Enable Notifications
+                            </button>
+                        </div>
+                    )}
+                    {upcomingSessions.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)' }}>
+                            <Calendar size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.3, display: 'block' }} />
+                            <p style={{ fontSize: '0.85rem' }}>No upcoming sessions</p>
+                        </div>
+                    ) : upcomingSessions.map(s => {
+                        const schedTime = new Date(s.scheduled_time)
+                        const durationMs = (s.duration_minutes || 60) * 60000
+                        const endTime = new Date(schedTime.getTime() + durationMs)
+                        const isNow = new Date() >= schedTime && new Date() < endTime
+                        const isPast = new Date() >= endTime
+
+                        return (
+                            <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: 12, border: `1px solid ${isNow ? 'rgba(239,68,68,0.2)' : '#e2e8f0'}`, marginBottom: '0.75rem' }}>
+                                <div style={{ width: 40, height: 40, background: isNow ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <Video size={18} color={isNow ? '#f87171' : '#818cf8'} />
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                                        {new Date(s.scheduled_time).toLocaleString()} · {s.duration_minutes || '?'} min
+                                    </div>
+                                </div>
+                                {!isPast ? (
+                                    isNow ? (
+                                        <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem', textDecoration: 'none', background: 'linear-gradient(135deg,#ef4444,#dc2626)' }}>
+                                            🔴 Join
+                                        </a>
+                                    ) : (
+                                        <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem', textDecoration: 'none' }}>
+                                            <ExternalLink size={13} /> Join
+                                        </a>
+                                    )
+                                ) : (
+                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 0.9rem' }}>Ended</span>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
 
 
                 {/* Circular Progress Card */}
