@@ -389,9 +389,17 @@ export default function CourseDetail() {
                                                                             )}
                                                                             {recorded ? (
                                                                                 <button onClick={() => { setActiveVideo(s); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Watch</button>
-                                                                            ) : s.video_url && (
-                                                                                <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>Join</a>
-                                                                            )}
+                                                                            ) : s.video_url && (() => {
+                                                                                const sTime = new Date(s.scheduled_time)
+                                                                                const dMs = (s.duration_minutes || 60) * 60000
+                                                                                const isPast = new Date() >= new Date(sTime.getTime() + dMs)
+                                                                                
+                                                                                if (isPast) return <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, padding: '0.4rem 1rem' }}>Ended</span>
+                                                                                
+                                                                                return (
+                                                                                    <a href={s.video_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>Join</a>
+                                                                                )
+                                                                            })()}
                                                                         </div>
                                                                     </div>
                                                                 )
