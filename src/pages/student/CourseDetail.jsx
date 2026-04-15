@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List } from 'lucide-react'
+import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List, Trash2, Save, FileEdit } from 'lucide-react'
 import ReactPlayer from 'react-player'
 import ProtectedViewer from '../../components/shared/ProtectedViewer'
 
@@ -32,6 +32,10 @@ export default function CourseDetail() {
     const [loading, setLoading] = useState(true)
     const [activeVideo, setActiveVideo] = useState(null)
     const [activeResource, setActiveResource] = useState(null)
+    const [notes, setNotes] = useState([])
+    const [isAddingNote, setIsAddingNote] = useState(false)
+    const [activeNote, setActiveNote] = useState(null) // For editing
+    const [savingNote, setSavingNote] = useState(false)
 
     useEffect(() => {
         async function load() {
@@ -47,7 +51,8 @@ export default function CourseDetail() {
                 { data: dayAccessData },
                 { data: locks },
                 { data: resData },
-                { data: vpData }
+                { data: vpData },
+                { data: initialNotes }
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
                 supabase.from('videos').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
@@ -59,7 +64,8 @@ export default function CourseDetail() {
                 supabase.from('day_access').select('*').eq('course_id', courseId),
                 supabase.from('resource_access').select('*').eq('is_locked', true),
                 supabase.from('course_resources').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
-                supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId)
+                supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
+                supabase.from('student_notes').select('*').eq('student_id', profile.id).eq('course_id', courseId).order('created_at', { ascending: false })
             ])
 
             // No need for setMaxDay state if we just use it to build the day list, but let's see
@@ -90,6 +96,7 @@ export default function CourseDetail() {
                     subMap[s.assessment_id].push(s)
                 })
             setSubmissions(subMap)
+            setNotes(initialNotes || [])
             setLoading(false)
         }
         load()
@@ -148,20 +155,76 @@ export default function CourseDetail() {
     }
 
     async function markComplete(sessionId) {
-        // Add to video_progress
+        // ... (existing code)
         const { error } = await supabase.from('video_progress').insert({
             student_id: profile.id,
             course_id: courseId,
             video_id: sessionId
         })
 
-        if (!error || error.code === '23505') { // Ignore unique violation
-            // Add to local state so UI updates instantly
+        if (!error || error.code === '23505') {
             setProgress(prev => ({
                 ...(prev || {}),
                 video_progress: [...(prev?.video_progress || []), { video_id: sessionId }]
             }))
             updateOverallProgress()
+        }
+    }
+
+    async function handleSaveNote(noteData) {
+        if (!profile?.id || !courseId) return
+        try {
+            setSavingNote(true)
+            const payload = {
+                student_id: profile.id,
+                course_id: courseId,
+                title: noteData.title || 'Untitled Note',
+                content: noteData.content || ''
+            }
+
+            if (noteData.id) {
+                const { data: updated, error } = await supabase
+                    .from('student_notes')
+                    .update(payload)
+                    .eq('id', noteData.id)
+                    .select()
+                    .single()
+                if (error) throw error
+                setNotes(prev => prev.map(n => n.id === updated.id ? updated : n))
+            } else {
+                const { data: created, error } = await supabase
+                    .from('student_notes')
+                    .insert(payload)
+                    .select()
+                    .single()
+                if (error) throw error
+                setNotes(prev => [created, ...prev])
+            }
+            setIsAddingNote(false)
+            setActiveNote(null)
+        } catch (err) {
+            console.error('Error saving note:', err)
+            alert('Failed to save note. Please try again.')
+        } finally {
+            setSavingNote(false)
+        }
+    }
+
+    async function handleDeleteNote(noteId) {
+        if (!window.confirm('Are you sure you want to delete this note?')) return
+        try {
+            const { error } = await supabase
+                .from('student_notes')
+                .delete()
+                .eq('id', noteId)
+            if (error) throw error
+            setNotes(prev => prev.filter(n => n.id !== noteId))
+            if (activeNote?.id === noteId) {
+                setActiveNote(null)
+                setIsAddingNote(false)
+            }
+        } catch (err) {
+            console.error('Error deleting note:', err)
         }
     }
 
@@ -528,15 +591,104 @@ export default function CourseDetail() {
                     )
                 })}
             </div>
-            {/* Protected Document Viewer */}
-            {activeResource && (
-                <ProtectedViewer
-                    url={activeResource.file_url}
-                    type={activeResource.resource_type}
-                    title={activeResource.title}
-                    onClose={() => setActiveResource(null)}
-                />
-            )}
+            <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '2px dashed var(--card-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <FileText size={22} /> Notes
+                    </h2>
+                    {!isAddingNote && !activeNote && (
+                        <button 
+                            onClick={() => { setIsAddingNote(true); setActiveNote({ title: '', content: '' }) }} 
+                            className="btn-primary" 
+                            style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem', fontWeight: 700, background: '#3b82f6', border: 'none', borderRadius: 8, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(59,130,246,0.2)' }}
+                        >
+                            <Plus size={18} /> NEW NOTE
+                        </button>
+                    )}
+                </div>
+
+                {/* Note Editor */}
+                {(isAddingNote || activeNote) && (
+                    <div className="glass-card animate-slide-up" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0', background: 'white', marginBottom: '2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', color: '#64748b' }}>
+                                <span style={{ fontWeight: 800 }}>B</span>
+                                <span style={{ fontStyle: 'italic' }}>I</span>
+                                <span style={{ textDecoration: 'underline' }}>U</span>
+                                <span style={{ textDecoration: 'line-through' }}>S</span>
+                                <List size={16} />
+                                <Edit2 size={16} />
+                                <ExternalLink size={16} />
+                            </div>
+                        </div>
+                        <div style={{ padding: '1.5rem' }}>
+                            <input
+                                value={activeNote?.title || ''}
+                                onChange={(e) => setActiveNote(p => ({ ...p, title: e.target.value }))}
+                                placeholder="Title"
+                                style={{ width: '100%', border: 'none', outline: 'none', fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}
+                            />
+                            <textarea
+                                value={activeNote?.content || ''}
+                                onChange={(e) => setActiveNote(p => ({ ...p, content: e.target.value }))}
+                                placeholder="Take a Note"
+                                style={{ width: '100%', border: 'none', outline: 'none', fontSize: '1rem', color: '#475569', minHeight: '150px', resize: 'vertical' }}
+                            />
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                    <Clock size={14} /> 
+                                    <span>{savingNote ? 'Saving...' : 'Not Saved'}</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    <button 
+                                        onClick={() => { setIsAddingNote(false); setActiveNote(null) }} 
+                                        style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        onClick={() => handleSaveNote(activeNote)} 
+                                        disabled={savingNote}
+                                        className="btn-primary" 
+                                        style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', gap: '0.4rem', background: '#3b82f6' }}
+                                    >
+                                        <Save size={16} /> {activeNote?.id ? 'Update' : 'Save'} Note
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Notes List */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                    {notes.length === 0 && !isAddingNote && !activeNote ? (
+                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', background: 'rgba(99,102,241,0.03)', borderRadius: 20, border: '1px dashed var(--card-border)' }}>
+                            <FileText size={48} color="#94a3b8" style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Notes Yet</h3>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Start your first note to keep track of important points during your learning!</p>
+                        </div>
+                    ) : notes.map(note => (
+                        <div key={note.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid var(--card-border)', background: 'white' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', flex: 1 }}>{note.title}</h4>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button onClick={() => setActiveNote(note)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }} title="Edit">
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button onClick={() => handleDeleteNote(note.id)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }} title="Delete">
+                                        <Trash2 size={16} color="#ef4444" />
+                                    </button>
+                                </div>
+                            </div>
+                            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
+                            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+                                <Calendar size={12} /> {new Date(note.created_at).toLocaleDateString()}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     )
 }
