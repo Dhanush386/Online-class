@@ -1,10 +1,11 @@
 -- Create Student Notes table
 CREATE TABLE IF NOT EXISTS public.student_notes (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    student_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
     course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE NOT NULL,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
+    day_number INTEGER,
     created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );

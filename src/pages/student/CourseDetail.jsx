@@ -179,7 +179,8 @@ export default function CourseDetail() {
                 student_id: profile.id,
                 course_id: courseId,
                 title: noteData.title || 'Untitled Note',
-                content: noteData.content || ''
+                content: noteData.content || '',
+                day_number: noteData.day_number ?? null
             }
 
             if (noteData.id) {
@@ -598,7 +599,7 @@ export default function CourseDetail() {
                     </h2>
                     {!isAddingNote && !activeNote && (
                         <button 
-                            onClick={() => { setIsAddingNote(true); setActiveNote({ title: '', content: '' }) }} 
+                            onClick={() => { setIsAddingNote(true); setActiveNote({ title: '', content: '', day_number: selectedDay }) }} 
                             className="btn-primary" 
                             style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem', fontWeight: 700, background: '#3b82f6', border: 'none', borderRadius: 8, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(59,130,246,0.2)' }}
                         >
@@ -626,8 +627,21 @@ export default function CourseDetail() {
                                 value={activeNote?.title || ''}
                                 onChange={(e) => setActiveNote(p => ({ ...p, title: e.target.value }))}
                                 placeholder="Title"
-                                style={{ width: '100%', border: 'none', outline: 'none', fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}
+                                style={{ width: '100%', border: 'none', outline: 'none', fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}
                             />
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Assign to:</span>
+                                <select 
+                                    value={activeNote?.day_number || ''} 
+                                    onChange={(e) => setActiveNote(p => ({ ...p, day_number: e.target.value ? parseInt(e.target.value) : null }))}
+                                    style={{ padding: '0.2rem 0.5rem', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: '0.8rem' }}
+                                >
+                                    <option value="">General (No Day)</option>
+                                    {Array.from({ length: daysCount }, (_, i) => i + 1).map(d => (
+                                        <option key={d} value={d}>Day {d}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <textarea
                                 value={activeNote?.content || ''}
                                 onChange={(e) => setActiveNote(p => ({ ...p, content: e.target.value }))}
@@ -660,33 +674,47 @@ export default function CourseDetail() {
                     </div>
                 )}
 
-                {/* Notes List */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {/* Notes List Grouped by Day */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                     {notes.length === 0 && !isAddingNote && !activeNote ? (
-                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', background: 'rgba(99,102,241,0.03)', borderRadius: 20, border: '1px dashed var(--card-border)' }}>
+                        <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'rgba(99,102,241,0.03)', borderRadius: 20, border: '1px dashed var(--card-border)' }}>
                             <FileText size={48} color="#94a3b8" style={{ marginBottom: '1rem', opacity: 0.3 }} />
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Notes Yet</h3>
                             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Start your first note to keep track of important points during your learning!</p>
                         </div>
-                    ) : notes.map(note => (
-                        <div key={note.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid var(--card-border)', background: 'white' }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', flex: 1 }}>{note.title}</h4>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <button onClick={() => setActiveNote(note)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }} title="Edit">
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button onClick={() => handleDeleteNote(note.id)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }} title="Delete">
-                                        <Trash2 size={16} color="#ef4444" />
-                                    </button>
+                    ) : (
+                        [...new Set(notes.map(n => n.day_number))].sort((a,b) => (a||0) - (b||0)).map(day => (
+                            <div key={day || 'general'}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                                    <div style={{ padding: '0.3rem 0.8rem', background: day ? 'rgba(59,130,246,0.1)' : 'rgba(148,163,184,0.1)', color: day ? '#3b82f6' : '#64748b', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                        {day ? `Day ${day} Notes` : 'General Notes'}
+                                    </div>
+                                    <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, var(--card-border), transparent)' }} />
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    {notes.filter(n => n.day_number === day).map(note => (
+                                        <div key={note.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid var(--card-border)', background: 'white' }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                                                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', flex: 1 }}>{note.title}</h4>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button onClick={() => setActiveNote(note)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }} title="Edit">
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteNote(note.id)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }} title="Delete">
+                                                        <Trash2 size={16} color="#ef4444" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
+                                            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+                                                <Calendar size={12} /> {new Date(note.created_at).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
-                            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94a3b8', fontSize: '0.75rem' }}>
-                                <Calendar size={12} /> {new Date(note.created_at).toLocaleDateString()}
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
         </div>
