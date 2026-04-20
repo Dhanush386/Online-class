@@ -127,6 +127,38 @@ export default function StudentDashboard() {
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Keep up the great work on your learning journey!</p>
             </div>
 
+            {/* Notification Subscription Banner */}
+            {!isCheckingSub && !isSubscribed && (
+                <div className="glass-card animate-slide-up" style={{ 
+                    padding: '1.25rem 1.5rem', 
+                    marginBottom: '2rem', 
+                    background: 'linear-gradient(90deg, rgba(99,102,241,0.05), rgba(168,85,247,0.05))', 
+                    border: '1px solid rgba(99,102,241,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1.5rem',
+                    flexWrap: 'wrap'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+                        <div style={{ padding: '0.75rem', background: 'white', borderRadius: 12, boxShadow: '0 4px 12px rgba(99,102,241,0.1)' }}>
+                            <Bell size={24} color="#6366f1" />
+                        </div>
+                        <div>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Stay Updated!</h3>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Enable push notifications to receive real-time alerts for live sessions and class announcements.</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleEnableNotifications}
+                        className="btn-primary"
+                        style={{ padding: '0.75rem 1.5rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                    >
+                        <Globe size={18} /> Enable Notifications
+                    </button>
+                </div>
+            )}
+
             <div className="dashboard-grid" style={{ alignItems: 'stretch', gridTemplateColumns: window.innerWidth <= 1024 ? '1fr' : '1fr 1fr' }}>
 
 
