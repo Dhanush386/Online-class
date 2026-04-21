@@ -10,7 +10,6 @@ export function AuthProvider({ children }) {
     const [stats, setStats] = useState({ xp: 0, solved: 0, streak: 0, completedCourses: [] })
     const [loading, setLoading] = useState(true)
     const [isExpired, setIsExpired] = useState(false)
-    const [isFaceVerifiedToday, setIsFaceVerifiedToday] = useState(false)
     const [browserSessionId] = useState(() => {
         let id = localStorage.getItem('online_class_session_uuid')
         if (!id) {
@@ -116,7 +115,7 @@ export function AuthProvider({ children }) {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('id, name, email, role, status, current_session_id, access_expires_at, face_descriptor, last_face_verified_at, daily_face_attempts')
+                .select('id, name, email, role, status, current_session_id, access_expires_at')
                 .eq('id', userId)
                 .maybeSingle()
 
@@ -146,18 +145,7 @@ export function AuthProvider({ children }) {
 
             setProfile(finalProfile)
 
-            // Check Face Verification Status
-            if (finalProfile) {
-                const lastVerified = finalProfile.last_face_verified_at
-                const today = new Date().toISOString().split('T')[0]
-                const wasVerifiedToday = lastVerified && lastVerified.split('T')[0] === today
-                setIsFaceVerifiedToday(!!wasVerifiedToday)
-
-                // Reset attempts if it's a new day
-                if (!wasVerifiedToday) {
-                    await supabase.rpc('check_reset_face_attempts', { user_id_param: userId })
-                }
-            }
+            setProfile(finalProfile)
 
             // Determine if profile is complete
             if (finalProfile.role === 'student') {
@@ -368,8 +356,6 @@ export function AuthProvider({ children }) {
         refreshProfileStatus,
         stats,
         isExpired,
-        isFaceVerifiedToday,
-        setIsFaceVerifiedToday,
         refreshStats: () => profile?.id && loadAchievementStats(profile.id)
     }
 

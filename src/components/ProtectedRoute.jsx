@@ -1,9 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import FaceVerificationModal from './shared/FaceVerificationModal'
-
 export function ProtectedRoute({ children, requiredRole }) {
-    const { user, profile, loading, signOut, isProfileComplete, isExpired, isFaceVerifiedToday } = useAuth()
+    const { user, profile, loading, signOut, isProfileComplete, isExpired } = useAuth()
     const location = useLocation()
 
     if (loading) {
@@ -99,9 +97,6 @@ export function ProtectedRoute({ children, requiredRole }) {
         }
     }
 
-    // Global Face Verification Check (for everyone: Student, Organizer, Admin)
-    if (user && profile && !isFaceVerifiedToday) {
-        return <FaceVerificationModal />
     }
 
     // Default: allow access
