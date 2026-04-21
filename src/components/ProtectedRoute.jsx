@@ -97,7 +97,7 @@ export function ProtectedRoute({ children, requiredRole }) {
         }
     }
 
-    }
+
 
     // Default: allow access
     return children
