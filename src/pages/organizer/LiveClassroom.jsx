@@ -122,7 +122,7 @@ export default function LiveClassroom() {
                 enableWelcomePage: false,
                 enableNoAudioDetection: true,
                 enableNoVideoDetection: true,
-                p2p: { enabled: true } // Faster audio/video for 1-on-1 or small groups
+                p2p: { enabled: false } // Disabled: Prevents audio drops when transitioning from 1-on-1 to group mode (when late students join)
             }
         }
         jitsiApiRef.current = new window.JitsiMeetExternalAPI(domain, options)
