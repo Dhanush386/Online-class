@@ -61,6 +61,28 @@ export default function CodeWorkspace() {
     const [showUnlockModal, setShowUnlockModal] = useState(false)
 
     useEffect(() => {
+        if (!challengeId) return;
+        const savedEndTime = localStorage.getItem(`challenge_endTime_${challengeId}`);
+        if (savedEndTime) {
+            const remaining = Math.floor((parseInt(savedEndTime) - Date.now()) / 1000);
+            if (remaining > 0) {
+                setTimeLeft(remaining);
+                setIsStarted(true);
+            } else {
+                setTimeLeft(0);
+                setIsStarted(true);
+            }
+        }
+    }, [challengeId]);
+
+    const handleStartChallenge = () => {
+        setIsStarted(true);
+        if (!localStorage.getItem(`challenge_endTime_${challengeId}`)) {
+            localStorage.setItem(`challenge_endTime_${challengeId}`, Date.now() + 30 * 60 * 1000);
+        }
+    };
+
+    useEffect(() => {
         if (!isStarted || canBypass || hasUnlockedAnswer) return
         const interval = setInterval(() => {
             setTimeLeft(prev => {
@@ -355,7 +377,7 @@ sys.stdin = StringIO(test_input)
                     <div style={{ background: '#ffffff', padding: '1.5rem', borderRadius: 12, textAlign: 'left', marginBottom: '2rem' }}>
                         <p style={{ color: '#334155', marginBottom: '1rem' }}>Please review the instructions. You have <strong>{MAX_ATTEMPTS - attemptCount} attempts</strong> remaining.</p>
                     </div>
-                    <button onClick={() => setIsStarted(true)} className="btn-primary" style={{ width: '100%', height: '3.5rem' }}>Start Challenge</button>
+                    <button onClick={handleStartChallenge} className="btn-primary" style={{ width: '100%', height: '3.5rem' }}>Start Challenge</button>
                     <Link to="/student/coding" style={{ display: 'block', marginTop: '1.5rem', color: '#64748b' }}>Go Back</Link>
                 </div>
             </div>
