@@ -34,7 +34,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
             setLoading(true)
             const { data, error } = await supabase
                 .from('coding_discussions')
-                .select('*, users:student_id(full_name)')
+                .select('*, users:student_id(name)')
                 .eq('challenge_id', challengeId)
                 .order('created_at', { ascending: false })
             
@@ -52,7 +52,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
         try {
             const { data, error } = await supabase
                 .from('coding_discussion_replies')
-                .select('*, users:user_id(full_name)')
+                .select('*, users:user_id(name)')
                 .eq('discussion_id', discussionId)
                 .order('created_at', { ascending: true })
             
@@ -149,7 +149,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                     <div style={{ marginBottom: '2rem' }}>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>{activeThread.title}</h2>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem' }}>
-                            <span>Posted by {activeThread.users?.full_name || 'Student'}</span>
+                            <span>Posted by {activeThread.users?.name || 'Student'}</span>
                             <span>•</span>
                             <Clock size={12} /> {new Date(activeThread.created_at).toLocaleDateString()}
                         </div>
@@ -172,7 +172,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                             replies.map(reply => (
                                 <div key={reply.id} style={{ padding: '1rem', borderRadius: 8, background: reply.is_organizer ? '#1e3a8a20' : '#0f172a', border: `1px solid ${reply.is_organizer ? '#3b82f650' : '#334155'}` }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: reply.is_organizer ? '#60a5fa' : '#94a3b8' }}>{reply.users?.full_name || 'User'}</span>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: reply.is_organizer ? '#60a5fa' : '#94a3b8' }}>{reply.users?.name || 'User'}</span>
                                         {reply.is_organizer && <span style={{ padding: '2px 6px', background: '#3b82f6', color: '#fff', fontSize: '0.6rem', borderRadius: 4, fontWeight: 800 }}>MENTOR</span>}
                                         <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#64748b' }}>{new Date(reply.created_at).toLocaleString()}</span>
                                     </div>
@@ -218,7 +218,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                             </div>
                             <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>{d.content}</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: '#64748b' }}>
-                                <span>{d.users?.full_name || 'Student'}</span>
+                                <span>{d.users?.name || 'Student'}</span>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><ThumbsUp size={12} /> {d.upvotes}</span>
                                 {d.code_snapshot && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CodeIcon size={12} /> Code attached</span>}
                                 <span style={{ marginLeft: 'auto' }}>{new Date(d.created_at).toLocaleDateString()}</span>

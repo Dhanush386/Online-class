@@ -27,7 +27,7 @@ export default function OrganizerCodingDiscussions() {
             setLoading(true)
             const { data, error } = await supabase
                 .from('coding_discussions')
-                .select('*, users:student_id(full_name), coding_challenges:challenge_id(title)')
+                .select('*, users:student_id(name), coding_challenges:challenge_id(title)')
                 .order('created_at', { ascending: false })
             
             if (error) throw error
@@ -44,7 +44,7 @@ export default function OrganizerCodingDiscussions() {
         try {
             const { data, error } = await supabase
                 .from('coding_discussion_replies')
-                .select('*, users:user_id(full_name, role)')
+                .select('*, users:user_id(name, role)')
                 .eq('discussion_id', discussionId)
                 .order('created_at', { ascending: true })
             
@@ -107,7 +107,7 @@ export default function OrganizerCodingDiscussions() {
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <span>Challenge: <strong style={{ color: '#475569' }}>{activeThread.coding_challenges?.title}</strong></span>
                                     <span>•</span>
-                                    <span>Student: <strong style={{ color: '#475569' }}>{activeThread.users?.full_name}</strong></span>
+                                    <span>Student: <strong style={{ color: '#475569' }}>{activeThread.users?.name}</strong></span>
                                     <span>•</span>
                                     <span><Clock size={12} style={{ display: 'inline', verticalAlign: 'text-bottom' }} /> {new Date(activeThread.created_at).toLocaleString()}</span>
                                 </div>
@@ -138,7 +138,7 @@ export default function OrganizerCodingDiscussions() {
                             replies.map(reply => (
                                 <div key={reply.id} style={{ padding: '1.25rem', borderRadius: 12, background: reply.is_organizer ? '#eff6ff' : '#fff', border: `1px solid ${reply.is_organizer ? '#bfdbfe' : '#e2e8f0'}` }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: reply.is_organizer ? '#1d4ed8' : '#334155' }}>{reply.users?.full_name || 'User'}</span>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: reply.is_organizer ? '#1d4ed8' : '#334155' }}>{reply.users?.name || 'User'}</span>
                                         {reply.is_organizer && <span style={{ padding: '2px 8px', background: '#3b82f6', color: '#fff', fontSize: '0.65rem', borderRadius: 6, fontWeight: 800 }}>ORGANIZER</span>}
                                         <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(reply.created_at).toLocaleString()}</span>
                                     </div>
@@ -163,7 +163,7 @@ export default function OrganizerCodingDiscussions() {
     const filtered = discussions.filter(d => 
         d.title.toLowerCase().includes(search.toLowerCase()) || 
         d.coding_challenges?.title?.toLowerCase().includes(search.toLowerCase()) ||
-        d.users?.full_name?.toLowerCase().includes(search.toLowerCase())
+        d.users?.name?.toLowerCase().includes(search.toLowerCase())
     )
 
     return (
@@ -207,7 +207,7 @@ export default function OrganizerCodingDiscussions() {
                             <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <span style={{ fontWeight: 600, color: '#475569' }}>{d.coding_challenges?.title}</span>
                                 <span>•</span>
-                                <span>{d.users?.full_name}</span>
+                                <span>{d.users?.name}</span>
                             </div>
                             <p style={{ fontSize: '0.9rem', color: '#475569', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>{d.content}</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8rem', color: '#94a3b8' }}>
