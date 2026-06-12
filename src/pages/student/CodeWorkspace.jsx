@@ -316,10 +316,11 @@ export default function CodeWorkspace() {
 
                                 {/* Testcases Section */}
                                 {(() => {
-                                    const cases = !result ? challenge.test_cases : result.testResults
+                                    const cases = result?.testResults || challenge.test_cases
                                     const total = cases?.length || 0
-                                    const passedCount = result && cases ? cases.filter(t => t.passed).length : 0
-                                    const failedCount = result ? total - passedCount : 0
+                                    const passedCount = result?.testResults ? cases.filter(t => t.passed).length : 0
+                                    const failedCount = result?.testResults ? total - passedCount : 0
+                                    const hasResults = !!result?.testResults
                                     return (
                                         <div style={{ marginTop: '2.5rem', borderTop: '1px solid #334155', paddingTop: '1.5rem' }}>
                                             {/* Collapsible Header */}
@@ -338,20 +339,20 @@ export default function CodeWorkspace() {
                                                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #05966930', background: '#05966910' }}>
                                                     <CheckCircle2 size={14} color="#10b981" />
                                                     <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>Passed</span>
-                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#10b981' }}>{result ? passedCount : '-'}</span>
+                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#10b981' }}>{hasResults ? passedCount : '-'}</span>
                                                 </div>
                                                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #ef444430', background: '#ef444410' }}>
                                                     <XCircle size={14} color="#ef4444" />
                                                     <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Failed</span>
-                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#ef4444' }}>{result ? failedCount : '-'}</span>
+                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#ef4444' }}>{hasResults ? failedCount : '-'}</span>
                                                 </div>
                                             </div>
 
                                             {/* Individual Test Case Cards */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                 {cases?.map((tc, idx) => {
-                                                    const tcData = !result ? tc : challenge.test_cases[idx]
-                                                    const passed = result ? tc.passed : null
+                                                    const tcData = challenge.test_cases[idx] || tc
+                                                    const passed = hasResults ? tc.passed : null
                                                     const description = tcData.description || tcData.expected_output || `Test Case ${idx + 1}`
                                                     return (
                                                         <div key={idx} style={{ padding: '1rem 1.25rem', borderRadius: 8, background: '#111827', borderLeft: `3px solid ${passed === true ? '#10b981' : passed === false ? '#ef4444' : '#334155'}`, transition: 'all 0.2s ease' }}>
@@ -359,7 +360,7 @@ export default function CodeWorkspace() {
                                                                 {passed === true ? <CheckCircle2 size={18} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} /> : passed === false ? <XCircle size={18} color="#ef4444" style={{ marginTop: 2, flexShrink: 0 }} /> : <Info size={18} color="#475569" style={{ marginTop: 2, flexShrink: 0 }} />}
                                                                 <span style={{ fontSize: '0.85rem', color: passed === true ? '#cbd5e1' : passed === false ? '#fca5a5' : '#94a3b8', lineHeight: 1.5, fontWeight: 500 }}>{description}</span>
                                                             </div>
-                                                            {result && tc.actual && (
+                                                            {hasResults && tc.actual && (
                                                                 <pre style={{ background: '#0f172a', padding: '0.5rem 0.75rem', borderRadius: 6, marginTop: 10, fontSize: '0.65rem', color: passed ? '#10b981' : '#f87171', overflowX: 'auto', border: '1px solid #1f2937', marginLeft: '2rem' }}>{tc.actual}</pre>
                                                             )}
                                                         </div>
