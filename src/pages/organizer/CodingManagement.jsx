@@ -38,7 +38,7 @@ export default function CodingManagement() {
     const [formData, setFormData] = useState({
         title: '', description: '', problem_statement: '',
         course_id: '', language: 'python', difficulty: 'easy',
-        starter_code: '', constraints: '', input_format: '', output_format: '',
+        starter_code: '', solution_code: '', constraints: '', input_format: '', output_format: '',
         xp_reward: 15, open_time: '', close_time: '',
         target_visual_url: '', allowed_assets: '',
         day_number: 1,
@@ -172,6 +172,7 @@ export default function CodingManagement() {
                 "language": "python",
                 "difficulty": "easy",
                 "starter_code": "def solution():\\n  pass",
+                "solution_code": "def solution():\\n  return True",
                 "constraints": "1 <= N <= 10^5",
                 "test_cases": [
                     { "input": "...", "expected_output": "..." }
@@ -219,6 +220,7 @@ export default function CodingManagement() {
                 language: c.language || 'python',
                 difficulty: c.difficulty || 'easy',
                 starter_code: c.starter_code || '',
+                solution_code: c.solution_code || '',
                 constraints: c.constraints || '',
                 test_cases: Array.isArray(c.test_cases) ? c.test_cases : [],
                 xp_reward: c.difficulty === 'hard' ? 30 : c.difficulty === 'medium' ? 20 : 15,
@@ -321,9 +323,8 @@ export default function CodingManagement() {
 
         setFormData({
             title: c.title, description: c.description || '',
-            problem_statement: c.problem_statement, course_id: c.course_id,
-            language: c.language, difficulty: c.difficulty,
-            starter_code: initialStarterCode, constraints: c.constraints || '',
+            problem_statement: c.problem_statement, course_id: c.course_id || '', language: c.language || 'python', difficulty: c.difficulty || 'easy',
+            starter_code: initialStarterCode, solution_code: c.solution_code || '', constraints: c.constraints || '',
             input_format: c.input_format || '', output_format: c.output_format || '',
             xp_reward: c.xp_reward || 15,
             open_time: toLocalInput(c.open_time),
@@ -339,8 +340,8 @@ export default function CodingManagement() {
     function resetForm() {
         setFormData({
             title: '', description: '', problem_statement: '',
-            course_id: '', language: 'python', difficulty: 'easy',
-            starter_code: '', constraints: '', input_format: '', output_format: '',
+            course_id: formData.course_id, language: 'python', difficulty: 'easy',
+            starter_code: '', solution_code: '', constraints: '', input_format: '', output_format: '',
             xp_reward: 15, open_time: '', close_time: '',
             target_visual_url: '', allowed_assets: '',
             day_number: 1,
@@ -702,6 +703,13 @@ export default function CodingManagement() {
                                     <div>
                                         <label htmlFor="constraints" className="form-label">Constraints</label>
                                         <textarea id="constraints" name="constraints" className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>Solution Code (Optional)</label>
+                                    <div style={{ height: '180px', background: '#1e293b', borderRadius: 8, overflow: 'hidden' }}>
+                                        <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} placeholder="Correct answer..." />
                                     </div>
                                 </div>
 

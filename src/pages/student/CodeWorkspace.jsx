@@ -55,6 +55,34 @@ export default function CodeWorkspace() {
     const [isStarted, setIsStarted] = useState(false)
     const [violationCount, setViolationCount] = useState(0)
 
+    const [timeLeft, setTimeLeft] = useState(30 * 60)
+    const [hasRequestedHelp, setHasRequestedHelp] = useState(false)
+    const [hasUnlockedAnswer, setHasUnlockedAnswer] = useState(false)
+    const [showUnlockModal, setShowUnlockModal] = useState(false)
+
+    useEffect(() => {
+        if (!isStarted || canBypass || hasUnlockedAnswer) return
+        const interval = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(interval)
+                    if (hasRequestedHelp && !hasUnlockedAnswer) {
+                        setShowUnlockModal(true)
+                    }
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [isStarted, canBypass, hasUnlockedAnswer, hasRequestedHelp])
+
+    const formatTime = (secs) => {
+        const m = Math.floor(secs / 60).toString().padStart(2, '0')
+        const s = (secs % 60).toString().padStart(2, '0')
+        return `${m}:${s}`
+    }
+
     useEffect(() => {
         fetchChallenge()
     }, [challengeId])
@@ -304,6 +332,7 @@ sys.stdin = StringIO(test_input)
                     student_id: profile.id,
                     challenge_id: challengeId,
                     status: 'accepted',
+                    score: hasUnlockedAnswer ? 0 : (challenge.xp_reward || 15),
                     code: challenge.language === 'html' ? JSON.stringify({html: htmlCode, css: cssCode, js: jsCode}) : genericCode
                 })
             }
@@ -341,6 +370,11 @@ sys.stdin = StringIO(test_input)
                 </Link>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{challenge.title}</span>
+                    {isStarted && !canBypass && (
+                        <div style={{ padding: '4px 10px', background: '#334155', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: timeLeft <= 300 ? '#ef4444' : '#e2e8f0' }}>
+                            <Clock size={14} /> {formatTime(timeLeft)}
+                        </div>
+                    )}
                     <div style={{ padding: '2px 8px', background: '#10b981', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>VER 7.1</div>
                 </div>
             </header>
@@ -452,12 +486,36 @@ sys.stdin = StringIO(test_input)
                             </div>
                         ) : leftTab === 'discuss' ? (
                             <CodingDiscussions challengeId={challengeId} currentCode={challenge?.language === 'html' ? {html: htmlCode, css: cssCode, js: jsCode} : genericCode} />
-                        ) : (
-                            <div style={{ textAlign: 'center', color: '#64748b', marginTop: '4rem' }}>
-                                <Info size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-                                <p style={{ fontSize: '0.85rem' }}>No hints/help available during exams.</p>
+                        ) : leftTab === 'help' ? (
+                            <div style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                                {!hasRequestedHelp ? (
+                                    <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+                                        <HelpCircle size={40} style={{ margin: '0 auto 1rem', opacity: 0.5, color: '#64748b' }} />
+                                        <p style={{ marginBottom: '1.5rem', color: '#94a3b8' }}>Stuck on this problem? You can request help to see hints.</p>
+                                        <button onClick={() => setHasRequestedHelp(true)} className="btn-primary" style={{ padding: '0.5rem 1rem' }}>Get Help</button>
+                                    </div>
+                                ) : (
+                                    <div className="animate-fade-in">
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', color: '#fff' }}>Help & Hints</h3>
+                                        <p style={{ marginBottom: '1rem' }}>Review the problem constraints and testcases carefully. Often, missing edge cases is the reason for failure.</p>
+                                        
+                                        {hasUnlockedAnswer ? (
+                                            <div style={{ marginTop: '2rem', padding: '1rem', background: '#052e16', border: '1px solid #10b981', borderRadius: 8 }}>
+                                                <h4 style={{ color: '#10b981', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle2 size={16} /> Solution Unlocked</h4>
+                                                <pre style={{ background: '#022c22', padding: '1rem', borderRadius: 6, color: '#a7f3d0', overflowX: 'auto', fontSize: '0.8rem' }}>
+                                                    {challenge.solution_code || "No solution provided by organizer."}
+                                                </pre>
+                                                <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#6ee7b7' }}>You will not receive XP for this challenge.</p>
+                                            </div>
+                                        ) : (
+                                            <div style={{ marginTop: '2rem', padding: '1rem', background: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}>
+                                                <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>If you are still stuck when the timer expires, you will have the option to unlock the correct answer. Note that unlocking the answer forfeits XP for this challenge.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        ) : null}
                     </div>
                 </div>
 
@@ -558,6 +616,25 @@ sys.stdin = StringIO(test_input)
                         <button onClick={() => setResult(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><XCircle size={14} /></button>
                     </div>
                     <img src={result.testResults.find(t => t.actual_image).actual_image} style={{ width: '100%', borderRadius: 6, border: '1px solid #334155' }} />
+                </div>
+            )}
+
+            {/* Unlock Modal */}
+            {showUnlockModal && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: '#1e293b', padding: '2rem', borderRadius: 12, border: '1px solid #334155', maxWidth: 450, textAlign: 'center' }}>
+                        <AlertCircle size={48} color="#f59e0b" style={{ margin: '0 auto 1rem' }} />
+                        <h2 style={{ fontSize: '1.25rem', color: '#fff', marginBottom: '1rem' }}>Time's Up!</h2>
+                        <p style={{ color: '#cbd5e1', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.5 }}>
+                            The 30-minute timer has expired. Since you requested help, you can now unlock the correct answer. 
+                            <br/><br/>
+                            <strong style={{ color: '#f87171' }}>Warning:</strong> Unlocking the answer means you will not earn any XP for this challenge.
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <button onClick={() => setShowUnlockModal(false)} style={{ padding: '0.5rem 1.5rem', background: 'transparent', border: '1px solid #64748b', color: '#cbd5e1', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                            <button onClick={() => { setHasUnlockedAnswer(true); setShowUnlockModal(false); setLeftTab('help'); }} style={{ padding: '0.5rem 1.5rem', background: '#f59e0b', border: 'none', color: '#fff', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Unlock Answer</button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
