@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import CodeEditor from '../../components/CodeEditor'
-import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image, Upload } from 'lucide-react'
+import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image, Upload, Sparkles, Loader2 } from 'lucide-react'
 import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
 const LANGUAGES = [
@@ -44,6 +44,14 @@ export default function CodingManagement() {
     })
 
     const [groups, setGroups] = useState([])
+
+    // AI Generation states
+    const [showAIModal, setShowAIModal] = useState(false)
+    const [aiPrompt, setAiPrompt] = useState('')
+    const [isGenerating, setIsGenerating] = useState(false)
+    const [generatedChallenges, setGeneratedChallenges] = useState([])
+    const [aiError, setAiError] = useState('')
+    const [aiCourseId, setAiCourseId] = useState('')
 
     useEffect(() => {
         if (location.state?.courseId) {
@@ -136,6 +144,97 @@ export default function CodingManagement() {
             setResourceAccess(data || [])
         } catch (err) {
             console.error('Error toggling lock:', err)
+        }
+    }
+
+    async function generateChallengesWithAI() {
+        if (!aiPrompt.trim()) return;
+        if (!aiCourseId) {
+            setAiError("Please select a course for the generated challenges.");
+            return;
+        }
+        setIsGenerating(true);
+        setAiError('');
+        setGeneratedChallenges([]);
+
+        try {
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+            if (!apiKey) throw new Error("Gemini API key is not configured.");
+
+            const prompt = `You are an expert computer science educator. Create coding challenges based on the following topic or text: "${aiPrompt}". 
+            Output the response strictly as a JSON array of objects. Do not include any markdown formatting like \`\`\`json.
+            Each object must follow this exact structure:
+            {
+                "title": "Challenge Title",
+                "problem_statement": "Detailed markdown description of the problem",
+                "language": "python",
+                "difficulty": "easy",
+                "starter_code": "def solution():\\n  pass",
+                "constraints": "1 <= N <= 10^5",
+                "test_cases": [
+                    { "input": "...", "expected_output": "..." }
+                ]
+            }
+            Valid languages: html, python, python_ml, java, cpp, c, sql. Valid difficulties: easy, medium, hard.`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.7 }
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error?.message || 'Failed to generate challenges');
+
+            let responseText = data.candidates[0].content.parts[0].text;
+            
+            // Clean up possible markdown wrappers
+            responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            
+            const parsed = JSON.parse(responseText);
+            if (!Array.isArray(parsed)) throw new Error("AI did not return an array.");
+            
+            setGeneratedChallenges(parsed);
+        } catch (err) {
+            console.error(err);
+            setAiError(err.message || 'Error parsing AI response. Please try a clearer prompt.');
+        } finally {
+            setIsGenerating(false);
+        }
+    }
+
+    async function handleAddAllGenerated() {
+        if (generatedChallenges.length === 0) return;
+        setSaving(true);
+        try {
+            const payloads = generatedChallenges.map(c => ({
+                course_id: aiCourseId,
+                title: c.title || 'Untitled',
+                problem_statement: c.problem_statement || '',
+                language: c.language || 'python',
+                difficulty: c.difficulty || 'easy',
+                starter_code: c.starter_code || '',
+                constraints: c.constraints || '',
+                test_cases: Array.isArray(c.test_cases) ? c.test_cases : [],
+                xp_reward: c.difficulty === 'hard' ? 30 : c.difficulty === 'medium' ? 20 : 15,
+                day_number: 1 // Default
+            }));
+
+            const { error } = await supabase.from('coding_challenges').insert(payloads);
+            if (error) throw error;
+
+            setShowAIModal(false);
+            setAiPrompt('');
+            setAiCourseId('');
+            setGeneratedChallenges([]);
+            loadInitialData();
+        } catch (err) {
+            alert('Failed to save AI challenges: ' + err.message);
+        } finally {
+            setSaving(false);
         }
     }
 
@@ -263,13 +362,22 @@ export default function CodingManagement() {
                     <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>Coding Practice</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Create and manage coding challenges for your students</p>
                 </div>
-                <button
-                    onClick={() => { resetForm(); setShowModal(true) }}
-                    className="btn-primary"
-                    style={{ gap: '0.5rem' }}
-                >
-                    <Plus size={18} /> Create Challenge
-                </button>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                        onClick={() => { setAiPrompt(''); setGeneratedChallenges([]); setShowAIModal(true) }}
+                        className="btn-secondary"
+                        style={{ gap: '0.5rem', background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}
+                    >
+                        <Sparkles size={18} /> Generate with AI
+                    </button>
+                    <button
+                        onClick={() => { resetForm(); setShowModal(true) }}
+                        className="btn-primary"
+                        style={{ gap: '0.5rem' }}
+                    >
+                        <Plus size={18} /> Create Challenge
+                    </button>
+                </div>
             </div>
 
             {/* Filters & Search */}
@@ -301,9 +409,14 @@ export default function CodingManagement() {
                     </div>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Challenges Found</h3>
                     <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 1.5rem' }}>Build interactive coding problems for your students to practice.</p>
-                    <button onClick={() => setShowModal(true)} className="btn-secondary">
-                        <Plus size={18} /> Add Your First Challenge
-                    </button>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                        <button onClick={() => setShowModal(true)} className="btn-secondary">
+                            <Plus size={18} /> Add Your First Challenge
+                        </button>
+                        <button onClick={() => { setAiPrompt(''); setGeneratedChallenges([]); setShowAIModal(true) }} className="btn-secondary" style={{ background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}>
+                            <Sparkles size={18} /> Generate with AI
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
@@ -754,6 +867,92 @@ export default function CodingManagement() {
                     </div>
                 )
             }
-        </div >
+            {/* AI Generation Modal */}
+            {showAIModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                    <div className="glass-card animate-scale-in" style={{ width: '100%', maxWidth: 700, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f5f3ff' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#8b5cf6' }}>
+                                <Sparkles size={20} />
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>AI Coding Challenge Generator</h2>
+                            </div>
+                            <button onClick={() => setShowAIModal(false)} style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
+                            {aiError && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                    <AlertCircle size={18} /> {aiError}
+                                </div>
+                            )}
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label className="form-label">Select Course</label>
+                                <select
+                                    className="form-input"
+                                    value={aiCourseId}
+                                    onChange={e => setAiCourseId(e.target.value)}
+                                    style={{ marginBottom: '1rem' }}
+                                >
+                                    <option value="">-- Choose a course --</option>
+                                    {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                                </select>
+
+                                <label className="form-label">Topic or Content</label>
+                                <textarea
+                                    className="form-input"
+                                    rows={4}
+                                    placeholder="e.g. Generate 3 Python challenges about array manipulation..."
+                                    value={aiPrompt}
+                                    onChange={e => setAiPrompt(e.target.value)}
+                                    style={{ resize: 'none' }}
+                                />
+                                <div style={{ textAlign: 'right', marginTop: '0.75rem' }}>
+                                    <button 
+                                        onClick={generateChallengesWithAI} 
+                                        className="btn-primary" 
+                                        disabled={isGenerating || !aiPrompt.trim()}
+                                        style={{ background: '#8b5cf6', borderColor: '#8b5cf6' }}
+                                    >
+                                        {isGenerating ? <><Loader2 size={18} className="animate-spin" /> Generating...</> : <><Sparkles size={18} /> Generate</>}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {generatedChallenges.length > 0 && (
+                                <div>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Review Generated Challenges</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        {generatedChallenges.map((c, idx) => (
+                                            <div key={idx} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                                <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span>{idx + 1}. {c.title}</span>
+                                                    <span style={{ fontSize: '0.7rem', background: '#e2e8f0', padding: '0.2rem 0.5rem', borderRadius: 4 }}>{c.language} • {c.difficulty}</span>
+                                                </div>
+                                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{c.problem_statement?.substring(0, 100)}...</p>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                    {Array.isArray(c.test_cases) ? c.test_cases.length : 0} Test Cases
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ padding: '1.5rem', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'flex-end', gap: '1rem', background: 'white' }}>
+                            <button onClick={() => setShowAIModal(false)} className="btn-secondary">Cancel</button>
+                            {generatedChallenges.length > 0 && (
+                                <button onClick={handleAddAllGenerated} className="btn-primary" disabled={saving} style={{ background: '#10b981', borderColor: '#10b981' }}>
+                                    {saving ? 'Saving...' : `Add All ${generatedChallenges.length} Challenges`}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     )
 }
