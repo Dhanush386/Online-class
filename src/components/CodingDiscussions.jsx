@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { MessageSquare, Plus, ChevronLeft, Send, Code as CodeIcon, Clock, ThumbsUp, CheckCircle2 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { useToast } from './Toast'
 
 export default function CodingDiscussions({ challengeId, currentCode }) {
     const { profile } = useAuth()
+    const toast = useToast()
     const [discussions, setDiscussions] = useState([])
     const [loading, setLoading] = useState(true)
     const [view, setView] = useState('list') // 'list', 'create', 'thread'

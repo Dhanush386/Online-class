@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { MessageSquare, CheckCircle2, Search, Send, Clock, Code as CodeIcon, ChevronLeft } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { useToast } from './Toast'
 
 export default function OrganizerCodingDiscussions() {
     const { profile } = useAuth()
+    const toast = useToast()
     const [discussions, setDiscussions] = useState([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
