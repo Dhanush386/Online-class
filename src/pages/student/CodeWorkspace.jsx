@@ -414,15 +414,32 @@ sys.stdin = StringIO(test_input)
                                                 {cases?.map((tc, idx) => {
                                                     const tcData = challenge.test_cases[idx] || tc
                                                     const passed = hasResults ? tc.passed : null
-                                                    const description = tcData.description || tcData.expected_output || `Test Case ${idx + 1}`
+                                                    
+                                                    let displayContent;
+                                                    if (tcData.description) {
+                                                        displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#cbd5e1' : passed === false ? '#fca5a5' : '#94a3b8', lineHeight: 1.5, fontWeight: 500 }}>{tcData.description}</span>;
+                                                    } else if (tcData.input || tcData.expected_output) {
+                                                        displayContent = (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                {tcData.input && <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontFamily: 'monospace' }}><strong style={{color:'#64748b', marginRight:'4px'}}>Input:</strong> {tcData.input}</span>}
+                                                                {tcData.expected_output && <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontFamily: 'monospace' }}><strong style={{color:'#64748b', marginRight:'4px'}}>Expected:</strong> {tcData.expected_output}</span>}
+                                                            </div>
+                                                        );
+                                                    } else {
+                                                        displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#cbd5e1' : passed === false ? '#fca5a5' : '#94a3b8', lineHeight: 1.5, fontWeight: 500 }}>Test Case {idx + 1}</span>;
+                                                    }
+
                                                     return (
                                                         <div key={idx} style={{ padding: '1rem 1.25rem', borderRadius: 8, background: '#111827', borderLeft: `3px solid ${passed === true ? '#10b981' : passed === false ? '#ef4444' : '#334155'}`, transition: 'all 0.2s ease' }}>
                                                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                                                                 {passed === true ? <CheckCircle2 size={18} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} /> : passed === false ? <XCircle size={18} color="#ef4444" style={{ marginTop: 2, flexShrink: 0 }} /> : <Info size={18} color="#475569" style={{ marginTop: 2, flexShrink: 0 }} />}
-                                                                <span style={{ fontSize: '0.85rem', color: passed === true ? '#cbd5e1' : passed === false ? '#fca5a5' : '#94a3b8', lineHeight: 1.5, fontWeight: 500 }}>{description}</span>
+                                                                <div style={{ flex: 1 }}>{displayContent}</div>
                                                             </div>
                                                             {hasResults && tc.actual && (
-                                                                <pre style={{ background: '#0f172a', padding: '0.5rem 0.75rem', borderRadius: 6, marginTop: 10, fontSize: '0.65rem', color: passed ? '#10b981' : '#f87171', overflowX: 'auto', border: '1px solid #1f2937', marginLeft: '2rem' }}>{tc.actual}</pre>
+                                                                <div style={{ marginLeft: '2.2rem', marginTop: '0.75rem' }}>
+                                                                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Your Output:</span>
+                                                                    <pre style={{ background: '#0f172a', padding: '0.5rem 0.75rem', borderRadius: 6, marginTop: '0.25rem', fontSize: '0.7rem', color: passed ? '#10b981' : '#f87171', overflowX: 'auto', border: '1px solid #1f2937' }}>{tc.actual}</pre>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     )
