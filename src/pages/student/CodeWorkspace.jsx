@@ -79,8 +79,8 @@ export default function CodeWorkspace() {
             }
 
             // Check attempts
-            const { data: userData } = await supabase.from('student_submissions').select('count').eq('challenge_id', challengeId).eq('user_id', profile.id).single()
-            setAttemptCount(userData ? userData.count : 0)
+            const { data: userData } = await supabase.from('coding_submissions').select('id').eq('challenge_id', challengeId).eq('student_id', profile.id)
+            setAttemptCount(userData ? userData.length : 0)
 
             // Fetch all for context
             const { data: all } = await supabase.from('coding_challenges').select('id, title').order('created_at')
@@ -238,10 +238,11 @@ export default function CodeWorkspace() {
             
             if (overallPassed && !canBypass) {
                 // Submit to DB
-                await supabase.from('student_submissions').insert({
-                    user_id: profile.id,
+                await supabase.from('coding_submissions').insert({
+                    student_id: profile.id,
                     challenge_id: challengeId,
-                    status: 'passed'
+                    status: 'accepted',
+                    code: challenge.language === 'html' ? JSON.stringify({html: htmlCode, css: cssCode, js: jsCode}) : genericCode
                 })
             }
         } catch (err) {
