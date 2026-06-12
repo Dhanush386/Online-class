@@ -561,25 +561,40 @@ export default function CourseDetail() {
                                                                                     <Edit2 size={16} />
                                                                                 </button>
                                                                             )}
-                                                                            {recorded ? (
-                                                                                <button onClick={() => handleWatchVideo(s)} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Watch</button>
-                                                                            ) : s.video_url && (() => {
-                                                                                const sTime = new Date(s.scheduled_time)
-                                                                                const dMs = (s.duration_minutes || 60) * 60000
-                                                                                const now = new Date()
-                                                                                const isPast = now >= new Date(sTime.getTime() + dMs)
-                                                                                const isFuture = now < sTime
+                                                                            {(() => {
+                                                                                const recorded = isRecorded(s)
+                                                                                if (recorded) {
+                                                                                    return <button onClick={() => handleWatchVideo(s)} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Watch</button>
+                                                                                }
+
+                                                                                const sTime = s.scheduled_time ? new Date(s.scheduled_time) : null;
+                                                                                let isPast = false, isFuture = false;
                                                                                 
-                                                                                if (isPast) return <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, padding: '0.4rem 1rem', background: 'rgba(16,185,129,0.1)', borderRadius: 8 }}>Ended</span>
-                                                                                if (isFuture) return <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, padding: '0.4rem 1rem', background: 'rgba(59,130,246,0.1)', borderRadius: 8 }}>Upcoming</span>
-                                                                                
+                                                                                if (sTime) {
+                                                                                    const dMs = (s.duration_minutes || 60) * 60000;
+                                                                                    const now = new Date();
+                                                                                    isPast = now >= new Date(sTime.getTime() + dMs);
+                                                                                    isFuture = now < sTime;
+                                                                                }
+
+                                                                                if (isPast) {
+                                                                                    if (s.video_url) {
+                                                                                        return <button onClick={() => handleWatchVideo(s)} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Watch Recording</button>
+                                                                                    }
+                                                                                    return <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, padding: '0.4rem 1rem', background: 'rgba(16,185,129,0.1)', borderRadius: 8 }}>Ended</span>
+                                                                                }
+
+                                                                                if (isFuture) {
+                                                                                    return <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, padding: '0.4rem 1rem', background: 'rgba(59,130,246,0.1)', borderRadius: 8 }}>Upcoming</span>
+                                                                                }
+
                                                                                 return (
                                                                                     <button 
-                                                                                        onClick={() => navigate(`/student/classroom/${s.id}`)}
+                                                                                        onClick={() => s.video_url ? window.open(s.video_url, '_blank') : navigate(`/student/classroom/${s.id}`)}
                                                                                         className="btn-secondary" 
-                                                                                        style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
+                                                                                        style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', background: '#ef4444', color: 'white', border: 'none' }}
                                                                                     >
-                                                                                        Join Class
+                                                                                        Join Live Class
                                                                                     </button>
                                                                                 )
                                                                             })()}
