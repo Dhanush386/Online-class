@@ -371,7 +371,7 @@ sys.stdin = StringIO(test_input)
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{challenge.title}</span>
                     {isStarted && !canBypass && (
-                        <div style={{ padding: '4px 10px', background: '#e2e8f0', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: timeLeft <= 300 ? '#ef4444' : '#e2e8f0' }}>
+                        <div style={{ padding: '4px 10px', background: '#e2e8f0', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: timeLeft <= 300 ? '#ef4444' : '#0f172a' }}>
                             <Clock size={14} /> {formatTime(timeLeft)}
                         </div>
                     )}
@@ -384,13 +384,13 @@ sys.stdin = StringIO(test_input)
                 {/* Column 1: Description */}
                 <div style={{ width: '28%', minWidth: 320, background: '#ffffff', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0' }}>
                     <div style={{ height: 40, borderBottom: '1px solid #e2e8f0', display: 'flex', padding: '0 4px' }}>
-                        <button onClick={() => setLeftTab('description')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'description' ? '#fff' : '#94a3b8', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'description' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <button onClick={() => setLeftTab('description')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'description' ? '#0f172a' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'description' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <FileText size={14} /> Description
                         </button>
-                        <button onClick={() => setLeftTab('help')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'help' ? '#fff' : '#94a3b8', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'help' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <button onClick={() => setLeftTab('help')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'help' ? '#0f172a' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'help' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <HelpCircle size={14} /> Get Help
                         </button>
-                        <button onClick={() => setLeftTab('discuss')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'discuss' ? '#fff' : '#94a3b8', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'discuss' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <button onClick={() => setLeftTab('discuss')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'discuss' ? '#0f172a' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'discuss' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <MessageSquare size={14} /> Discuss
                         </button>
                     </div>
