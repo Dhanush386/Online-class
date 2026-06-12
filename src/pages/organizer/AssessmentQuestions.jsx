@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Plus, Trash2, Edit2, X, Save, AlertCircle, ChevronLeft, HelpCircle, CheckCircle2, Clock } from 'lucide-react'
+import { Plus, Trash2, Edit2, X, Save, AlertCircle, ChevronLeft, HelpCircle, CheckCircle2, Clock, Sparkles, Loader2 } from 'lucide-react'
 
 export default function AssessmentQuestions() {
     const { assessmentId } = useParams()
@@ -21,6 +21,13 @@ export default function AssessmentQuestions() {
     const [groups, setGroups] = useState([])
     const [resourceAccess, setResourceAccess] = useState([])
     const [showLockModal, setShowLockModal] = useState(false)
+
+    // AI Generation states
+    const [showAIModal, setShowAIModal] = useState(false)
+    const [aiPrompt, setAiPrompt] = useState('')
+    const [isGenerating, setIsGenerating] = useState(false)
+    const [generatedQuestions, setGeneratedQuestions] = useState([])
+    const [aiError, setAiError] = useState('')
 
     useEffect(() => {
         if (assessmentId) {
@@ -116,6 +123,79 @@ export default function AssessmentQuestions() {
         }
     }
 
+    async function generateQuestionsWithAI() {
+        if (!aiPrompt.trim()) return;
+        setIsGenerating(true);
+        setAiError('');
+        setGeneratedQuestions([]);
+
+        try {
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+            if (!apiKey) throw new Error("Gemini API key is not configured.");
+
+            const prompt = `You are an expert educator. Create multiple-choice questions based on the following topic or text: "${aiPrompt}". 
+            Output the response strictly as a JSON array of objects. Do not include any markdown formatting like \`\`\`json.
+            Each object must follow this exact structure:
+            {
+                "question_text": "The question here",
+                "options": ["Option A", "Option B", "Option C", "Option D"],
+                "correct_answer": ["Option A"]
+            }`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.7 }
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error?.message || 'Failed to generate questions');
+
+            let responseText = data.candidates[0].content.parts[0].text;
+            
+            // Clean up possible markdown wrappers
+            responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            
+            const parsedQuestions = JSON.parse(responseText);
+            if (!Array.isArray(parsedQuestions)) throw new Error("AI did not return an array.");
+            
+            setGeneratedQuestions(parsedQuestions);
+        } catch (err) {
+            console.error(err);
+            setAiError(err.message || 'Error parsing AI response. Please try a clearer prompt.');
+        } finally {
+            setIsGenerating(false);
+        }
+    }
+
+    async function handleAddAllGenerated() {
+        if (generatedQuestions.length === 0) return;
+        setSaving(true);
+        try {
+            const payloads = generatedQuestions.map(q => ({
+                assessment_id: assessmentId,
+                question_text: q.question_text,
+                options: q.options,
+                correct_answer: JSON.stringify(q.correct_answer || [])
+            }));
+
+            const { error } = await supabase.from('questions').insert(payloads);
+            if (error) throw error;
+
+            setShowAIModal(false);
+            setAiPrompt('');
+            setGeneratedQuestions([]);
+            loadData();
+        } catch (err) {
+            alert('Failed to save AI questions: ' + err.message);
+        } finally {
+            setSaving(false);
+        }
+    }
+
     async function handleDelete(id) {
         if (!confirm('Delete this question?')) return
         const { error } = await supabase.from('questions').delete().eq('id', id)
@@ -181,6 +261,13 @@ export default function AssessmentQuestions() {
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem' }}>
                         <button
+                            onClick={() => { setAiPrompt(''); setGeneratedQuestions([]); setShowAIModal(true) }}
+                            className="btn-secondary"
+                            style={{ gap: '0.5rem', background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}
+                        >
+                            <Sparkles size={18} /> Generate with AI
+                        </button>
+                        <button
                             onClick={() => { resetForm(); setShowModal(true) }}
                             className="btn-primary"
                             style={{ gap: '0.5rem' }}
@@ -204,8 +291,11 @@ export default function AssessmentQuestions() {
                     <HelpCircle size={48} style={{ margin: '0 auto 1rem', opacity: 0.2, display: 'block' }} />
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Questions Yet</h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Start building your quiz by adding the first question.</p>
-                    <button onClick={() => setShowModal(true)} className="btn-secondary">
+                    <button onClick={() => setShowModal(true)} className="btn-secondary" style={{ marginBottom: '0.75rem' }}>
                         <Plus size={18} /> Add Multiple Choice Question
+                    </button>
+                    <button onClick={() => { setAiPrompt(''); setGeneratedQuestions([]); setShowAIModal(true) }} className="btn-secondary" style={{ background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}>
+                        <Sparkles size={18} /> Generate with AI
                     </button>
                 </div>
             ) : (
@@ -394,6 +484,84 @@ export default function AssessmentQuestions() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* AI Generation Modal */}
+            {showAIModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                    <div className="glass-card animate-scale-in" style={{ width: '100%', maxWidth: 700, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f5f3ff' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#8b5cf6' }}>
+                                <Sparkles size={20} />
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>AI Question Generator</h2>
+                            </div>
+                            <button onClick={() => setShowAIModal(false)} style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
+                            {aiError && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                    <AlertCircle size={18} /> {aiError}
+                                </div>
+                            )}
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label className="form-label">Topic or Content</label>
+                                <textarea
+                                    className="form-input"
+                                    rows={4}
+                                    placeholder="e.g. Generate 5 multiple choice questions about React Hooks..."
+                                    value={aiPrompt}
+                                    onChange={e => setAiPrompt(e.target.value)}
+                                    style={{ resize: 'none' }}
+                                />
+                                <div style={{ textAlign: 'right', marginTop: '0.75rem' }}>
+                                    <button 
+                                        onClick={generateQuestionsWithAI} 
+                                        className="btn-primary" 
+                                        disabled={isGenerating || !aiPrompt.trim()}
+                                        style={{ background: '#8b5cf6', borderColor: '#8b5cf6' }}
+                                    >
+                                        {isGenerating ? <><Loader2 size={18} className="animate-spin" /> Generating...</> : <><Sparkles size={18} /> Generate</>}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {generatedQuestions.length > 0 && (
+                                <div>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Review Generated Questions</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        {generatedQuestions.map((q, idx) => (
+                                            <div key={idx} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                                <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>{idx + 1}. {q.question_text}</div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem' }}>
+                                                    {q.options.map((opt, oIdx) => {
+                                                        const isCorrect = Array.isArray(q.correct_answer) ? q.correct_answer.includes(opt) : opt === q.correct_answer;
+                                                        return (
+                                                            <div key={oIdx} style={{ padding: '0.4rem 0.6rem', background: isCorrect ? '#ecfdf5' : 'white', border: `1px solid ${isCorrect ? '#10b981' : '#cbd5e1'}`, borderRadius: 6, color: isCorrect ? '#065f46' : 'var(--text-secondary)' }}>
+                                                                {opt}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ padding: '1.5rem', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'flex-end', gap: '1rem', background: 'white' }}>
+                            <button onClick={() => setShowAIModal(false)} className="btn-secondary">Cancel</button>
+                            {generatedQuestions.length > 0 && (
+                                <button onClick={handleAddAllGenerated} className="btn-primary" disabled={saving} style={{ background: '#10b981', borderColor: '#10b981' }}>
+                                    {saving ? 'Saving...' : `Add All ${generatedQuestions.length} Questions`}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
