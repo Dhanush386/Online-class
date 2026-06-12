@@ -452,16 +452,26 @@ sys.stdin = StringIO(test_input)
                                                     
                                                     let displayContent;
                                                     if (tcData.description) {
-                                                        displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#cbd5e1' : passed === false ? '#fca5a5' : '#94a3b8', lineHeight: 1.5, fontWeight: 500 }}>{tcData.description}</span>;
+                                                        displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b', lineHeight: 1.5, fontWeight: 500 }}>{tcData.description}</span>;
                                                     } else if (tcData.input || tcData.expected_output) {
                                                         displayContent = (
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                                {tcData.input && <span style={{ fontSize: '0.8rem', color: '#64748b', fontFamily: 'monospace' }}><strong style={{color:'#64748b', marginRight:'4px'}}>Input:</strong> {tcData.input}</span>}
-                                                                {tcData.expected_output && <span style={{ fontSize: '0.8rem', color: '#64748b', fontFamily: 'monospace' }}><strong style={{color:'#64748b', marginRight:'4px'}}>Expected:</strong> {tcData.expected_output}</span>}
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', padding: '0.5rem 0' }}>
+                                                                {tcData.input && (
+                                                                    <div>
+                                                                        <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: '#0f172a' }}>Sample Input {idx + 1}</h5>
+                                                                        <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: '#0f172a', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.input}</div>
+                                                                    </div>
+                                                                )}
+                                                                {tcData.expected_output && (
+                                                                    <div>
+                                                                        <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: '#0f172a' }}>Sample Output {idx + 1}</h5>
+                                                                        <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: '#0f172a', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.expected_output}</div>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         );
                                                     } else {
-                                                        displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#cbd5e1' : passed === false ? '#fca5a5' : '#94a3b8', lineHeight: 1.5, fontWeight: 500 }}>Test Case {idx + 1}</span>;
+                                                        displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b', lineHeight: 1.5, fontWeight: 500 }}>Test Case {idx + 1}</span>;
                                                     }
 
                                                     return (
