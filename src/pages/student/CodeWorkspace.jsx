@@ -36,6 +36,7 @@ export default function CodeWorkspace() {
     const [htmlCode, setHtmlCode] = useState('<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Document</title>\n  <link rel="stylesheet" href="style.css">\n</head>\n<body>\n  <div class="main">\n    <h1>Hello World</h1>\n  </div>\n</body>\n</html>')
     const [cssCode, setCssCode] = useState('/* Write your CSS here */\n.main {\n  text-align: center;\n  font-family: sans-serif;\n}')
     const [jsCode, setJsCode] = useState('// JavaScript here')
+    const [genericCode, setGenericCode] = useState('')
     const [webTab, setWebTab] = useState('html')
     const [leftTab, setLeftTab] = useState('description')
     
@@ -64,6 +65,19 @@ export default function CodeWorkspace() {
             if (error) throw error
             setChallenge(data)
             
+            if (data.language !== 'html' && data.starter_code) {
+                setGenericCode(data.starter_code)
+            } else if (data.language === 'html' && data.starter_code) {
+                try {
+                    const parsed = JSON.parse(data.starter_code)
+                    if (parsed.html) setHtmlCode(parsed.html)
+                    if (parsed.css) setCssCode(parsed.css)
+                    if (parsed.js) setJsCode(parsed.js)
+                } catch (e) {
+                    setHtmlCode(data.starter_code)
+                }
+            }
+
             // Check attempts
             const { data: userData } = await supabase.from('student_submissions').select('count').eq('challenge_id', challengeId).eq('user_id', profile.id).single()
             setAttemptCount(userData ? userData.count : 0)
@@ -191,7 +205,7 @@ export default function CodeWorkspace() {
             setResult({ status: 'success', message: 'Rendered successfully' })
         } else {
             // Mock execution
-            setTimeout(() => setResult({ status: 'success', message: 'Output: Success' }), 1000)
+            setTimeout(() => setResult({ status: 'success', message: 'Output: Success\nCode executed successfully.' }), 1000)
         }
         setRunning(false)
     }
@@ -368,15 +382,23 @@ export default function CodeWorkspace() {
                 <div style={{ flex: 1.5, background: '#1e293b', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #334155', overflow: 'hidden' }}>
                     <div style={{ height: 40, borderBottom: '1px solid #334155', display: 'flex', background: '#0f172a', padding: '0 4px', alignItems: 'center' }}>
                         <div style={{ display: 'flex', height: '100%' }}>
-                            <button onClick={() => setWebTab('html')} style={{ padding: '0 1rem', background: webTab === 'html' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'html' ? '#e34c26' : '#64748b', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 14, height: 14, background: '#e34c26', color: '#fff', borderRadius: 2, fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>H</div> HTML
-                            </button>
-                            <button onClick={() => setWebTab('css')} style={{ padding: '0 1rem', background: webTab === 'css' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'css' ? '#264de4' : '#64748b', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 14, height: 14, background: '#264de4', color: '#fff', borderRadius: 2, fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>C</div> CSS
-                            </button>
-                            <button onClick={() => setWebTab('js')} style={{ padding: '0 1rem', background: webTab === 'js' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'js' ? '#f0db4f' : '#64748b', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 14, height: 14, background: '#f0db4f', color: '#000', borderRadius: 2, fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>JS</div> JS
-                            </button>
+                            {challenge.language === 'html' ? (
+                                <>
+                                    <button onClick={() => setWebTab('html')} style={{ padding: '0 1rem', background: webTab === 'html' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'html' ? '#e34c26' : '#64748b', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <div style={{ width: 14, height: 14, background: '#e34c26', color: '#fff', borderRadius: 2, fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>H</div> HTML
+                                    </button>
+                                    <button onClick={() => setWebTab('css')} style={{ padding: '0 1rem', background: webTab === 'css' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'css' ? '#264de4' : '#64748b', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <div style={{ width: 14, height: 14, background: '#264de4', color: '#fff', borderRadius: 2, fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>C</div> CSS
+                                    </button>
+                                    <button onClick={() => setWebTab('js')} style={{ padding: '0 1rem', background: webTab === 'js' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'js' ? '#f0db4f' : '#64748b', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <div style={{ width: 14, height: 14, background: '#f0db4f', color: '#000', borderRadius: 2, fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>JS</div> JS
+                                    </button>
+                                </>
+                            ) : (
+                                <button style={{ padding: '0 1rem', background: '#1e293b', border: 'none', color: '#e2e8f0', fontSize: '0.7rem', fontWeight: 800, cursor: 'default', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    {LANGUAGE_CONFIG[challenge.language]?.icon || <CodeIcon size={14} />} {LANGUAGE_CONFIG[challenge.language]?.name || challenge.language}
+                                </button>
+                            )}
                         </div>
                         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', paddingRight: '0.5rem' }}>
                             <button title="Reset" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><RotateCcw size={14} /></button>
@@ -386,9 +408,15 @@ export default function CodeWorkspace() {
                     </div>
 
                     <div style={{ flex: 1, background: '#1e293b' }}>
-                        {webTab === 'html' && <CodeEditor value={htmlCode} onChange={e => setHtmlCode(e.target.value)} language="html" readOnly={isReadOnly} />}
-                        {webTab === 'css' && <CodeEditor value={cssCode} onChange={e => setCssCode(e.target.value)} language="css" readOnly={isReadOnly} />}
-                        {webTab === 'js' && <CodeEditor value={jsCode} onChange={e => setJsCode(e.target.value)} language="js" readOnly={isReadOnly} />}
+                        {challenge.language === 'html' ? (
+                            <>
+                                {webTab === 'html' && <CodeEditor value={htmlCode} onChange={e => setHtmlCode(e.target.value)} language="html" readOnly={isReadOnly} />}
+                                {webTab === 'css' && <CodeEditor value={cssCode} onChange={e => setCssCode(e.target.value)} language="css" readOnly={isReadOnly} />}
+                                {webTab === 'js' && <CodeEditor value={jsCode} onChange={e => setJsCode(e.target.value)} language="js" readOnly={isReadOnly} />}
+                            </>
+                        ) : (
+                            <CodeEditor value={genericCode} onChange={e => setGenericCode(e.target.value)} language={challenge.language} readOnly={isReadOnly} />
+                        )}
                     </div>
 
                     <div style={{ height: 48, background: '#0f172a', borderTop: '1px solid #334155', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.75rem' }}>
@@ -404,25 +432,38 @@ export default function CodeWorkspace() {
                     </div>
                 </div>
 
-                {/* Column 3: Preview */}
+                {/* Column 3: Preview/Output */}
                 <div style={{ width: '32%', background: '#1e293b', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #334155', overflow: 'hidden' }}>
                     <div style={{ height: 40, borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', padding: '0 1rem', background: '#0f172a' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8' }}>PREVIEW</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8' }}>{challenge.language === 'html' ? 'PREVIEW' : 'OUTPUT'}</span>
                         <div style={{ marginLeft: 'auto' }}>
                             <button style={{ background: 'none', border: 'none', color: '#64748b' }}><Maximize size={14} /></button>
                         </div>
                     </div>
                     
-                    <div style={{ flex: 1, background: '#fff', margin: '1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid #334155' }}>
-                        <iframe ref={iframeRef} style={{ width: '100%', height: '100%', border: 'none' }} title="preview" />
-                    </div>
-
-                    <div style={{ padding: '1.25rem', background: '#0f172a', borderTop: '1px solid #334155', textAlign: 'center' }}>
-                        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '1rem' }}>Try comparing your output with expected output</p>
-                        <button onClick={handleSubmit} disabled={submitting || running} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                            <Layout size={16} /> {submitting ? 'Comparing...' : 'Compare'}
-                        </button>
-                    </div>
+                    {challenge.language === 'html' ? (
+                        <>
+                            <div style={{ flex: 1, background: '#fff', margin: '1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid #334155' }}>
+                                <iframe ref={iframeRef} style={{ width: '100%', height: '100%', border: 'none' }} title="preview" />
+                            </div>
+                            <div style={{ padding: '1.25rem', background: '#0f172a', borderTop: '1px solid #334155', textAlign: 'center' }}>
+                                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '1rem' }}>Try comparing your output with expected output</p>
+                                <button onClick={handleSubmit} disabled={submitting || running} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                    <Layout size={16} /> {submitting ? 'Comparing...' : 'Compare'}
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ flex: 1, padding: '1rem', background: '#0f172a', overflowY: 'auto', fontFamily: 'monospace', fontSize: '0.85rem', color: '#e2e8f0' }}>
+                            {result ? (
+                                <div style={{ color: result.status === 'success' ? '#10b981' : (result.status === 'error' ? '#ef4444' : '#64748b') }}>
+                                    <pre style={{ whiteSpace: 'pre-wrap' }}>{result.message}</pre>
+                                </div>
+                            ) : (
+                                <div style={{ color: '#64748b' }}>Code output will appear here...</div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
