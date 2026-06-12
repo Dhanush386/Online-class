@@ -451,7 +451,14 @@ sys.stdin = StringIO(test_input)
                                                     const passed = hasResults ? tc.passed : null
                                                     
                                                     let displayContent;
-                                                    if (tcData.description) {
+                                                    if (tcData.is_hidden) {
+                                                        displayContent = (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b' }}>
+                                                                <Lock size={14} />
+                                                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Hidden Test Case</span>
+                                                            </div>
+                                                        );
+                                                    } else if (tcData.description) {
                                                         displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b', lineHeight: 1.5, fontWeight: 500 }}>{tcData.description}</span>;
                                                     } else if (tcData.input || tcData.expected_output) {
                                                         displayContent = (
