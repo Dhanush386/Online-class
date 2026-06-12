@@ -189,71 +189,92 @@ export default function LiveClassroom() {
                 ...mixedOutput.stream.getAudioTracks()
             ])
 
-            const metadata = { name: `Class_Recording_${videoDataRef.current.title}.webm`, mimeType: 'video/webm' }
-            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${gToken}`, 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Type': 'video/webm' },
-                body: JSON.stringify(metadata)
-            })
-            uploadUrlRef.current = res.headers.get('Location')
-            
             mediaRecorderRef.current = new MediaRecorder(combinedStream, { mimeType: 'video/webm; codecs=vp9,opus' })
-            totalBytesRecordedRef.current = 0
+            const recordedChunks = []
             
-            mediaRecorderRef.current.ondataavailable = async (e) => {
+            mediaRecorderRef.current.ondataavailable = (e) => {
                 if (e.data.size > 0) {
-                    const start = totalBytesRecordedRef.current
-                    await fetch(uploadUrlRef.current, { method: 'PUT', headers: { 'Content-Range': `bytes ${start}-${start + e.data.size - 1}/*` }, body: e.data })
-                    totalBytesRecordedRef.current += e.data.size
+                    recordedChunks.push(e.data)
                 }
             }
             
             mediaRecorderRef.current.onstop = async () => {
-                setRecording(false); setUploading(true)
-                const response = await fetch(uploadUrlRef.current, { method: 'PUT', headers: { 'Content-Range': `bytes */${totalBytesRecordedRef.current}` } })
-                
-                if (response.ok || response.status === 308) {
-                    const text = await response.text()
-                    const data = text ? JSON.parse(text) : {}
-                    const fileId = data.id
+                setRecording(false); 
+                setUploading(true);
+                let success = false;
 
-                    if (fileId) {
-                        // Set the file permissions so students can actually view it (Anyone with the link)
-                        try {
-                            await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${gToken}`,
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    role: 'reader',
-                                    type: 'anyone'
+                try {
+                    const finalBlob = new Blob(recordedChunks, { type: 'video/webm' })
+                    
+                    // 1. Get Resumable Session URL
+                    const metadata = { name: `Class_Recording_${videoDataRef.current.title}.webm`, mimeType: 'video/webm' }
+                    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${gToken}`, 
+                            'Content-Type': 'application/json; charset=UTF-8', 
+                            'X-Upload-Content-Type': 'video/webm' 
+                        },
+                        body: JSON.stringify(metadata)
+                    })
+
+                    const uploadUrl = res.headers.get('Location')
+                    if (!uploadUrl) throw new Error('Failed to get Google Drive upload session URL.')
+
+                    // 2. Upload the entire video file to the session URL
+                    const uploadRes = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Length': finalBlob.size.toString() },
+                        body: finalBlob
+                    })
+
+                    if (uploadRes.ok) {
+                        const data = await uploadRes.json()
+                        const fileId = data.id
+
+                        if (fileId) {
+                            // Set permissions to anyone with the link
+                            try {
+                                await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${gToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ role: 'reader', type: 'anyone' })
                                 })
-                            });
-                        } catch (permErr) {
-                            console.error('Failed to set permissions on Drive file', permErr);
+                            } catch (permErr) {
+                                console.error('Failed to set permissions on Drive file', permErr)
+                            }
+
+                            const driveLink = `https://drive.google.com/file/d/${fileId}/view`
+                            // Update database with the recording link
+                            await supabase
+                                .from('videos')
+                                .update({ video_url: driveLink })
+                                .eq('id', videoDataRef.current.id)
+                            
+                            success = true;
                         }
-
-                        const driveLink = `https://drive.google.com/file/d/${fileId}/view`
-                        // Update database with the recording link
-                        await supabase
-                            .from('videos')
-                            .update({ video_url: driveLink })
-                            .eq('id', videoDataRef.current.id)
+                    } else {
+                        console.error('Upload to Drive failed:', await uploadRes.text())
                     }
+                } catch (err) {
+                    console.error('Recording upload error:', err)
+                } finally {
+                    // Cleanup tracks
+                    screenStream.getTracks().forEach(t => t.stop())
+                    if (micStream) micStream.getTracks().forEach(t => t.stop())
+                    audioContext.close()
+                    
+                    setUploading(false)
+                    if (success) {
+                        alert('Success! Recording saved and linked to the course.'); 
+                    } else {
+                        alert('Failed to save the recording to Google Drive. Please check the console.');
+                    }
+                    navigate('/organizer/courses')
                 }
-
-                // Cleanup tracks
-                screenStream.getTracks().forEach(t => t.stop())
-                if (micStream) micStream.getTracks().forEach(t => t.stop())
-                audioContext.close()
-                
-                alert('Success! Recording saved and linked to the course.'); 
-                navigate('/organizer/courses')
             }
             
-            mediaRecorderRef.current.start(5000)
+            mediaRecorderRef.current.start(1000)
             setRecording(true)
         } catch (err) { 
             console.error(err)
