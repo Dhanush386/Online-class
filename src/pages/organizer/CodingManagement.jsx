@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import CodeEditor from '../../components/CodeEditor'
 import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image, Upload, Sparkles, Loader2 } from 'lucide-react'
+import OrganizerCodingDiscussions from '../../components/OrganizerCodingDiscussions'
 import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
 const LANGUAGES = [
@@ -22,6 +23,7 @@ const DIFFICULTIES = ['easy', 'medium', 'hard']
 export default function CodingManagement() {
     const { profile } = useAuth()
     const location = useLocation()
+    const [mainTab, setMainTab] = useState('challenges')
     const [courses, setCourses] = useState([])
     const [challenges, setChallenges] = useState([])
     const [loading, setLoading] = useState(true)
@@ -380,8 +382,16 @@ export default function CodingManagement() {
                 </div>
             </div>
 
-            {/* Filters & Search */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', marginBottom: '1.5rem' }}>
+                <button onClick={() => setMainTab('challenges')} style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'challenges' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'challenges' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Challenges</button>
+                <button onClick={() => setMainTab('discussions')} style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'discussions' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'discussions' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Discussions</button>
+            </div>
+
+            {mainTab === 'challenges' ? (
+                <>
+                    {/* Filters & Search */}
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ flex: 1, position: 'relative' }}>
                     <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input
@@ -479,6 +489,10 @@ export default function CodingManagement() {
                 </div>
             )
             }
+            </>
+            ) : (
+                <OrganizerCodingDiscussions />
+            )}
 
             {/* Access Control Modal */}
             {

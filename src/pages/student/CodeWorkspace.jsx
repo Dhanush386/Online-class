@@ -9,6 +9,7 @@ import {
     FileText, HelpCircle, MessageSquare, RotateCcw, Maximize, Settings, Save, Trash2
 } from 'lucide-react'
 import CodeEditor from '../../components/CodeEditor'
+import CodingDiscussions from '../../components/CodingDiscussions'
 
 const LANGUAGE_CONFIG = {
     python: { id: 25, name: 'Python 3', icon: <CodeIcon size={16} />, useExtra: true },
@@ -449,10 +450,12 @@ sys.stdin = StringIO(test_input)
                                     )
                                 })()}
                             </div>
+                        ) : leftTab === 'discuss' ? (
+                            <CodingDiscussions challengeId={challengeId} currentCode={challenge?.language === 'html' ? {html: htmlCode, css: cssCode, js: jsCode} : genericCode} />
                         ) : (
                             <div style={{ textAlign: 'center', color: '#64748b', marginTop: '4rem' }}>
                                 <Info size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-                                <p style={{ fontSize: '0.85rem' }}>No hints/discussion available during exams.</p>
+                                <p style={{ fontSize: '0.85rem' }}>No hints/help available during exams.</p>
                             </div>
                         )}
                     </div>
