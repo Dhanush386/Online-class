@@ -34,7 +34,7 @@ export default function LiveClassroom() {
     useEffect(() => {
         // 1. Load Jitsi Script (Riot.im)
         const jitsiScript = document.createElement('script')
-        jitsiScript.src = 'https://jitsi.riot.im/external_api.js'
+        jitsiScript.src = 'https://meet.jit.si/external_api.js'
         jitsiScript.async = true
         jitsiScript.onload = () => setJitsiLoaded(true)
         document.head.appendChild(jitsiScript)
@@ -120,7 +120,7 @@ export default function LiveClassroom() {
     }, [loading, videoData, profile, instructorPresent, jitsiLoaded])
 
     function initJitsi(data) {
-        const domain = 'jitsi.riot.im' 
+        const domain = 'meet.jit.si' 
         const options = {
             roomName: `Learnova_LiveClass_${data.id}`,
             width: '100%',
