@@ -202,6 +202,23 @@ export default function LiveClassroom() {
                     const fileId = data.id
 
                     if (fileId) {
+                        // Set the file permissions so students can actually view it (Anyone with the link)
+                        try {
+                            await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${gToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    role: 'reader',
+                                    type: 'anyone'
+                                })
+                            });
+                        } catch (permErr) {
+                            console.error('Failed to set permissions on Drive file', permErr);
+                        }
+
                         const driveLink = `https://drive.google.com/file/d/${fileId}/view`
                         // Update database with the recording link
                         await supabase
