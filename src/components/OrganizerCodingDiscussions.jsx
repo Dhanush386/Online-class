@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
-import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import { MessageSquare, CheckCircle2, Search, Send, Clock, Code as CodeIcon, ChevronLeft } from 'lucide-react'
 import { useToast } from './Toast'
 
