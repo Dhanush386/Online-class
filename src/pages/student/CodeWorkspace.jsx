@@ -317,7 +317,7 @@ export default function CodeWorkspace() {
                                 {(() => {
                                     const cases = !result ? challenge.test_cases : result.testResults
                                     const total = cases?.length || 0
-                                    const passedCount = result ? cases.filter(t => t.passed).length : 0
+                                    const passedCount = result && cases ? cases.filter(t => t.passed).length : 0
                                     const failedCount = result ? total - passedCount : 0
                                     return (
                                         <div style={{ marginTop: '2.5rem', borderTop: '1px solid #334155', paddingTop: '1.5rem' }}>
