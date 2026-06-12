@@ -530,7 +530,7 @@ sys.stdin = StringIO(test_input)
                 </div>
 
                 {/* Column 2: Editor */}
-                <div style={{ flex: 1.5, background: '#ffffff', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                <div style={{ flex: 1.5, background: '#f8fafc', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
                     <div style={{ height: 40, borderBottom: '1px solid #e2e8f0', display: 'flex', background: '#f1f5f9', padding: '0 4px', alignItems: 'center' }}>
                         <div style={{ display: 'flex', height: '100%' }}>
                             {challenge.language === 'html' ? (
@@ -558,7 +558,7 @@ sys.stdin = StringIO(test_input)
                         </div>
                     </div>
 
-                    <div style={{ flex: 1, background: '#ffffff' }}>
+                    <div style={{ flex: 1, background: '#f8fafc' }}>
                         {challenge.language === 'html' ? (
                             <>
                                 {webTab === 'html' && <CodeEditor theme='light' value={htmlCode} onChange={e => setHtmlCode(e.target.value)} language="html" readOnly={isReadOnly} />}
@@ -599,7 +599,7 @@ sys.stdin = StringIO(test_input)
                             </div>
                             <div style={{ padding: '1.25rem', background: '#f1f5f9', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
                                 <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem' }}>Try comparing your output with expected output</p>
-                                <button onClick={handleSubmit} disabled={submitting || running} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', color: '#0f172a', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                <button onClick={handleSubmit} disabled={submitting || running} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                     <Layout size={16} /> {submitting ? 'Comparing...' : 'Compare'}
                                 </button>
                             </div>
