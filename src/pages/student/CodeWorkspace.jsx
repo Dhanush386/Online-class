@@ -196,15 +196,53 @@ export default function CodeWorkspace() {
         }
     }
 
+    const initPyodide = async () => {
+        if (!window.pyodideInstance) {
+            if (!document.querySelector('#pyodide-script')) {
+                const script = document.createElement('script')
+                script.id = 'pyodide-script'
+                script.src = 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js'
+                document.body.appendChild(script)
+                await new Promise((resolve) => script.onload = resolve)
+            }
+            let outputBuffer = []
+            window.pyodideInstance = await window.loadPyodide({
+                stdout: (text) => outputBuffer.push(text),
+                stderr: (text) => outputBuffer.push(text)
+            })
+            window.pyodideOutputBuffer = outputBuffer
+        }
+    }
+
     const runCode = async () => {
         setRunning(true)
         setResult({ status: 'running', message: 'Running code...' })
-        // Basic local run for HTML, mock for others
+        // Basic local run for HTML, Pyodide for Python, mock for others
         if (challenge.language === 'html') {
             updatePreview()
             setResult({ status: 'success', message: 'Rendered successfully' })
+        } else if (challenge.language.startsWith('python')) {
+            try {
+                setResult({ status: 'running', message: 'Initializing Python Engine (this takes a few seconds on the first run)...' })
+                await initPyodide()
+                window.pyodideOutputBuffer.length = 0 // clear buffer
+                
+                const defaultInput = challenge.test_cases?.[0]?.input || ""
+                window.pyodideInstance.globals.set("test_input", defaultInput)
+                await window.pyodideInstance.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdin = StringIO(test_input)
+                `)
+                await window.pyodideInstance.runPythonAsync(genericCode)
+                
+                const output = window.pyodideOutputBuffer.join('\n')
+                setResult({ status: 'success', message: output || 'Code executed successfully (no output)' })
+            } catch (err) {
+                setResult({ status: 'error', message: err.toString() })
+            }
         } else {
-            // Mock execution
+            // Mock execution for other languages
             setTimeout(() => setResult({ status: 'success', message: 'Output: Success\nCode executed successfully.' }), 1000)
         }
         setRunning(false)
@@ -212,7 +250,13 @@ export default function CodeWorkspace() {
 
     const handleSubmit = async () => {
         setSubmitting(true)
+        setResult({ status: 'running', message: 'Running tests...' })
         try {
+            if (challenge.language.startsWith('python')) {
+                setResult({ status: 'running', message: 'Initializing Python Engine for tests...' })
+                await initPyodide()
+            }
+
             const testResults = []
             let overallPassed = true
 
@@ -226,6 +270,23 @@ export default function CodeWorkspace() {
                     passed = result.total > 0.85 && result.foreground > 0.05
                     stdout = `[VER-7.1] Visual Match: ${(result.total * 100).toFixed(2)}%\nForeground: ${(result.foreground * 100).toFixed(2)}% (Target: 5%+)`
                     tc.actual_image = result.diffImage
+                } else if (challenge.language.startsWith('python')) {
+                    try {
+                        window.pyodideOutputBuffer.length = 0
+                        window.pyodideInstance.globals.set("test_input", tc.input || "")
+                        await window.pyodideInstance.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdin = StringIO(test_input)
+                        `)
+                        await window.pyodideInstance.runPythonAsync(genericCode)
+                        stdout = window.pyodideOutputBuffer.join('\n').trim()
+                        const expected = (tc.expected_output || "").trim()
+                        passed = stdout === expected
+                    } catch (err) {
+                        stdout = err.toString()
+                        passed = false
+                    }
                 } else {
                     passed = true // Mock
                 }
