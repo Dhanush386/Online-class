@@ -58,25 +58,41 @@ export default function LiveClassroom() {
             setLoading(false)
 
             // Real-time Handshake
+            let intervalId = null;
             const channel = supabase.channel(`class-lobby-${videoId}`, { config: { broadcast: { self: true } } })
             channel
                 .on('broadcast', { event: 'check_instructor' }, () => {
                     if (isOrganizer) channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
                 })
                 .on('broadcast', { event: 'presence' }, (p) => {
-                    if (p.payload.instructorJoined) setInstructorPresent(true)
+                    if (p.payload.instructorJoined) {
+                        setInstructorPresent(true)
+                        if (intervalId) {
+                            clearInterval(intervalId)
+                            intervalId = null
+                        }
+                    }
                 })
                 .subscribe((status) => {
                     if (status === 'SUBSCRIBED') {
                         if (isOrganizer) {
                             channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
+                            intervalId = setInterval(() => {
+                                channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
+                            }, 3000)
                         } else {
                             channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
+                            intervalId = setInterval(() => {
+                                channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
+                            }, 3000)
                         }
                     }
                 })
 
-            return () => supabase.removeChannel(channel)
+            return () => {
+                if (intervalId) clearInterval(intervalId)
+                supabase.removeChannel(channel)
+            }
         }
     
         fetchVideo()
