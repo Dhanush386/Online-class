@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Calendar, Clock, ExternalLink, Video, Zap } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export default function StudentSchedule() {
     const { profile } = useAuth()
@@ -173,18 +174,14 @@ export default function StudentSchedule() {
 
                                                     if (isEnded) return <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, padding: '0.4rem 0.9rem', background: 'rgba(16,185,129,0.1)', borderRadius: 8 }}>Ended</span>
                                                     if (isFuture) return <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, padding: '0.4rem 0.9rem', background: 'rgba(59,130,246,0.1)', borderRadius: 8 }}>Upcoming</span>
-                                                    if (!s.video_url) return null
-
                                                     return (
-                                                        <a
-                                                            href={s.video_url}
-                                                            target="_blank"
-                                                            rel="noreferrer"
+                                                        <Link
+                                                            to={`/student/classroom/${s.id}`}
                                                             className={live ? 'btn-primary' : 'btn-secondary'}
                                                             style={{ textDecoration: 'none', padding: '0.45rem 1rem', fontSize: '0.8rem', background: live ? 'linear-gradient(135deg,#ef4444,#dc2626)' : undefined }}
                                                         >
                                                             <ExternalLink size={13} /> {live ? 'Join Now' : 'Join'}
-                                                        </a>
+                                                        </Link>
                                                     )
                                                 })()}
                                             </div>

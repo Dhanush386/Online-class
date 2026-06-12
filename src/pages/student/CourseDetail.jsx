@@ -590,7 +590,7 @@ export default function CourseDetail() {
 
                                                                                 return (
                                                                                     <button 
-                                                                                        onClick={() => s.video_url ? window.open(s.video_url, '_blank') : navigate(`/student/classroom/${s.id}`)}
+                                                                                        onClick={() => navigate(`/student/classroom/${s.id}`)}
                                                                                         className="btn-secondary" 
                                                                                         style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', background: '#ef4444', color: 'white', border: 'none' }}
                                                                                     >
