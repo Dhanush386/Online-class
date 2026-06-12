@@ -30,27 +30,27 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
 
         if (lang === 'html' || lang === 'web') {
             // 1. Strings (inside attributes) - process first
-            html = html.replace(/"([^"]*)"/g, m => pushToken(m, '${theme === 'light' ? '#059669' : '#34d399'}'))
+            html = html.replace(/"([^"]*)"/g, m => pushToken(m, theme === 'light' ? '#059669' : '#34d399'))
             // 2. Tags
-            html = html.replace(/(&lt;\/?[a-z1-6]+)(&gt;| )/gi, m => pushToken(m, '${theme === 'light' ? '#dc2626' : '#f87171'}'))
+            html = html.replace(/(&lt;\/?[a-z1-6]+)(&gt;| )/gi, m => pushToken(m, theme === 'light' ? '#dc2626' : '#f87171'))
             // 3. Attributes
-            html = html.replace(/ ([a-z-]+)=/gi, m => pushToken(m, '${theme === 'light' ? '#d97706' : '#fbbf24'}'))
+            html = html.replace(/ ([a-z-]+)=/gi, m => pushToken(m, theme === 'light' ? '#d97706' : '#fbbf24'))
         } else if (lang === 'css') {
             // 1. Values (often contains strings/urls)
-            html = html.replace(/: ([^;]+);/g, (m, v) => ': ' + pushToken(v, '${theme === 'light' ? '#d97706' : '#fbbf24'}') + ';')
+            html = html.replace(/: ([^;]+);/g, (m, v) => ': ' + pushToken(v, theme === 'light' ? '#d97706' : '#fbbf24') + ';')
             // 2. Properties
-            html = html.replace(/([a-z-]+):/gi, m => pushToken(m, '${theme === 'light' ? '#2563eb' : '#60a5fa'}'))
+            html = html.replace(/([a-z-]+):/gi, m => pushToken(m, theme === 'light' ? '#2563eb' : '#60a5fa'))
             // 3. Selectors
-            html = html.replace(/^([.#a-z][^{]+) {/gim, (m, s) => pushToken(s, '${theme === 'light' ? '#dc2626' : '#f87171'}') + ' {')
+            html = html.replace(/^([.#a-z][^{]+) {/gim, (m, s) => pushToken(s, theme === 'light' ? '#dc2626' : '#f87171') + ' {')
         } else {
             // JS / Python / SQL Common
             // 1. Comments (lowest priority to overlap, but highest to ignore)
             const commentRegex = lang === 'python' ? /(#.*)/g : lang === 'sql' ? /(--.*)/g : /(\/\/.*)/g
-            html = html.replace(commentRegex, m => pushToken(m, '${theme === 'light' ? '#64748b' : '#94a3b8'}'))
+            html = html.replace(commentRegex, m => pushToken(m, theme === 'light' ? '#64748b' : '#94a3b8'))
 
             // 2. Strings
-            html = html.replace(/"([^"]*)"/g, m => pushToken(m, '${theme === 'light' ? '#059669' : '#34d399'}'))
-            html = html.replace(/'([^']*)'/g, m => pushToken(m, '${theme === 'light' ? '#059669' : '#34d399'}'))
+            html = html.replace(/"([^"]*)"/g, m => pushToken(m, theme === 'light' ? '#059669' : '#34d399'))
+            html = html.replace(/'([^']*)'/g, m => pushToken(m, theme === 'light' ? '#059669' : '#34d399'))
 
             // 3. Keywords
             const keywords = {
@@ -59,10 +59,10 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
                 sql: /\b(SELECT|FROM|WHERE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|DROP|JOIN|LEFT|RIGHT|INNER|ON|GROUP|BY|ORDER|LIMIT|ASC|DESC)\b/gi
             }
             const activeKeywords = keywords[lang] || keywords.js
-            html = html.replace(activeKeywords, m => pushToken(m, '${theme === 'light' ? '#9333ea' : '#c084fc'}'))
+            html = html.replace(activeKeywords, m => pushToken(m, theme === 'light' ? '#9333ea' : '#c084fc'))
 
             // 4. Numbers
-            html = html.replace(/\b(\d+)\b/g, m => pushToken(m, '${theme === 'light' ? '#d97706' : '#fbbf24'}'))
+            html = html.replace(/\b(\d+)\b/g, m => pushToken(m, theme === 'light' ? '#d97706' : '#fbbf24'))
         }
 
         // Restore tokens
