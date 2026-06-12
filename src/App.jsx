@@ -57,7 +57,6 @@ const TakeAssessment    = lazy(() => import('./pages/student/TakeAssessment'))
 const AssessmentReview  = lazy(() => import('./pages/student/AssessmentReview'))
 const CodingPractice    = lazy(() => import('./pages/student/CodingPractice'))
 const CodeWorkspace     = lazy(() => import('./pages/student/CodeWorkspace'))
-const StudentSchedule   = lazy(() => import('./pages/student/StudentSchedule'))
 const Achievements      = lazy(() => import('./pages/student/Achievements'))
 const Profile           = lazy(() => import('./pages/student/Profile'))
 const Leaderboard       = lazy(() => import('./pages/student/Leaderboard'))
@@ -133,7 +132,6 @@ export default function App() {
                   <Route path="assessments/:assessmentId/review" element={<AssessmentReview />} />
                   <Route path="coding"                            element={<CodingPractice />} />
                   <Route path="coding/:challengeId"              element={<CodeWorkspace />} />
-                  <Route path="schedule"                          element={<StudentSchedule />} />
                   <Route path="achievements"                      element={<Achievements />} />
                   <Route path="playground"                        element={<CodePlayground />} />
                   <Route path="support"                           element={<Support />} />

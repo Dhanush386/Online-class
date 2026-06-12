@@ -16,7 +16,6 @@ const navItems = [
     { to: '/student/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/student/achievements', icon: Award, label: 'Achievements' },
     { to: '/student/playground', icon: Globe, label: 'Code Playground' },
-    { to: '/student/schedule', icon: Calendar, label: 'Schedule' },
 ]
 
 
