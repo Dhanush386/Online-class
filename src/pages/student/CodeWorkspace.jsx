@@ -28,7 +28,7 @@ export default function CodeWorkspace() {
     const navigate = useNavigate()
     const queryParams = new URLSearchParams(window.location.search)
     const isAdminMode = queryParams.get('admin') === 'true'
-    const { profile } = useAuth()
+    const { profile, refreshStats } = useAuth()
     const isOrganizer = profile?.role === 'organizer'
     const canBypass = isAdminMode && isOrganizer
     
@@ -349,6 +349,15 @@ sys.stdin = StringIO(test_input)
             setResult({ status: overallPassed ? 'success' : 'error', message: overallPassed ? 'Success: All tests passed!' : 'Error: Some tests failed', testResults })
             
             if (overallPassed && !canBypass) {
+                // Check if already solved
+                const { data: previousSubs } = await supabase.from('coding_submissions')
+                    .select('id')
+                    .eq('challenge_id', challengeId)
+                    .eq('student_id', profile.id)
+                    .eq('status', 'accepted');
+                
+                const alreadySolved = previousSubs && previousSubs.length > 0;
+
                 // Submit to DB
                 await supabase.from('coding_submissions').insert({
                     student_id: profile.id,
@@ -357,6 +366,17 @@ sys.stdin = StringIO(test_input)
                     score: hasUnlockedAnswer ? 0 : (challenge.xp_reward || 15),
                     code: challenge.language === 'html' ? JSON.stringify({html: htmlCode, css: cssCode, js: jsCode}) : genericCode
                 })
+
+                // Award XP if it's their first time passing and they haven't unlocked the answer
+                if (!alreadySolved && !hasUnlockedAnswer) {
+                    const earnedXp = challenge.xp_reward || 15;
+                    const { data: userData } = await supabase.from('users').select('xp').eq('id', profile.id).single();
+                    if (userData) {
+                        const newXp = (userData.xp || 0) + earnedXp;
+                        await supabase.from('users').update({ xp: newXp }).eq('id', profile.id);
+                        if (refreshStats) refreshStats();
+                    }
+                }
             }
         } catch (err) {
             console.error(err)
