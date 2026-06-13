@@ -707,10 +707,12 @@ export default function CodingManagement() {
                                     />
                                 </div>
 
-                                <div style={{ marginBottom: '1.25rem' }}>
-                                    <label htmlFor="problem-statement" className="form-label">Problem Statement (Markdown supported)</label>
-                                    <textarea id="problem-statement" name="problem_statement" className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
-                                </div>
+                                {!formData.is_combined ? (
+                                    <>
+                                        <div style={{ marginBottom: '1.25rem' }}>
+                                            <label htmlFor="problem-statement" className="form-label">Problem Statement (Markdown supported)</label>
+                                            <textarea id="problem-statement" name="problem_statement" className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
+                                        </div>
 
                                 <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
                                     <div>
@@ -949,64 +951,6 @@ export default function CodingManagement() {
                                         ))}
                                     </div>
                                 )}
-                                                                    background: '#f1f5f9', 
-                                                                    display: 'flex', 
-                                                                    alignItems: 'center', 
-                                                                    justifyContent: 'center', 
-                                                                    border: '1px solid #e2e8f0', 
-                                                                    overflow: 'hidden',
-                                                                    flexShrink: 0
-                                                                }}>
-                                                                    {tc[field] ? (
-                                                                        <img src={tc[field]} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                                    ) : (
-                                                                        <Image size={24} color="#94a3b8" />
-                                                                    )}
-                                                                </div>
-                                                                <div style={{ flex: 1 }}>
-                                                                    <input
-                                                                        type="file"
-                                                                        id={`${field}-${idx}`}
-                                                                        accept="image/*"
-                                                                        style={{ display: 'none' }}
-                                                                        onChange={e => handleTCImageUpload(e, idx, field)}
-                                                                    />
-                                                                    <label 
-                                                                        htmlFor={`${field}-${idx}`}
-                                                                        className="btn-secondary"
-                                                                        style={{ 
-                                                                            display: 'inline-flex', 
-                                                                            alignItems: 'center', 
-                                                                            gap: '0.4rem', 
-                                                                            fontSize: '0.7rem', 
-                                                                            padding: '0.4rem 0.6rem',
-                                                                            cursor: 'pointer'
-                                                                        }}
-                                                                    >
-                                                                        <Upload size={12} /> {tc[field] ? 'Change Image' : 'Upload Image'}
-                                                                    </label>
-                                                                    {tc[field] && (
-                                                                        <button 
-                                                                            type="button" 
-                                                                            onClick={() => {
-                                                                                const newTCData = [...formData.test_cases];
-                                                                                newTCData[idx][field] = '';
-                                                                                setFormData(p => ({ ...p, test_cases: newTCData }));
-                                                                            }}
-                                                                            style={{ fontSize: '0.65rem', color: '#ef4444', background: 'none', border: 'none', marginLeft: '0.5rem', cursor: 'pointer' }}
-                                                                        >
-                                                                            Remove
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
 
                                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
                                     <button type="button" onClick={() => setShowModal(false)} className="btn-secondary" style={{ padding: '0.6rem 1.25rem' }}>Cancel</button>
