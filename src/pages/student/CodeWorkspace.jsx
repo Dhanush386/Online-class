@@ -423,6 +423,29 @@ sys.stdin = StringIO(test_input)
                                 <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>{challenge.title}</h1>
                                 <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, marginBottom: '2rem' }}>{challenge.problem_statement}</div>
 
+                                {challenge.input_format && (
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>Input Format</h4>
+                                        <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{challenge.input_format}</div>
+                                    </div>
+                                )}
+
+                                {challenge.output_format && (
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>Output Format</h4>
+                                        <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{challenge.output_format}</div>
+                                    </div>
+                                )}
+
+                                {challenge.constraints && (
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>Constraints</h4>
+                                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.9rem', color: '#334155', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                                            {challenge.constraints}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {challenge.target_visual_url && (
                                     <div style={{ marginBottom: '2rem' }}>
                                         <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem', color: '#3b82f6' }}>Refer to the below image.</p>
