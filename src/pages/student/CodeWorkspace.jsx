@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import CodeEditor from '../../components/CodeEditor'
 import CodingDiscussions from '../../components/CodingDiscussions'
+import { useToast } from '../../components/Toast'
 
 const LANGUAGE_CONFIG = {
     python: { id: 25, name: 'Python 3', icon: <CodeIcon size={16} />, useExtra: true },
@@ -26,6 +27,7 @@ const MAX_ATTEMPTS = 2
 export default function CodeWorkspace() {
     const { challengeId } = useParams()
     const navigate = useNavigate()
+    const toast = useToast()
     const queryParams = new URLSearchParams(window.location.search)
     const isAdminMode = queryParams.get('admin') === 'true'
     const { profile, refreshStats } = useAuth()
@@ -375,6 +377,7 @@ sys.stdin = StringIO(test_input)
                         const newXp = (userData.xp || 0) + earnedXp;
                         await supabase.from('users').update({ xp: newXp }).eq('id', profile.id);
                         if (refreshStats) refreshStats();
+                        toast.success(`Congratulations! You earned ${earnedXp} XP for solving this challenge.`);
                     }
                 }
             }
