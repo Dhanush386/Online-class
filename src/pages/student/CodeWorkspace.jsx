@@ -42,6 +42,11 @@ export default function CodeWorkspace() {
     const [genericCode, setGenericCode] = useState('')
     const [webTab, setWebTab] = useState('html')
     const [leftTab, setLeftTab] = useState('description')
+
+    // Combined Challenge State
+    const [currentSubIndex, setCurrentSubIndex] = useState(0)
+    const [subCodes, setSubCodes] = useState({})
+    const [solvedSubIds, setSolvedSubIds] = useState([])
     
     const [loading, setLoading] = useState(true)
     const [running, setRunning] = useState(false)
@@ -61,6 +66,21 @@ export default function CodeWorkspace() {
     const [hasRequestedHelp, setHasRequestedHelp] = useState(false)
     const [hasUnlockedAnswer, setHasUnlockedAnswer] = useState(false)
     const [showUnlockModal, setShowUnlockModal] = useState(false)
+
+    const isCombined = challenge?.test_cases?.is_combined === true;
+    const currentQuestion = isCombined ? challenge.test_cases.sub_questions[currentSubIndex] : challenge;
+    const currentTestCases = isCombined ? currentQuestion.test_cases : (challenge?.test_cases || []);
+
+    const handleSubCodeChange = (val) => {
+        setGenericCode(val);
+        setSubCodes(prev => ({ ...prev, [currentSubIndex]: val }));
+    }
+
+    const handleSwitchSubQuestion = (index) => {
+        setCurrentSubIndex(index);
+        setGenericCode(subCodes[index] || '');
+        setResult(null);
+    }
 
     useEffect(() => {
         if (!challengeId) return;
@@ -118,7 +138,15 @@ export default function CodeWorkspace() {
             if (error) throw error
             setChallenge(data)
             
-            if (data.language !== 'html' && data.starter_code) {
+            const isCombinedData = data.test_cases?.is_combined === true;
+            if (isCombinedData) {
+                const initialSubCodes = {};
+                data.test_cases.sub_questions.forEach((q, i) => {
+                    initialSubCodes[i] = q.starter_code || '';
+                });
+                setSubCodes(initialSubCodes);
+                setGenericCode(initialSubCodes[0] || '');
+            } else if (data.language !== 'html' && data.starter_code) {
                 setGenericCode(data.starter_code)
             } else if (data.language === 'html' && data.starter_code) {
                 try {
@@ -131,9 +159,22 @@ export default function CodeWorkspace() {
                 }
             }
 
-            // Check attempts
-            const { data: userData } = await supabase.from('coding_submissions').select('id').eq('challenge_id', challengeId).eq('student_id', profile.id)
+            // Check attempts and solved status
+            const { data: userData } = await supabase.from('coding_submissions').select('id, code, status').eq('challenge_id', challengeId).eq('student_id', profile.id)
             setAttemptCount(userData ? userData.length : 0)
+
+            if (userData && isCombinedData) {
+                const solved = [];
+                userData.forEach(sub => {
+                    if (sub.status === 'accepted') {
+                        try {
+                            const parsed = JSON.parse(sub.code);
+                            if (parsed.isCombined && parsed.subId) solved.push(parsed.subId);
+                        } catch(e) {}
+                    }
+                });
+                setSolvedSubIds(solved);
+            }
 
             // Fetch all for context
             const { data: all } = await supabase.from('coding_challenges').select('id, title').order('created_at')
@@ -280,7 +321,7 @@ export default function CodeWorkspace() {
                 await initPyodide()
                 window.pyodideOutputBuffer.length = 0 // clear buffer
                 
-                const defaultInput = challenge.test_cases?.[0]?.input || ""
+                const defaultInput = currentTestCases?.[0]?.input || ""
                 window.pyodideInstance.globals.set("test_input", defaultInput)
                 await window.pyodideInstance.runPythonAsync(`
 import sys
@@ -313,8 +354,8 @@ sys.stdin = StringIO(test_input)
             const testResults = []
             let overallPassed = true
 
-            for (let i = 0; i < challenge.test_cases.length; i++) {
-                const tc = challenge.test_cases[i]
+            for (let i = 0; i < currentTestCases.length; i++) {
+                const tc = currentTestCases[i]
                 let passed = false
                 let stdout = ''
 
@@ -352,26 +393,38 @@ sys.stdin = StringIO(test_input)
             
             if (overallPassed && !canBypass) {
                 // Check if already solved
-                const { data: previousSubs } = await supabase.from('coding_submissions')
-                    .select('id')
-                    .eq('challenge_id', challengeId)
-                    .eq('student_id', profile.id)
-                    .eq('status', 'accepted');
-                
-                const alreadySolved = previousSubs && previousSubs.length > 0;
+                let alreadySolved = false;
+                if (isCombined) {
+                    alreadySolved = solvedSubIds.includes(currentQuestion.id);
+                } else {
+                    const { data: previousSubs } = await supabase.from('coding_submissions')
+                        .select('id')
+                        .eq('challenge_id', challengeId)
+                        .eq('student_id', profile.id)
+                        .eq('status', 'accepted');
+                    alreadySolved = previousSubs && previousSubs.length > 0;
+                }
 
                 // Submit to DB
+                const finalCodePayload = isCombined 
+                    ? JSON.stringify({ isCombined: true, subId: currentQuestion.id, code: genericCode })
+                    : (challenge.language === 'html' ? JSON.stringify({html: htmlCode, css: cssCode, js: jsCode}) : genericCode);
+
                 await supabase.from('coding_submissions').insert({
                     student_id: profile.id,
                     challenge_id: challengeId,
                     status: 'accepted',
-                    score: hasUnlockedAnswer ? 0 : (challenge.xp_reward || 15),
-                    code: challenge.language === 'html' ? JSON.stringify({html: htmlCode, css: cssCode, js: jsCode}) : genericCode
+                    score: hasUnlockedAnswer ? 0 : (currentQuestion.xp_reward || 15),
+                    code: finalCodePayload
                 })
+
+                if (isCombined && !alreadySolved && !hasUnlockedAnswer) {
+                    setSolvedSubIds(prev => [...prev, currentQuestion.id]);
+                }
 
                 // Award XP if it's their first time passing and they haven't unlocked the answer
                 if (!alreadySolved && !hasUnlockedAnswer) {
-                    const earnedXp = challenge.xp_reward || 15;
+                    const earnedXp = currentQuestion.xp_reward || 15;
                     const { data: userData } = await supabase.from('users').select('xp').eq('id', profile.id).single();
                     if (userData) {
                         const newXp = (userData.xp || 0) + earnedXp;
@@ -443,28 +496,49 @@ sys.stdin = StringIO(test_input)
                     <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
                         {leftTab === 'description' ? (
                             <div className="animate-fade-in">
-                                <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>{challenge.title}</h1>
-                                <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, marginBottom: '2rem' }}>{challenge.problem_statement}</div>
+                                <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>{isCombined ? `${challenge.title} - ${currentQuestion.title}` : challenge.title}</h1>
+                                {isCombined && (
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem', background: '#f8fafc', padding: '0.5rem', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                                        {challenge.test_cases.sub_questions.map((q, idx) => {
+                                            const isSolved = solvedSubIds.includes(q.id);
+                                            return (
+                                                <button 
+                                                    key={q.id} 
+                                                    onClick={() => handleSwitchSubQuestion(idx)}
+                                                    style={{ padding: '0.4rem 0.75rem', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600, border: '1px solid', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                                                        background: currentSubIndex === idx ? '#3b82f6' : (isSolved ? '#10b981' : '#ffffff'),
+                                                        color: currentSubIndex === idx || isSolved ? '#ffffff' : '#64748b',
+                                                        borderColor: currentSubIndex === idx ? '#2563eb' : (isSolved ? '#059669' : '#cbd5e1')
+                                                    }}
+                                                >
+                                                    {isSolved && <CheckCircle2 size={12} />}
+                                                    Part {idx + 1}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                                <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, marginBottom: '2rem', whiteSpace: 'pre-wrap' }}>{currentQuestion.problem_statement}</div>
 
-                                {challenge.input_format && (
+                                {currentQuestion.input_format && (
                                     <div style={{ marginBottom: '1.5rem' }}>
                                         <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>Input Format</h4>
-                                        <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{challenge.input_format}</div>
+                                        <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{currentQuestion.input_format}</div>
                                     </div>
                                 )}
 
-                                {challenge.output_format && (
+                                {currentQuestion.output_format && (
                                     <div style={{ marginBottom: '1.5rem' }}>
                                         <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>Output Format</h4>
-                                        <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{challenge.output_format}</div>
+                                        <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{currentQuestion.output_format}</div>
                                     </div>
                                 )}
 
-                                {challenge.constraints && (
+                                {currentQuestion.constraints && (
                                     <div style={{ marginBottom: '2rem' }}>
                                         <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>Constraints</h4>
                                         <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.9rem', color: '#334155', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                                            {challenge.constraints}
+                                            {currentQuestion.constraints}
                                         </div>
                                     </div>
                                 )}
@@ -480,7 +554,7 @@ sys.stdin = StringIO(test_input)
 
                                 {/* Testcases Section */}
                                 {(() => {
-                                    const cases = result?.testResults || challenge.test_cases
+                                    const cases = result?.testResults || currentTestCases
                                     const total = cases?.length || 0
                                     const passedCount = result?.testResults ? cases.filter(t => t.passed).length : 0
                                     const failedCount = result?.testResults ? total - passedCount : 0
@@ -515,7 +589,7 @@ sys.stdin = StringIO(test_input)
                                             {/* Individual Test Case Cards */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                 {cases?.map((tc, idx) => {
-                                                    const tcData = challenge.test_cases[idx] || tc
+                                                    const tcData = currentTestCases[idx] || tc
                                                     const passed = hasResults ? tc.passed : null
                                                     
                                                     let displayContent;
@@ -641,7 +715,7 @@ sys.stdin = StringIO(test_input)
                                 {webTab === 'js' && <CodeEditor value={jsCode} onChange={e => setJsCode(e.target.value)} language="js" readOnly={isReadOnly} />}
                             </>
                         ) : (
-                            <CodeEditor value={genericCode} onChange={e => setGenericCode(e.target.value)} language={challenge.language} readOnly={isReadOnly} />
+                            <CodeEditor value={genericCode} onChange={e => isCombined ? handleSubCodeChange(e.target.value) : setGenericCode(e.target.value)} language={challenge.language} readOnly={isReadOnly} />
                         )}
                     </div>
 

@@ -2,7 +2,9 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock, ShieldAlert } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock, ShieldAlert, Camera } from 'lucide-react'
+import * as tf from '@tensorflow/tfjs'
+import * as cocoSsd from '@tensorflow-models/coco-ssd'
 
 const MAX_ATTEMPTS = 1
 
@@ -27,6 +29,81 @@ export default function TakeAssessment() {
     const [isAutoSubmitted, setIsAutoSubmitted] = useState(false)
     const [requiresReentry, setRequiresReentry] = useState(false)
     const containerRef = useRef(null)
+
+    // Proctoring Engine States
+    const [isDeviceAllowed, setIsDeviceAllowed] = useState(true)
+    const [cameraEnabled, setCameraEnabled] = useState(false)
+    const [aiModel, setAiModel] = useState(null)
+    const videoRef = useRef(null)
+    const proctorInterval = useRef(null)
+
+    // Check Device
+    useEffect(() => {
+        const ua = navigator.userAgent
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+            setIsDeviceAllowed(false)
+        }
+    }, [])
+
+    // Load AI Model
+    useEffect(() => {
+        const loadModel = async () => {
+            try {
+                await tf.ready()
+                const model = await cocoSsd.load()
+                setAiModel(model)
+                console.log('AI Proctoring Model Loaded')
+            } catch (err) {
+                console.error('Failed to load AI model:', err)
+            }
+        }
+        loadModel()
+    }, [])
+
+    // Run Proctoring Loop
+    useEffect(() => {
+        if (isStarted && cameraEnabled && aiModel && videoRef.current) {
+            proctorInterval.current = setInterval(async () => {
+                if (videoRef.current && videoRef.current.readyState === 4) {
+                    const predictions = await aiModel.detect(videoRef.current)
+                    
+                    let phoneDetected = false
+                    let personCount = 0
+
+                    predictions.forEach(p => {
+                        if (p.class === 'cell phone') phoneDetected = true
+                        if (p.class === 'person') personCount++
+                    })
+
+                    if (phoneDetected) {
+                        setViolationCount(prev => {
+                            const next = prev + 1
+                            if (next < 3) {
+                                alert(`Security Warning (${next}/3): Unauthorized device (cell phone) detected by AI Proctoring.`)
+                            }
+                            return next
+                        })
+                    }
+                }
+            }, 2500)
+        }
+
+        return () => {
+            if (proctorInterval.current) clearInterval(proctorInterval.current)
+        }
+    }, [isStarted, cameraEnabled, aiModel])
+
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream
+            }
+            setCameraEnabled(true)
+        } catch (err) {
+            alert('Camera permission is required to take this proctored assessment.')
+        }
+    }
 
     useEffect(() => {
         if (violationCount >= 3 && isStarted && !submitted && !submitting && !isAutoSubmitted) {
@@ -347,6 +424,26 @@ export default function TakeAssessment() {
         )
     }
 
+    if (!isDeviceAllowed) {
+        return (
+            <div className="animate-fade-in" style={{ maxWidth: 600, margin: '4rem auto', textAlign: 'center' }}>
+                <div className="glass-card" style={{ padding: '3rem', border: '1px solid #ef4444' }}>
+                    <div style={{ width: 80, height: 80, background: '#fef2f2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#ef4444' }}>
+                        <ShieldAlert size={40} />
+                    </div>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Device Not Allowed</h1>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                        This assessment requires a strict proctoring environment. <strong>Mobile phones and tablets are strictly prohibited.</strong>
+                    </p>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Please log in from a Laptop or Desktop computer to take this exam.</p>
+                    <Link to={`/student/courses/${assessment?.course_id}`} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                        Go Back
+                    </Link>
+                </div>
+            </div>
+        )
+    }
+
     if (!isStarted) {
         return (
             <div className="animate-fade-in" style={{ maxWidth: 600, margin: '4rem auto', textAlign: 'center' }}>
@@ -354,17 +451,32 @@ export default function TakeAssessment() {
                     <div style={{ width: 80, height: 80, background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#6366f1' }}>
                         <Lock size={40} />
                     </div>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Secure Assessment</h1>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Secure AI Proctored Assessment</h1>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                        This assessment will be taken in <strong>Fullscreen Mode</strong> to ensure a fair environment.
-                        Right-click and copy-paste are disabled.
+                        This assessment will be taken in <strong>Fullscreen Mode</strong> with <strong>AI Webcam Monitoring</strong> to ensure a fair environment.
                     </p>
-                    <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', color: '#9a3412', fontSize: '0.875rem', marginBottom: '2rem', textAlign: 'left' }}>
-                        <strong>Note:</strong> Exiting fullscreen or switching tabs may result in a warning or automatic submission.
+                    <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', color: '#9a3412', fontSize: '0.875rem', marginBottom: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <strong>Security Rules:</strong>
+                        <li>Exiting fullscreen or switching tabs will result in a warning strike.</li>
+                        <li>An AI model will monitor your webcam to detect cell phones.</li>
+                        <li>Receiving 3 violation strikes will result in automatic test failure.</li>
                     </div>
-                    <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem' }}>
-                        Enter Secure Mode & Start
-                    </button>
+                    
+                    {!cameraEnabled ? (
+                        <button onClick={startCamera} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem', marginBottom: '1rem', border: '1px solid #6366f1', color: '#6366f1' }}>
+                            <Camera size={20} style={{ marginRight: '0.5rem' }} /> Enable Webcam to Continue
+                        </button>
+                    ) : (
+                        <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ background: '#ecfdf5', color: '#059669', padding: '0.75rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600 }}>
+                                <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
+                            </div>
+                            <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem' }}>
+                                Enter Secure Mode & Start
+                            </button>
+                        </div>
+                    )}
+
                     <Link to={`/student/courses/${assessment?.course_id}`} style={{ display: 'block', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                         Cancel and Go Back
                     </Link>
@@ -430,6 +542,16 @@ export default function TakeAssessment() {
                     </div>
                 </div>
             </div>
+
+            {/* Webcam Feed */}
+            {cameraEnabled && (
+                <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: 50, background: '#000' }}>
+                    <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ position: 'absolute', bottom: '4px', left: '0', right: '0', textAlign: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 800, background: 'rgba(239,68,68,0.8)', padding: '2px 0' }}>
+                        AI PROCTORING ACTIVE
+                    </div>
+                </div>
+            )}
 
             {/* Question Card */}
             <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '2rem' }}>

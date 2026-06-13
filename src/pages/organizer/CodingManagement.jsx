@@ -42,6 +42,8 @@ export default function CodingManagement() {
         xp_reward: 15, open_time: '', close_time: '',
         target_visual_url: '', allowed_assets: '',
         day_number: 1,
+        is_combined: false,
+        sub_questions: [{ id: 'q1', title: '', problem_statement: '', starter_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }] }],
         test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }]
     })
 
@@ -260,9 +262,21 @@ export default function CodingManagement() {
             }
 
             const payload = {
-                ...formData,
+                title: formData.title,
+                description: formData.description,
+                problem_statement: formData.problem_statement,
+                course_id: formData.course_id,
+                language: formData.language,
+                difficulty: formData.difficulty,
+                solution_code: formData.solution_code,
+                constraints: formData.constraints,
+                input_format: formData.input_format,
+                output_format: formData.output_format,
+                xp_reward: formData.xp_reward,
+                day_number: formData.day_number,
+                target_visual_url: formData.target_visual_url,
                 starter_code: finalStarterCode,
-                test_cases: formData.test_cases.filter(tc => 
+                test_cases: formData.is_combined ? { is_combined: true, sub_questions: formData.sub_questions } : formData.test_cases.filter(tc => 
                     tc.expected_output?.trim() !== '' || 
                     (formData.language === 'html' && tc.output_image_url?.trim() !== '')
                 ),
@@ -321,6 +335,17 @@ export default function CodingManagement() {
             }
         }
 
+        let is_combined = false;
+        let sub_questions = [{ id: 'q1', title: '', problem_statement: '', starter_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }] }];
+        let parsedTestCases = [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }];
+        
+        if (c.test_cases && !Array.isArray(c.test_cases) && c.test_cases.is_combined) {
+            is_combined = true;
+            sub_questions = c.test_cases.sub_questions || sub_questions;
+        } else if (Array.isArray(c.test_cases)) {
+            parsedTestCases = c.test_cases;
+        }
+
         setFormData({
             title: c.title, description: c.description || '',
             problem_statement: c.problem_statement, course_id: c.course_id || '', language: c.language || 'python', difficulty: c.difficulty || 'easy',
@@ -331,7 +356,9 @@ export default function CodingManagement() {
             close_time: toLocalInput(c.close_time),
             target_visual_url: c.target_visual_url || '',
             allowed_assets: Array.isArray(c.allowed_assets) ? c.allowed_assets.join('\n') : (c.allowed_assets || ''),
-            test_cases: c.test_cases || [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }],
+            test_cases: parsedTestCases,
+            is_combined,
+            sub_questions,
             day_number: c.day_number || 1
         })
         setShowModal(true)
@@ -345,6 +372,8 @@ export default function CodingManagement() {
             xp_reward: 15, open_time: '', close_time: '',
             target_visual_url: '', allowed_assets: '',
             day_number: 1,
+            is_combined: false,
+            sub_questions: [{ id: 'q1', title: '', problem_statement: '', starter_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }] }],
             test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }]
         })
         setStarterWebCode({ html: '', css: '', js: '' })
@@ -651,6 +680,17 @@ export default function CodingManagement() {
                                             required
                                         />
                                     </div>
+                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1', display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={formData.is_combined} 
+                                                onChange={e => setFormData({ ...formData, is_combined: e.target.checked })} 
+                                                style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                                            />
+                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>Combined Challenge (Multi-Part)</span>
+                                        </label>
+                                    </div>
                                 </div>
 
                                 <div style={{ marginBottom: '1.25rem' }}>
@@ -819,6 +859,96 @@ export default function CodingManagement() {
                                                                     width: 60, 
                                                                     height: 60, 
                                                                     borderRadius: 8, 
+                                                                    background: '#f1f5f9', 
+                                                                    display: 'flex', 
+                                                                    alignItems: 'center', 
+                                                                    justifyContent: 'center',
+                                                                    overflow: 'hidden',
+                                                                    border: '1px solid #e2e8f0',
+                                                                    flexShrink: 0
+                                                                }}>
+                                                                    {tc[field] ? (
+                                                                        <img src={tc[field]} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                    ) : (
+                                                                        <ImageIcon size={20} color="#cbd5e1" />
+                                                                    )}
+                                                                </div>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-input"
+                                                                    placeholder="Image URL"
+                                                                    value={tc[field] || ''}
+                                                                    onChange={e => {
+                                                                        const newTCData = [...formData.test_cases]
+                                                                        newTCData[idx][field] = e.target.value
+                                                                        setFormData(p => ({ ...p, test_cases: newTCData }))
+                                                                    }}
+                                                                    style={{ fontSize: '0.75rem' }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                </>
+                                ) : (
+                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                            <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sub-Questions</h4>
+                                            <button type="button" onClick={() => setFormData(p => ({ ...p, sub_questions: [...p.sub_questions, { id: 'q' + (p.sub_questions.length + 1), title: '', problem_statement: '', starter_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false }] }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
+                                                <Plus size={14} /> Add Question
+                                            </button>
+                                        </div>
+                                        {formData.sub_questions.map((q, qIdx) => (
+                                            <div key={qIdx} style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '1rem', marginBottom: '1.5rem', background: 'white' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                                    <h5 style={{ fontWeight: 700 }}>Question {qIdx + 1}</h5>
+                                                    <button type="button" onClick={() => setFormData(p => ({ ...p, sub_questions: p.sub_questions.filter((_, i) => i !== qIdx) }))} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', gap: '1rem', marginBottom: '1rem' }}>
+                                                    <div>
+                                                        <label className="form-label">Title</label>
+                                                        <input className="form-input" value={q.title} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].title = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
+                                                    </div>
+                                                    <div>
+                                                        <label className="form-label">XP Reward</label>
+                                                        <input type="number" className="form-input" value={q.xp_reward} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].xp_reward = parseInt(e.target.value) || 0; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
+                                                    </div>
+                                                </div>
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="form-label">Problem Statement</label>
+                                                    <textarea className="form-input" rows={3} value={q.problem_statement} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].problem_statement = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
+                                                </div>
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="form-label">Starter Code</label>
+                                                    <div style={{ height: '120px', background: '#1e293b', borderRadius: 8, overflow: 'hidden' }}>
+                                                        <CodeEditor value={q.starter_code} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].starter_code = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} language={formData.language} placeholder="Initial code..." />
+                                                    </div>
+                                                </div>
+                                                <div style={{ marginTop: '1rem', padding: '1rem', background: '#f1f5f9', borderRadius: 8 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                        <strong style={{ fontSize: '0.85rem' }}>Test Cases for Q{qIdx + 1}</strong>
+                                                        <button type="button" onClick={() => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases.push({ input: '', expected_output: '', is_hidden: false }); setFormData(p => ({ ...p, sub_questions: sq })) }} className="btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}>+ TC</button>
+                                                    </div>
+                                                    {q.test_cases.map((tc, tcIdx) => (
+                                                        <div key={tcIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'flex-start' }}>
+                                                            <textarea className="form-input" placeholder="Input" value={tc.input} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases[tcIdx].input = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} style={{ flex: 1, height: '40px', minHeight: '40px' }} />
+                                                            <textarea className="form-input" placeholder="Expected" value={tc.expected_output} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases[tcIdx].expected_output = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} style={{ flex: 1, height: '40px', minHeight: '40px' }} />
+                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: '0.6rem' }}>Hide</span>
+                                                                <input type="checkbox" checked={tc.is_hidden} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases[tcIdx].is_hidden = e.target.checked; setFormData(p => ({ ...p, sub_questions: sq })) }} />
+                                                            </div>
+                                                            <button type="button" onClick={() => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases = sq[qIdx].test_cases.filter((_, i) => i !== tcIdx); setFormData(p => ({ ...p, sub_questions: sq })) }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                                                     background: '#f1f5f9', 
                                                                     display: 'flex', 
                                                                     alignItems: 'center', 
