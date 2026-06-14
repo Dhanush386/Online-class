@@ -795,7 +795,7 @@ sys.stdin = StringIO(test_input)
                                                     }}
                                                 >
                                                     {isSolved && <CheckCircle2 size={12} />}
-                                                    Part {idx + 1}
+                                                    Part {idx + 1} ({q.xp_reward || 15} XP)
                                                 </button>
                                             )
                                         })}
@@ -945,7 +945,7 @@ sys.stdin = StringIO(test_input)
                                             <div style={{ marginTop: '2rem', padding: '1rem', background: '#d1fae5', border: '1px solid #10b981', borderRadius: 8 }}>
                                                 <h4 style={{ color: '#10b981', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle2 size={16} /> Solution Unlocked</h4>
                                                 <pre style={{ background: '#ecfdf5', padding: '1rem', borderRadius: 6, color: '#064e3b', overflowX: 'auto', fontSize: '0.8rem' }}>
-                                                    {challenge.solution_code || "No solution provided by organizer."}
+                                                    {(isCombined ? currentQuestion.solution_code : challenge.solution_code) || "No solution provided by organizer."}
                                                 </pre>
                                                 <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#6ee7b7' }}>You will not receive XP for this challenge.</p>
                                             </div>

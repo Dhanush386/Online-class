@@ -336,7 +336,7 @@ export default function CodingManagement() {
         }
 
         let is_combined = false;
-        let sub_questions = [{ id: 'q1', title: '', problem_statement: '', starter_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }] }];
+        let sub_questions = [{ id: 'q1', title: '', problem_statement: '', starter_code: '', solution_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }] }];
         let parsedTestCases = [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }];
         
         if (c.test_cases && !Array.isArray(c.test_cases) && c.test_cases.is_combined) {
@@ -373,7 +373,7 @@ export default function CodingManagement() {
             target_visual_url: '', allowed_assets: '',
             day_number: 1,
             is_combined: false,
-            sub_questions: [{ id: 'q1', title: '', problem_statement: '', starter_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }] }],
+            sub_questions: [{ id: 'q1', title: '', problem_statement: '', starter_code: '', solution_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }] }],
             test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }]
         })
         setStarterWebCode({ html: '', css: '', js: '' })
@@ -900,7 +900,7 @@ export default function CodingManagement() {
                                     <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                             <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sub-Questions</h4>
-                                            <button type="button" onClick={() => setFormData(p => ({ ...p, sub_questions: [...p.sub_questions, { id: 'q' + (p.sub_questions.length + 1), title: '', problem_statement: '', starter_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false }] }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
+                                            <button type="button" onClick={() => setFormData(p => ({ ...p, sub_questions: [...p.sub_questions, { id: 'q' + (p.sub_questions.length + 1), title: '', problem_statement: '', starter_code: '', solution_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false }] }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
                                                 <Plus size={14} /> Add Question
                                             </button>
                                         </div>
@@ -928,6 +928,12 @@ export default function CodingManagement() {
                                                     <label className="form-label">Starter Code</label>
                                                     <div style={{ height: '120px', background: '#1e293b', borderRadius: 8, overflow: 'hidden' }}>
                                                         <CodeEditor value={q.starter_code} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].starter_code = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} language={formData.language} placeholder="Initial code..." />
+                                                    </div>
+                                                </div>
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="form-label">Solution Code (Optional)</label>
+                                                    <div style={{ height: '120px', background: '#1e293b', borderRadius: 8, overflow: 'hidden' }}>
+                                                        <CodeEditor value={q.solution_code || ''} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].solution_code = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} language={formData.language} placeholder="Correct answer..." />
                                                     </div>
                                                 </div>
                                                 <div style={{ marginTop: '1rem', padding: '1rem', background: '#f1f5f9', borderRadius: 8 }}>
