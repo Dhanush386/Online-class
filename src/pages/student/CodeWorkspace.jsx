@@ -188,14 +188,6 @@ export default function CodeWorkspace() {
         }
     }
 
-    useEffect(() => {
-        if (videoRef.current && mediaStream) {
-            if (videoRef.current.srcObject !== mediaStream) {
-                videoRef.current.srcObject = mediaStream
-            }
-            videoRef.current.play().catch(e => console.error("Video play error:", e))
-        }
-    }, [isStarted, cameraEnabled, mediaStream, violationCount])
 
     useEffect(() => {
         if (violationCount >= 3 && isStarted && !canBypass) {
@@ -728,7 +720,16 @@ sys.stdin = StringIO(test_input)
 
             {cameraEnabled && !canBypass && (
                 <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: 1000, background: '#000' }}>
-                    <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <video 
+                        ref={(node) => {
+                            videoRef.current = node;
+                            if (node && mediaStream) {
+                                if (node.srcObject !== mediaStream) node.srcObject = mediaStream;
+                                if (node.paused) node.play().catch(e => console.error("Video play error:", e));
+                            }
+                        }} 
+                        autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
                     <div style={{ position: 'absolute', bottom: '4px', left: '0', right: '0', textAlign: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 800, background: 'rgba(239,68,68,0.8)', padding: '2px 0' }}>
                         AI PROCTORING ACTIVE
                     </div>
