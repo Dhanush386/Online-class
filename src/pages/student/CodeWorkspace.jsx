@@ -97,13 +97,13 @@ export default function CodeWorkspace() {
             const remaining = Math.floor((parseInt(savedEndTime) - Date.now()) / 1000);
             if (remaining > 0) {
                 setTimeLeft(remaining);
-                setIsStarted(true);
+                if (canBypass) setIsStarted(true);
             } else {
                 setTimeLeft(0);
-                setIsStarted(true);
+                if (canBypass) setIsStarted(true);
             }
         }
-    }, [challengeId]);
+    }, [challengeId, canBypass]);
 
     // Check Device
     useEffect(() => {
