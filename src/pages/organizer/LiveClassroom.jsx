@@ -32,9 +32,9 @@ export default function LiveClassroom() {
     const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
 
     useEffect(() => {
-        // 1. Load Jitsi Script (Using public riot.im instance)
+        // 1. Load Jitsi Script (Using public guifi.net instance)
         const jitsiScript = document.createElement('script')
-        jitsiScript.src = `https://jitsi.riot.im/external_api.js`
+        jitsiScript.src = `https://meet.guifi.net/external_api.js`
         jitsiScript.async = true
         jitsiScript.onload = () => setJitsiLoaded(true)
         document.head.appendChild(jitsiScript)
@@ -120,7 +120,7 @@ export default function LiveClassroom() {
     }, [loading, videoData, profile, instructorPresent, jitsiLoaded])
 
     function initJitsi(data) {
-        const domain = 'jitsi.riot.im' 
+        const domain = 'meet.guifi.net' 
         const options = {
             roomName: `Learnova_LiveClass_${data.id}`,
             width: '100%',

@@ -5,9 +5,10 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import {
     ChevronLeft, Play, Send, Layout, Eye, Sidebar as SidebarIcon,
-    AlertCircle, CheckCircle2, XCircle, Clock, Info, Code as CodeIcon, Database, Globe, Lock, Share2, Copy,
-    FileText, HelpCircle, MessageSquare, RotateCcw, Maximize, Settings, Save, Trash2
+    FileText, HelpCircle, MessageSquare, RotateCcw, Maximize, Settings, Save, Trash2, ShieldAlert, Camera
 } from 'lucide-react'
+import * as tf from '@tensorflow/tfjs'
+import * as cocoSsd from '@tensorflow-models/coco-ssd'
 import CodeEditor from '../../components/CodeEditor'
 import CodingDiscussions from '../../components/CodingDiscussions'
 import { useToast } from '../../components/Toast'
@@ -61,6 +62,12 @@ export default function CodeWorkspace() {
     const [timeStatus, setTimeStatus] = useState('open')
     const [isStarted, setIsStarted] = useState(false)
     const [violationCount, setViolationCount] = useState(0)
+    const [requiresReentry, setRequiresReentry] = useState(false)
+    const [isDeviceAllowed, setIsDeviceAllowed] = useState(true)
+    const [cameraEnabled, setCameraEnabled] = useState(false)
+    const [aiModel, setAiModel] = useState(null)
+    const videoRef = useRef(null)
+    const proctorInterval = useRef(null)
 
     const [timeLeft, setTimeLeft] = useState(30 * 60)
     const [hasRequestedHelp, setHasRequestedHelp] = useState(false)
@@ -96,6 +103,129 @@ export default function CodeWorkspace() {
             }
         }
     }, [challengeId]);
+
+    // Check Device
+    useEffect(() => {
+        if (canBypass) return;
+        const ua = navigator.userAgent
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+            setIsDeviceAllowed(false)
+        }
+    }, [canBypass])
+
+    // Load AI Model
+    useEffect(() => {
+        if (canBypass) return;
+        const loadModel = async () => {
+            try {
+                await tf.ready()
+                const model = await cocoSsd.load()
+                setAiModel(model)
+            } catch (err) {
+                console.error('Failed to load AI model:', err)
+            }
+        }
+        loadModel()
+    }, [canBypass])
+
+    // Run Proctoring Loop
+    useEffect(() => {
+        if (isStarted && cameraEnabled && aiModel && videoRef.current && !canBypass) {
+            proctorInterval.current = setInterval(async () => {
+                if (videoRef.current && videoRef.current.readyState === 4) {
+                    const predictions = await aiModel.detect(videoRef.current)
+                    let phoneDetected = false
+                    predictions.forEach(p => {
+                        if (p.class === 'cell phone') phoneDetected = true
+                    })
+                    if (phoneDetected) {
+                        setViolationCount(prev => {
+                            const next = prev + 1
+                            if (next < 3) {
+                                alert(`Security Warning (${next}/3): Unauthorized device (cell phone) detected by AI Proctoring.`)
+                            }
+                            return next
+                        })
+                    }
+                }
+            }, 2500)
+        }
+        return () => {
+            if (proctorInterval.current) clearInterval(proctorInterval.current)
+        }
+    }, [isStarted, cameraEnabled, aiModel, canBypass])
+
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream
+            }
+            setCameraEnabled(true)
+        } catch (err) {
+            alert('Camera permission is required to take this proctored challenge.')
+        }
+    }
+
+    useEffect(() => {
+        if (violationCount >= 3 && isStarted && !canBypass) {
+            alert('Security Violation: 3 violations detected. You are being removed from the coding session.')
+            navigate('/student/coding')
+        }
+    }, [violationCount, isStarted, canBypass, navigate])
+
+    useEffect(() => {
+        const handleFullScreenChange = () => {
+            if (isStarted && !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement && !canBypass) {
+                setViolationCount(prev => {
+                    const next = prev + 1
+                    if (next < 3) setRequiresReentry(true)
+                    return next
+                })
+            }
+        }
+
+        const handleVisibilityChange = () => {
+            if (isStarted && document.hidden && !canBypass) {
+                setViolationCount(prev => {
+                    const next = prev + 1
+                    if (next < 3) alert(`Security Warning (${next}/3): You lost focus on the coding window. Please stay on this page.`)
+                    return next
+                })
+            }
+        }
+
+        if (isStarted && !canBypass) {
+            document.addEventListener('fullscreenchange', handleFullScreenChange)
+            document.addEventListener('webkitfullscreenchange', handleFullScreenChange)
+            document.addEventListener('mozfullscreenchange', handleFullScreenChange)
+            document.addEventListener('MSFullscreenChange', handleFullScreenChange)
+            document.addEventListener('visibilitychange', handleVisibilityChange)
+        }
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullScreenChange)
+            document.removeEventListener('webkitfullscreenchange', handleFullScreenChange)
+            document.removeEventListener('mozfullscreenchange', handleFullScreenChange)
+            document.removeEventListener('MSFullscreenChange', handleFullScreenChange)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
+    }, [isStarted, canBypass])
+
+    const enterFullScreen = () => {
+        const elem = document.documentElement
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen()
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen()
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen()
+        }
+        setIsStarted(true)
+        setRequiresReentry(false)
+        if (!localStorage.getItem(`challenge_endTime_${challengeId}`)) {
+            localStorage.setItem(`challenge_endTime_${challengeId}`, Date.now() + 30 * 60 * 1000);
+        }
+    }
 
     const handleStartChallenge = () => {
         setIsStarted(true);
@@ -445,16 +575,91 @@ sys.stdin = StringIO(test_input)
     if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#0f172a' }}>Loading workspace...</div>
     if (!challenge) return <div>Challenge not found</div>
 
+    if (!isDeviceAllowed && !canBypass) {
+        return (
+            <div className="animate-fade-in" style={{ height: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                <div className="glass-card" style={{ maxWidth: 600, padding: '3rem', border: '1px solid #ef4444', textAlign: 'center' }}>
+                    <div style={{ width: 80, height: 80, background: '#fef2f2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#ef4444' }}>
+                        <ShieldAlert size={40} />
+                    </div>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem' }}>Device Not Allowed</h1>
+                    <p style={{ color: '#334155', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                        Coding practice requires a strict proctoring environment. <strong>Mobile phones and tablets are strictly prohibited.</strong>
+                    </p>
+                    <Link to="/student/coding" className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>Go Back</Link>
+                </div>
+            </div>
+        )
+    }
+
     if (!isStarted && !canBypass) {
+        return (
+            <div style={{ height: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                <div className="glass-card" style={{ maxWidth: 600, padding: '3rem', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                    <div style={{ width: 80, height: 80, background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#6366f1' }}>
+                        <Lock size={40} />
+                    </div>
+                    <h1 style={{ color: '#0f172a', fontSize: '1.8rem', marginBottom: '1rem', fontWeight: 800 }}>Secure AI Proctored Coding</h1>
+                    <p style={{ color: '#334155', marginBottom: '1.5rem' }}>
+                        This challenge will be taken in <strong>Fullscreen Mode</strong> with <strong>AI Webcam Monitoring</strong>.
+                    </p>
+                    <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', color: '#9a3412', fontSize: '0.875rem', marginBottom: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <strong>Security Rules:</strong>
+                        <li>Exiting fullscreen or switching tabs will result in a warning strike.</li>
+                        <li>An AI model will monitor your webcam to detect cell phones.</li>
+                        <li>Receiving 3 violation strikes will result in automatic termination.</li>
+                    </div>
+                    
+                    {!cameraEnabled ? (
+                        <button onClick={startCamera} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem', marginBottom: '1rem', border: '1px solid #6366f1', color: '#6366f1' }}>
+                            <Camera size={20} style={{ marginRight: '0.5rem' }} /> Enable Webcam to Continue
+                        </button>
+                    ) : (
+                        <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ background: '#ecfdf5', color: '#059669', padding: '0.75rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600 }}>
+                                <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
+                            </div>
+                            <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', height: '3.5rem', fontSize: '1.1rem', justifyContent: 'center' }}>
+                                Enter Secure Mode & Start
+                            </button>
+                        </div>
+                    )}
+                    <Link to="/student/coding" style={{ display: 'block', marginTop: '1.5rem', color: '#64748b' }}>Cancel and Go Back</Link>
+                </div>
+            </div>
+        )
+    }
+
+    if (!isStarted && canBypass) {
         return (
             <div style={{ height: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
                 <div className="glass-card" style={{ maxWidth: 600, padding: '3rem', textAlign: 'center', border: '1px solid #e2e8f0' }}>
                     <h1 style={{ color: '#0f172a', fontSize: '2rem', marginBottom: '1.5rem' }}>{challenge.title}</h1>
                     <div style={{ background: '#ffffff', padding: '1.5rem', borderRadius: 12, textAlign: 'left', marginBottom: '2rem' }}>
-                        <p style={{ color: '#334155', marginBottom: '1rem' }}>Please review the instructions. You have <strong>{MAX_ATTEMPTS - attemptCount} attempts</strong> remaining.</p>
+                        <p style={{ color: '#334155', marginBottom: '1rem' }}>You are testing in <strong>Organizer Admin Mode</strong>. AI Proctoring is bypassed.</p>
                     </div>
                     <button onClick={handleStartChallenge} className="btn-primary" style={{ width: '100%', height: '3.5rem' }}>Start Challenge</button>
-                    <Link to="/student/coding" style={{ display: 'block', marginTop: '1.5rem', color: '#64748b' }}>Go Back</Link>
+                    <Link to="/organizer/coding" style={{ display: 'block', marginTop: '1.5rem', color: '#64748b' }}>Go Back</Link>
+                </div>
+            </div>
+        )
+    }
+
+    if (requiresReentry && !canBypass) {
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.98)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                <div className="glass-card animate-scale-in" style={{ maxWidth: 500, padding: '3rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <div style={{ width: 80, height: 80, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#ef4444' }}>
+                        <ShieldAlert size={40} />
+                    </div>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>Security Block</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem', lineHeight: 1.6 }}>
+                        You have exited <strong>Secure Mode</strong>. This is a security violation ({violationCount}/3). 
+                        You must re-enter fullscreen to continue your challenge.
+                    </p>
+                    <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', height: '3.5rem', fontSize: '1.1rem', background: '#ef4444', border: 'none', justifyContent: 'center' }}>
+                        Re-enter Secure Mode
+                    </button>
                 </div>
             </div>
         )
@@ -467,6 +672,11 @@ sys.stdin = StringIO(test_input)
                     <ChevronLeft size={18} /> CODING PRACTICE - {currentIndex + 1}
                 </Link>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    {violationCount > 0 && !canBypass && (
+                        <div style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 700, background: '#fef2f2', padding: '4px 10px', borderRadius: 4, border: '1px solid #fee2e2' }}>
+                            Violations: {violationCount}/3
+                        </div>
+                    )}
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{challenge.title}</span>
                     {isStarted && !canBypass && (
                         <div style={{ padding: '4px 10px', background: '#e2e8f0', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: timeLeft <= 300 ? '#ef4444' : '#0f172a' }}>
@@ -476,6 +686,15 @@ sys.stdin = StringIO(test_input)
                     <div style={{ padding: '2px 8px', background: '#10b981', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>VER 7.1</div>
                 </div>
             </header>
+
+            {cameraEnabled && !canBypass && (
+                <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: 1000, background: '#000' }}>
+                    <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ position: 'absolute', bottom: '4px', left: '0', right: '0', textAlign: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 800, background: 'rgba(239,68,68,0.8)', padding: '2px 0' }}>
+                        AI PROCTORING ACTIVE
+                    </div>
+                </div>
+            )}
 
             <div style={{ flex: 1, display: 'flex', gap: '8px', padding: '8px', overflow: 'hidden' }}>
                 
