@@ -157,6 +157,27 @@ export default function CodeWorkspace() {
         }
     }, [isStarted, cameraEnabled, aiModel, canBypass])
 
+    const stopProctoring = () => {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(t => t.stop())
+            setMediaStream(null)
+            setCameraEnabled(false)
+        }
+        if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+            if (document.exitFullscreen) document.exitFullscreen()
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
+            else if (document.msExitFullscreen) document.msExitFullscreen()
+        }
+    }
+
+    useEffect(() => {
+        return () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop())
+            }
+        }
+    }, [mediaStream])
+
     const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true })
@@ -568,6 +589,15 @@ sys.stdin = StringIO(test_input)
                         if (refreshStats) refreshStats();
                         toast.success(`Congratulations! You earned ${earnedXp} XP for solving this challenge.`);
                     }
+                }
+
+                let isFullyCompleted = true;
+                if (isCombined && (solvedSubIds.length + (!alreadySolved && !hasUnlockedAnswer ? 1 : 0)) < challenge.test_cases.sub_questions.length) {
+                    isFullyCompleted = false;
+                }
+
+                if (isFullyCompleted) {
+                    stopProctoring();
                 }
             }
         } catch (err) {
