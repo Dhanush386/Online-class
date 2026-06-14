@@ -315,6 +315,10 @@ export default function CodeWorkspace() {
             const { data: userData } = await supabase.from('coding_submissions').select('id, code, status').eq('challenge_id', challengeId).eq('student_id', profile.id)
             setAttemptCount(userData ? userData.length : 0)
 
+            if (userData && userData.some(sub => sub.status === 'unlocked')) {
+                setHasUnlockedAnswer(true)
+            }
+
             if (userData && isCombinedData) {
                 const solved = [];
                 userData.forEach(sub => {
@@ -621,6 +625,26 @@ sys.stdin = StringIO(test_input)
                 </div>
             </div>
         )
+    }
+
+    const handleUnlockAnswer = async () => {
+        setHasUnlockedAnswer(true);
+        setShowUnlockModal(false);
+        setLeftTab('help');
+
+        if (!canBypass) {
+            try {
+                await supabase.from('coding_submissions').insert({
+                    student_id: profile.id,
+                    challenge_id: challengeId,
+                    status: 'unlocked',
+                    score: 0,
+                    code: 'Unlocked answer without submission',
+                });
+            } catch (e) {
+                console.error("Failed to mark answer as unlocked", e);
+            }
+        }
     }
 
     if (!isStarted && !canBypass) {
@@ -1050,7 +1074,7 @@ sys.stdin = StringIO(test_input)
                         </p>
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                             <button onClick={() => setShowUnlockModal(false)} style={{ padding: '0.5rem 1.5rem', background: 'transparent', border: '1px solid #64748b', color: '#334155', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-                            <button onClick={() => { setHasUnlockedAnswer(true); setShowUnlockModal(false); setLeftTab('help'); }} style={{ padding: '0.5rem 1.5rem', background: '#f59e0b', border: 'none', color: '#fff', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Unlock Answer</button>
+                            <button onClick={handleUnlockAnswer} style={{ padding: '0.5rem 1.5rem', background: '#f59e0b', border: 'none', color: '#fff', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Unlock Answer</button>
                         </div>
                     </div>
                 </div>

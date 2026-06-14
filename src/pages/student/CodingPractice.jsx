@@ -85,9 +85,10 @@ export default function CodingPractice() {
     }
 
     const getStatus = (challengeId) => {
-        const sub = submissions.find(s => s.challenge_id === challengeId)
-        if (!sub) return { label: 'UNSOLVED', color: '#94a3b8', solved: false }
-        if (sub.status === 'accepted') return { label: 'SOLVED', color: '#10b981', solved: true }
+        const challengeSubs = submissions.filter(s => s.challenge_id === challengeId)
+        if (challengeSubs.length === 0) return { label: 'UNSOLVED', color: '#94a3b8', solved: false }
+        if (challengeSubs.some(s => s.status === 'unlocked')) return { label: 'UNLOCKED', color: '#ea580c', solved: false }
+        if (challengeSubs.some(s => s.status === 'accepted')) return { label: 'SOLVED', color: '#10b981', solved: true }
         return { label: 'ATTEMPTED', color: '#f59e0b', solved: false }
     }
 
