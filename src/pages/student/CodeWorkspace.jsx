@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import {
     ChevronLeft, Play, Send, Layout, Eye, Sidebar as SidebarIcon,
+    AlertCircle, CheckCircle2, XCircle, Clock, Info, Code as CodeIcon, Database, Globe, Lock, Share2, Copy,
     FileText, HelpCircle, MessageSquare, RotateCcw, Maximize, Settings, Save, Trash2, ShieldAlert, Camera
 } from 'lucide-react'
 import * as tf from '@tensorflow/tfjs'
