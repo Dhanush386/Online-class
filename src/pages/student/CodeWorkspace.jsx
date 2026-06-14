@@ -190,9 +190,12 @@ export default function CodeWorkspace() {
 
     useEffect(() => {
         if (videoRef.current && mediaStream) {
-            videoRef.current.srcObject = mediaStream
+            if (videoRef.current.srcObject !== mediaStream) {
+                videoRef.current.srcObject = mediaStream
+            }
+            videoRef.current.play().catch(e => console.error("Video play error:", e))
         }
-    }, [isStarted, cameraEnabled, mediaStream])
+    }, [isStarted, cameraEnabled, mediaStream, violationCount])
 
     useEffect(() => {
         if (violationCount >= 3 && isStarted && !canBypass) {
