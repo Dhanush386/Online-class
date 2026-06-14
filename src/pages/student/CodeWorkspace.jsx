@@ -315,7 +315,7 @@ export default function CodeWorkspace() {
             const { data: userData } = await supabase.from('coding_submissions').select('id, code, status').eq('challenge_id', challengeId).eq('student_id', profile.id)
             setAttemptCount(userData ? userData.length : 0)
 
-            if (userData && userData.some(sub => sub.status === 'unlocked')) {
+            if (userData && userData.some(sub => sub.code === 'Unlocked answer without submission')) {
                 setHasUnlockedAnswer(true)
             }
 
@@ -637,7 +637,7 @@ sys.stdin = StringIO(test_input)
                 await supabase.from('coding_submissions').insert({
                     student_id: profile.id,
                     challenge_id: challengeId,
-                    status: 'unlocked',
+                    status: 'failed',
                     score: 0,
                     code: 'Unlocked answer without submission',
                 });

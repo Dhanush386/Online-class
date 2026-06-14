@@ -87,7 +87,7 @@ export default function CodingPractice() {
     const getStatus = (challengeId) => {
         const challengeSubs = submissions.filter(s => s.challenge_id === challengeId)
         if (challengeSubs.length === 0) return { label: 'UNSOLVED', color: '#94a3b8', solved: false }
-        if (challengeSubs.some(s => s.status === 'unlocked')) return { label: 'UNLOCKED', color: '#ea580c', solved: false }
+        if (challengeSubs.some(s => s.code === 'Unlocked answer without submission')) return { label: 'UNLOCKED', color: '#ea580c', solved: false }
         if (challengeSubs.some(s => s.status === 'accepted')) return { label: 'SOLVED', color: '#10b981', solved: true }
         return { label: 'ATTEMPTED', color: '#f59e0b', solved: false }
     }
