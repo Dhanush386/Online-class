@@ -66,6 +66,7 @@ export default function CodeWorkspace() {
     const [requiresReentry, setRequiresReentry] = useState(false)
     const [isDeviceAllowed, setIsDeviceAllowed] = useState(true)
     const [cameraEnabled, setCameraEnabled] = useState(false)
+    const [mediaStream, setMediaStream] = useState(null)
     const [aiModel, setAiModel] = useState(null)
     const videoRef = useRef(null)
     const proctorInterval = useRef(null)
@@ -159,14 +160,18 @@ export default function CodeWorkspace() {
     const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream
-            }
+            setMediaStream(stream)
             setCameraEnabled(true)
         } catch (err) {
             alert('Camera permission is required to take this proctored challenge.')
         }
     }
+
+    useEffect(() => {
+        if (videoRef.current && mediaStream) {
+            videoRef.current.srcObject = mediaStream
+        }
+    }, [isStarted, cameraEnabled, mediaStream])
 
     useEffect(() => {
         if (violationCount >= 3 && isStarted && !canBypass) {
