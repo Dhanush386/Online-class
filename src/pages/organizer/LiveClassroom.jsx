@@ -32,10 +32,9 @@ export default function LiveClassroom() {
     const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
 
     useEffect(() => {
-        // 1. Load Jitsi Script (8x8 JaaS)
-        const appId = import.meta.env.VITE_JITSI_APP_ID || 'vpaas-magic-cookie-YOUR_APP_ID'
+        // 1. Load Jitsi Script (Using public riot.im instance)
         const jitsiScript = document.createElement('script')
-        jitsiScript.src = `https://8x8.vc/${appId}/external_api.js`
+        jitsiScript.src = `https://jitsi.riot.im/external_api.js`
         jitsiScript.async = true
         jitsiScript.onload = () => setJitsiLoaded(true)
         document.head.appendChild(jitsiScript)
@@ -121,11 +120,9 @@ export default function LiveClassroom() {
     }, [loading, videoData, profile, instructorPresent, jitsiLoaded])
 
     function initJitsi(data) {
-        const domain = '8x8.vc' 
-        const appId = import.meta.env.VITE_JITSI_APP_ID || 'vpaas-magic-cookie-YOUR_APP_ID'
-        
+        const domain = 'jitsi.riot.im' 
         const options = {
-            roomName: `${appId}/Learnova_LiveClass_${data.id}`,
+            roomName: `Learnova_LiveClass_${data.id}`,
             width: '100%',
             height: '100%',
             parentNode: jitsiContainerRef.current,
