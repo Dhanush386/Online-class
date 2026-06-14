@@ -637,7 +637,7 @@ sys.stdin = StringIO(test_input)
                 await supabase.from('coding_submissions').insert({
                     student_id: profile.id,
                     challenge_id: challengeId,
-                    status: 'failed',
+                    status: 'accepted',
                     score: 0,
                     code: 'Unlocked answer without submission',
                 });
