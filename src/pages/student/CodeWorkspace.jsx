@@ -696,11 +696,13 @@ sys.stdin = StringIO(test_input)
                     ? JSON.stringify({ isCombined: true, subId: currentQuestion.id, code: genericCode })
                     : (challenge.language === 'html' ? JSON.stringify({html: htmlCode, css: cssCode, js: jsCode}) : genericCode);
 
+                const finalScore = (hasUnlockedAnswer || alreadySolved) ? 0 : (currentQuestion.xp_reward || 15);
+
                 await supabase.from('coding_submissions').insert({
                     student_id: profile.id,
                     challenge_id: challengeId,
                     status: 'accepted',
-                    score: hasUnlockedAnswer ? 0 : (currentQuestion.xp_reward || 15),
+                    score: finalScore,
                     code: finalCodePayload
                 })
 
