@@ -114,11 +114,24 @@ export function AuthProvider({ children }) {
         if (!userId) return
         try {
             const { data: userProfile } = await supabase.from('users').select('xp').eq('id', userId).single()
-            const totalXp = userProfile?.xp || 0
+            let totalXp = userProfile?.xp || 0
 
-            const { data: codingSubs } = await supabase.from('coding_submissions').select('status').eq('student_id', userId)
-            const solvedCount = codingSubs?.filter(s => s.status === 'accepted').length || 0
+            const { data: codingSubs } = await supabase.from('coding_submissions').select('challenge_id, score, status, created_at').eq('student_id', userId)
             
+            // Calculate dynamic XP from coding submissions as a fallback for RLS issues
+            let calculatedCodingXp = 0;
+            if (codingSubs) {
+                const uniqueChallenges = {};
+                codingSubs.forEach(sub => {
+                    if (sub.status === 'accepted') {
+                        if (!uniqueChallenges[sub.challenge_id] || sub.score > uniqueChallenges[sub.challenge_id]) {
+                            uniqueChallenges[sub.challenge_id] = sub.score;
+                        }
+                    }
+                });
+                Object.values(uniqueChallenges).forEach(score => calculatedCodingXp += score);
+            }
+
             const { data: assessSubs } = await supabase.from('assessment_submissions').select('created_at').eq('student_id', userId)
 
             const { data: progress } = await supabase.from('progress').select('completed, courses(title)').eq('student_id', userId).eq('completed', true)
@@ -127,6 +140,12 @@ export function AuthProvider({ children }) {
             const { data: watchedProgs } = await supabase.from('video_progress').select('watched_at').eq('student_id', userId)
 
             const { data: liveAtt } = await supabase.from('live_attendance').select('joined_at').eq('student_id', userId).eq('attendance_status', 'present')
+
+            // Add 20 XP for every live classroom attendance (fallback for RLS)
+            let dynamicTotalXp = calculatedCodingXp + (liveAtt ? liveAtt.length * 20 : 0);
+            if (dynamicTotalXp > totalXp) {
+                totalXp = dynamicTotalXp;
+            }
 
             const activityDates = new Set([
                 ...(codingSubs?.map(s => s.created_at.split('T')[0]) || []),
@@ -155,6 +174,8 @@ export function AuthProvider({ children }) {
             // Use shared rank constants — single source of truth
             const currentTier = getTierForXP(totalXp)
             const rankName    = getRankName(totalXp)
+
+            const solvedCount = codingSubs?.filter(s => s.status === 'accepted').length || 0
 
             setStats({ xp: totalXp, solved: solvedCount, streak: streakCount, completedCourses: completedCourseTitles, rankName, rankColor: currentTier.color })
         } catch (err) { console.error(err) }
