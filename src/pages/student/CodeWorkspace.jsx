@@ -292,7 +292,8 @@ export default function CodeWorkspace() {
                     setViolationCount(prev => {
                         const next = prev + 1
                         if (next < 3) {
-                            alert(`Security Warning (${next}/3): Warning from Ai. Please ensure your environment is clear.`)
+                            const msg = payload.payload.message || "Warning from Ai. Please ensure your environment is clear.";
+                            alert(`Security Warning (${next}/3): ${msg}`)
                         }
                         return next
                     })

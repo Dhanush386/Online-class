@@ -244,11 +244,15 @@ export default function LiveProctoring() {
 
     const sendWarning = async (studentId, studentName) => {
         if (!channelRef.current) return
+        
+        const message = window.prompt(`Enter warning message for ${studentName}:`, "Please ensure your face is clearly visible.");
+        if (!message) return;
+
         try {
             await channelRef.current.send({
                 type: 'broadcast',
                 event: 'proctor_warning',
-                payload: { studentId }
+                payload: { studentId, message }
             })
             toast.success(`Warning sent to ${studentName}`)
         } catch (error) {
