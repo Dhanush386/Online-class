@@ -126,10 +126,13 @@ export function AuthProvider({ children }) {
 
             const { data: watchedProgs } = await supabase.from('video_progress').select('watched_at').eq('student_id', userId)
 
+            const { data: liveAtt } = await supabase.from('live_attendance').select('joined_at').eq('student_id', userId).eq('attendance_status', 'present')
+
             const activityDates = new Set([
                 ...(codingSubs?.map(s => s.created_at.split('T')[0]) || []),
                 ...(assessSubs?.map(s => s.created_at.split('T')[0]) || []),
-                ...(watchedProgs?.map(s => s.watched_at.split('T')[0]) || [])
+                ...(watchedProgs?.map(s => s.watched_at.split('T')[0]) || []),
+                ...(liveAtt?.map(s => s.joined_at.split('T')[0]) || [])
             ])
 
             const sortedDates = Array.from(activityDates).sort().reverse()

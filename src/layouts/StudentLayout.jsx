@@ -1,466 +1,474 @@
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import {
-    LayoutDashboard, BookOpen, Calendar, ClipboardList, LogOut,
-    GraduationCap, Menu, X, Bell, Award, Code, Globe,
-    User, MessageSquare, Zap, Bookmark, HelpCircle, Gift, MessageCircle, Mountain, ChevronRight, ExternalLink,
-    Flame, Star, Info, AlertTriangle, CheckCircle, Clock, Trophy, CreditCard
+  LayoutDashboard, BookOpen, Calendar, ClipboardList, LogOut,
+  GraduationCap, Menu, X, Bell, Award, Code, Globe,
+  User, Zap, HelpCircle, MessageCircle, Mountain, ChevronRight,
+  Flame, Star, Info, AlertTriangle, CheckCircle, Clock, Trophy, CreditCard,
+  ChevronDown
 } from 'lucide-react'
 import AIChatbot from '../components/shared/AIChatbot'
+import CommandPalette from '../components/CommandPalette'
+import { Avatar } from '../design-system'
+import { ProgressRing } from '../design-system'
 
-const navItems = [
-    { to: '/student', icon: LayoutDashboard, label: 'Dashboard', end: true },
-    { to: '/student/courses', icon: BookOpen, label: 'My Courses' },
-    { to: '/student/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { to: '/student/achievements', icon: Award, label: 'Achievements' },
-    { to: '/student/playground', icon: Globe, label: 'Code Playground' },
+const NAV_GROUPS = [
+  {
+    label: 'Learn',
+    items: [
+      { to: '/student',             icon: LayoutDashboard, label: 'Dashboard', end: true },
+      { to: '/student/courses',     icon: BookOpen,        label: 'My Courses' },
+      { to: '/student/assessments', icon: ClipboardList,   label: 'Assessments' },
+      { to: '/student/coding',      icon: Code,            label: 'Coding Practice' },
+    ],
+  },
+  {
+    label: 'Compete',
+    items: [
+      { to: '/student/leaderboard',  icon: Trophy,  label: 'Leaderboard' },
+      { to: '/student/achievements', icon: Award,   label: 'Achievements' },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { to: '/student/playground', icon: Globe,        label: 'Code Playground' },
+      { to: '/student/support',    icon: HelpCircle,   label: 'Help & Support' },
+    ],
+  },
 ]
 
+// Rank thresholds
+const RANK_LEVELS = [
+  { name: 'Iron I',      min: 0,    max: 200,   color: '#94a3b8' },
+  { name: 'Iron II',     min: 200,  max: 400,   color: '#94a3b8' },
+  { name: 'Bronze I',    min: 400,  max: 700,   color: '#cd7c2f' },
+  { name: 'Bronze II',   min: 700,  max: 1000,  color: '#cd7c2f' },
+  { name: 'Silver I',    min: 1000, max: 1500,  color: '#64748b' },
+  { name: 'Silver II',   min: 1500, max: 2100,  color: '#64748b' },
+  { name: 'Gold I',      min: 2100, max: 2800,  color: '#f59e0b' },
+  { name: 'Gold II',     min: 2800, max: 3600,  color: '#f59e0b' },
+  { name: 'Platinum I',  min: 3600, max: 4500,  color: '#06b6d4' },
+  { name: 'Diamond',     min: 4500, max: 99999, color: '#6366f1' },
+]
+
+function getRankInfo(xp = 0) {
+  const rank = RANK_LEVELS.find(r => xp >= r.min && xp < r.max) || RANK_LEVELS[0]
+  const next = RANK_LEVELS[RANK_LEVELS.indexOf(rank) + 1]
+  const progress = next
+    ? Math.round(((xp - rank.min) / (rank.max - rank.min)) * 100)
+    : 100
+  const xpToNext = next ? rank.max - xp : 0
+  return { ...rank, progress, xpToNext, nextName: next?.name }
+}
 
 export default function StudentLayout() {
-    const { profile, signOut, stats } = useAuth()
-    const navigate = useNavigate()
-    const [collapsed, setCollapsed] = useState(false)
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
-    const [showNotifications, setShowNotifications] = useState(false)
-    const [notifications, setNotifications] = useState([])
-    const [unreadCount, setUnreadCount] = useState(0)
-    const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const { profile, signOut, stats } = useAuth()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const [collapsed,       setCollapsed]       = useState(false)
+  const [mobileMenuOpen,  setMobileMenuOpen]  = useState(false)
+  const [isMobile,        setIsMobile]        = useState(window.innerWidth <= 768)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications,   setNotifications]   = useState([])
+  const [unreadCount,     setUnreadCount]     = useState(0)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
 
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768)
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
-    }, [])
+  const rankInfo = getRankInfo(stats?.xp || 0)
 
-    useEffect(() => {
-        if (profile?.id) {
-            fetchNotifications()
-            
-            // Subscribe to real-time notifications
-            const channel = supabase
-                .channel('global-notifications')
-                .on('postgres_changes', { 
-                    event: 'INSERT', 
-                    schema: 'public', 
-                    table: 'notifications' 
-                }, (payload) => {
-                    if (payload.new.target === 'all' || payload.new.target === 'students') {
-                        setNotifications(prev => [payload.new, ...prev])
-                        setUnreadCount(prev => prev + 1)
-                    }
-                })
-                .subscribe()
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', h)
+    return () => window.removeEventListener('resize', h)
+  }, [])
 
-            return () => supabase.removeChannel(channel)
-        }
-    }, [profile?.id])
-
-    async function fetchNotifications() {
-        if (!profile?.id) return
-        try {
-            // 1. Fetch relevant notifications
-            const { data: notes, error: notesError } = await supabase
-                .from('notifications')
-                .select('*')
-                .or(`target.eq.all,target.eq.students`)
-                .order('created_at', { ascending: false })
-                .limit(10)
-            
-            if (notesError) throw notesError
-
-            // 2. Fetch read status
-            const { data: reads, error: readsError } = await supabase
-                .from('notification_reads')
-                .select('notification_id')
-                .eq('user_id', profile.id)
-            
-            if (readsError) throw readsError
-
-            const readIds = new Set(reads.map(r => r.notification_id))
-            const notesWithReadStatus = notes.map(n => ({
-                ...n,
-                isRead: readIds.has(n.id)
-            }))
-
-            setNotifications(notesWithReadStatus)
-            setUnreadCount(notesWithReadStatus.filter(n => !n.isRead).length)
-        } catch (err) {
-            console.error('Error fetching notifications:', err)
-        }
+  useEffect(() => {
+    if (profile?.id) {
+      fetchNotifications()
+      const channel = supabase.channel('global-notifications')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+          if (payload.new.target === 'all' || payload.new.target === 'students') {
+            setNotifications(prev => [payload.new, ...prev])
+            setUnreadCount(prev => prev + 1)
+          }
+        }).subscribe()
+      return () => supabase.removeChannel(channel)
     }
+  }, [profile?.id])
 
-    async function handleMarkAllAsRead() {
-        if (!profile?.id || unreadCount === 0) return
-        try {
-            const unreadNotes = notifications.filter(n => !n.isRead)
-            const newReads = unreadNotes.map(n => ({
-                notification_id: n.id,
-                user_id: profile.id
-            }))
+  async function fetchNotifications() {
+    if (!profile?.id) return
+    try {
+      const { data: notes } = await supabase.from('notifications').select('*')
+        .or('target.eq.all,target.eq.students').order('created_at', { ascending: false }).limit(10)
+      const { data: reads } = await supabase.from('notification_reads').select('notification_id').eq('user_id', profile.id)
+      const readIds = new Set((reads || []).map(r => r.notification_id))
+      const notesWithRead = (notes || []).map(n => ({ ...n, isRead: readIds.has(n.id) }))
+      setNotifications(notesWithRead)
+      setUnreadCount(notesWithRead.filter(n => !n.isRead).length)
+    } catch (err) { console.error('Notifications error:', err) }
+  }
 
-            const { error } = await supabase
-                .from('notification_reads')
-                .upsert(newReads)
-            
-            if (error) throw error
-            
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
-            setUnreadCount(0)
-        } catch (err) {
-            console.error('Error marking as read:', err)
-        }
-    }
+  async function handleMarkAllAsRead() {
+    if (!profile?.id || unreadCount === 0) return
+    try {
+      const unread = notifications.filter(n => !n.isRead)
+      await supabase.from('notification_reads').upsert(unread.map(n => ({ notification_id: n.id, user_id: profile.id })))
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnreadCount(0)
+    } catch (err) { console.error(err) }
+  }
 
-    async function handleSignOut() {
-        await signOut()
-        navigate('/login')
-    }
+  async function handleSignOut() { await signOut(); navigate('/login') }
 
+  const navIconStyle = (isActive) => ({
+    width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: isActive ? 'rgba(99,102,241,0.15)' : 'transparent',
+    transition: 'background 0.15s ease',
+  })
 
-    const LayoutContent = (
-        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-main)', position: 'relative' }}>
-            {/* Sidebar Overlay (Mobile) */}
-            {isMobile && mobileMenuOpen && (
-                <div
-                    onClick={() => setMobileMenuOpen(false)}
-                    style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)', zIndex: 40 }}
-                />
+  /* ── Mobile bottom nav (5 items) ── */
+  const BOTTOM_NAV = [
+    { to: '/student',             icon: LayoutDashboard, label: 'Home',     end: true },
+    { to: '/student/courses',     icon: BookOpen,        label: 'Courses' },
+    { to: '/student/leaderboard', icon: Trophy,          label: 'Rank' },
+    { to: '/student/achievements',icon: Award,           label: 'Awards' },
+    { to: '/student/profile',     icon: User,            label: 'Profile' },
+  ]
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-base)', position: 'relative' }}>
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {isMobile && mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)', zIndex: 40 }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════ SIDEBAR ══════════════ */}
+      <motion.aside
+        animate={{
+          width: isMobile ? (mobileMenuOpen ? 260 : 0) : collapsed ? 68 : 260,
+          x: isMobile && !mobileMenuOpen ? -260 : 0,
+        }}
+        transition={{ type: 'spring', stiffness: 350, damping: 36 }}
+        style={{
+          position: isMobile ? 'absolute' : 'relative',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          zIndex: 50,
+          flexShrink: 0,
+          background: 'var(--sidebar-bg)',
+          backdropFilter: 'blur(24px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+          borderRight: '1px solid var(--sidebar-border)',
+        }}
+      >
+        {/* Logo */}
+        <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(99,102,241,0.35)',
+          }}>
+            <GraduationCap size={20} color="white" />
+          </div>
+          {(!collapsed || isMobile) && (
+            <div style={{ overflow: 'hidden' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>Learnova</div>
+              <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--secondary-500)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>STUDENT</div>
+            </div>
+          )}
+        </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0.75rem 0.625rem' }}>
+          {NAV_GROUPS.map(({ label, items }) => (
+            <div key={label}>
+              {(!collapsed || isMobile) && (
+                <div className="nav-section-label">{label}</div>
+              )}
+              {items.map(({ to, icon: Icon, label: itemLabel, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  onClick={() => isMobile && setMobileMenuOpen(false)}
+                  className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                  style={{ justifyContent: collapsed && !isMobile ? 'center' : 'flex-start' }}
+                  title={collapsed && !isMobile ? itemLabel : undefined}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <div style={navIconStyle(isActive)}>
+                        <Icon size={16} />
+                      </div>
+                      {(!collapsed || isMobile) && <span>{itemLabel}</span>}
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        {/* XP Progress footer */}
+        {(!collapsed || isMobile) && (
+          <div style={{ padding: '1rem', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
+            {isOrganizer && (
+              <button onClick={() => navigate('/organizer')} className="btn-secondary" style={{ width: '100%', marginBottom: '1rem', padding: '0.5rem', fontSize: '0.8rem', gap: '0.5rem', background: 'rgba(99,102,241,0.1)', color: 'var(--primary-600)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 10 }}>
+                <LayoutDashboard size={14} /> Back to Organizer
+              </button>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
+              <ProgressRing value={rankInfo.progress} size={40} stroke={3} color={rankInfo.color} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {rankInfo.name}
+                </div>
+                {rankInfo.xpToNext > 0 && (
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 1 }}>
+                    {rankInfo.xpToNext} XP to {rankInfo.nextName}
+                  </div>
+                )}
+              </div>
+            </div>
+            <button onClick={handleSignOut} className="btn-ghost" style={{ width: '100%', justifyContent: 'flex-start', gap: '0.6rem', fontSize: '0.8rem', padding: '0.5rem 0.6rem' }}>
+              <LogOut size={15} /> Sign Out
+            </button>
+          </div>
+        )}
+      </motion.aside>
+
+      {/* ══════════════ MAIN CONTENT ══════════════ */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+
+        {/* ── Top Header ── */}
+        <header style={{
+          height: 60, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 1.25rem',
+          background: 'rgba(255,255,255,0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: '1px solid var(--sidebar-border)',
+          zIndex: 100, position: 'relative',
+        }}>
+          {/* Left: hamburger / collapse */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button
+              onClick={() => isMobile ? setMobileMenuOpen(!mobileMenuOpen) : setCollapsed(!collapsed)}
+              className="btn-icon" style={{ border: 'none', background: 'transparent' }}
+              aria-label="Toggle sidebar"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
+
+          {/* Right: gamification chips + actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+
+            {/* XP Chips */}
+            {profile?.role === 'student' && (
+              <div className="hide-mobile" style={{ display: 'flex', gap: '0.4rem', marginRight: '0.5rem' }}>
+                <span className="xp-chip xp-chip-rank" title="Current Rank">
+                  <Trophy size={13} fill="currentColor" /> {stats?.rankName || rankInfo.name}
+                </span>
+                <span className="xp-chip xp-chip-streak" title="Day Streak">
+                  <Flame size={13} fill={stats?.streak > 0 ? 'currentColor' : 'none'} /> {stats?.streak || 0}
+                </span>
+                <span className="xp-chip xp-chip-xp" title="Total XP">
+                  <Star size={13} fill="currentColor" /> {(stats?.xp || 0).toLocaleString()} <span style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 600 }}>XP</span>
+                </span>
+              </div>
             )}
 
-            {/* Sidebar */}
-            <aside style={{
-                position: isMobile ? 'absolute' : 'relative',
-                left: isMobile && !mobileMenuOpen ? -240 : 0,
-                width: collapsed && !isMobile ? 70 : 240,
-                minWidth: collapsed && !isMobile ? 70 : 240,
-                height: '100%',
-                background: 'var(--sidebar-bg)',
-                borderRight: '1px solid var(--sidebar-border)',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: 'all 0.25s ease',
-                overflow: 'hidden',
-                zIndex: 50,
-            }}>
-                {/* Logo */}
-                <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
-                    <img 
-                        src="/logo.png" 
-                        alt="Learnova Logo" 
-                        style={{ 
-                            height: 60, 
-                            width: 60,
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: '2px solid rgba(16,185,129,0.2)',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                        }} 
-                    />
-                    {(!collapsed || isMobile) && (
-                        <div style={{ fontSize: '0.6rem', color: '#10b981', fontWeight: 800, letterSpacing: '0.15em', marginTop: '-8px' }}>STUDENT</div>
-                    )}
-                </div>
+            {/* Command Palette */}
+            <CommandPalette role="student" onSignOut={handleSignOut} />
 
-                {/* Nav */}
-                <nav style={{ flex: 1, padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto' }}>
-                    {navItems.map(({ to, icon: Icon, label, end }) => (
-                        <NavLink
-                            key={to + label}
-                            to={to}
-                            end={end}
-                            onClick={() => isMobile && setMobileMenuOpen(false)}
-                            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                            style={{ justifyContent: collapsed && !isMobile ? 'center' : 'flex-start' }}
-                            title={collapsed && !isMobile ? label : undefined}
-                        >
-                            <Icon size={18} style={{ flexShrink: 0 }} />
-                            {(!collapsed || isMobile) && <span>{label}</span>}
-                        </NavLink>
-                    ))}
-                </nav>
-            </aside>
+            {/* Achievements shortcut */}
+            <button onClick={() => navigate('/student/achievements')} className="btn-icon hide-mobile" title="Achievements">
+              <Award size={16} color="var(--secondary-500)" />
+            </button>
 
-            {/* Main */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {/* Top bar */}
-                <header style={{ padding: '0 1rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--sidebar-border)', background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', flexShrink: 0, zIndex: 100, position: 'relative' }}>
-                    <button
-                        onClick={() => isMobile ? setMobileMenuOpen(!mobileMenuOpen) : setCollapsed(!collapsed)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.5rem', borderRadius: 8 }}
+            {/* Notifications */}
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setShowNotifications(!showNotifications)} className="btn-icon" title="Notifications" style={{ position: 'relative' }}>
+                <Bell size={16} />
+                {unreadCount > 0 && <span className="notif-dot" />}
+              </button>
+
+              <AnimatePresence>
+                {showNotifications && (
+                  <>
+                    <div onClick={() => setShowNotifications(false)} style={{ position: 'fixed', inset: 0, zIndex: 45 }} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      className="dropdown-menu"
+                      style={{ top: 'calc(100% + 8px)', right: 0, width: 300, zIndex: 200 }}
                     >
-                        {isMobile ? <Menu size={20} /> : collapsed ? <Menu size={20} /> : <X size={20} />}
-                    </button>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {/* Streak & XP Display */}
-                        {profile?.role === 'student' && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '0.5rem' }}>
-                                <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '0.35rem', 
-                                    padding: '0.4rem 0.75rem', 
-                                    background: `${stats.rankColor || '#94a3b8'}15`, 
-                                    borderRadius: 8,
-                                    border: `1px solid ${stats.rankColor || '#94a3b8'}30`,
-                                    color: stats.rankColor || '#94a3b8',
-                                    fontWeight: 800,
-                                    fontSize: '0.75rem',
-                                    textTransform: 'uppercase'
-                                }}>
-                                    <Trophy size={14} fill="currentColor" />
-                                    <span>{stats.rankName || 'Iron I'}</span>
-                                </div>
-
-                                <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '0.35rem', 
-                                    padding: '0.4rem 0.75rem', 
-                                    background: stats.streak > 0 ? 'rgba(249,115,22,0.1)' : 'rgba(100,116,139,0.05)', 
-                                    borderRadius: 8,
-                                    border: stats.streak > 0 ? '1px solid rgba(249,115,22,0.2)' : '1px solid rgba(100,116,139,0.1)',
-                                    color: stats.streak > 0 ? '#f97316' : '#64748b',
-                                    fontWeight: 700,
-                                    fontSize: '0.85rem'
-                                }}>
-                                    <Flame size={16} fill={stats.streak > 0 ? 'currentColor' : 'none'} />
-                                    <span>{stats.streak}</span>
-                                </div>
-                                
-                                <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '0.35rem', 
-                                    padding: '0.4rem 0.75rem', 
-                                    background: 'rgba(99,102,241,0.08)', 
-                                    borderRadius: 8,
-                                    border: '1px solid rgba(99,102,241,0.15)',
-                                    color: '#6366f1',
-                                    fontWeight: 700,
-                                    fontSize: '0.85rem'
-                                }}>
-                                    <Star size={16} fill="currentColor" />
-                                    <span>{stats.xp} <span style={{ fontSize: '0.65rem', fontWeight: 600, opacity: 0.8 }}>XP</span></span>
-                                </div>
-                            </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem 0.75rem' }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</span>
+                        {unreadCount > 0 && (
+                          <button onClick={handleMarkAllAsRead} style={{ border: 'none', background: 'none', fontSize: '0.72rem', color: 'var(--secondary-500)', fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-body)' }}>
+                            Mark all read
+                          </button>
                         )}
-
-                        <button
-                            onClick={() => navigate('/student/achievements')}
-                            className="hide-mobile"
-                            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8, padding: '0.5rem', color: 'var(--text-secondary)', cursor: 'pointer' }}
-                            title="Achievements"
-                        >
-                            <Award size={18} color="#10b981" />
-                        </button>
-                        <div style={{ position: 'relative' }}>
-                            <button
-                                onClick={() => setShowNotifications(!showNotifications)}
-                                className="hide-mobile"
-                                style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8, padding: '0.5rem', color: 'var(--text-secondary)', cursor: 'pointer', position: 'relative' }}
-                            >
-                                <Bell size={18} />
-                                {unreadCount > 0 && <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, background: '#10b981', borderRadius: '50%' }} />}
-                            </button>
-
-                            {showNotifications && (
-                                <>
-                                    <div
-                                        onClick={() => setShowNotifications(false)}
-                                        style={{ position: 'fixed', inset: 0, zIndex: 45 }}
-                                    />
-                                    <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: 280, background: 'white', borderRadius: 12, boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--sidebar-border)', zIndex: 50, padding: '1rem', overflow: 'hidden' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</span>
-                                            {unreadCount > 0 && (
-                                                <button
-                                                    onClick={handleMarkAllAsRead}
-                                                    style={{ border: 'none', background: 'none', fontSize: '0.7rem', color: '#10b981', fontWeight: 600, cursor: 'pointer', padding: 0 }}
-                                                >
-                                                    Mark all as read
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto' }}>
-                                            {notifications.length === 0 ? (
-                                                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                                                    <Bell size={24} color="var(--text-muted)" style={{ margin: '0 auto', opacity: 0.2 }} />
-                                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>No notifications</p>
-                                                </div>
-                                            ) : (
-                                                notifications.map(n => (
-                                                    <div key={n.id} style={{ 
-                                                        padding: '0.75rem', 
-                                                        borderRadius: 8, 
-                                                        background: n.isRead ? 'transparent' : 'rgba(16,185,129,0.05)',
-                                                        border: n.isRead ? '1px solid transparent' : '1px solid rgba(16,185,129,0.1)',
-                                                        display: 'flex',
-                                                        gap: '0.75rem',
-                                                        position: 'relative'
-                                                    }}>
-                                                        <div style={{ marginTop: '0.2rem' }}>
-                                                            {n.type === 'warning' ? <AlertTriangle size={16} color="#f59e0b" /> : 
-                                                             n.type === 'success' ? <CheckCircle size={16} color="#10b981" /> : 
-                                                             <Info size={16} color="#3b82f6" />}
-                                                        </div>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{n.title}</div>
-                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem', lineHeight: 1.4 }}>{n.message}</div>
-                                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                                                <Clock size={10} />
-                                                                {new Date(n.created_at).toLocaleDateString()}
-                                                            </div>
-                                                        </div>
-                                                        {!n.isRead && <div style={{ position: 'absolute', top: 12, right: 12, width: 6, height: 6, background: '#10b981', borderRadius: '50%' }} />}
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                        {notifications.length > 0 && (
-                                            <div style={{ borderTop: '1px solid var(--sidebar-border)', padding: '0.75rem 0 0', marginTop: '0.75rem', textAlign: 'center' }}>
-                                                <button 
-                                                    onClick={() => { setShowNotifications(false); navigate('/student/support') }}
-                                                    style={{ border: 'none', background: 'none', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500, cursor: 'pointer' }}
-                                                >
-                                                    View all history
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                        <div style={{ position: 'relative' }}>
-                            <div 
-                                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                                className="nav-item-hover"
-                            >
-                                <div style={{ width: 24, height: 24, background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'white' }}>
-                                    {profile?.name?.[0]?.toUpperCase() || 'S'}
+                      </div>
+                      <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        {notifications.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                            <Bell size={24} style={{ opacity: 0.25, marginBottom: '0.5rem' }} />
+                            <div>No notifications yet</div>
+                          </div>
+                        ) : notifications.map(n => (
+                          <div key={n.id} style={{
+                            padding: '0.65rem 0.75rem', borderRadius: 8, position: 'relative',
+                            background: n.isRead ? 'transparent' : 'rgba(16,185,129,0.05)',
+                            border: `1px solid ${n.isRead ? 'transparent' : 'rgba(16,185,129,0.12)'}`,
+                          }}>
+                            <div style={{ display: 'flex', gap: '0.6rem' }}>
+                              {n.type === 'warning' ? <AlertTriangle size={14} color="#f59e0b" />
+                                : n.type === 'success' ? <CheckCircle size={14} color="#10b981" />
+                                : <Info size={14} color="#3b82f6" />}
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
+                                <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>{n.message}</div>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                  <Clock size={9} /> {new Date(n.created_at).toLocaleDateString()}
                                 </div>
-                                <span className="hide-mobile" style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 500 }}>{profile?.name || 'Student'}</span>
+                              </div>
+                              {!n.isRead && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0, marginTop: 4 }} />}
                             </div>
-
-                            {showProfileMenu && (
-                                <>
-                                    <div 
-                                        onClick={() => setShowProfileMenu(false)}
-                                        style={{ position: 'fixed', inset: 0, zIndex: 45 }}
-                                    />
-                                    <div style={{ 
-                                        position: 'absolute', 
-                                        top: 'calc(100% + 10px)', 
-                                        right: 0, 
-                                        width: 240, 
-                                        background: 'white', 
-                                        borderRadius: 12, 
-                                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
-                                        border: '1px solid var(--sidebar-border)', 
-                                        zIndex: 100, 
-                                        padding: '0.5rem',
-                                        maxHeight: 'calc(100vh - 80px)',
-                                        overflowY: 'auto',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '2px'
-                                    }}>
-                                        <div style={{ padding: '0.5rem 0.75rem', marginBottom: '0.25rem', borderBottom: '1px solid var(--sidebar-border)' }}>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{profile?.name}</div>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{profile?.email}</div>
-                                        </div>
-
-                                        {['organizer', 'sub_admin', 'main_admin'].includes(profile?.role) && (
-                                            <button onClick={() => { navigate('/organizer'); setShowProfileMenu(false) }} className="dropdown-item" style={{ background: 'rgba(99,102,241,0.05)', color: '#6366f1', fontWeight: 700 }}>
-                                                <LayoutDashboard size={16} /> <span>Organizer Panel</span>
-                                            </button>
-                                        )}
-
-                                        <button onClick={() => { navigate('/student'); setShowProfileMenu(false) }} className="dropdown-item">
-                                            <Mountain size={16} /> <span>My Journey</span>
-                                        </button>
-                                        <button onClick={() => { navigate('/student/playground'); setShowProfileMenu(false) }} className="dropdown-item">
-                                            <Globe size={16} /> <span>Playground</span>
-                                        </button>
-                                        <button onClick={() => { navigate('/student/playground?view=saved'); setShowProfileMenu(false) }} className="dropdown-item">
-                                            <Zap size={16} /> <span>Saved Snippets</span>
-                                        </button>
-
-                                        <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
-
-                                        <button onClick={() => { navigate('/student/profile'); setShowProfileMenu(false) }} className="dropdown-item">
-                                            <User size={16} /> <span>Profile</span>
-                                        </button>
-                                        <button onClick={() => { navigate('/student/renew'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: '#6366f1' }}>
-                                            <CreditCard size={16} /> <span>Renew Access</span>
-                                        </button>
-
-                                        <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
-
-                                        <button onClick={() => { navigate('/student/support'); setShowProfileMenu(false) }} className="dropdown-item">
-                                            <MessageCircle size={16} /> <span>Contact Us</span>
-                                        </button>
-
-                                        <div style={{ height: '1px', background: 'var(--sidebar-border)', margin: '0.4rem 0.5rem' }} />
-
-                                        <button 
-                                            onClick={() => { handleSignOut(); setShowProfileMenu(false) }} 
-                                            className="dropdown-item" 
-                                            style={{ color: '#dc2626' }}
-                                        >
-                                            <LogOut size={16} /> <span>Log Out</span>
-                                        </button>
-                                    </div>
-
-                                    <style>{`
-                                        .dropdown-item {
-                                            display: flex;
-                                            align-items: center;
-                                            gap: 0.75rem;
-                                            padding: 0.6rem 0.75rem;
-                                            border: none;
-                                            background: none;
-                                            width: 100%;
-                                            text-align: left;
-                                            font-size: 0.85rem;
-                                            font-weight: 500;
-                                            color: #475569;
-                                            cursor: pointer;
-                                            border-radius: 8px;
-                                            transition: all 0.2s ease;
-                                        }
-                                        .dropdown-item:hover {
-                                            background: #f8fafc;
-                                            color: #10b981;
-                                        }
-                                        .dropdown-item-container:hover .dropdown-item {
-                                            background: #f8fafc;
-                                            color: #10b981;
-                                        }
-                                        .nav-item-hover:hover {
-                                            background: rgba(16,185,129,0.12) !important;
-                                            border-color: rgba(16,185,129,0.25) !important;
-                                        }
-                                    `}</style>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </header>
-
-                {/* Page content */}
-                <main style={{ flex: 1, overflow: 'auto', padding: '2rem' }}>
-                    <Outlet />
-                </main>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
-            {!window.location.pathname.includes('/classroom/') && <AIChatbot />}
-        </div>
-    )
 
-    return LayoutContent
+            {/* Profile menu */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  padding: '0.35rem 0.625rem 0.35rem 0.35rem',
+                  borderRadius: 10, cursor: 'pointer', border: 'none',
+                  background: 'rgba(16,185,129,0.08)', transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(16,185,129,0.14)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(16,185,129,0.08)'}
+              >
+                <Avatar name={profile?.name || 'S'} size="sm" />
+                <span className="hide-mobile" style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
+                  {profile?.name?.split(' ')[0] || 'Student'} ({profile?.role || 'no role'})
+                </span>
+                <ChevronDown size={13} color="var(--text-muted)" style={{ transform: showProfileMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+
+              <AnimatePresence>
+                {showProfileMenu && (
+                  <>
+                    <div onClick={() => setShowProfileMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 145 }} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      className="dropdown-menu"
+                      style={{ top: 'calc(100% + 8px)', right: 0, width: 240, zIndex: 150 }}
+                    >
+                      {/* Profile header */}
+                      <div style={{ padding: '0.75rem', marginBottom: '0.25rem', borderBottom: '1px solid var(--card-border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                          <Avatar name={profile?.name || 'S'} size="md" />
+                          <div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{profile?.name}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{profile?.email}</div>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '0.6rem', display: 'flex', gap: '0.4rem' }}>
+                          <span className="xp-chip xp-chip-streak" style={{ fontSize: '0.65rem' }}><Flame size={11} /> {stats?.streak || 0} day</span>
+                          <span className="xp-chip xp-chip-xp" style={{ fontSize: '0.65rem' }}><Star size={11} /> {(stats?.xp || 0).toLocaleString()} XP</span>
+                        </div>
+                      </div>
+
+                      <button onClick={() => { navigate('/student/profile'); setShowProfileMenu(false) }} className="dropdown-item"><User size={15} /> My Profile</button>
+                      {isOrganizer && <button onClick={() => { navigate('/organizer'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: 'var(--primary-600)', fontWeight: 700 }}><LayoutDashboard size={15} /> Back to Organizer</button>}
+                      <button onClick={() => { navigate('/student'); setShowProfileMenu(false) }} className="dropdown-item"><Mountain size={15} /> My Journey</button>
+                      <button onClick={() => { navigate('/student/playground'); setShowProfileMenu(false) }} className="dropdown-item"><Globe size={15} /> Playground</button>
+                      <button onClick={() => { navigate('/student/renew'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: 'var(--primary-600)' }}><CreditCard size={15} /> Renew Access</button>
+
+                      <div className="dropdown-divider" />
+                      <button onClick={() => { navigate('/student/support'); setShowProfileMenu(false) }} className="dropdown-item"><MessageCircle size={15} /> Contact Us</button>
+                      <div className="dropdown-divider" />
+                      <button onClick={() => { handleSignOut(); setShowProfileMenu(false) }} className="dropdown-item danger"><LogOut size={15} /> Sign Out</button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </header>
+
+        {/* ── Page Content ── */}
+        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: isMobile ? '1rem 1rem 5rem' : '1.75rem 2rem' }}>
+          <Outlet />
+        </main>
+
+        {/* ── Mobile Bottom Nav ── */}
+        {isMobile && (
+          <nav style={{
+            position: 'fixed', bottom: 0, left: 0, right: 0,
+            height: 60,
+            background: 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(16px)',
+            borderTop: '1px solid var(--sidebar-border)',
+            display: 'flex', alignItems: 'center',
+            padding: '0 0.5rem',
+            zIndex: 200,
+            paddingBottom: 'var(--safe-area-bottom)',
+          }}>
+            {BOTTOM_NAV.map(({ to, icon: Icon, label, end }) => (
+              <NavLink key={to} to={to} end={end} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0.5rem 0', textDecoration: 'none' }}>
+                {({ isActive }) => (
+                  <>
+                    <div style={{
+                      width: 36, height: 28, borderRadius: 10,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: isActive ? 'rgba(99,102,241,0.12)' : 'transparent',
+                      transition: 'background 0.15s ease',
+                    }}>
+                      <Icon size={17} color={isActive ? 'var(--primary-600)' : 'var(--text-muted)'} />
+                    </div>
+                    <span style={{ fontSize: '0.6rem', fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--primary-600)' : 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>{label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </nav>
+        )}
+      </div>
+
+      {!location.pathname.includes('/classroom/') && <AIChatbot />}
+    </div>
+  )
 }

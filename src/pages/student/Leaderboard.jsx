@@ -60,6 +60,7 @@ export default function Leaderboard() {
                 .select('id, name, avatar_url, xp')
                 .eq('role', 'student')
                 .order('xp', { ascending: false })
+                .order('name', { ascending: true })
             
             if (error) throw error
 

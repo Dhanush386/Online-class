@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Calendar, Edit2, Trash2, Clock, X, Save, Plus, ExternalLink, Video } from 'lucide-react'
+import { Calendar, Edit2, Trash2, Clock, X, Save, Plus, ExternalLink, Video, Users } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
@@ -12,6 +12,10 @@ export default function ScheduleManager() {
     const [loading, setLoading] = useState(true)
     const [editVideo, setEditVideo] = useState(null)
     const [saving, setSaving] = useState(false)
+    const [viewAttendanceFor, setViewAttendanceFor] = useState(null)
+    const [attendanceData, setAttendanceData] = useState([])
+    const [totalEnrolled, setTotalEnrolled] = useState(0)
+    const [loadingAttendance, setLoadingAttendance] = useState(false)
     const navigate = useNavigate()
 
     useEffect(() => { loadData() }, [])
@@ -48,6 +52,65 @@ export default function ScheduleManager() {
             setEditVideo(null)
         }
         setSaving(false)
+    }
+
+    async function handleViewAttendance(video) {
+        setViewAttendanceFor(video)
+        setLoadingAttendance(true)
+        const [{ data: attData }, { data: enrolledStudents }] = await Promise.all([
+            supabase.from('live_attendance')
+                .select('id, student_id, joined_at, left_at, duration_seconds, attendance_status, users(name, email)')
+                .eq('video_id', video.id)
+                .order('joined_at', { ascending: true }),
+            supabase.from('enrollments')
+                .select('student_id, users(name, email)')
+                .eq('course_id', video.course_id)
+        ]);
+        
+        const unifiedData = enrolledStudents?.map(enrollment => {
+            const attRecord = attData?.find(a => a.student_id === enrollment.student_id);
+            if (attRecord) return attRecord;
+            return {
+                id: null,
+                student_id: enrollment.student_id,
+                users: enrollment.users,
+                joined_at: null,
+                left_at: null,
+                duration_seconds: 0,
+                attendance_status: 'absent'
+            };
+        }) || [];
+
+        // Append any attendees who aren't explicitly enrolled
+        attData?.forEach(record => {
+            if (!unifiedData.find(u => u.student_id === record.student_id)) {
+                unifiedData.push(record);
+            }
+        });
+        
+        setAttendanceData(unifiedData)
+        setTotalEnrolled(enrolledStudents?.length || 0)
+        setLoadingAttendance(false)
+    }
+
+    async function handleUpdateStatus(record, newStatus) {
+        setAttendanceData(prev => prev.map(d => d.student_id === record.student_id ? { ...d, attendance_status: newStatus } : d))
+        
+        const payload = {
+            student_id: record.student_id,
+            video_id: viewAttendanceFor.id,
+            course_id: viewAttendanceFor.course_id,
+            attendance_status: newStatus
+        };
+        if (record.id) payload.id = record.id;
+
+        const { data, error } = await supabase.from('live_attendance').upsert(payload, { onConflict: 'student_id,video_id' }).select('id, joined_at').single()
+        
+        if (error) {
+            console.error("Error updating status:", error)
+        } else if (!record.id && data) {
+            setAttendanceData(prev => prev.map(d => d.student_id === record.student_id ? { ...d, id: data.id, joined_at: data.joined_at } : d))
+        }
     }
 
     function formatTime(t) {
@@ -127,6 +190,9 @@ export default function ScheduleManager() {
                                             >
                                                 <Video size={13} /> Launch Classroom
                                             </button>
+                                            <button onClick={() => handleViewAttendance(v)} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}>
+                                                <Users size={13} /> Attendance
+                                            </button>
                                             <button onClick={() => setEditVideo({ ...v })} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}>
                                                 <Edit2 size={13} /> Edit
                                             </button>
@@ -191,6 +257,121 @@ export default function ScheduleManager() {
                                     {saving ? 'Saving...' : <><Save size={16} /> Save Changes</>}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Attendance Modal */}
+            {viewAttendanceFor && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+                    <div className="glass-card animate-fade-in" style={{ width: '100%', maxWidth: 700, padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>Live Class Analytics</h2>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{viewAttendanceFor.title}</p>
+                            </div>
+                            <button onClick={() => setViewAttendanceFor(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
+                            {loadingAttendance ? (
+                                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading analytics...</div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                    {/* Analytics Row */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+                                        <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{totalEnrolled}</div>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Students</div>
+                                        </div>
+                                        <div style={{ background: '#ecfdf5', padding: '1.25rem', borderRadius: 12, border: '1px solid #a7f3d0', textAlign: 'center' }}>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#059669' }}>
+                                                {attendanceData.filter(d => d.attendance_status === 'present').length}
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981', textTransform: 'uppercase' }}>Present</div>
+                                        </div>
+                                        <div style={{ background: '#fef2f2', padding: '1.25rem', borderRadius: 12, border: '1px solid #fecaca', textAlign: 'center' }}>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#dc2626' }}>
+                                                {Math.max(0, totalEnrolled - attendanceData.filter(d => d.attendance_status === 'present').length)}
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', textTransform: 'uppercase' }}>Absent</div>
+                                        </div>
+                                        <div style={{ background: '#eff6ff', padding: '1.25rem', borderRadius: 12, border: '1px solid #bfdbfe', textAlign: 'center' }}>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#2563eb' }}>
+                                                {totalEnrolled > 0 ? Math.round((attendanceData.filter(d => d.attendance_status === 'present').length / totalEnrolled) * 100) : 0}%
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#3b82f6', textTransform: 'uppercase' }}>Attendance Rate</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Detailed List */}
+                                    <div>
+                                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Participant Details</h3>
+                                        {attendanceData.length === 0 ? (
+                                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
+                                                <Users size={32} style={{ margin: '0 auto 0.5rem', opacity: 0.3, display: 'block' }} />
+                                                No students have joined this class yet.
+                                            </div>
+                                        ) : (
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                                    <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                                        <tr>
+                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Student</th>
+                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Joined</th>
+                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Left</th>
+                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Duration</th>
+                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {attendanceData.map((record, idx) => (
+                                                            <tr key={idx} style={{ borderBottom: idx === attendanceData.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
+                                                                <td style={{ padding: '0.75rem 1rem' }}>
+                                                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{record.users?.name || 'Unknown'}</div>
+                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{record.users?.email}</div>
+                                                                </td>
+                                                                <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>
+                                                                    {formatTime(record.joined_at).split('•')[1] || '—'}
+                                                                </td>
+                                                                <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>
+                                                                    {record.left_at ? formatTime(record.left_at).split('•')[1] : '—'}
+                                                                </td>
+                                                                <td style={{ padding: '0.75rem 1rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                                                                    {record.duration_seconds > 0 ? `${Math.floor(record.duration_seconds / 60)} min` : '< 1 min'}
+                                                                </td>
+                                                                <td style={{ padding: '0.75rem 1rem' }}>
+                                                                    <select 
+                                                                        value={record.attendance_status}
+                                                                        onChange={(e) => handleUpdateStatus(record, e.target.value)}
+                                                                        style={{ 
+                                                                            padding: '0.2rem 0.5rem', 
+                                                                            borderRadius: 6, 
+                                                                            fontSize: '0.75rem', 
+                                                                            fontWeight: 600, 
+                                                                            border: '1px solid #e2e8f0', 
+                                                                            background: record.attendance_status === 'present' ? '#ecfdf5' : record.attendance_status === 'absent' ? '#fef2f2' : '#f8fafc', 
+                                                                            color: record.attendance_status === 'present' ? '#059669' : record.attendance_status === 'absent' ? '#dc2626' : '#64748b',
+                                                                            cursor: 'pointer',
+                                                                            outline: 'none'
+                                                                        }}
+                                                                    >
+                                                                        <option value="present">✅ Present</option>
+                                                                        <option value="absent">❌ Absent</option>
+                                                                        <option value="insufficient_time">⚠️ Insufficient</option>
+                                                                    </select>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

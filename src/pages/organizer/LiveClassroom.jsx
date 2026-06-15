@@ -2,7 +2,14 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { Loader2, Video, StopCircle, Play, UserCheck } from 'lucide-react'
+import { useToast } from '../../components/Toast'
+import { Loader2, Video, StopCircle, Play, UserCheck, MessageSquare, BarChart2, Edit3, Users, Hand, Maximize, Minimize } from 'lucide-react'
+
+import LiveNotes from '../../components/live-classroom/LiveNotes'
+import LivePolls from '../../components/live-classroom/LivePolls'
+import LiveAttendance from '../../components/live-classroom/LiveAttendance'
+import LiveQA from '../../components/live-classroom/LiveQA'
+import LiveHandRaise from '../../components/live-classroom/LiveHandRaise'
 
 // Constants
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -10,8 +17,9 @@ const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
 
 export default function LiveClassroom() {
     const { videoId } = useParams()
-    const { profile } = useAuth()
+    const { profile, refreshStats } = useAuth()
     const navigate = useNavigate()
+    const toast = useToast()
     
     const [videoData, setVideoData] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -20,6 +28,9 @@ export default function LiveClassroom() {
     const [gToken, setGToken] = useState(null)
     const [instructorPresent, setInstructorPresent] = useState(false)
     const [jitsiLoaded, setJitsiLoaded] = useState(false)
+    const [sidebarTab, setSidebarTab] = useState('notes')
+    const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [channelInstance, setChannelInstance] = useState(null)
     
     const jitsiContainerRef = useRef(null)
     const jitsiApiRef = useRef(null)
@@ -28,13 +39,32 @@ export default function LiveClassroom() {
     const tokenClientRef = useRef(null)
     const uploadUrlRef = useRef(null)
     const totalBytesRecordedRef = useRef(0)
+    const containerRef = useRef(null)
 
     const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
+    const [isFullScreen, setIsFullScreen] = useState(false)
 
     useEffect(() => {
-        // 1. Load Jitsi Script (Using public guifi.net instance)
+        const handleFullscreenChange = () => {
+            setIsFullScreen(!!document.fullscreenElement)
+        }
+        document.addEventListener('fullscreenchange', handleFullscreenChange)
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }, [])
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement && containerRef.current) {
+            containerRef.current.requestFullscreen().catch(err => console.log(err))
+        } else if (document.fullscreenElement) {
+            document.exitFullscreen()
+        }
+    }
+
+    useEffect(() => {
+        // 1. Load 8x8 Jitsi Script
+        const appId = import.meta.env.VITE_8X8_APP_ID || '';
         const jitsiScript = document.createElement('script')
-        jitsiScript.src = `https://meet.guifi.net/external_api.js`
+        jitsiScript.src = appId ? `https://8x8.vc/${appId}/external_api.js` : 'https://8x8.vc/external_api.js'
         jitsiScript.async = true
         jitsiScript.onload = () => setJitsiLoaded(true)
         document.head.appendChild(jitsiScript)
@@ -60,6 +90,7 @@ export default function LiveClassroom() {
             // Real-time Handshake
             let intervalId = null;
             const channel = supabase.channel(`class-lobby-${videoId}`, { config: { broadcast: { self: true } } })
+            setChannelInstance(channel)
             channel
                 .on('broadcast', { event: 'check_instructor' }, () => {
                     if (isOrganizer) channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
@@ -104,7 +135,7 @@ export default function LiveClassroom() {
     }, [videoId])
 
     function initGoogleAuth() {
-        if (!window.google) return
+        if (!window.google || !GOOGLE_CLIENT_ID) return
         tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/drive.file',
@@ -120,9 +151,10 @@ export default function LiveClassroom() {
     }, [loading, videoData, profile, instructorPresent, jitsiLoaded])
 
     function initJitsi(data) {
-        const domain = 'meet.guifi.net' 
+        const appId = import.meta.env.VITE_8X8_APP_ID || '';
+        const domain = '8x8.vc' 
         const options = {
-            roomName: `Learnova_LiveClass_${data.id}`,
+            roomName: appId ? `${appId}/Learnova_LiveClass_${data.id}` : `Learnova_LiveClass_${data.id}`,
             width: '100%',
             height: '100%',
             parentNode: jitsiContainerRef.current,
@@ -138,13 +170,84 @@ export default function LiveClassroom() {
                 enableWelcomePage: false,
                 enableNoAudioDetection: true,
                 enableNoVideoDetection: true,
+                toolbarButtons: [
+                    'camera', 'chat', 'closedcaptions', 'desktop', 'download', 'hangup', 'highlight', 'microphone', 'participants-pane', 'profile', 'raisehand', 'recording', 'security', 'select-background', 'settings', 'shareaudio', 'sharedvideo', 'shortcuts', 'stats', 'tileview', 'toggle-camera', 'videoquality', '__end'
+                ],
                 p2p: { enabled: false } // Disabled: Prevents audio drops when transitioning from 1-on-1 to group mode (when late students join)
             }
         }
         jitsiApiRef.current = new window.JitsiMeetExternalAPI(domain, options)
 
+        let joinTime = null;
+        let attendanceInterval = null;
+        let attendanceMarked = false;
+
+        jitsiApiRef.current.on('videoConferenceJoined', () => {
+            if (!isOrganizer && profile?.id) {
+                joinTime = Date.now();
+                // Initial insert
+                supabase.from('live_attendance').upsert({
+                    student_id: profile.id,
+                    video_id: data.id,
+                    course_id: data.course_id,
+                    joined_at: new Date(joinTime).toISOString()
+                }, { onConflict: 'student_id,video_id' }).then(({ error }) => {
+                    if (error) console.error('Failed to init attendance:', error)
+                })
+
+                // Start duration tracking
+                attendanceInterval = setInterval(async () => {
+                    if (!joinTime) return;
+                    const durationSec = Math.floor((Date.now() - joinTime) / 1000);
+                    const isSufficient = durationSec >= 300; // 5 minutes
+
+                    const updateData = {
+                        student_id: profile.id,
+                        video_id: data.id,
+                        left_at: new Date().toISOString(),
+                        duration_seconds: durationSec
+                    };
+
+                    if (isSufficient && !attendanceMarked) {
+                        updateData.attendance_status = 'present';
+                        updateData.streak_awarded = true;
+                        attendanceMarked = true;
+                        
+                        toast.success('🎉 Attendance Marked! +20 XP earned');
+                        
+                        // Award XP
+                        const { data: userProfile } = await supabase.from('users').select('xp').eq('id', profile.id).single();
+                        if (userProfile) {
+                            await supabase.from('users').update({ xp: (userProfile.xp || 0) + 20 }).eq('id', profile.id);
+                            refreshStats(); // Update streak and XP context
+                        }
+                    } else if (!attendanceMarked) {
+                         updateData.attendance_status = 'insufficient_time';
+                    }
+
+                    supabase.from('live_attendance').upsert(updateData, { onConflict: 'student_id,video_id' })
+                        .then(({error}) => { if(error) console.error(error) });
+
+                }, 10000); // Check every 10s
+            }
+        });
+
         // Auto-navigate back when the user leaves the conference
         jitsiApiRef.current.on('videoConferenceLeft', () => {
+            if (attendanceInterval) clearInterval(attendanceInterval);
+            if (!isOrganizer && !attendanceMarked && joinTime) {
+                const durationSec = Math.floor((Date.now() - joinTime) / 1000);
+                toast.warning(`⚠️ You attended only ${Math.floor(durationSec/60)} minutes. Stay at least 5 mins for credit.`);
+                
+                // Final save
+                supabase.from('live_attendance').upsert({
+                    student_id: profile.id,
+                    video_id: data.id,
+                    left_at: new Date().toISOString(),
+                    duration_seconds: durationSec,
+                    attendance_status: 'insufficient_time'
+                }, { onConflict: 'student_id,video_id' }).then();
+            }
             setTimeout(() => navigate(-1), 500)
         })
     }
@@ -299,7 +402,7 @@ export default function LiveClassroom() {
     }
 
     return (
-        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#020617' }}>
+        <div ref={containerRef} style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#020617' }}>
             <div style={{ padding: '1rem 2rem', background: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
                 <div>
                     <h1 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{videoData?.title}</h1>
@@ -325,6 +428,12 @@ export default function LiveClassroom() {
                             )}
                         </>
                     )}
+                    <button onClick={toggleFullScreen} style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        {isFullScreen ? <><Minimize size={14} /> Exit Fullscreen</> : <><Maximize size={14} /> Fullscreen</>}
+                    </button>
+                    <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: sidebarOpen ? '#818cf8' : '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
+                        {sidebarOpen ? 'Close Panel' : 'Open Panel'}
+                    </button>
                     <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>Leave Class</button>
                 </div>
             </div>
@@ -333,7 +442,37 @@ export default function LiveClassroom() {
                     💾 Finalizing recording and saving to Google Drive... please wait.
                 </div>
             )}
-            <div ref={jitsiContainerRef} style={{ flex: 1, width: '100%', background: '#000' }} />
+            <div style={{ flex: 1, display: 'flex', width: '100%', overflow: 'hidden' }}>
+                <div ref={jitsiContainerRef} style={{ flex: 1, height: '100%', background: '#000' }} />
+                
+                {sidebarOpen && channelInstance && (
+                    <div style={{ width: '360px', background: '#0f172a', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', background: '#1e293b', padding: '0.5rem', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
+                            <button onClick={() => setSidebarTab('notes')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'notes' ? '#6366f1' : 'transparent', color: sidebarTab === 'notes' ? 'white' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                                <Edit3 size={14} /> Notes
+                            </button>
+                            <button onClick={() => setSidebarTab('polls')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'polls' ? '#6366f1' : 'transparent', color: sidebarTab === 'polls' ? 'white' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                                <BarChart2 size={14} /> Polls
+                            </button>
+                            <button onClick={() => setSidebarTab('qa')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'qa' ? '#6366f1' : 'transparent', color: sidebarTab === 'qa' ? 'white' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                                <MessageSquare size={14} /> Q&A
+                            </button>
+                            {isOrganizer && (
+                                <button onClick={() => setSidebarTab('attendance')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'attendance' ? '#6366f1' : 'transparent', color: sidebarTab === 'attendance' ? 'white' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                                    <Users size={14} /> Att.
+                                </button>
+                            )}
+                        </div>
+                        
+                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                            {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
+                            {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
+                            {sidebarTab === 'qa' && <LiveQA videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
+                            {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     )
 }

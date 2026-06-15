@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import CodeEditor from '../../components/CodeEditor'
-import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image, Upload, Sparkles, Loader2 } from 'lucide-react'
+import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image, Upload, Sparkles, Loader2, ShieldAlert } from 'lucide-react'
 import OrganizerCodingDiscussions from '../../components/OrganizerCodingDiscussions'
 import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
@@ -23,6 +23,7 @@ const DIFFICULTIES = ['easy', 'medium', 'hard']
 export default function CodingManagement() {
     const { profile } = useAuth()
     const location = useLocation()
+    const navigate = useNavigate()
     const [mainTab, setMainTab] = useState('challenges')
     const [courses, setCourses] = useState([])
     const [challenges, setChallenges] = useState([])
@@ -395,6 +396,13 @@ export default function CodingManagement() {
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Create and manage coding challenges for your students</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                        onClick={() => navigate('/organizer/proctoring')}
+                        className="btn-secondary"
+                        style={{ gap: '0.5rem', background: '#fef2f2', color: '#ef4444', borderColor: '#fecaca' }}
+                    >
+                        <ShieldAlert size={18} /> Live Proctoring
+                    </button>
                     <button
                         onClick={() => { setAiPrompt(''); setGeneratedChallenges([]); setShowAIModal(true) }}
                         className="btn-secondary"

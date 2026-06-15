@@ -70,6 +70,7 @@ export default function CodeWorkspace() {
     const [aiModel, setAiModel] = useState(null)
     const videoRef = useRef(null)
     const proctorInterval = useRef(null)
+    const peerConnections = useRef({})
 
     const [timeLeft, setTimeLeft] = useState(30 * 60)
     const [hasRequestedHelp, setHasRequestedHelp] = useState(false)
@@ -180,11 +181,11 @@ export default function CodeWorkspace() {
 
     const startCamera = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             setMediaStream(stream)
             setCameraEnabled(true)
         } catch (err) {
-            alert('Camera permission is required to take this proctored challenge.')
+            alert('Camera and microphone permissions are required to take this proctored challenge.')
         }
     }
 
@@ -233,7 +234,7 @@ export default function CodeWorkspace() {
         }
     }, [isStarted, canBypass])
 
-    const enterFullScreen = () => {
+    const enterFullScreen = async () => {
         const elem = document.documentElement
         if (elem.requestFullscreen) {
             elem.requestFullscreen()
@@ -247,14 +248,142 @@ export default function CodeWorkspace() {
         if (!localStorage.getItem(`challenge_endTime_${challengeId}`)) {
             localStorage.setItem(`challenge_endTime_${challengeId}`, Date.now() + 30 * 60 * 1000);
         }
+
+        try {
+            await supabase.from('coding_sessions').insert({
+                student_id: profile.id,
+                student_name: profile.name || 'Student',
+                challenge_id: challengeId
+            });
+        } catch (e) {
+            console.error("Failed to log coding session", e);
+        }
     }
 
-    const handleStartChallenge = () => {
+    const handleStartChallenge = async () => {
         setIsStarted(true);
         if (!localStorage.getItem(`challenge_endTime_${challengeId}`)) {
             localStorage.setItem(`challenge_endTime_${challengeId}`, Date.now() + 30 * 60 * 1000);
         }
+
+        try {
+            await supabase.from('coding_sessions').insert({
+                student_id: profile.id,
+                student_name: profile.name || 'Student',
+                challenge_id: challengeId
+            });
+        } catch (e) {
+            console.error("Failed to log coding session", e);
+        }
     };
+
+    useEffect(() => {
+        if (!isStarted || canBypass) return
+
+        const channel = supabase.channel('coding_proctoring', {
+            config: {
+                broadcast: { ack: false }
+            }
+        })
+
+        channel
+            .on('broadcast', { event: 'proctor_warning' }, (payload) => {
+                if (payload.payload.studentId === profile.id) {
+                    setViolationCount(prev => {
+                        const next = prev + 1
+                        if (next < 3) {
+                            alert(`Security Warning (${next}/3): Warning from Organizer. Please ensure your environment is clear.`)
+                        }
+                        return next
+                    })
+                }
+            })
+            .on('broadcast', { event: 'webrtc_offer' }, async (payload) => {
+                const { studentId, offer, organizerId } = payload.payload;
+                if (studentId !== profile.id) return;
+
+                try {
+                    const pc = new RTCPeerConnection({
+                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    });
+                    
+                    peerConnections.current[organizerId] = pc;
+
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => {
+                            pc.addTrack(track, mediaStream);
+                        });
+                    }
+
+                    pc.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            channel.send({
+                                type: 'broadcast',
+                                event: 'webrtc_ice_candidate',
+                                payload: {
+                                    target: 'organizer',
+                                    organizerId,
+                                    studentId: profile.id,
+                                    candidate: event.candidate
+                                }
+                            });
+                        }
+                    };
+
+                    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+
+                    channel.send({
+                        type: 'broadcast',
+                        event: 'webrtc_answer',
+                        payload: {
+                            target: 'organizer',
+                            organizerId,
+                            studentId: profile.id,
+                            answer
+                        }
+                    });
+
+                } catch (err) {
+                    console.error('WebRTC Answer Error:', err);
+                }
+            })
+            .on('broadcast', { event: 'webrtc_ice_candidate' }, async (payload) => {
+                const { target, studentId, organizerId, candidate } = payload.payload;
+                if (target === 'student' && studentId === profile.id) {
+                    const pc = peerConnections.current[organizerId];
+                    if (pc && candidate) {
+                        try {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        } catch (err) {
+                            console.error('Error adding ICE candidate:', err);
+                        }
+                    }
+                }
+            })
+            .subscribe()
+
+        // Tell organizers we are online so they can request streams
+        const pingInterval = setInterval(() => {
+            channel.send({
+                type: 'broadcast',
+                event: 'student_online',
+                payload: {
+                    studentId: profile.id,
+                    name: profile?.name || 'Student',
+                    challengeId
+                }
+            }).catch(err => console.error(err))
+        }, 3000)
+
+        return () => {
+            clearInterval(pingInterval)
+            Object.values(peerConnections.current).forEach(pc => pc.close());
+            peerConnections.current = {};
+            channel.unsubscribe()
+        }
+    }, [isStarted, canBypass, profile, challengeId, mediaStream])
 
     useEffect(() => {
         if (!isStarted || canBypass || hasUnlockedAnswer) return

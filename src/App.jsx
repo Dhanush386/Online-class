@@ -1,19 +1,31 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ToastProvider } from './components/Toast'
 import ErrorBoundary from './components/ErrorBoundary'
 import PWAInstallBanner from './components/shared/PWAInstallBanner'
+import CustomCursor from './components/cursor/CustomCursor'
 
 // ── Page loader shown while lazy chunks are fetching ──────────────────────────
 function PageLoader() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-main)' }}>
+    <div className="page-loader">
       <div style={{
-        width: 40, height: 40, border: '3px solid rgba(99,102,241,0.3)',
-        borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite'
-      }} />
+        width: 48, height: 48,
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 8px 24px rgba(99,102,241,0.4)',
+        marginBottom: '0.25rem',
+      }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+        </svg>
+      </div>
+      <div className="loader-ring" />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
@@ -38,6 +50,7 @@ const AdminManagement       = lazy(() => import('./pages/organizer/AdminManageme
 const OrganizerAssessments  = lazy(() => import('./pages/organizer/OrganizerAssessments'))
 const AssessmentQuestions   = lazy(() => import('./pages/organizer/AssessmentQuestions'))
 const CodingManagement      = lazy(() => import('./pages/organizer/CodingManagement'))
+const LiveProctoring        = lazy(() => import('./pages/organizer/LiveProctoring'))
 const UploadVideo           = lazy(() => import('./pages/organizer/UploadVideo'))
 const ScheduleManager       = lazy(() => import('./pages/organizer/ScheduleManager'))
 const StudentManagement     = lazy(() => import('./pages/organizer/StudentManagement'))
@@ -67,7 +80,8 @@ function HomeRedirect() {
   const { user, profile, loading } = useAuth()
   const location = useLocation()
 
-  if (loading) return <PageLoader />
+  // Wait if AuthContext is initializing, OR if we have a user but are still fetching their profile
+  if (loading || (user && !profile)) return <PageLoader />
 
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
 
@@ -79,73 +93,89 @@ function HomeRedirect() {
 }
 
 // ── App ───────────────────────────────────────────────────────────────────────
+function AppInner() {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW registration failed:', err));
+    }
+  }, []);
+
+  return (
+    <>
+      <CustomCursor />
+      <PWAInstallBanner />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Public */}
+          <Route path="/login"           element={<Login />} />
+          <Route path="/register"        element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/p/:projectId"    element={<SharedProject />} />
+
+          {/* Organizer / Admin */}
+          <Route path="/organizer" element={
+            <ProtectedRoute requiredRole="organizer">
+              <OrganizerLayout />
+            </ProtectedRoute>
+          }>
+            <Route index                                    element={<OrganizerDashboard />} />
+            <Route path="courses"                           element={<CourseManagement />} />
+            <Route path="admins"                            element={<AdminManagement />} />
+            <Route path="assessments"                       element={<OrganizerAssessments />} />
+            <Route path="assessments/:assessmentId/questions" element={<AssessmentQuestions />} />
+            <Route path="coding"                            element={<CodingManagement />} />
+            <Route path="proctoring"                        element={<LiveProctoring />} />
+            <Route path="upload"                            element={<UploadVideo />} />
+            <Route path="schedule"                          element={<ScheduleManager />} />
+            <Route path="students"                          element={<StudentManagement />} />
+            <Route path="leaderboard"                       element={<Leaderboard />} />
+            <Route path="notifications"                     element={<Notifications />} />
+            <Route path="playground"                        element={<CodePlayground />} />
+            <Route path="support"                           element={<Support />} />
+            <Route path="profile"                           element={<OrganizerProfile />} />
+            <Route path="renewals"                          element={<RenewalManagement />} />
+            <Route path="classroom/:videoId"               element={<LiveClassroom />} />
+          </Route>
+
+          {/* Student */}
+          <Route path="/student" element={
+            <ProtectedRoute requiredRole="student">
+              <StudentLayout />
+            </ProtectedRoute>
+          }>
+            <Route index                                    element={<StudentDashboard />} />
+            <Route path="courses"                           element={<MyCourses />} />
+            <Route path="courses/:courseId"                 element={<CourseDetail />} />
+            <Route path="assessments"                       element={<Assessments />} />
+            <Route path="assessments/:assessmentId/take"   element={<TakeAssessment />} />
+            <Route path="assessments/:assessmentId/review" element={<AssessmentReview />} />
+            <Route path="coding"                            element={<CodingPractice />} />
+            <Route path="coding/:challengeId"              element={<CodeWorkspace />} />
+            <Route path="achievements"                      element={<Achievements />} />
+            <Route path="playground"                        element={<CodePlayground />} />
+            <Route path="support"                           element={<Support />} />
+            <Route path="profile"                           element={<Profile />} />
+            <Route path="leaderboard"                       element={<Leaderboard />} />
+            <Route path="renew"                             element={<RenewAccess />} />
+            <Route path="classroom/:videoId"               element={<LiveClassroom />} />
+          </Route>
+
+          {/* Fallback */}
+          <Route path="/"  element={<HomeRedirect />} />
+          <Route path="*"  element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
           <ErrorBoundary>
-            <PWAInstallBanner />
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                {/* Public */}
-                <Route path="/login"           element={<Login />} />
-                <Route path="/register"        element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/p/:projectId"    element={<SharedProject />} />
-
-                {/* Organizer / Admin */}
-                <Route path="/organizer" element={
-                  <ProtectedRoute requiredRole="organizer">
-                    <OrganizerLayout />
-                  </ProtectedRoute>
-                }>
-                  <Route index                                    element={<OrganizerDashboard />} />
-                  <Route path="courses"                           element={<CourseManagement />} />
-                  <Route path="admins"                            element={<AdminManagement />} />
-                  <Route path="assessments"                       element={<OrganizerAssessments />} />
-                  <Route path="assessments/:assessmentId/questions" element={<AssessmentQuestions />} />
-                  <Route path="coding"                            element={<CodingManagement />} />
-                  <Route path="upload"                            element={<UploadVideo />} />
-                  <Route path="schedule"                          element={<ScheduleManager />} />
-                  <Route path="students"                          element={<StudentManagement />} />
-                  <Route path="leaderboard"                       element={<Leaderboard />} />
-                  <Route path="notifications"                     element={<Notifications />} />
-                  <Route path="playground"                        element={<CodePlayground />} />
-                  <Route path="support"                           element={<Support />} />
-                  <Route path="profile"                           element={<OrganizerProfile />} />
-                  <Route path="renewals"                          element={<RenewalManagement />} />
-                  <Route path="classroom/:videoId"               element={<LiveClassroom />} />
-                </Route>
-
-                {/* Student */}
-                <Route path="/student" element={
-                  <ProtectedRoute requiredRole="student">
-                    <StudentLayout />
-                  </ProtectedRoute>
-                }>
-                  <Route index                                    element={<StudentDashboard />} />
-                  <Route path="courses"                           element={<MyCourses />} />
-                  <Route path="courses/:courseId"                 element={<CourseDetail />} />
-                  <Route path="assessments"                       element={<Assessments />} />
-                  <Route path="assessments/:assessmentId/take"   element={<TakeAssessment />} />
-                  <Route path="assessments/:assessmentId/review" element={<AssessmentReview />} />
-                  <Route path="coding"                            element={<CodingPractice />} />
-                  <Route path="coding/:challengeId"              element={<CodeWorkspace />} />
-                  <Route path="achievements"                      element={<Achievements />} />
-                  <Route path="playground"                        element={<CodePlayground />} />
-                  <Route path="support"                           element={<Support />} />
-                  <Route path="profile"                           element={<Profile />} />
-                  <Route path="leaderboard"                       element={<Leaderboard />} />
-                  <Route path="renew"                             element={<RenewAccess />} />
-                  <Route path="classroom/:videoId"               element={<LiveClassroom />} />
-                </Route>
-
-                {/* Fallback */}
-                <Route path="/"  element={<HomeRedirect />} />
-                <Route path="*"  element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
+            <AppInner />
           </ErrorBoundary>
         </ToastProvider>
       </AuthProvider>

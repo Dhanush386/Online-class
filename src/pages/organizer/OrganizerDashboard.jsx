@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Users, Video, BookOpen, TrendingUp, Play, Clock, Calendar, Code, Key, RefreshCw } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import {
+    Users, Video, BookOpen, TrendingUp, Play, Clock, Code, Key,
+    RefreshCw, ArrowRight, Radio, Calendar, ChevronRight, Zap, Plus
+} from 'lucide-react'
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
-
+import { StatCard, GlassCard } from '../../design-system'
 
 export default function OrganizerDashboard() {
     const { profile } = useAuth()
@@ -49,36 +54,28 @@ export default function OrganizerDashboard() {
             setRecentVideos(videos || [])
             setRecentChallenges(challenges || [])
 
-            // Calculate weekly uploads for the graph
+            // Weekly uploads chart
             const now = new Date()
-            const dayOfWeek = now.getDay() // 0 (Sun) to 6 (Sat)
-            const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1) // Adjust to Monday
+            const dayOfWeek = now.getDay()
+            const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
             const monday = new Date(now.setDate(diff))
             monday.setHours(0, 0, 0, 0)
 
             const { data: allVideos } = await supabase
-                .from('videos')
-                .select('created_at')
-                .gte('created_at', monday.toISOString())
+                .from('videos').select('created_at').gte('created_at', monday.toISOString())
 
             const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
             const counts = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 }
-            
             ;(allVideos || []).forEach(v => {
                 const dayName = dayNames[new Date(v.created_at).getDay()]
                 if (counts[dayName] !== undefined) counts[dayName]++
             })
-
             setWeeklyUploads([
-                { name: 'Mon', uploads: counts.Mon },
-                { name: 'Tue', uploads: counts.Tue },
-                { name: 'Wed', uploads: counts.Wed },
-                { name: 'Thu', uploads: counts.Thu },
-                { name: 'Fri', uploads: counts.Fri },
-                { name: 'Sat', uploads: counts.Sat },
+                { name: 'Mon', uploads: counts.Mon }, { name: 'Tue', uploads: counts.Tue },
+                { name: 'Wed', uploads: counts.Wed }, { name: 'Thu', uploads: counts.Thu },
+                { name: 'Fri', uploads: counts.Fri }, { name: 'Sat', uploads: counts.Sat },
                 { name: 'Sun', uploads: counts.Sun },
             ])
-
             setLoading(false)
         }
 
@@ -87,178 +84,243 @@ export default function OrganizerDashboard() {
             if (data) setResetCode(data.code)
         }
 
-        if (profile) {
-            load()
-            fetchResetCode()
-        }
+        if (profile) { load(); fetchResetCode() }
     }, [profile])
 
     const generateResetCode = async () => {
         setGeneratingCode(true)
         try {
-            // First check if one exists since we only want one active code per organizer
             const { data: existing } = await supabase.from('organizer_reset_codes').select('code').eq('organizer_id', profile.id).maybeSingle()
+            const newCode = Math.floor(100000 + Math.random() * 900000).toString()
             if (existing) {
-                // Generate new one by calling the RPC directly?
-                // Actually, the easiest way to generate a new code securely without full DB logic on frontend is to
-                // just let JS generate a random number and update it, but in the migration we wrote `generate_6_digit_code()`
-                // For simplicity, we can do it here:
-                const newCode = Math.floor(100000 + Math.random() * 900000).toString()
                 await supabase.from('organizer_reset_codes').update({ code: newCode }).eq('organizer_id', profile.id)
-                setResetCode(newCode)
             } else {
-                const newCode = Math.floor(100000 + Math.random() * 900000).toString()
                 await supabase.from('organizer_reset_codes').insert({ organizer_id: profile.id, code: newCode })
-                setResetCode(newCode)
             }
-        } catch (err) {
-            console.error('Error generating code:', err)
-        } finally {
-            setGeneratingCode(false)
-        }
+            setResetCode(newCode)
+        } catch (err) { console.error('Error generating code:', err) }
+        finally { setGeneratingCode(false) }
     }
 
-    const statCards = [
-        { label: 'Total Students', value: stats.students, icon: Users, color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
-        { label: 'Coding Practice', value: stats.challenges, icon: Code, color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-        { label: 'Active Courses', value: stats.courses, icon: BookOpen, color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
-        { label: 'Avg Completion', value: `${stats.completion}%`, icon: TrendingUp, color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
-    ]
+    const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
+    const itemVariants = {
+        hidden: { opacity: 0, y: 14 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
+    }
 
     return (
-        <div className="animate-fade-in">
-            {/* Header */}
-            <div style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    Welcome back, <span className="gradient-text">{profile?.name?.split(' ')[0]}</span> 👋
-                </h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                    Here's your teaching overview for today
-                </p>
-            </div>
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ maxWidth: 1280 }}>
 
-            {/* Stat Cards */}
-            <div className="stat-grid">
-                {statCards.map(({ label, value, icon: Icon, color, bg }) => (
-                    <div key={label} className="stat-card">
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <div style={{ width: 44, height: 44, background: bg, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Icon size={22} color={color} />
+            {/* ══════════════ HERO WELCOME ══════════════ */}
+            <motion.div variants={itemVariants} style={{ marginBottom: '1.75rem' }}>
+                <GlassCard
+                    tilt3d
+                    padding="1.5rem 2rem"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(99,102,241,0.07) 0%, rgba(139,92,246,0.05) 50%, rgba(16,185,129,0.04) 100%)',
+                        border: '1px solid rgba(99,102,241,0.15)',
+                        position: 'relative', overflow: 'hidden',
+                    }}
+                >
+                    <div aria-hidden style={{ position: 'absolute', top: -30, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12), transparent 70%)', pointerEvents: 'none' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
+                        <div>
+                            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                             </div>
-                            <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600, background: 'rgba(16,185,129,0.1)', padding: '0.2rem 0.5rem', borderRadius: 6 }}>↑ Live</span>
+                            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.4rem, 2.5vw, 2rem)', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: '0.3rem' }}>
+                                Welcome back, <span className="gradient-text">{profile?.name?.split(' ')[0]}</span> 👋
+                            </h1>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+                                Here's your teaching overview for today.
+                            </p>
                         </div>
-                        <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{loading ? '—' : value}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{label}</div>
+                        <div style={{ display: 'flex', gap: '0.6rem' }}>
+                            <Link to="/organizer/upload" style={{ textDecoration: 'none' }}>
+                                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="btn-primary" style={{ fontSize: '0.82rem', padding: '0.6rem 1.1rem', gap: '0.4rem' }}>
+                                    <Radio size={15} /> Go Live
+                                </motion.button>
+                            </Link>
+                            <Link to="/organizer/courses" style={{ textDecoration: 'none' }}>
+                                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="btn-secondary" style={{ fontSize: '0.82rem', padding: '0.6rem 1.1rem', gap: '0.4rem' }}>
+                                    <Plus size={15} /> New Course
+                                </motion.button>
+                            </Link>
+                        </div>
                     </div>
-                ))}
-            </div>
+                </GlassCard>
+            </motion.div>
 
-            {/* Reset Code Card */}
-            <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: 48, height: 48, background: 'rgba(99,102,241,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Key size={24} color="#6366f1" />
-                    </div>
-                    <div>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Student Password Reset Code</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Share this code with students who forgot their password.</p>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div style={{ background: '#1e293b', color: '#10b981', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '1.5rem', fontWeight: 800, letterSpacing: '4px', fontFamily: 'monospace' }}>
-                        {resetCode ? resetCode : '------'}
-                    </div>
-                    <button
-                        onClick={generateResetCode}
-                        disabled={generatingCode}
-                        className="btn-secondary"
-                        style={{ background: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                    >
-                        <RefreshCw size={16} className={generatingCode ? 'animate-spin' : ''} />
-                        {resetCode ? 'Regenerate Code' : 'Generate Code'}
-                    </button>
-                </div>
-            </div>
+            {/* ══════════════ STATS ══════════════ */}
+            <motion.div variants={itemVariants} className="stat-grid" style={{ marginBottom: '1.75rem' }}>
+                <StatCard icon={Users}      label="Total Students"   value={stats.students}   color="primary" isLoading={loading} />
+                <StatCard icon={Code}       label="Coding Practice"  value={stats.challenges} color="warning" isLoading={loading} />
+                <StatCard icon={BookOpen}   label="Active Courses"   value={stats.courses}    color="success" isLoading={loading} />
+                <StatCard icon={TrendingUp} label="Avg Completion"   value={stats.completion} color="violet"  suffix="%" isLoading={loading} />
+            </motion.div>
 
-            {/* Chart + Recent */}
+            {/* ══════════════ RESET CODE ══════════════ */}
+            <motion.div variants={itemVariants} style={{ marginBottom: '1.75rem' }}>
+                <GlassCard padding="1.25rem 1.5rem" style={{ border: '1px solid rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: 44, height: 44, background: 'rgba(99,102,241,0.12)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Key size={20} color="#6366f1" />
+                        </div>
+                        <div>
+                            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Student Password Reset Code</h3>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Share this code with students who forgot their password.</p>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{
+                            background: 'var(--text-primary)', color: '#10b981',
+                            padding: '0.55rem 1.1rem', borderRadius: 10,
+                            fontSize: '1.4rem', fontWeight: 800, letterSpacing: '4px',
+                            fontFamily: 'var(--font-mono)',
+                        }}>
+                            {resetCode || '------'}
+                        </div>
+                        <motion.button
+                            onClick={generateResetCode}
+                            disabled={generatingCode}
+                            className="btn-secondary"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.97 }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem' }}
+                        >
+                            <RefreshCw size={14} className={generatingCode ? 'animate-spin' : ''} />
+                            {resetCode ? 'Regenerate' : 'Generate'}
+                        </motion.button>
+                    </div>
+                </GlassCard>
+            </motion.div>
+
+            {/* ══════════════ CHART + RECENT ══════════════ */}
             <div className="dashboard-grid">
                 {/* Chart */}
-                <div className="glass-card" style={{ padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>Video Uploads — This Week</h3>
-                    <ResponsiveContainer width="100%" height={220}>
-                        <AreaChart data={weeklyUploads}>
-                            <defs>
-                                <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                            <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 10, color: '#1e293b', fontSize: '0.85rem' }} />
-                            <Area type="monotone" dataKey="uploads" stroke="#6366f1" strokeWidth={2} fill="url(#grad)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
+                <motion.div variants={itemVariants}>
+                    <GlassCard padding="1.5rem">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                            <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                                Video Uploads — This Week
+                            </h3>
+                            <Link to="/organizer/upload" style={{ fontSize: '0.75rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                Upload <ChevronRight size={13} />
+                            </Link>
+                        </div>
+                        <ResponsiveContainer width="100%" height={220}>
+                            <AreaChart data={weeklyUploads}>
+                                <defs>
+                                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(226,232,240,0.5)" vertical={false} />
+                                <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12, fontFamily: 'var(--font-body)' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                                <Tooltip
+                                    contentStyle={{
+                                        background: 'rgba(255,255,255,0.95)',
+                                        backdropFilter: 'blur(12px)',
+                                        border: '1px solid rgba(226,232,240,0.7)',
+                                        borderRadius: 12,
+                                        color: 'var(--text-primary)',
+                                        fontSize: '0.82rem',
+                                        fontFamily: 'var(--font-body)',
+                                        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                                    }}
+                                />
+                                <Area type="monotone" dataKey="uploads" stroke="#6366f1" strokeWidth={2.5} fill="url(#chartGrad)" dot={{ r: 3, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </GlassCard>
+                </motion.div>
 
                 {/* Recent Content */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     {/* Recent Videos */}
-                    <div className="glass-card" style={{ padding: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.25rem' }}>Recent Uploads</h3>
-                        {recentVideos.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
-                                <Video size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
-                                <p style={{ fontSize: '0.85rem' }}>No videos uploaded yet</p>
+                    <motion.div variants={itemVariants}>
+                        <GlassCard padding="1.25rem">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Video size={15} color="var(--primary-500)" /> Recent Uploads
+                                </h3>
+                                <Link to="/organizer/upload" style={{ fontSize: '0.75rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600 }}>View all</Link>
                             </div>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                {recentVideos.map(v => (
-                                    <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                                        <div style={{ width: 36, height: 36, background: 'rgba(99,102,241,0.15)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            <Play size={16} color="#818cf8" />
-                                        </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.title}</div>
-                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                                                <Clock size={11} /> {v.duration_minutes || '?'} min
+                            {recentVideos.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
+                                    <Video size={28} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
+                                    <p style={{ fontSize: '0.82rem' }}>No videos uploaded yet</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {recentVideos.map(v => (
+                                        <div key={v.id} style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                            padding: '0.65rem 0.75rem', borderRadius: 10,
+                                            background: 'rgba(99,102,241,0.04)',
+                                            border: '1px solid rgba(99,102,241,0.1)',
+                                        }}>
+                                            <div style={{ width: 34, height: 34, background: 'rgba(99,102,241,0.12)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <Play size={14} color="#6366f1" />
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.title}</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: 2 }}>
+                                                    <Clock size={10} /> {v.duration_minutes || '?'} min
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                    ))}
+                                </div>
+                            )}
+                        </GlassCard>
+                    </motion.div>
 
                     {/* Recent Challenges */}
-                    <div className="glass-card" style={{ padding: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.25rem' }}>Latest Coding Questions</h3>
-                        {recentChallenges.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
-                                <Code size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
-                                <p style={{ fontSize: '0.85rem' }}>No challenges created yet</p>
+                    <motion.div variants={itemVariants}>
+                        <GlassCard padding="1.25rem">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Code size={15} color="#f59e0b" /> Latest Challenges
+                                </h3>
+                                <Link to="/organizer/coding" style={{ fontSize: '0.75rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600 }}>View all</Link>
                             </div>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                {recentChallenges.map(c => (
-                                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                                        <div style={{ width: 36, height: 36, background: 'rgba(245,158,11,0.15)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.9rem' }}>
-                                            {c.language === 'python' ? '🐍' : c.language === 'java' ? '☕' : '💻'}
-                                        </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</div>
-                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                                                <span style={{ color: c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444' }}>{c.difficulty.toUpperCase()}</span>
+                            {recentChallenges.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
+                                    <Code size={28} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
+                                    <p style={{ fontSize: '0.82rem' }}>No challenges created yet</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {recentChallenges.map(c => (
+                                        <div key={c.id} style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                            padding: '0.65rem 0.75rem', borderRadius: 10,
+                                            background: 'rgba(245,158,11,0.04)',
+                                            border: '1px solid rgba(245,158,11,0.1)',
+                                        }}>
+                                            <div style={{ width: 34, height: 34, background: 'rgba(245,158,11,0.12)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.9rem' }}>
+                                                {c.language === 'python' ? '🐍' : c.language === 'java' ? '☕' : '💻'}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</div>
+                                                <div style={{ fontSize: '0.7rem', marginTop: 2 }}>
+                                                    <span style={{
+                                                        color: c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444',
+                                                        fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em',
+                                                    }}>{c.difficulty}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                    ))}
+                                </div>
+                            )}
+                        </GlassCard>
+                    </motion.div>
                 </div>
             </div>
-        </div>
+        </motion.div>
     )
 }
