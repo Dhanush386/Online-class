@@ -64,7 +64,7 @@ export default function LiveClassroom() {
         // 1. Load 8x8 Jitsi Script
         const appId = import.meta.env.VITE_8X8_APP_ID || '';
         const jitsiScript = document.createElement('script')
-        jitsiScript.src = 'https://meet.jit.si/external_api.js'
+        jitsiScript.src = appId ? `https://8x8.vc/${appId}/external_api.js` : 'https://8x8.vc/external_api.js'
         jitsiScript.async = true
         jitsiScript.onload = () => setJitsiLoaded(true)
         document.head.appendChild(jitsiScript)
@@ -151,9 +151,10 @@ export default function LiveClassroom() {
     }, [loading, videoData, profile, instructorPresent, jitsiLoaded])
 
     function initJitsi(data) {
-        const domain = 'meet.jit.si' 
+        const appId = import.meta.env.VITE_8X8_APP_ID || '';
+        const domain = '8x8.vc' 
         const options = {
-            roomName: `Learnova_LiveClass_${data.id}`,
+            roomName: appId ? `${appId}/Learnova_LiveClass_${data.id}` : `Learnova_LiveClass_${data.id}`,
             width: '100%',
             height: '100%',
             parentNode: jitsiContainerRef.current,
