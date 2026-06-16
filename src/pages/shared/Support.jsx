@@ -212,7 +212,7 @@ export default function Support() {
                 <div style={{ width: '320px', borderRight: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
                     <div style={{ padding: '1.25rem' }}>
                         <div style={{ position: 'relative' }}>
-                            <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={16} />
+                            <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={16} />
                             <input 
                                 type="text" 
                                 placeholder="Search tickets..." 
@@ -255,7 +255,7 @@ export default function Support() {
                                 </div>
                                 <div style={{ flex: 1, overflow: 'hidden' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: t.status === 'closed' ? '#94a3b8' : 'var(--text-primary)' }}>{t.subject}</span>
+                                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: t.status === 'closed' ? 'var(--text-muted)' : 'var(--text-primary)' }}>{t.subject}</span>
                                         <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: 4, background: t.status === 'closed' ? '#fee2e2' : '#ecfdf5', color: t.status === 'closed' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{t.status}</span>
                                     </div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -269,7 +269,7 @@ export default function Support() {
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white' }}>
                     {!selectedTicket ? (
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', gap: '1rem' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '1rem' }}>
                             <MessageSquare size={48} style={{ opacity: 0.3 }} />
                             <p>{isOrganizer ? 'Select a ticket to respond' : 'Select a ticket to view conversation'}</p>
                         </div>
@@ -277,7 +277,7 @@ export default function Support() {
                         <>
                             <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: selectedTicket.status === 'closed' ? '#94a3b8' : 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: selectedTicket.status === 'closed' ? 'var(--text-muted)' : 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <UserIcon size={16} />
                                     </div>
                                     <div>
@@ -358,7 +358,7 @@ export default function Support() {
                                     )
                                 })}
                                 {messages.length === 0 && (
-                                    <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                         No messages yet. Start the conversation!
                                     </div>
                                 )}
@@ -376,7 +376,7 @@ export default function Support() {
                                                 <div style={{ background: 'var(--accent)', color: 'white', padding: '4px', borderRadius: 4 }}>
                                                     {attachment.type.startsWith('image/') ? <ImageIcon size={14} /> : <File size={14} />}
                                                 </div>
-                                                <span style={{ fontSize: '0.75rem', color: '#64748b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                     {attachment.name}
                                                 </span>
                                                 <button 
@@ -399,7 +399,7 @@ export default function Support() {
                                             <button 
                                                 type="button" 
                                                 onClick={() => fileInputRef.current.click()}
-                                                style={{ background: '#f1f5f9', border: 'none', color: '#64748b', padding: '0.6rem', borderRadius: 8, cursor: 'pointer' }}
+                                                style={{ background: '#f1f5f9', border: 'none', color: 'var(--text-muted)', padding: '0.6rem', borderRadius: 8, cursor: 'pointer' }}
                                                 title="Attach file"
                                             >
                                                 <Paperclip size={20} />

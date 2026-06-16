@@ -115,10 +115,10 @@ export default function AssessmentReview() {
                     return (
                         <div key={q.id} className="glass-card" style={{
                             padding: '1.5rem',
-                            borderLeft: `3px solid ${!wasAnswered ? '#94a3b8' : isCorrect ? '#10b981' : '#ef4444'}`
+                            borderLeft: `3px solid ${!wasAnswered ? 'var(--text-muted)' : isCorrect ? '#10b981' : '#ef4444'}`
                         }}>
                             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', alignItems: 'flex-start' }}>
-                                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: '#64748b', flexShrink: 0 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
                                     {idx + 1}
                                 </div>
                                 <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
@@ -126,7 +126,7 @@ export default function AssessmentReview() {
                                 </h3>
                                 <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
                                     {!wasAnswered
-                                        ? <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Unanswered</span>
+                                        ? <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Unanswered</span>
                                         : isCorrect
                                             ? <CheckCircle2 size={20} color="#10b981" />
                                             : <XCircle size={20} color="#ef4444" />

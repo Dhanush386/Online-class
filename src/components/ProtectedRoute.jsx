@@ -34,7 +34,7 @@ export function ProtectedRoute({ children, requiredRole }) {
                 <div className="glass-card" style={{ padding: '2rem', maxWidth: 400 }}>
                     <div style={{ width: 64, height: 64, background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>⚠️</div>
                     <h2 style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 700 }}>Profile Sync Issue</h2>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
                         We found your account but couldn't determine your role or load your profile.
                         Try refreshing the page or signing out and back in.
                     </p>
@@ -63,7 +63,7 @@ export function ProtectedRoute({ children, requiredRole }) {
                     <div className="glass-card" style={{ padding: '2rem', maxWidth: 400 }}>
                         <div style={{ width: 64, height: 64, background: 'rgba(245,158,11,0.1)', color: '#f59e0b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>⏳</div>
                         <h2 style={{ color: 'white', marginBottom: '1rem', fontWeight: 700 }}>Pending Approval</h2>
-                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
                             Your account has been created successfully. An organizer must review and approve your registration before you can access the platform.
                         </p>
                         <button onClick={() => window.location.reload()} className="btn-primary" style={{ width: '100%', marginBottom: '0.75rem' }}>Refresh Status</button>
@@ -78,7 +78,7 @@ export function ProtectedRoute({ children, requiredRole }) {
                     <div className="glass-card" style={{ padding: '2rem', maxWidth: 400 }}>
                         <div style={{ width: 64, height: 64, background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>❌</div>
                         <h2 style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 700 }}>Access Declined</h2>
-                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
                             Your registration has been declined by an organizer. Please contact support if you believe this is an error.
                         </p>
                         <button onClick={() => signOut()} className="btn-secondary" style={{ width: '100%' }}>Sign Out</button>

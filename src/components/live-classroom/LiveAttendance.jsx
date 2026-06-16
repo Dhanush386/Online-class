@@ -108,7 +108,7 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
 
     if (!isOrganizer) {
         return (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                 Only the instructor can view the attendance report.
             </div>
         );
@@ -126,16 +126,16 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                <button onClick={downloadCSV} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#1e293b', border: '1px solid #334155', color: 'white', padding: '0.6rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                <button onClick={downloadCSV} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: 'white', padding: '0.6rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
                     <FileSpreadsheet size={16} color="#10b981" /> CSV
                 </button>
-                <button onClick={downloadPDF} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#1e293b', border: '1px solid #334155', color: 'white', padding: '0.6rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                <button onClick={downloadPDF} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: 'white', padding: '0.6rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
                     <FileText size={16} color="#ef4444" /> PDF
                 </button>
             </div>
 
             <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)', borderRadius: '8px', padding: '1rem', marginBottom: '1rem', textAlign: 'center' }}>
-                <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Total Students</p>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>Total Students</p>
                 <p style={{ margin: 0, color: 'white', fontSize: '1.5rem', fontWeight: 'bold' }}>{attendance.length}</p>
                 <p style={{ margin: 0, color: '#10b981', fontSize: '0.8rem', marginTop: '0.2rem' }}>{presentCount} Marked Present (&gt;5 mins)</p>
             </div>
@@ -145,7 +145,7 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
                     <div key={record.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', padding: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <p style={{ margin: 0, color: 'white', fontSize: '0.9rem', fontWeight: 500 }}>{record.users?.name || 'Unknown'}</p>
-                            <p style={{ margin: 0, color: '#64748b', fontSize: '0.75rem' }}>{Math.round(record.duration_seconds / 60)} mins</p>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem' }}>{Math.round(record.duration_seconds / 60)} mins</p>
                         </div>
                         <div>
                             <select 
@@ -174,7 +174,7 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
                     </div>
                 ))}
                 {attendance.length === 0 && (
-                    <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>No one has joined yet.</p>
+                    <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No one has joined yet.</p>
                 )}
             </div>
         </div>

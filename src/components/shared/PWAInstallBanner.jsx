@@ -134,7 +134,7 @@ export default function PWAInstallBanner() {
                 }
 
                 .pwa-subtitle {
-                    color: #94a3b8;
+                    color: var(--text-muted);
                     font-size: 0.75rem;
                     margin: 0;
                 }
@@ -147,7 +147,7 @@ export default function PWAInstallBanner() {
 
                 .pwa-install-btn {
                     background: white;
-                    color: #0f172a;
+                    color: var(--text-primary);
                     border: none;
                     padding: 0.5rem 1rem;
                     border-radius: 8px;
@@ -167,7 +167,7 @@ export default function PWAInstallBanner() {
                 .pwa-close-btn {
                     background: transparent;
                     border: none;
-                    color: #94a3b8;
+                    color: var(--text-muted);
                     cursor: pointer;
                     padding: 4px;
                     display: flex;

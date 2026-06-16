@@ -136,7 +136,7 @@ export default function RenewAccess() {
                     <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>
                         {isExpired ? 'Access Expired' : 'Extend Access'}
                     </h1>
-                    <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
                         {isExpired 
                             ? 'Your current subscription phase has ended. Renew now to continue your learning journey.' 
                             : 'Want more learning time? Extend your access ahead of time to keep your streak going!'}
@@ -151,11 +151,11 @@ export default function RenewAccess() {
                     border: '1px solid rgba(255,255,255,0.05)'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Renewal Plan</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Renewal Plan</span>
                         <span style={{ fontWeight: 700, color: '#6366f1' }}>1 Month Access</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Amount Payable</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Amount Payable</span>
                         <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹100</span>
                     </div>
                 </div>
@@ -183,7 +183,7 @@ export default function RenewAccess() {
                             style={{ 
                                 background: 'none', 
                                 border: 'none', 
-                                color: '#64748b', 
+                                color: 'var(--text-muted)', 
                                 fontSize: '0.875rem', 
                                 cursor: 'pointer',
                                 textDecoration: 'underline'
@@ -226,7 +226,7 @@ export default function RenewAccess() {
                                     {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
                                 </button>
                             </div>
-                            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Scan QR or pay to the above UPI ID using GPay, PhonePe, or Paytm.</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Scan QR or pay to the above UPI ID using GPay, PhonePe, or Paytm.</p>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -297,7 +297,7 @@ export default function RenewAccess() {
                                 style={{ 
                                     background: 'none', 
                                     border: 'none', 
-                                    color: '#64748b', 
+                                    color: 'var(--text-muted)', 
                                     fontSize: '0.875rem', 
                                     cursor: 'pointer',
                                     textDecoration: 'underline'
@@ -319,13 +319,13 @@ export default function RenewAccess() {
                 }}>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                         <Zap size={16} color="#f59e0b" style={{ marginTop: 2, flexShrink: 0 }} />
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                             <strong>Instant Access:</strong> Your account will be activated immediately after you submit the transaction ID.
                         </p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                         <ShieldCheck size={16} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} />
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                             <strong>Secured:</strong> All transactions are audited. Incorrect transaction IDs may lead to permanent account suspension.
                         </p>
                     </div>
@@ -343,7 +343,7 @@ export default function RenewAccess() {
                     transform: translateY(1px);
                 }
                 input::placeholder {
-                    color: #475569;
+                    color: var(--text-secondary);
                 }
             `}</style>
         </div>

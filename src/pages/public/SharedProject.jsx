@@ -75,7 +75,7 @@ export default function SharedProject() {
 
     if (loading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--text-primary)', color: 'white' }}>
                 <div style={{ width: 40, height: 40, border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
@@ -84,13 +84,13 @@ export default function SharedProject() {
 
     if (error || !project) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
-                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', maxWidth: 400, background: '#1e293b', border: '1px solid #334155' }}>
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--text-primary)', color: 'white' }}>
+                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', maxWidth: 400, background: 'var(--text-primary)', border: '1px solid var(--card-border)' }}>
                     <div style={{ width: 64, height: 64, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
                         <Code size={32} color="#ef4444" />
                     </div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Project Unavailable</h1>
-                    <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>This web project link is invalid or the project has been removed.</p>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>This web project link is invalid or the project has been removed.</p>
                     <Link to="/login" className="btn-primary" style={{ display: 'inline-flex' }}>Return to Learnova</Link>
                 </div>
             </div>
@@ -102,8 +102,8 @@ export default function SharedProject() {
             {/* Top Bar */}
             <header style={{
                 height: 60,
-                background: '#1e293b',
-                borderBottom: '1px solid #334155',
+                background: 'var(--text-primary)',
+                borderBottom: '1px solid var(--card-border)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -127,12 +127,12 @@ export default function SharedProject() {
                     </Link>
 
                     {/* Divider */}
-                    <div style={{ width: 1, height: 24, background: '#334155' }} />
+                    <div style={{ width: 1, height: 24, background: 'var(--card-border)' }} />
 
                     {/* Project Info */}
                     <div>
                         <h1 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'white', margin: 0 }}>{project.title}</h1>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
                             <span>by {author || 'Unknown Developer'}</span>
                             <span>•</span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Eye size={12} /> {project.views + 1} views</span>
@@ -151,7 +151,7 @@ export default function SharedProject() {
                         }}
                         style={{
                             background: 'none',
-                            border: '1px solid #475569',
+                            border: '1px solid var(--text-secondary)',
                             color: 'white',
                             padding: '0.4rem 1rem',
                             borderRadius: 6,

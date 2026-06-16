@@ -646,6 +646,7 @@ export default function TakeAssessment() {
                         <ChevronLeft size={16} /> Quit Assessment
                     </button>
                     <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{assessment?.title}</h1>
+                    {profile && <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontWeight: 600 }}>Student: {profile.full_name || profile.name || 'Unknown'}</div>}
                 </div>
                 <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     {violationCount > 0 && (

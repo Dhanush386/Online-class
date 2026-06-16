@@ -123,7 +123,7 @@ export default function Notifications() {
         switch (target) {
             case 'students': return { label: 'Students Only', color: '#10b981', bg: 'rgba(16,185,129,0.1)' }
             case 'organizers': return { label: 'Organizers Only', color: '#6366f1', bg: 'rgba(99,102,241,0.1)' }
-            default: return { label: 'Everyone', color: '#64748b', bg: 'rgba(100,116,139,0.1)' }
+            default: return { label: 'Everyone', color: 'var(--text-muted)', bg: 'rgba(100,116,139,0.1)' }
         }
     }
 

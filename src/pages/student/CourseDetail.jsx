@@ -366,7 +366,7 @@ export default function CourseDetail() {
                             {loadingVideo ? (
                                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
                                     <div className="animate-spin" style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%' }} />
-                                    <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Securing your connection...</span>
+                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Securing your connection...</span>
                                 </div>
                             ) : signedUrl ? (
                                 <ReactPlayer
@@ -392,7 +392,7 @@ export default function CourseDetail() {
 
                         {/* Modal Footer */}
                         <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.05)', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                                 <Lock size={14} />
                                 <span>Secured by Learnova Protection System</span>
                             </div>
@@ -515,7 +515,7 @@ export default function CourseDetail() {
                                     <div style={{ paddingTop: '1.5rem' }}>
                                         {status.locked ? (
                                             <div style={{ textAlign: 'center', padding: '2rem 1rem', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
-                                                <Lock size={32} color="#94a3b8" style={{ marginBottom: '1rem' }} />
+                                                <Lock size={32} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
                                                 <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Content Locked</h4>
                                                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{status.reason || "This day's content is not yet available."}</p>
                                             </div>
@@ -682,7 +682,7 @@ export default function CourseDetail() {
                                                     <section>
                                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <FileText size={16} color="#64748b" />
+                                                                <FileText size={16} color="var(--text-muted)" />
                                                                 <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Study Materials</h4>
                                                             </div>
                                                             {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
@@ -743,7 +743,7 @@ export default function CourseDetail() {
                 {(isAddingNote || activeNote) && (
                     <div className="glass-card animate-slide-up" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0', background: 'white', marginBottom: '2rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                            <div style={{ display: 'flex', gap: '0.75rem', color: '#64748b' }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', color: 'var(--text-muted)' }}>
                                 <span style={{ fontWeight: 800 }}>B</span>
                                 <span style={{ fontStyle: 'italic' }}>I</span>
                                 <span style={{ textDecoration: 'underline' }}>U</span>
@@ -758,10 +758,10 @@ export default function CourseDetail() {
                                 value={activeNote?.title || ''}
                                 onChange={(e) => setActiveNote(p => ({ ...p, title: e.target.value }))}
                                 placeholder="Title"
-                                style={{ width: '100%', border: 'none', outline: 'none', fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}
+                                style={{ width: '100%', border: 'none', outline: 'none', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}
                             />
                             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Assign to:</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Assign to:</span>
                                 <select 
                                     value={activeNote?.day_number || ''} 
                                     onChange={(e) => setActiveNote(p => ({ ...p, day_number: e.target.value ? parseInt(e.target.value) : null }))}
@@ -777,17 +777,17 @@ export default function CourseDetail() {
                                 value={activeNote?.content || ''}
                                 onChange={(e) => setActiveNote(p => ({ ...p, content: e.target.value }))}
                                 placeholder="Take a Note"
-                                style={{ width: '100%', border: 'none', outline: 'none', fontSize: '1rem', color: '#475569', minHeight: '150px', resize: 'vertical' }}
+                                style={{ width: '100%', border: 'none', outline: 'none', fontSize: '1rem', color: 'var(--text-secondary)', minHeight: '150px', resize: 'vertical' }}
                             />
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                     <Clock size={14} /> 
                                     <span>{savingNote ? 'Saving...' : 'Not Saved'}</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                                     <button 
                                         onClick={() => { setIsAddingNote(false); setActiveNote(null) }} 
-                                        style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
                                     >
                                         Cancel
                                     </button>
@@ -809,7 +809,7 @@ export default function CourseDetail() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                     {notes.length === 0 && !isAddingNote && !activeNote ? (
                         <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'rgba(99,102,241,0.03)', borderRadius: 20, border: '1px dashed var(--card-border)' }}>
-                            <FileText size={48} color="#94a3b8" style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                            <FileText size={48} color="var(--text-muted)" style={{ marginBottom: '1rem', opacity: 0.3 }} />
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Notes Yet</h3>
                             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Start your first note to keep track of important points during your learning!</p>
                         </div>
@@ -817,7 +817,7 @@ export default function CourseDetail() {
                         [...new Set(notes.map(n => n.day_number))].sort((a,b) => (a||0) - (b||0)).map(day => (
                             <div key={day || 'general'}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                                    <div style={{ padding: '0.3rem 0.8rem', background: day ? 'rgba(59,130,246,0.1)' : 'rgba(148,163,184,0.1)', color: day ? '#3b82f6' : '#64748b', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                    <div style={{ padding: '0.3rem 0.8rem', background: day ? 'rgba(59,130,246,0.1)' : 'rgba(148,163,184,0.1)', color: day ? '#3b82f6' : 'var(--text-muted)', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
                                         {day ? `Day ${day} Notes` : 'General Notes'}
                                     </div>
                                     <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, var(--card-border), transparent)' }} />
@@ -826,18 +826,18 @@ export default function CourseDetail() {
                                     {notes.filter(n => n.day_number === day).map(note => (
                                         <div key={note.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid var(--card-border)', background: 'white' }}>
                                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                                                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', flex: 1 }}>{note.title}</h4>
+                                                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>{note.title}</h4>
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button onClick={() => setActiveNote(note)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }} title="Edit">
+                                                    <button onClick={() => setActiveNote(note)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }} title="Edit">
                                                         <Edit2 size={16} />
                                                     </button>
-                                                    <button onClick={() => handleDeleteNote(note.id)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }} title="Delete">
+                                                    <button onClick={() => handleDeleteNote(note.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }} title="Delete">
                                                         <Trash2 size={16} color="#ef4444" />
                                                     </button>
                                                 </div>
                                             </div>
-                                            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
-                                            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+                                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
+                                            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                                                 <Calendar size={12} /> {new Date(note.created_at).toLocaleDateString()}
                                             </div>
                                         </div>

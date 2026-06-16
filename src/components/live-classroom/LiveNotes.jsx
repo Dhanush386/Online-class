@@ -140,7 +140,7 @@ export default function LiveNotes({ videoId, isOrganizer, channel }) {
                     <button 
                         onClick={handleManualSave}
                         style={{ 
-                            background: saving ? '#475569' : '#6366f1', 
+                            background: saving ? 'var(--text-secondary)' : '#6366f1', 
                             color: 'white', 
                             border: 'none', 
                             padding: '0.4rem 0.8rem', 
@@ -158,7 +158,7 @@ export default function LiveNotes({ videoId, isOrganizer, channel }) {
                 )}
             </div>
             
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '1rem' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                 {isOrganizer 
                     ? "Notes auto-save every 15s and sync to students instantly."
                     : "Notes are updated live by the instructor."}

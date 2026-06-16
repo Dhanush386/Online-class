@@ -45,7 +45,7 @@ export default function StudentDashboard() {
   const xp       = stats?.xp       || 0
   const streak   = stats?.streak   || 0
   const rankName = stats?.rankName || 'Iron I'
-  const rankColor= stats?.rankColor || '#94a3b8'
+  const rankColor= stats?.rankColor || 'var(--text-muted)'
   const levelProgress = getLevelProgress(xp)
 
   useEffect(() => {
@@ -104,9 +104,9 @@ export default function StudentDashboard() {
 
   const getRankInfo = (xp) => {
     const tiers = [
-      { name: 'Iron', color: '#94a3b8', base: 0, step: 200 },
+      { name: 'Iron', color: 'var(--text-muted)', base: 0, step: 200 },
       { name: 'Bronze', color: '#b45309', base: 1000, step: 200 },
-      { name: 'Silver', color: '#64748b', base: 2000, step: 300 },
+      { name: 'Silver', color: 'var(--text-muted)', base: 2000, step: 300 },
       { name: 'Gold', color: '#f59e0b', base: 3500, step: 800 },
       { name: 'Diamond', color: '#a855f7', base: 7500, step: 1000 }
     ]
@@ -394,7 +394,7 @@ export default function StudentDashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {topStudents.map((s, i) => (
                   <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem', borderRadius: 10, background: s.id === profile?.id ? 'rgba(99,102,241,0.06)' : 'transparent', border: s.id === profile?.id ? '1px solid rgba(99,102,241,0.15)' : '1px solid transparent' }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : '#cd7c2f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: i === 0 ? '#f59e0b' : i === 1 ? 'var(--text-muted)' : '#cd7c2f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>
                       {i + 1}
                     </div>
                     <Avatar name={s.name} size="sm" />
@@ -402,7 +402,7 @@ export default function StudentDashboard() {
                       <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
                       <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{(s.xp || 0).toLocaleString()} XP</div>
                     </div>
-                    <span className="xp-chip xp-chip-rank" style={{ fontSize: '0.62rem', color: s.rank_color || '#94a3b8', background: `${s.rank_color || '#94a3b8'}15`, borderColor: `${s.rank_color || '#94a3b8'}25`, padding: '0.15rem 0.4rem' }}>
+                    <span className="xp-chip xp-chip-rank" style={{ fontSize: '0.62rem', color: s.rank_color || 'var(--text-muted)', background: `${s.rank_color || 'var(--text-muted)'}15`, borderColor: `${s.rank_color || 'var(--text-muted)'}25`, padding: '0.15rem 0.4rem' }}>
                       {(s.rank_name || 'Iron').split(' ')[0]}
                     </span>
                   </div>

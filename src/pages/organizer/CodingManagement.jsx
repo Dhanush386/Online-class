@@ -529,7 +529,7 @@ export default function CodingManagement() {
             ) : filteredChallenges.length === 0 ? (
                 <div className="glass-card" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
                     <div style={{ width: 64, height: 64, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                        <Code size={32} color="#94a3b8" />
+                        <Code size={32} color="var(--text-muted)" />
                     </div>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Challenges Found</h3>
                     <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 1.5rem' }}>Build interactive coding problems for your students to practice.</p>
@@ -547,7 +547,7 @@ export default function CodingManagement() {
                     {filteredChallenges.map(c => (
                         <div key={c.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444'}` }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                                <span className="badge" style={{ background: '#f1f5f9', color: '#64748b', fontSize: '0.7rem' }}>
+                                <span className="badge" style={{ background: '#f1f5f9', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
                                     {LANGUAGES.find(l => l.id === c.language)?.icon} {c.language.toUpperCase()}
                                 </span>
                                 <div style={{ display: 'flex', gap: '0.25rem' }}>
@@ -815,7 +815,7 @@ export default function CodingManagement() {
                                                     <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
                                                     <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
                                                 </div>
-                                                <div style={{ height: '180px', background: '#1e293b' }}>
+                                                <div style={{ height: '180px', background: 'var(--text-primary)' }}>
                                                     {webTab === 'html' && (
                                                         <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="Initial HTML..." />
                                                     )}
@@ -828,7 +828,7 @@ export default function CodingManagement() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div style={{ height: '180px', background: '#1e293b', borderRadius: 8, overflow: 'hidden' }}>
+                                            <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
                                                 <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} placeholder="Initial code..." />
                                             </div>
                                         )}
@@ -840,8 +840,8 @@ export default function CodingManagement() {
                                 </div>
 
                                 <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>Solution Code (Optional)</label>
-                                    <div style={{ height: '180px', background: '#1e293b', borderRadius: 8, overflow: 'hidden' }}>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Solution Code (Optional)</label>
+                                    <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
                                         <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} placeholder="Correct answer..." />
                                     </div>
                                 </div>
@@ -953,7 +953,7 @@ export default function CodingManagement() {
                                                             flex: 1, padding: '0.65rem 0.5rem', border: 'none', cursor: 'pointer',
                                                             background: wcTab === tab.id ? 'white' : 'transparent',
                                                             borderBottom: wcTab === tab.id ? `2px solid ${tab.color}` : '2px solid transparent',
-                                                            color: wcTab === tab.id ? tab.color : '#64748b',
+                                                            color: wcTab === tab.id ? tab.color : 'var(--text-muted)',
                                                             fontWeight: wcTab === tab.id ? 700 : 500,
                                                             fontSize: '0.78rem', transition: 'all 0.15s'
                                                         }}
@@ -982,7 +982,7 @@ export default function CodingManagement() {
                                                                 </button>
                                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 100px', gap: '0.6rem' }}>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</label>
+                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</label>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Page should have a main heading"
                                                                             value={tc.description || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.html]; arr[idx] = { ...arr[idx], description: e.target.value }
@@ -998,7 +998,7 @@ export default function CodingManagement() {
                                                                             }} />
                                                                     </div>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>MIN COUNT</label>
+                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>MIN COUNT</label>
                                                                         <input type="number" min="1" className="form-input" style={{ fontSize: '0.8rem' }} placeholder="1"
                                                                             value={tc.minCount || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.html]; arr[idx] = { ...arr[idx], minCount: parseInt(e.target.value) || 1 }
@@ -1030,7 +1030,7 @@ export default function CodingManagement() {
                                                                 </button>
                                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 160px 140px', gap: '0.6rem' }}>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</label>
+                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</label>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Container should use flexbox"
                                                                             value={tc.description || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], description: e.target.value }
@@ -1054,7 +1054,7 @@ export default function CodingManagement() {
                                                                             }} />
                                                                     </div>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>EXPECTED VALUE</label>
+                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>EXPECTED VALUE</label>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="flex"
                                                                             value={tc.value || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], value: e.target.value }
@@ -1086,7 +1086,7 @@ export default function CodingManagement() {
                                                                 </button>
                                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '0.6rem' }}>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</label>
+                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</label>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Submit button should use addEventListener"
                                                                             value={tc.description || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.js]; arr[idx] = { ...arr[idx], description: e.target.value }
@@ -1140,19 +1140,19 @@ export default function CodingManagement() {
                                         <div key={idx} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '1rem', marginBottom: '1rem', background: 'white' }}>
                                             <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.75rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                    <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>INPUT (STDIN)</label>
+                                                    <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)' }}>INPUT (STDIN)</label>
                                                     <textarea id={`tc-input-${idx}`} className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => {
                                                         const newTCData = [...formData.test_cases]; newTCData[idx].input = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
                                                     }} style={{ fontSize: '0.8rem' }} />
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                    <label htmlFor={`tc-output-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>EXPECTED OUTPUT (STDOUT)</label>
+                                                    <label htmlFor={`tc-output-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)' }}>EXPECTED OUTPUT (STDOUT)</label>
                                                     <textarea id={`tc-output-${idx}`} className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => {
                                                         const newTCData = [...formData.test_cases]; newTCData[idx].expected_output = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
                                                     }} style={{ fontSize: '0.8rem' }} />
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', paddingTop: '1.25rem' }}>
-                                                    <label htmlFor={`tc-hidden-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>HIDDEN</label>
+                                                    <label htmlFor={`tc-hidden-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)' }}>HIDDEN</label>
                                                     <input
                                                         id={`tc-hidden-${idx}`}
                                                         type="checkbox"
@@ -1215,7 +1215,7 @@ export default function CodingManagement() {
                                                                         border: '1px solid #e2e8f0', 
                                                                         borderRadius: '8px', 
                                                                         padding: '0 0.75rem',
-                                                                        color: '#64748b',
+                                                                        color: 'var(--text-muted)',
                                                                         transition: 'all 0.2s'
                                                                     }} title="Upload from desktop">
                                                                         <input 
@@ -1266,13 +1266,13 @@ export default function CodingManagement() {
                                                 </div>
                                                 <div style={{ marginBottom: '1rem' }}>
                                                     <label className="form-label">Starter Code</label>
-                                                    <div style={{ height: '120px', background: '#1e293b', borderRadius: 8, overflow: 'hidden' }}>
+                                                    <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
                                                         <CodeEditor value={q.starter_code} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].starter_code = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} language={formData.language} placeholder="Initial code..." />
                                                     </div>
                                                 </div>
                                                 <div style={{ marginBottom: '1rem' }}>
                                                     <label className="form-label">Solution Code (Optional)</label>
-                                                    <div style={{ height: '120px', background: '#1e293b', borderRadius: 8, overflow: 'hidden' }}>
+                                                    <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
                                                         <CodeEditor value={q.solution_code || ''} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].solution_code = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} language={formData.language} placeholder="Correct answer..." />
                                                     </div>
                                                 </div>

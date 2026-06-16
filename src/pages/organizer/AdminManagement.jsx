@@ -178,7 +178,7 @@ export default function AdminManagement() {
                                         </div>
                                     </td>
                                     <td style={{ padding: '1rem 1.5rem' }}>
-                                        <span className="badge" style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 4, background: admin.role === 'main_admin' ? '#fee2e2' : admin.role === 'sub_admin' ? '#e0e7ff' : '#f1f5f9', color: admin.role === 'main_admin' ? '#991b1b' : admin.role === 'sub_admin' ? '#3730a3' : '#475569' }}>
+                                        <span className="badge" style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 4, background: admin.role === 'main_admin' ? '#fee2e2' : admin.role === 'sub_admin' ? '#e0e7ff' : '#f1f5f9', color: admin.role === 'main_admin' ? '#991b1b' : admin.role === 'sub_admin' ? '#3730a3' : 'var(--text-secondary)' }}>
                                             {admin.role.replace('_', ' ')}
                                         </span>
                                     </td>
@@ -272,7 +272,7 @@ export default function AdminManagement() {
                                             }}
                                         >
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                <div style={{ width: 36, height: 36, background: isAssigned ? '#6366f1' : '#f1f5f9', color: isAssigned ? 'white' : '#94a3b8', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div style={{ width: 36, height: 36, background: isAssigned ? '#6366f1' : '#f1f5f9', color: isAssigned ? 'white' : 'var(--text-muted)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                     <BookOpen size={18} />
                                                 </div>
                                                 <span style={{ fontWeight: 600, fontSize: '0.9rem', color: isAssigned ? '#1e1b4b' : 'var(--text-primary)' }}>{course.title}</span>

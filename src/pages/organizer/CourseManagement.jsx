@@ -216,7 +216,7 @@ export default function CourseManagement() {
             ) : courses.length === 0 ? (
                 <div className="glass-card" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
                     <div style={{ width: 64, height: 64, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                        <BookOpen size={32} color="#94a3b8" />
+                        <BookOpen size={32} color="var(--text-muted)" />
                     </div>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Courses Yet</h3>
                     <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 1.5rem' }}>Start by creating your first course. You'll be able to schedule live classes under each course.</p>

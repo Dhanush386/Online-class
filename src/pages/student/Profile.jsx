@@ -324,14 +324,14 @@ export default function Profile() {
                                         alignItems: 'center', 
                                         justifyContent: 'center' 
                                     }}>
-                                        <section.icon size={16} color={activeSection === section.id ? 'white' : '#64748b'} />
+                                        <section.icon size={16} color={activeSection === section.id ? 'white' : 'var(--text-muted)'} />
                                     </div>
-                                    <span style={{ fontWeight: 600, color: activeSection === section.id ? '#10b981' : '#334155' }}>{section.label}</span>
+                                    <span style={{ fontWeight: 600, color: activeSection === section.id ? '#10b981' : 'var(--card-border)' }}>{section.label}</span>
                                 </div>
                                 {section.id === 'basic' ? (
-                                    <ChevronDown size={18} color="#64748b" style={{ transform: activeSection === 'basic' ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
+                                    <ChevronDown size={18} color="var(--text-muted)" style={{ transform: activeSection === 'basic' ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
                                 ) : (
-                                    <ChevronRight size={18} color="#64748b" />
+                                    <ChevronRight size={18} color="var(--text-muted)" />
                                 )}
                             </button>
 
@@ -348,7 +348,7 @@ export default function Profile() {
                                                 padding: '0.6rem 1rem',
                                                 borderRadius: 8,
                                                 background: activeSubSection === sub.id ? 'rgba(16,185,129,0.08)' : 'none',
-                                                color: activeSubSection === sub.id ? '#10b981' : '#64748b',
+                                                color: activeSubSection === sub.id ? '#10b981' : 'var(--text-muted)',
                                                 border: 'none',
                                                 cursor: 'pointer',
                                                 textAlign: 'left',
@@ -386,8 +386,8 @@ export default function Profile() {
                                 <section>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Student Profile</h2>
-                                            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Information you provide will be used for IRC Certificate etc.. Write your Name and other details carefully, just as you would in an official document.</p>
+                                            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Student Profile</h2>
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Information you provide will be used for IRC Certificate etc.. Write your Name and other details carefully, just as you would in an official document.</p>
                                         </div>
                                         <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', background: 'none', border: 'none', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>
                                             <HelpCircle size={18} /> Help Guide
@@ -395,8 +395,8 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '2.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Photo</label>
-                                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '1rem' }}>This will be your profile photo. Same will be used for exams, placements etc..</p>
+                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Photo</label>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>This will be your profile photo. Same will be used for exams, placements etc..</p>
                                         
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
                                             <div style={{ 
@@ -427,7 +427,7 @@ export default function Profile() {
                                                 />
                                                 <button 
                                                     onClick={() => fileInputRef.current.click()}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', color: '#475569' }}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)' }}
                                                 >
                                                     <Upload size={18} /> Upload Photo
                                                 </button>
@@ -470,12 +470,12 @@ export default function Profile() {
                                                 }}>
                                                     <button 
                                                         onClick={stopCamera}
-                                                        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#f1f5f9', border: 'none', padding: '0.75rem', borderRadius: '50%', cursor: 'pointer', color: '#64748b' }}
+                                                        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#f1f5f9', border: 'none', padding: '0.75rem', borderRadius: '50%', cursor: 'pointer', color: 'var(--text-muted)' }}
                                                     >
                                                         <X size={20} />
                                                     </button>
-                                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>Capture Profile Photo</h3>
-                                                    <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1.5rem' }}>Position your face in the center for a clear snapshot</p>
+                                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Capture Profile Photo</h3>
+                                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Position your face in the center for a clear snapshot</p>
                                                     
                                                     <div style={{ 
                                                         width: '100%', 
@@ -499,7 +499,7 @@ export default function Profile() {
                                                     <div style={{ display: 'flex', gap: '1rem' }}>
                                                         <button 
                                                             onClick={stopCamera}
-                                                            style={{ flex: 1, padding: '1rem', borderRadius: 12, background: '#f1f5f9', color: '#64748b', fontWeight: 600, border: 'none', cursor: 'pointer' }}
+                                                            style={{ flex: 1, padding: '1rem', borderRadius: 12, background: '#f1f5f9', color: 'var(--text-muted)', fontWeight: 600, border: 'none', cursor: 'pointer' }}
                                                         >
                                                             Cancel
                                                         </button>
@@ -534,7 +534,7 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>First Name</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>First Name</label>
                                             <input 
                                                 name="first_name"
                                                 value={formData.first_name}
@@ -542,10 +542,10 @@ export default function Profile() {
                                                 placeholder="Ex: Sachin"
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                             />
-                                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem' }}>Ex: Sachin</p>
+                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ex: Sachin</p>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Surname/Last Name</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Surname/Last Name</label>
                                             <input 
                                                 name="last_name"
                                                 value={formData.last_name}
@@ -553,12 +553,12 @@ export default function Profile() {
                                                 placeholder="Ex: Tendulkar"
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                             />
-                                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem' }}>Ex: Tendulkar</p>
+                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ex: Tendulkar</p>
                                         </div>
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Name on your IRC Certificate</label>
+                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Name on your IRC Certificate</label>
                                         <input 
                                             name="certificate_name"
                                             value={formData.certificate_name}
@@ -566,12 +566,12 @@ export default function Profile() {
                                             placeholder="Full name as it should appear"
                                             style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                         />
-                                        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem' }}>How would you like your name to appear on certificates?</p>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>How would you like your name to appear on certificates?</p>
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Gender</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Gender</label>
                                             <select 
                                                 name="gender" 
                                                 value={formData.gender} 
@@ -585,7 +585,7 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Date of Birth</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Date of Birth</label>
                                             <input 
                                                 type="date"
                                                 name="dob"
@@ -598,7 +598,7 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>LinkedIn Profile URL</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>LinkedIn Profile URL</label>
                                             <div style={{ position: 'relative' }}>
                                                 <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#0077b5' }}>
                                                     <Linkedin size={18} />
@@ -615,8 +615,8 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Resume/CV</label>
-                                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '1rem' }}>Upload your latest resume in PDF format (Max 5MB)</p>
+                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Resume/CV</label>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Upload your latest resume in PDF format (Max 5MB)</p>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                                             <input 
                                                 type="file" 
@@ -627,7 +627,7 @@ export default function Profile() {
                                             />
                                             <button 
                                                 onClick={() => resumeInputRef.current.click()}
-                                                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', color: '#475569' }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)' }}
                                             >
                                                 <Upload size={18} /> {formData.resume_url ? 'Update Resume' : 'Upload Resume'}
                                             </button>
@@ -649,15 +649,15 @@ export default function Profile() {
                             {activeSubSection === 'contact' && (
                                 <section>
                                     <div style={{ marginBottom: '2rem' }}>
-                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Student Contact Details</h2>
-                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>We will use the contact details you provide to send you the important updates during the program</p>
+                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Student Contact Details</h2>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>We will use the contact details you provide to send you the important updates during the program</p>
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Phone Number</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Phone Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}>IN +91</div>
+                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
                                                     name="phone"
                                                     value={formData.phone || ''}
@@ -666,12 +666,12 @@ export default function Profile() {
                                                     style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                                 />
                                             </div>
-                                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem' }}>Primary contact number</p>
+                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Primary contact number</p>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>WhatsApp Number</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>WhatsApp Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}>IN +91</div>
+                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
                                                     name="whatsapp_number"
                                                     value={formData.whatsapp_number || ''}
@@ -680,17 +680,17 @@ export default function Profile() {
                                                     style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                                 />
                                             </div>
-                                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem' }}>For important updates on WhatsApp</p>
+                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>For important updates on WhatsApp</p>
                                         </div>
                                     </div>
 
                                     <div style={{ marginBottom: '2rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Email ID</label>
+                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Email ID</label>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <input 
                                                 value={user?.email || ''}
                                                 disabled
-                                                style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}
+                                                style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}
                                             />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: 600 }}>
@@ -708,7 +708,7 @@ export default function Profile() {
                                                 style={{ width: 20, height: 20, accentColor: '#10b981' }} 
                                             />
                                             <div>
-                                                <p style={{ fontWeight: 600, color: '#334155', fontSize: '0.95rem' }}>I would like to receive updates in WhatsApp.</p>
+                                                <p style={{ fontWeight: 600, color: 'var(--card-border)', fontSize: '0.95rem' }}>I would like to receive updates in WhatsApp.</p>
                                             </div>
                                         </label>
                                     </div>
@@ -718,13 +718,13 @@ export default function Profile() {
                             {activeSubSection === 'parent' && (
                                 <section>
                                     <div style={{ marginBottom: '2rem' }}>
-                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Parent/Guardian Details</h2>
-                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Person/Guardian is the one who supports the student during their journey. Student's progress will be shared regularly with Parent/Guardian.</p>
+                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Parent/Guardian Details</h2>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Person/Guardian is the one who supports the student during their journey. Student's progress will be shared regularly with Parent/Guardian.</p>
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>First Name</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>First Name</label>
                                             <input 
                                                 name="parent_first_name"
                                                 value={formData.parent_first_name}
@@ -734,7 +734,7 @@ export default function Profile() {
                                             />
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Surname/Last Name</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Surname/Last Name</label>
                                             <input 
                                                 name="parent_last_name"
                                                 value={formData.parent_last_name}
@@ -747,7 +747,7 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Relation with the student</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Relation with the student</label>
                                             <select 
                                                 name="parent_relation" 
                                                 value={formData.parent_relation} 
@@ -761,7 +761,7 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Occupation</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Occupation</label>
                                             <select 
                                                 name="parent_occupation" 
                                                 value={formData.parent_occupation} 
@@ -791,9 +791,9 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Parent/Guardian Phone Number</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Parent/Guardian Phone Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}>IN +91</div>
+                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
                                                     name="parent_phone"
                                                     value={formData.parent_phone || ''}
@@ -804,9 +804,9 @@ export default function Profile() {
                                             </div>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Parent/Guardian WhatsApp Number</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Parent/Guardian WhatsApp Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.95rem' }}>IN +91</div>
+                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
                                                     name="parent_whatsapp"
                                                     value={formData.parent_whatsapp || ''}
@@ -823,12 +823,12 @@ export default function Profile() {
                             {activeSubSection === 'address' && (
                                 <section>
                                     <div style={{ marginBottom: '2.5rem' }}>
-                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Current Address</h2>
-                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Please provide your complete address to send rewards, resources, certificates, etc.</p>
+                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Current Address</h2>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Please provide your complete address to send rewards, resources, certificates, etc.</p>
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Address Line 1</label>
+                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Address Line 1</label>
                                         <input 
                                             name="address_line1"
                                             value={formData.address_line1}
@@ -839,7 +839,7 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Address Line 2</label>
+                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Address Line 2</label>
                                         <input 
                                             name="address_line2"
                                             value={formData.address_line2}
@@ -851,7 +851,7 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Country</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Country</label>
                                             <select 
                                                 name="country" 
                                                 value={formData.country} 
@@ -869,7 +869,7 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Postal/Pin Code</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Postal/Pin Code</label>
                                             <input 
                                                 name="pincode"
                                                 value={formData.pincode}
@@ -882,7 +882,7 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>State</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>State</label>
                                             <select 
                                                 name="state" 
                                                 value={formData.state} 
@@ -902,7 +902,7 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>District</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>District</label>
                                             {formData.country === 'India' ? (
                                                 <select 
                                                     name="district" 
@@ -932,13 +932,13 @@ export default function Profile() {
                             {activeSubSection === 'expertise' && (
                                 <section>
                                     <div style={{ marginBottom: '2rem' }}>
-                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Current Expertise</h2>
-                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Please provide the following details to mentor you better</p>
+                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Current Expertise</h2>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Please provide the following details to mentor you better</p>
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Current Coding Level</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Current Coding Level</label>
                                             <select 
                                                 name="coding_level" 
                                                 value={formData.coding_level} 
@@ -953,7 +953,7 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '1.25rem' }}>Do you have a Laptop/Computer?</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>Do you have a Laptop/Computer?</label>
                                             <div style={{ display: 'flex', gap: '2rem' }}>
                                                 {['Yes', 'No'].map(v => (
                                                     <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
@@ -964,7 +964,7 @@ export default function Profile() {
                                                             onChange={() => setFormData(p => ({ ...p, has_laptop: v === 'Yes' }))}
                                                             style={{ width: 18, height: 18, accentColor: '#10b981' }}
                                                         />
-                                                        <span style={{ fontSize: '0.95rem', color: '#64748b' }}>{v}</span>
+                                                        <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}>{v}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -972,9 +972,9 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Technical Skills (if any)</label>
+                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Technical Skills (if any)</label>
                                         <div style={{ position: 'relative' }}>
-                                            <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+                                            <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
                                                 <Search size={18} />
                                             </div>
                                             <input 
@@ -1024,7 +1024,7 @@ export default function Profile() {
                                                                         background: '#f1f5f9', 
                                                                         border: 'none', 
                                                                         fontSize: '0.85rem', 
-                                                                        color: '#475569', 
+                                                                        color: 'var(--text-secondary)', 
                                                                         cursor: 'pointer',
                                                                         fontWeight: 500,
                                                                         transition: 'all 0.2s'
@@ -1048,7 +1048,7 @@ export default function Profile() {
                                                 </div>
                                             )}
                                         </div>
-                                        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>Click a suggestion or type and press Enter to add</p>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Click a suggestion or type and press Enter to add</p>
                                         
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.25rem' }}>
                                             {(formData.technical_skills || []).length > 0 ? (
@@ -1059,7 +1059,7 @@ export default function Profile() {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <p style={{ fontSize: '0.9rem', color: '#94a3b8', italic: true }}>No skills added yet</p>
+                                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', italic: true }}>No skills added yet</p>
                                             )}
                                         </div>
                                         
@@ -1076,13 +1076,13 @@ export default function Profile() {
                             {activeSubSection === 'preference' && (
                                 <section>
                                     <div style={{ marginBottom: '2rem' }}>
-                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Your Preference</h2>
-                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Tailor your learning experience</p>
+                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Your Preference</h2>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Tailor your learning experience</p>
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Preferred Language for teaching</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Preferred Language for teaching</label>
                                             <select 
                                                 name="language_teaching" 
                                                 value={formData.language_teaching} 
@@ -1096,7 +1096,7 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Preferred Language for watching video lectures</label>
+                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Preferred Language for watching video lectures</label>
                                             <select 
                                                 name="language_watching" 
                                                 value={formData.language_watching} 
@@ -1118,8 +1118,8 @@ export default function Profile() {
                         <section>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                                 <div>
-                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Education Details</h2>
-                                    <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Add your educational background</p>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Education Details</h2>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Add your educational background</p>
                                 </div>
                                 <button 
                                     onClick={() => setFormData(p => ({ 
@@ -1136,7 +1136,7 @@ export default function Profile() {
                                 {formData.education_details.length === 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
                                         <GraduationCap size={64} color="#e2e8f0" />
-                                        <p style={{ color: '#94a3b8', fontSize: '1rem' }}>No education details added yet</p>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No education details added yet</p>
                                     </div>
                                 ) : (
                                     formData.education_details.map((edu, idx) => (
@@ -1149,7 +1149,7 @@ export default function Profile() {
                                             </button>
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', fontSize: '0.85rem' }}>School/College</label>
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>School/College</label>
                                                     <input 
                                                         value={edu.school}
                                                         onChange={(e) => {
@@ -1161,7 +1161,7 @@ export default function Profile() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Degree/Course</label>
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Degree/Course</label>
                                                     <input 
                                                         value={edu.degree}
                                                         onChange={(e) => {
@@ -1184,8 +1184,8 @@ export default function Profile() {
                         <section>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                                 <div>
-                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Work Experience</h2>
-                                    <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Add your professional experience</p>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Work Experience</h2>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Add your professional experience</p>
                                 </div>
                                 <button 
                                     onClick={() => setFormData(p => ({ 
@@ -1202,7 +1202,7 @@ export default function Profile() {
                                 {formData.work_experience.length === 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
                                         <Briefcase size={64} color="#e2e8f0" />
-                                        <p style={{ color: '#94a3b8', fontSize: '1rem' }}>No work experience added yet</p>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No work experience added yet</p>
                                     </div>
                                 ) : (
                                     formData.work_experience.map((work, idx) => (
@@ -1215,7 +1215,7 @@ export default function Profile() {
                                             </button>
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Company</label>
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Company</label>
                                                     <input 
                                                         value={work.company}
                                                         onChange={(e) => {
@@ -1227,7 +1227,7 @@ export default function Profile() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Role</label>
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Role</label>
                                                     <input 
                                                         value={work.role}
                                                         onChange={(e) => {
@@ -1250,8 +1250,8 @@ export default function Profile() {
                         <section>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                                 <div>
-                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Projects & Achievements</h2>
-                                    <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Highlight your best work and accomplishments</p>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Projects & Achievements</h2>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Highlight your best work and accomplishments</p>
                                 </div>
                                 <button 
                                     onClick={() => setFormData(p => ({ 
@@ -1268,7 +1268,7 @@ export default function Profile() {
                                 {formData.projects_achievements.length === 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
                                         <Trophy size={64} color="#e2e8f0" />
-                                        <p style={{ color: '#94a3b8', fontSize: '1rem' }}>No projects or achievements added yet</p>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No projects or achievements added yet</p>
                                     </div>
                                 ) : (
                                     formData.projects_achievements.map((proj, idx) => (
@@ -1281,7 +1281,7 @@ export default function Profile() {
                                             </button>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Project Title</label>
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Project Title</label>
                                                     <input 
                                                         value={proj.title}
                                                         onChange={(e) => {
@@ -1293,7 +1293,7 @@ export default function Profile() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Link/URL</label>
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Link/URL</label>
                                                     <input 
                                                         value={proj.link}
                                                         onChange={(e) => {

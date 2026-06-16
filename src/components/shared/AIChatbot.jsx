@@ -292,9 +292,9 @@ export default function AIChatbot() {
                 <div style={{ padding: '6px', background: '#eff6ff', borderRadius: '8px', color: '#6366f1' }}>
                     <MessageCircle size={20} />
                 </div>
-                <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b', margin: 0 }}>Virtual Assistant</h3>
+                <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)', margin: 0 }}>Virtual Assistant</h3>
             </div>
-            <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}><X size={20} /></button>
+            <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}><X size={20} /></button>
         </div>
     )
 
@@ -304,10 +304,10 @@ export default function AIChatbot() {
                 <button
                     key={tab}
                     onClick={() => { setActiveTab(tab); setIsChatting(false); }}
-                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366f1' : '#64748b', position: 'relative', cursor: 'pointer', flex: 1, textTransform: 'capitalize' }}
+                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366f1' : 'var(--text-muted)', position: 'relative', cursor: 'pointer', flex: 1, textTransform: 'capitalize' }}
                 >
                     {tab === 'home' ? 'Home' : tab === 'past' ? 'Past chats' : 'Ticket history'}
-                    {activeTab === tab && <div style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: '3px', background: '#1e293b', borderRadius: '3px 3px 0 0' }} />}
+                    {activeTab === tab && <div style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: '3px', background: 'var(--text-primary)', borderRadius: '3px 3px 0 0' }} />}
                 </button>
             ))}
         </div>
@@ -315,11 +315,11 @@ export default function AIChatbot() {
 
     const renderHome = () => (
         <div style={{ padding: '2rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '1rem', color: '#64748b', marginBottom: '0.25rem' }}>Welcome</span>
-            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Welcome</span>
+            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {profile?.name || 'Guest'} <span style={{ fontSize: '1.75rem' }}>👋</span>
             </h2>
-            <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>How can I help you?<br />Browse our Help Center or start a chat.</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>How can I help you?<br />Browse our Help Center or start a chat.</p>
             <button 
                 onClick={() => {
                     setIsOpen(false)
@@ -364,7 +364,7 @@ export default function AIChatbot() {
                     <ChevronRight size={14} style={{ transform: 'rotate(180deg)' }} /> Back to Home
                 </button>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={handleClearChat} style={{ color: '#64748b', background: 'none', border: 'none', fontSize: '0.75rem', cursor: 'pointer' }}>Reset</button>
+                    <button onClick={handleClearChat} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', fontSize: '0.75rem', cursor: 'pointer' }}>Reset</button>
                 </div>
             </div>
 
@@ -374,7 +374,7 @@ export default function AIChatbot() {
             >
                 {getActiveMessages().map((msg, i) => (
                     <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
-                        <div style={{ padding: '0.75rem 1rem', borderRadius: '16px', background: msg.role === 'user' ? '#7c3aed' : '#f1f5f9', color: msg.role === 'user' ? 'white' : '#1e293b', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                        <div style={{ padding: '0.75rem 1rem', borderRadius: '16px', background: msg.role === 'user' ? '#7c3aed' : '#f1f5f9', color: msg.role === 'user' ? 'white' : 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
                             {msg.content}
                         </div>
                     </div>
@@ -405,7 +405,7 @@ export default function AIChatbot() {
     const renderPastChats = () => (
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
             {sessions.length === 0 ? (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                     <History size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
                     <p style={{ margin: 0 }}>No past conversations yet.</p>
                 </div>
@@ -425,15 +425,15 @@ export default function AIChatbot() {
                                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
                                     <div style={{ padding: '8px', background: '#f8fafc', borderRadius: '10px', color: '#6366f1' }}><MessageSquare size={18} /></div>
                                     <div style={{ overflow: 'hidden', flex: 1 }}>
-                                        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}><Clock size={12} /> {date}</div>
+                                        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}><Clock size={12} /> {date}</div>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={(e) => handleDeleteSession(e, s.id)}
-                                    style={{ padding: '8px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
+                                    style={{ padding: '8px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
                                     onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
-                                    onMouseOut={(e) => e.currentTarget.style.color = '#94a3b8'}
+                                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                                 >
                                     <Trash2 size={16} />
                                 </button>
@@ -453,14 +453,14 @@ export default function AIChatbot() {
                         <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>New Support Ticket</h4>
                         <button 
                             onClick={() => setIsCreatingTicket(false)}
-                            style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.8rem', cursor: 'pointer' }}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}
                         >
                             Cancel
                         </button>
                     </div>
                     <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.4rem' }}>Subject</label>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Subject</label>
                             <input 
                                 type="text"
                                 placeholder="What's the issue about?"
@@ -471,7 +471,7 @@ export default function AIChatbot() {
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.4rem' }}>Description</label>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Description</label>
                             <textarea 
                                 placeholder="Provide more details..."
                                 value={newTicketMessage}
@@ -502,7 +502,7 @@ export default function AIChatbot() {
                                     <div style={{ background: '#7c3aed', color: 'white', padding: '4px', borderRadius: '4px' }}>
                                         <ImageIcon size={14} />
                                     </div>
-                                    <span style={{ fontSize: '0.7rem', color: '#1e293b', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-primary)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {screenshot.name}
                                     </span>
                                     <button 
@@ -539,7 +539,7 @@ export default function AIChatbot() {
         return (
             <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>Support Tickets</h4>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Support Tickets</h4>
                     <button 
                         onClick={() => setIsCreatingTicket(true)}
                         style={{ padding: '0.5rem 0.8rem', background: '#eff6ff', color: '#6366f1', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -553,7 +553,7 @@ export default function AIChatbot() {
                         <Loader2 className="animate-spin" size={24} color="#6366f1" />
                     </div>
                 ) : tickets.length === 0 ? (
-                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                         <Ticket size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
                         <p style={{ margin: 0, fontSize: '0.85rem' }}>No tickets found yet.</p>
                     </div>
@@ -572,7 +572,7 @@ export default function AIChatbot() {
                                 onMouseOut={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                                    <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
+                                    <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
                                     <span style={{ 
                                         padding: '4px 8px', 
                                         borderRadius: '6px', 
@@ -585,7 +585,7 @@ export default function AIChatbot() {
                                         {t.status}
                                     </span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: '#94a3b8' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                                     <Clock size={12} /> {new Date(t.created_at).toLocaleDateString()}
                                 </div>
                             </div>

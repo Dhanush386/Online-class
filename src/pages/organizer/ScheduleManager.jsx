@@ -353,7 +353,7 @@ export default function ScheduleManager() {
                                                                             fontWeight: 600, 
                                                                             border: '1px solid #e2e8f0', 
                                                                             background: record.attendance_status === 'present' ? '#ecfdf5' : record.attendance_status === 'absent' ? '#fef2f2' : '#f8fafc', 
-                                                                            color: record.attendance_status === 'present' ? '#059669' : record.attendance_status === 'absent' ? '#dc2626' : '#64748b',
+                                                                            color: record.attendance_status === 'present' ? '#059669' : record.attendance_status === 'absent' ? '#dc2626' : 'var(--text-muted)',
                                                                             cursor: 'pointer',
                                                                             outline: 'none'
                                                                         }}

@@ -1206,18 +1206,18 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                 <Icon size={20} />
             </div>
             <div>
-                <h4 style={{ fontWeight: 700, color: '#1e293b', fontSize: '1.1rem' }}>{title}</h4>
-                <p style={{ color: '#64748b', fontSize: '0.8rem' }}>{subtitle}</p>
+                <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1.1rem' }}>{title}</h4>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{subtitle}</p>
             </div>
         </div>
     )
 
     const InfoItem = ({ label, value, icon: Icon }) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 {Icon && <Icon size={12} />} {label}
             </span>
-            <span style={{ fontSize: '0.9rem', color: '#334155', fontWeight: 500 }}>{value || 'Not provided'}</span>
+            <span style={{ fontSize: '0.9rem', color: 'var(--card-border)', fontWeight: 500 }}>{value || 'Not provided'}</span>
         </div>
     )
 
@@ -1243,7 +1243,7 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                 {loading ? (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
                         <div className="spinner" />
-                        <p style={{ color: '#64748b' }}>Fetching student data...</p>
+                        <p style={{ color: 'var(--text-muted)' }}>Fetching student data...</p>
                     </div>
                 ) : !profile ? (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', padding: '4rem' }}>
@@ -1251,8 +1251,8 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                             <AlertCircle size={40} />
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>Profile Incomplete</h3>
-                            <p style={{ color: '#64748b', maxWidth: 400 }}>This student has registered but hasn't filled out their profile details yet.</p>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Profile Incomplete</h3>
+                            <p style={{ color: 'var(--text-muted)', maxWidth: 400 }}>This student has registered but hasn't filled out their profile details yet.</p>
                         </div>
                         <button onClick={onClose} className="btn-secondary">Close View</button>
                     </div>
@@ -1273,7 +1273,7 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                     style={{
                                         display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', borderRadius: 12, border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 600, fontSize: '0.9rem',
                                         background: activeTab === tab.id ? '#6366f1' : 'transparent',
-                                        color: activeTab === tab.id ? 'white' : '#64748b',
+                                        color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
                                         transition: 'all 0.2s'
                                     }}
                                 >
@@ -1328,7 +1328,7 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                                 />
                                                 <InfoItem label="Pincode" value={profile.pincode} />
                                                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                                    {profile.github_url && <a href={profile.github_url} target="_blank" rel="noreferrer" style={{ color: '#334155' }}><Github size={20} /></a>}
+                                                    {profile.github_url && <a href={profile.github_url} target="_blank" rel="noreferrer" style={{ color: 'var(--card-border)' }}><Github size={20} /></a>}
                                                     {profile.linkedin_url && <a href={profile.linkedin_url} target="_blank" rel="noreferrer" style={{ color: '#0077b5' }}><Linkedin size={20} /></a>}
                                                     {profile.twitter_url && <a href={profile.twitter_url} target="_blank" rel="noreferrer" style={{ color: '#1DA1F2' }}><Twitter size={20} /></a>}
                                                 </div>
@@ -1352,14 +1352,14 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                                 {profile.education_details?.length > 0 ? profile.education_details.map((edu, idx) => (
                                                     <div key={idx} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12, display: 'flex', justifyContent: 'space-between' }}>
                                                         <div>
-                                                            <div style={{ fontWeight: 700, color: '#1e293b' }}>{edu.school}</div>
-                                                            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{edu.degree}</div>
+                                                            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{edu.school}</div>
+                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{edu.degree}</div>
                                                         </div>
                                                         <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '0.25rem 0.75rem', borderRadius: 20, height: 'fit-content' }}>
                                                             {edu.year || 'N/A'}
                                                         </div>
                                                     </div>
-                                                )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No education details added</p>}
+                                                )) : <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No education details added</p>}
                                             </div>
                                         </div>
                                         <div>
@@ -1367,11 +1367,11 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                                 {profile.work_experience?.length > 0 ? profile.work_experience.map((work, idx) => (
                                                     <div key={idx} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12 }}>
-                                                        <div style={{ fontWeight: 700, color: '#1e293b' }}>{work.company}</div>
+                                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{work.company}</div>
                                                         <div style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: 600 }}>{work.role}</div>
-                                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>{work.duration}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{work.duration}</div>
                                                     </div>
-                                                )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No work experience added</p>}
+                                                )) : <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No work experience added</p>}
                                             </div>
                                         </div>
                                     </div>
@@ -1382,10 +1382,10 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                         <SectionHeader icon={Briefcase} title="Technical Expertise" subtitle="Searchable skills and technology stack" />
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                                             {profile.technical_skills?.length > 0 ? profile.technical_skills.map((skill, idx) => (
-                                                <span key={idx} style={{ padding: '0.6rem 1.2rem', background: '#f1f5f9', color: '#475569', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600, border: '1px solid #e2e8f0' }}>
+                                                <span key={idx} style={{ padding: '0.6rem 1.2rem', background: '#f1f5f9', color: 'var(--text-secondary)', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600, border: '1px solid #e2e8f0' }}>
                                                     {skill}
                                                 </span>
-                                            )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No technical skills listed</p>}
+                                            )) : <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No technical skills listed</p>}
                                         </div>
                                         {profile.resume_url && (
                                             <div style={{ marginTop: '3rem', padding: '1.5rem', background: '#eef2ff', borderRadius: 16, border: '1px dashed #6366f1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1394,8 +1394,8 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                                         <Globe size={24} />
                                                     </div>
                                                     <div>
-                                                        <div style={{ fontWeight: 700, color: '#1e293b' }}>Professional Resume</div>
-                                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Resume / Portfolio document is available</div>
+                                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Professional Resume</div>
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Resume / Portfolio document is available</div>
                                                     </div>
                                                 </div>
                                                 <a href={profile.resume_url} target="_blank" rel="noreferrer" className="btn-primary" style={{ gap: '0.5rem', padding: '0.6rem 1.2rem' }}>
@@ -1413,19 +1413,19 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                             {profile.projects_achievements?.length > 0 ? profile.projects_achievements.map((proj, idx) => (
                                                 <div key={idx} style={{ padding: '1.5rem', background: '#fbfcfe', border: '1px solid #eef2ff', borderRadius: 20 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                                        <h6 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>{proj.title}</h6>
+                                                        <h6 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{proj.title}</h6>
                                                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.1)', padding: '0.3rem 0.8rem', borderRadius: 20 }}>
                                                             PROJECT
                                                         </span>
                                                     </div>
-                                                    <p style={{ fontSize: '0.9rem', color: '#64748b', mb: '1.5rem', lineHeight: 1.6 }}>{proj.description}</p>
+                                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', mb: '1.5rem', lineHeight: 1.6 }}>{proj.description}</p>
                                                     {proj.link && (
                                                         <a href={proj.link} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#6366f1', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none' }}>
                                                             <ExternalLink size={14} /> View Project Link
                                                         </a>
                                                     )}
                                                 </div>
-                                            )) : <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>No projects or achievements listed</p>}
+                                            )) : <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No projects or achievements listed</p>}
                                         </div>
                                     </div>
                                 )}

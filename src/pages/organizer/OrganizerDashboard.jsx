@@ -217,8 +217,8 @@ export default function OrganizerDashboard() {
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(226,232,240,0.5)" vertical={false} />
-                                <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12, fontFamily: 'var(--font-body)' }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                                <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-body)' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
                                 <Tooltip
                                     contentStyle={{
                                         background: 'rgba(255,255,255,0.95)',

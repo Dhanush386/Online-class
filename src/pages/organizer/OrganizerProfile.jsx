@@ -201,7 +201,7 @@ export default function OrganizerProfile() {
                                 {formData.avatar_url ? (
                                     <img src={formData.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                    <User size={40} color="#94a3b8" />
+                                    <User size={40} color="var(--text-muted)" />
                                 )}
                             </div>
                             <button
@@ -273,7 +273,7 @@ export default function OrganizerProfile() {
                         </div>
                         <div>
                             <label className="form-label">Email</label>
-                            <input value={formData.email} disabled className="form-input" style={{ background: '#f8fafc', color: '#64748b' }} />
+                            <input value={formData.email} disabled className="form-input" style={{ background: '#f8fafc', color: 'var(--text-muted)' }} />
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#10b981', fontSize: '0.75rem', marginTop: '0.4rem', fontWeight: 600 }}>
                                 <CheckCircle2 size={12} /> Verified
                             </div>

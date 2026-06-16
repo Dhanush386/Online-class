@@ -86,7 +86,7 @@ export default function CodingPractice() {
 
     const getStatus = (challengeId) => {
         const challengeSubs = submissions.filter(s => s.challenge_id === challengeId)
-        if (challengeSubs.length === 0) return { label: 'UNSOLVED', color: '#94a3b8', solved: false }
+        if (challengeSubs.length === 0) return { label: 'UNSOLVED', color: 'var(--text-muted)', solved: false }
         if (challengeSubs.some(s => s.code === 'Unlocked answer without submission')) return { label: 'UNLOCKED', color: '#ea580c', solved: false }
         if (challengeSubs.some(s => s.status === 'accepted')) return { label: 'SOLVED', color: '#10b981', solved: true }
         return { label: 'ATTEMPTED', color: '#f59e0b', solved: false }
@@ -127,8 +127,8 @@ export default function CodingPractice() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e40af', fontSize: '0.95rem', fontWeight: 600 }}>
                     <BookOpen size={16} />
                     <span>Operators & Conditional Statements</span>
-                    <ChevronRight size={14} style={{ color: '#94a3b8' }} />
-                    <span style={{ color: '#1e293b' }}>Coding Practice - 2C</span>
+                    <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
+                    <span style={{ color: 'var(--text-primary)' }}>Coding Practice - 2C</span>
                 </div>
             </div>
 
@@ -142,11 +142,11 @@ export default function CodingPractice() {
                 alignItems: 'center',
                 marginBottom: '1px'
             }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Question</div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Difficulty</div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Testcases Passed</div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Score</div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Status</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Question</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Difficulty</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Testcases Passed</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Score</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Status</div>
                 <div style={{ width: 40 }}></div>
             </div>
 
@@ -211,9 +211,9 @@ export default function CodingPractice() {
                             <div style={{ display: 'flex', gap: '1.5rem', width: '100%', justifyContent: window.innerWidth <= 1024 ? 'space-between' : 'flex-start' }}>
                                 {/* Test Cases Passed */}
                                 <div style={{ flex: window.innerWidth <= 1024 ? 1 : 'unset' }}>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.25rem' }} className="show-mobile">TEST CASES</div>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.25rem' }} className="show-mobile">TEST CASES</div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e40af' }}>
-                                        {metrics.tests}<span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>/{tcCount}</span>
+                                        {metrics.tests}<span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>/{tcCount}</span>
                                     </div>
                                     <div style={{ width: '80%', height: 3, background: '#e2e8f0', marginTop: '0.25rem', borderRadius: 2, overflow: 'hidden' }}>
                                         <div style={{ width: tcCount > 0 ? `${(metrics.tests / tcCount) * 100}%` : '0%', height: '100%', background: '#2563eb' }}></div>
@@ -222,9 +222,9 @@ export default function CodingPractice() {
 
                                 {/* Score */}
                                 <div style={{ flex: window.innerWidth <= 1024 ? 1 : 'unset' }}>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.25rem' }} className="show-mobile">SCORE</div>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.25rem' }} className="show-mobile">SCORE</div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e40af' }}>
-                                        {metrics.score}<span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>/{c.xp_reward || 15}</span>
+                                        {metrics.score}<span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>/{c.xp_reward || 15}</span>
                                     </div>
                                     <div style={{ width: '80%', height: 3, background: '#e2e8f0', marginTop: '0.25rem', borderRadius: 2, overflow: 'hidden' }}>
                                         <div style={{ width: (c.xp_reward || 15) > 0 ? `${(metrics.score / (c.xp_reward || 15)) * 100}%` : '0%', height: '100%', background: '#2563eb' }}></div>
@@ -243,9 +243,9 @@ export default function CodingPractice() {
 
             {filtered.length === 0 && (
                 <div style={{ padding: '5rem 2rem', textAlign: 'center', background: 'white', borderRadius: 16, marginTop: '1rem', border: '1px solid #e2e8f0' }}>
-                    <Layout size={48} color="#94a3b8" style={{ marginBottom: '1rem' }} />
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1e293b' }}>No challenges found</h3>
-                    <p style={{ color: '#64748b' }}>Try searching with a different term or check back later.</p>
+                    <Layout size={48} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>No challenges found</h3>
+                    <p style={{ color: 'var(--text-muted)' }}>Try searching with a different term or check back later.</p>
                 </div>
             )}
         </div>

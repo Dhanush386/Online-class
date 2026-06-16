@@ -113,10 +113,10 @@ export default function LiveQA({ videoId, isOrganizer, channel }) {
                     placeholder="Ask a question..." 
                     value={newQuestion} 
                     onChange={e => setNewQuestion(e.target.value)}
-                    style={{ width: '100%', padding: '0.5rem', background: '#0f172a', border: '1px solid #334155', color: 'white', borderRadius: '4px', outline: 'none', resize: 'none', height: '60px' }}
+                    style={{ width: '100%', padding: '0.5rem', background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: 'white', borderRadius: '4px', outline: 'none', resize: 'none', height: '60px' }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                    <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
                         <input type="checkbox" checked={isAnonymous} onChange={e => setIsAnonymous(e.target.checked)} />
                         Ask anonymously
                     </label>
@@ -128,7 +128,7 @@ export default function LiveQA({ videoId, isOrganizer, channel }) {
                 {questions.map(q => (
                     <div key={q.id} style={{ background: q.answered ? 'rgba(16, 185, 129, 0.05)' : 'rgba(255,255,255,0.03)', border: `1px solid ${q.answered ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)'}`, borderRadius: '8px', padding: '1rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>{q.author_name}</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>{q.author_name}</span>
                             {q.answered && <span style={{ fontSize: '0.7rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><CheckCircle2 size={12} /> Answered</span>}
                         </div>
                         <p style={{ margin: 0, color: 'white', fontSize: '0.95rem', lineHeight: '1.4' }}>{q.text}</p>
@@ -154,7 +154,7 @@ export default function LiveQA({ videoId, isOrganizer, channel }) {
                     </div>
                 ))}
                 {questions.length === 0 && (
-                    <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.9rem', marginTop: '2rem' }}>
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '2rem' }}>
                         No questions yet.
                     </div>
                 )}

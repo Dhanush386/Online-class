@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const generateRankBadges = () => {
     const tiers = [
-        { name: 'Iron', color1: '#cbd5e1', color2: '#64748b', base: 0, step: 200 },
+        { name: 'Iron', color1: '#cbd5e1', color2: 'var(--text-muted)', base: 0, step: 200 },
         { name: 'Bronze', color1: '#fcd34d', color2: '#b45309', base: 1000, step: 200 },
-        { name: 'Silver', color1: '#e2e8f0', color2: '#475569', base: 2000, step: 300 },
+        { name: 'Silver', color1: '#e2e8f0', color2: 'var(--text-secondary)', base: 2000, step: 300 },
         { name: 'Gold', color1: '#fde047', color2: '#ca8a04', base: 3500, step: 800 },
         { name: 'Diamond', color1: '#e879f9', color2: '#7e22ce', base: 7500, step: 1000 }
     ]
@@ -181,7 +181,7 @@ export default function Achievements() {
                     align-items: center;
                     justify-content: center;
                     z-index: 10;
-                    color: #475569;
+                    color: var(--text-secondary);
                     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
                     opacity: 0;
                     transition: opacity 0.3s ease;

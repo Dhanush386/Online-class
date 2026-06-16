@@ -890,7 +890,7 @@ sys.stdin = StringIO(test_input)
         }
     }
 
-    if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#0f172a' }}>Loading workspace...</div>
+    if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: 'var(--text-primary)' }}>Loading workspace...</div>
     if (!challenge) return <div>Challenge not found</div>
 
     if (!isDeviceAllowed && !canBypass) {
@@ -900,8 +900,8 @@ sys.stdin = StringIO(test_input)
                     <div style={{ width: 80, height: 80, background: '#fef2f2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#ef4444' }}>
                         <ShieldAlert size={40} />
                     </div>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem' }}>Device Not Allowed</h1>
-                    <p style={{ color: '#334155', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Device Not Allowed</h1>
+                    <p style={{ color: 'var(--card-border)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
                         Coding practice requires a strict proctoring environment. <strong>Mobile phones and tablets are strictly prohibited.</strong>
                     </p>
                     <Link to="/student/coding" className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>Go Back</Link>
@@ -937,8 +937,8 @@ sys.stdin = StringIO(test_input)
                     <div style={{ width: 80, height: 80, background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#6366f1' }}>
                         <Lock size={40} />
                     </div>
-                    <h1 style={{ color: '#0f172a', fontSize: '1.8rem', marginBottom: '1rem', fontWeight: 800 }}>Secure AI Proctored Coding</h1>
-                    <p style={{ color: '#334155', marginBottom: '1.5rem' }}>
+                    <h1 style={{ color: 'var(--text-primary)', fontSize: '1.8rem', marginBottom: '1rem', fontWeight: 800 }}>Secure AI Proctored Coding</h1>
+                    <p style={{ color: 'var(--card-border)', marginBottom: '1.5rem' }}>
                         This challenge will be taken in <strong>Fullscreen Mode</strong> with <strong>AI Webcam Monitoring</strong>.
                     </p>
                     <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', color: '#9a3412', fontSize: '0.875rem', marginBottom: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -962,7 +962,7 @@ sys.stdin = StringIO(test_input)
                             </button>
                         </div>
                     )}
-                    <Link to="/student/coding" style={{ display: 'block', marginTop: '1.5rem', color: '#64748b' }}>Cancel and Go Back</Link>
+                    <Link to="/student/coding" style={{ display: 'block', marginTop: '1.5rem', color: 'var(--text-muted)' }}>Cancel and Go Back</Link>
                 </div>
             </div>
         )
@@ -972,12 +972,12 @@ sys.stdin = StringIO(test_input)
         return (
             <div style={{ height: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
                 <div className="glass-card" style={{ maxWidth: 600, padding: '3rem', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                    <h1 style={{ color: '#0f172a', fontSize: '2rem', marginBottom: '1.5rem' }}>{challenge.title}</h1>
+                    <h1 style={{ color: 'var(--text-primary)', fontSize: '2rem', marginBottom: '1.5rem' }}>{challenge.title}</h1>
                     <div style={{ background: '#ffffff', padding: '1.5rem', borderRadius: 12, textAlign: 'left', marginBottom: '2rem' }}>
-                        <p style={{ color: '#334155', marginBottom: '1rem' }}>You are testing in <strong>Organizer Admin Mode</strong>. AI Proctoring is bypassed.</p>
+                        <p style={{ color: 'var(--card-border)', marginBottom: '1rem' }}>You are testing in <strong>Organizer Admin Mode</strong>. AI Proctoring is bypassed.</p>
                     </div>
                     <button onClick={handleStartChallenge} className="btn-primary" style={{ width: '100%', height: '3.5rem' }}>Start Challenge</button>
-                    <Link to="/organizer/coding" style={{ display: 'block', marginTop: '1.5rem', color: '#64748b' }}>Go Back</Link>
+                    <Link to="/organizer/coding" style={{ display: 'block', marginTop: '1.5rem', color: 'var(--text-muted)' }}>Go Back</Link>
                 </div>
             </div>
         )
@@ -1004,9 +1004,9 @@ sys.stdin = StringIO(test_input)
     }
 
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', background: '#f1f5f9', color: '#1e293b', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', background: '#f1f5f9', color: 'var(--text-primary)', fontFamily: 'Inter, system-ui, sans-serif' }}>
             <header style={{ height: 48, background: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', padding: '0 1rem' }}>
-                <Link to={canBypass ? "/organizer/coding" : "/student/coding"} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 600 }}>
+                <Link to={canBypass ? "/organizer/coding" : "/student/coding"} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 600 }}>
                     <ChevronLeft size={18} /> CODING PRACTICE - {currentIndex + 1}
                 </Link>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -1015,9 +1015,9 @@ sys.stdin = StringIO(test_input)
                             Violations: {violationCount}/3
                         </div>
                     )}
-                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{challenge.title}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{challenge.title}</span>
                     {isStarted && !canBypass && (
-                        <div style={{ padding: '4px 10px', background: '#e2e8f0', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: timeLeft <= 300 ? '#ef4444' : '#0f172a' }}>
+                        <div style={{ padding: '4px 10px', background: '#e2e8f0', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: timeLeft <= 300 ? '#ef4444' : 'var(--text-primary)' }}>
                             <Clock size={14} /> {formatTime(timeLeft)}
                         </div>
                     )}
@@ -1048,13 +1048,13 @@ sys.stdin = StringIO(test_input)
                 {/* Column 1: Description */}
                 <div style={{ width: '28%', minWidth: 320, background: '#ffffff', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0' }}>
                     <div style={{ height: 40, borderBottom: '1px solid #e2e8f0', display: 'flex', padding: '0 4px' }}>
-                        <button onClick={() => setLeftTab('description')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'description' ? '#0f172a' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'description' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <button onClick={() => setLeftTab('description')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'description' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'description' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <FileText size={14} /> Description
                         </button>
-                        <button onClick={() => setLeftTab('help')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'help' ? '#0f172a' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'help' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <button onClick={() => setLeftTab('help')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'help' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'help' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <HelpCircle size={14} /> Get Help
                         </button>
-                        <button onClick={() => setLeftTab('discuss')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'discuss' ? '#0f172a' : '#64748b', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'discuss' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <button onClick={() => setLeftTab('discuss')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'discuss' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'discuss' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <MessageSquare size={14} /> Discuss
                         </button>
                     </div>
@@ -1073,7 +1073,7 @@ sys.stdin = StringIO(test_input)
                                                     onClick={() => handleSwitchSubQuestion(idx)}
                                                     style={{ padding: '0.4rem 0.75rem', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600, border: '1px solid', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
                                                         background: currentSubIndex === idx ? '#3b82f6' : (isSolved ? '#10b981' : '#ffffff'),
-                                                        color: currentSubIndex === idx || isSolved ? '#ffffff' : '#64748b',
+                                                        color: currentSubIndex === idx || isSolved ? '#ffffff' : 'var(--text-muted)',
                                                         borderColor: currentSubIndex === idx ? '#2563eb' : (isSolved ? '#059669' : '#cbd5e1')
                                                     }}
                                                 >
@@ -1084,26 +1084,26 @@ sys.stdin = StringIO(test_input)
                                         })}
                                     </div>
                                 )}
-                                <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, marginBottom: '2rem', whiteSpace: 'pre-wrap' }}>{currentQuestion.problem_statement}</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, marginBottom: '2rem', whiteSpace: 'pre-wrap' }}>{currentQuestion.problem_statement}</div>
 
                                 {currentQuestion.input_format && (
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>Input Format</h4>
-                                        <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{currentQuestion.input_format}</div>
+                                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Input Format</h4>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{currentQuestion.input_format}</div>
                                     </div>
                                 )}
 
                                 {currentQuestion.output_format && (
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>Output Format</h4>
-                                        <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{currentQuestion.output_format}</div>
+                                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Output Format</h4>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{currentQuestion.output_format}</div>
                                     </div>
                                 )}
 
                                 {currentQuestion.constraints && (
                                     <div style={{ marginBottom: '2rem' }}>
-                                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>Constraints</h4>
-                                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.9rem', color: '#334155', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Constraints</h4>
+                                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.9rem', color: 'var(--card-border)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
                                             {currentQuestion.constraints}
                                         </div>
                                     </div>
@@ -1144,7 +1144,7 @@ sys.stdin = StringIO(test_input)
                                                 loading="lazy"
                                             />
                                         </div>
-                                        <p style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.35rem' }}>This is the reference page your output should resemble.</p>
+                                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>This is the reference page your output should resemble.</p>
                                     </div>
                                 )}
 
@@ -1203,8 +1203,8 @@ sys.stdin = StringIO(test_input)
                                         <div style={{ marginTop: '2.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
                                             {/* Collapsible Header */}
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', cursor: 'default' }}>
-                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Testcases</h4>
-                                                <ChevronLeft size={16} style={{ transform: 'rotate(-90deg)', color: '#64748b' }} />
+                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Testcases</h4>
+                                                <ChevronLeft size={16} style={{ transform: 'rotate(-90deg)', color: 'var(--text-muted)' }} />
                                             </div>
 
                                             {/* Summary Badges */}
@@ -1219,9 +1219,9 @@ sys.stdin = StringIO(test_input)
                                                     <>
                                                     <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
                                                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                                                            <CodeIcon size={14} color="#94a3b8" />
-                                                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>Total</span>
-                                                            <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>{total}</span>
+                                                            <CodeIcon size={14} color="var(--text-muted)" />
+                                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total</span>
+                                                            <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{total}</span>
                                                         </div>
                                                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #05966930', background: '#05966910' }}>
                                                             <CheckCircle2 size={14} color="#10b981" />
@@ -1248,7 +1248,7 @@ sys.stdin = StringIO(test_input)
                                                             let displayContent;
                                                             if (tcData.is_hidden) {
                                                                 displayContent = (
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: passed === true ? '#059669' : passed === false ? '#dc2626' : 'var(--text-muted)' }}>
                                                                         <Lock size={14} />
                                                                         <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Hidden Test Case</span>
                                                                     </div>
@@ -1259,7 +1259,7 @@ sys.stdin = StringIO(test_input)
                                                                         {typeLabel && (
                                                                             <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.1rem 0.4rem', background: typeColor, color: typeColor === '#f59e0b' ? '#000' : '#fff', borderRadius: 4, flexShrink: 0 }}>{typeLabel}</span>
                                                                         )}
-                                                                        <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b', lineHeight: 1.5, fontWeight: 500 }}>{tcData.description || tc.description}</span>
+                                                                        <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : 'var(--text-muted)', lineHeight: 1.5, fontWeight: 500 }}>{tcData.description || tc.description}</span>
                                                                     </div>
                                                                 );
                                                             } else if (tcData.input || tcData.expected_output) {
@@ -1267,38 +1267,38 @@ sys.stdin = StringIO(test_input)
                                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', padding: '0.5rem 0' }}>
                                                                         {tcData.input && (
                                                                             <div>
-                                                                                <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: '#0f172a' }}>Sample Input {idx + 1}</h5>
-                                                                                <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: '#0f172a', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.input}</div>
+                                                                                <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Input {idx + 1}</h5>
+                                                                                <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.input}</div>
                                                                             </div>
                                                                         )}
                                                                         {tcData.expected_output && (
                                                                             <div>
-                                                                                <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: '#0f172a' }}>Sample Output {idx + 1}</h5>
-                                                                                <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: '#0f172a', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.expected_output}</div>
+                                                                                <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Output {idx + 1}</h5>
+                                                                                <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.expected_output}</div>
                                                                             </div>
                                                                         )}
                                                                     </div>
                                                                 );
                                                             } else {
-                                                                displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b', lineHeight: 1.5, fontWeight: 500 }}>Test Case {idx + 1}</span>;
+                                                                displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : 'var(--text-muted)', lineHeight: 1.5, fontWeight: 500 }}>Test Case {idx + 1}</span>;
                                                             }
 
                                                             return (
                                                                 <div key={idx} style={{ padding: '1rem 1.25rem', borderRadius: 8, background: '#f8fafc', borderLeft: `3px solid ${passed === true ? '#10b981' : passed === false ? '#ef4444' : '#cbd5e1'}`, transition: 'all 0.2s ease' }}>
                                                                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                                                                        {passed === true ? <CheckCircle2 size={18} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} /> : passed === false ? <XCircle size={18} color="#ef4444" style={{ marginTop: 2, flexShrink: 0 }} /> : <Info size={18} color="#475569" style={{ marginTop: 2, flexShrink: 0 }} />}
+                                                                        {passed === true ? <CheckCircle2 size={18} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} /> : passed === false ? <XCircle size={18} color="#ef4444" style={{ marginTop: 2, flexShrink: 0 }} /> : <Info size={18} color="var(--text-secondary)" style={{ marginTop: 2, flexShrink: 0 }} />}
                                                                         <div style={{ flex: 1 }}>{displayContent}</div>
                                                                     </div>
                                                                     {/* Web testcase: Expected vs Found detail */}
                                                                     {hasResults && isWebTc && (
                                                                         <div style={{ marginLeft: '2.2rem', marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                                                                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                                                <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Expected</span>
+                                                                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Expected</span>
                                                                                 <code style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', background: '#ecfdf5', color: '#059669', borderRadius: 4, border: '1px solid #d1fae5' }}>{tc.expected}</code>
                                                                             </div>
                                                                             {!tc.passed && (
                                                                                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                                                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Found</span>
+                                                                                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Found</span>
                                                                                     <code style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', background: '#fef2f2', color: '#dc2626', borderRadius: 4, border: '1px solid #fecaca' }}>{tc.actual}</code>
                                                                                 </div>
                                                                             )}
@@ -1307,7 +1307,7 @@ sys.stdin = StringIO(test_input)
                                                                     {/* Classic testcase: stdout output */}
                                                                     {hasResults && !isWebTc && tc.actual && (
                                                                         <div style={{ marginLeft: '2.2rem', marginTop: '0.75rem' }}>
-                                                                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Your Output:</span>
+                                                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Your Output:</span>
                                                                             <pre style={{ background: '#f1f5f9', padding: '0.5rem 0.75rem', borderRadius: 6, marginTop: '0.25rem', fontSize: '0.7rem', color: passed ? '#059669' : '#dc2626', overflowX: 'auto', border: '1px solid #1f2937' }}>{tc.actual}</pre>
                                                                         </div>
                                                                     )}
@@ -1325,16 +1325,16 @@ sys.stdin = StringIO(test_input)
                         ) : leftTab === 'discuss' ? (
                             <CodingDiscussions challengeId={challengeId} currentCode={challenge?.language === 'html' ? {html: htmlCode, css: cssCode, js: jsCode} : genericCode} />
                         ) : leftTab === 'help' ? (
-                            <div style={{ color: '#334155', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                            <div style={{ color: 'var(--card-border)', fontSize: '0.9rem', lineHeight: 1.6 }}>
                                 {!hasRequestedHelp ? (
                                     <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-                                        <HelpCircle size={40} style={{ margin: '0 auto 1rem', opacity: 0.5, color: '#64748b' }} />
-                                        <p style={{ marginBottom: '1.5rem', color: '#64748b' }}>Stuck on this problem? You can request help to see hints.</p>
+                                        <HelpCircle size={40} style={{ margin: '0 auto 1rem', opacity: 0.5, color: 'var(--text-muted)' }} />
+                                        <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>Stuck on this problem? You can request help to see hints.</p>
                                         <button onClick={() => setHasRequestedHelp(true)} className="btn-primary" style={{ padding: '0.5rem 1rem' }}>Get Help</button>
                                     </div>
                                 ) : (
                                     <div className="animate-fade-in">
-                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', color: '#0f172a' }}>Help & Hints</h3>
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Help & Hints</h3>
                                         <p style={{ marginBottom: '1rem' }}>Review the problem constraints and testcases carefully. Often, missing edge cases is the reason for failure.</p>
                                         
                                         {hasUnlockedAnswer ? (
@@ -1347,7 +1347,7 @@ sys.stdin = StringIO(test_input)
                                             </div>
                                         ) : (
                                             <div style={{ marginTop: '2rem', padding: '1rem', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-                                                <p style={{ fontSize: '0.8rem', color: '#64748b' }}>If you are still stuck when the timer expires, you will have the option to unlock the correct answer. Note that unlocking the answer forfeits XP for this challenge.</p>
+                                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>If you are still stuck when the timer expires, you will have the option to unlock the correct answer. Note that unlocking the answer forfeits XP for this challenge.</p>
                                             </div>
                                         )}
                                     </div>
@@ -1358,35 +1358,35 @@ sys.stdin = StringIO(test_input)
                 </div>
 
                 {/* Column 2: Editor */}
-                <div style={{ flex: 1.5, background: '#1e293b', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #334155', overflow: 'hidden' }}>
-                    <div style={{ height: 40, borderBottom: '1px solid #334155', display: 'flex', background: '#0f172a', padding: '0 4px', alignItems: 'center' }}>
+                <div style={{ flex: 1.5, background: 'var(--text-primary)', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid var(--card-border)', overflow: 'hidden' }}>
+                    <div style={{ height: 40, borderBottom: '1px solid var(--card-border)', display: 'flex', background: 'var(--text-primary)', padding: '0 4px', alignItems: 'center' }}>
                         <div style={{ display: 'flex', height: '100%' }}>
                             {challenge.language === 'html' ? (
                                 <>
-                                    <button onClick={() => setWebTab('html')} style={{ padding: '0 1rem', background: webTab === 'html' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'html' ? '#e34c26' : '#94a3b8', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <button onClick={() => setWebTab('html')} style={{ padding: '0 1rem', background: webTab === 'html' ? 'var(--text-primary)' : 'transparent', border: 'none', color: webTab === 'html' ? '#e34c26' : 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <div style={{ width: 14, height: 14, background: '#e34c26', color: '#fff', borderRadius: 2, fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>H</div> HTML
                                     </button>
-                                    <button onClick={() => setWebTab('css')} style={{ padding: '0 1rem', background: webTab === 'css' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'css' ? '#264de4' : '#94a3b8', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <button onClick={() => setWebTab('css')} style={{ padding: '0 1rem', background: webTab === 'css' ? 'var(--text-primary)' : 'transparent', border: 'none', color: webTab === 'css' ? '#264de4' : 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <div style={{ width: 14, height: 14, background: '#264de4', color: '#fff', borderRadius: 2, fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>C</div> CSS
                                     </button>
-                                    <button onClick={() => setWebTab('js')} style={{ padding: '0 1rem', background: webTab === 'js' ? '#1e293b' : 'transparent', border: 'none', color: webTab === 'js' ? '#f0db4f' : '#94a3b8', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <button onClick={() => setWebTab('js')} style={{ padding: '0 1rem', background: webTab === 'js' ? 'var(--text-primary)' : 'transparent', border: 'none', color: webTab === 'js' ? '#f0db4f' : 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <div style={{ width: 14, height: 14, background: '#f0db4f', color: '#000', borderRadius: 2, fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>JS</div> JS
                                     </button>
                                 </>
                             ) : (
-                                <button style={{ padding: '0 1rem', background: '#1e293b', border: 'none', color: '#e2e8f0', fontSize: '0.7rem', fontWeight: 800, cursor: 'default', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <button style={{ padding: '0 1rem', background: 'var(--text-primary)', border: 'none', color: '#e2e8f0', fontSize: '0.7rem', fontWeight: 800, cursor: 'default', display: 'flex', alignItems: 'center', gap: 6 }}>
                                     {LANGUAGE_CONFIG[challenge.language]?.icon || <CodeIcon size={14} />} {LANGUAGE_CONFIG[challenge.language]?.name || challenge.language}
                                 </button>
                             )}
                         </div>
                         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', paddingRight: '0.5rem' }}>
-                            <button title="Reset" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><RotateCcw size={14} /></button>
-                            <button title="Save" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><Save size={14} /></button>
-                            <button title="Expand" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><Maximize size={14} /></button>
+                            <button title="Reset" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><RotateCcw size={14} /></button>
+                            <button title="Save" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Save size={14} /></button>
+                            <button title="Expand" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Maximize size={14} /></button>
                         </div>
                     </div>
 
-                    <div style={{ flex: 1, background: '#1e293b' }}>
+                    <div style={{ flex: 1, background: 'var(--text-primary)' }}>
                         {challenge.language === 'html' ? (
                             <>
                                 {webTab === 'html' && <CodeEditor value={htmlCode} onChange={e => setHtmlCode(e.target.value)} language="html" readOnly={isReadOnly} />}
@@ -1398,10 +1398,10 @@ sys.stdin = StringIO(test_input)
                         )}
                     </div>
 
-                    <div style={{ height: 48, background: '#0f172a', borderTop: '1px solid #334155', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.75rem' }}>
-                        <button style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><Settings size={18} /></button>
+                    <div style={{ height: 48, background: 'var(--text-primary)', borderTop: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.75rem' }}>
+                        <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Settings size={18} /></button>
                         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem' }}>
-                            <button onClick={runCode} disabled={running} style={{ padding: '0.4rem 1.25rem', borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <button onClick={runCode} disabled={running} style={{ padding: '0.4rem 1.25rem', borderRadius: 6, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <Play size={14} fill="currentColor" /> Run
                             </button>
                             <button onClick={handleSubmit} disabled={submitting || running} style={{ padding: '0.4rem 1.5rem', borderRadius: 6, background: '#3b82f6', border: 'none', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
@@ -1412,17 +1412,17 @@ sys.stdin = StringIO(test_input)
                 </div>
 
                 {/* Column 3: Preview/Output */}
-                <div style={{ width: '32%', background: '#1e293b', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #334155', overflow: 'hidden' }}>
-                    <div style={{ height: 40, borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', padding: '0 1rem', background: '#0f172a' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8' }}>{challenge.language === 'html' ? 'PREVIEW' : 'OUTPUT'}</span>
+                <div style={{ width: '32%', background: 'var(--text-primary)', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid var(--card-border)', overflow: 'hidden' }}>
+                    <div style={{ height: 40, borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', padding: '0 1rem', background: 'var(--text-primary)' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>{challenge.language === 'html' ? 'PREVIEW' : 'OUTPUT'}</span>
                         <div style={{ marginLeft: 'auto' }}>
-                            <button style={{ background: 'none', border: 'none', color: '#94a3b8' }}><Maximize size={14} /></button>
+                            <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)' }}><Maximize size={14} /></button>
                         </div>
                     </div>
                     
                     {challenge.language === 'html' ? (
                         <>
-                            <div style={{ flex: 1, background: '#fff', margin: '1rem 1rem 0 1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid #334155', minHeight: 0 }}>
+                            <div style={{ flex: 1, background: '#fff', margin: '1rem 1rem 0 1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--card-border)', minHeight: 0 }}>
                                 <iframe ref={iframeRef} style={{ width: '100%', height: '100%', border: 'none' }} title="preview" />
                             </div>
                             {/* Keyword hint / result message strip */}
@@ -1431,20 +1431,20 @@ sys.stdin = StringIO(test_input)
                                     <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.7rem', color: result.status === 'error' ? '#fca5a5' : result.status === 'warning' ? '#fcd34d' : '#86efac', margin: 0, lineHeight: 1.5 }}>{result.message}</pre>
                                 </div>
                             )}
-                            <div style={{ padding: '0.75rem 1.25rem 1.25rem', background: '#0f172a', borderTop: '1px solid #334155', textAlign: 'center' }}>
+                            <div style={{ padding: '0.75rem 1.25rem 1.25rem', background: 'var(--text-primary)', borderTop: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <button onClick={handleSubmit} disabled={submitting || running} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                     <Layout size={16} /> {submitting ? 'Comparing...' : 'Compare & Submit'}
                                 </button>
                             </div>
                         </>
                     ) : (
-                        <div style={{ flex: 1, padding: '1rem', background: '#0f172a', overflowY: 'auto', fontFamily: 'monospace', fontSize: '0.85rem', color: '#e2e8f0' }}>
+                        <div style={{ flex: 1, padding: '1rem', background: 'var(--text-primary)', overflowY: 'auto', fontFamily: 'monospace', fontSize: '0.85rem', color: '#e2e8f0' }}>
                             {result ? (
-                                <div style={{ color: result.status === 'success' ? '#10b981' : result.status === 'warning' ? '#fcd34d' : (result.status === 'error' ? '#ef4444' : '#94a3b8') }}>
+                                <div style={{ color: result.status === 'success' ? '#10b981' : result.status === 'warning' ? '#fcd34d' : (result.status === 'error' ? '#ef4444' : 'var(--text-muted)') }}>
                                     <pre style={{ whiteSpace: 'pre-wrap' }}>{result.message}</pre>
                                 </div>
                             ) : (
-                                <div style={{ color: '#64748b' }}>Code output will appear here...</div>
+                                <div style={{ color: 'var(--text-muted)' }}>Code output will appear here...</div>
                             )}
                         </div>
                     )}
@@ -1456,7 +1456,7 @@ sys.stdin = StringIO(test_input)
                 <div style={{ position: 'fixed', bottom: 20, right: 20, width: 280, background: '#ffffff', borderRadius: 12, border: '1px solid #3b82f6', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', padding: '1rem', zIndex: 1000 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                         <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#3b82f6' }}>VISUAL COMPARISON (RED = MISMATCH)</span>
-                        <button onClick={() => setResult(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><XCircle size={14} /></button>
+                        <button onClick={() => setResult(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={14} /></button>
                     </div>
                     <img src={result.testResults.find(t => t.actual_image).actual_image} style={{ width: '100%', borderRadius: 6, border: '1px solid #e2e8f0' }} />
                 </div>
@@ -1467,14 +1467,14 @@ sys.stdin = StringIO(test_input)
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ background: '#ffffff', padding: '2rem', borderRadius: 12, border: '1px solid #e2e8f0', maxWidth: 450, textAlign: 'center' }}>
                         <AlertCircle size={48} color="#f59e0b" style={{ margin: '0 auto 1rem' }} />
-                        <h2 style={{ fontSize: '1.25rem', color: '#0f172a', marginBottom: '1rem' }}>Time's Up!</h2>
-                        <p style={{ color: '#334155', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.5 }}>
+                        <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>Time's Up!</h2>
+                        <p style={{ color: 'var(--card-border)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.5 }}>
                             The 30-minute timer has expired. Since you requested help, you can now unlock the correct answer. 
                             <br/><br/>
                             <strong style={{ color: '#f87171' }}>Warning:</strong> Unlocking the answer means you will not earn any XP for this challenge.
                         </p>
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                            <button onClick={() => setShowUnlockModal(false)} style={{ padding: '0.5rem 1.5rem', background: 'transparent', border: '1px solid #64748b', color: '#334155', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                            <button onClick={() => setShowUnlockModal(false)} style={{ padding: '0.5rem 1.5rem', background: 'transparent', border: '1px solid var(--text-muted)', color: 'var(--card-border)', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
                             <button onClick={handleUnlockAnswer} style={{ padding: '0.5rem 1.5rem', background: '#f59e0b', border: 'none', color: '#fff', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Unlock Answer</button>
                         </div>
                     </div>

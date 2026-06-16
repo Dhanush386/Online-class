@@ -395,7 +395,7 @@ export default function LiveClassroom() {
                         <Video size={40} color="#6366f1" />
                     </div>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1rem' }}>Waiting for Instructor</h2>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '2rem' }}>The class will start automatically when your teacher joins. Stay tuned!</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>The class will start automatically when your teacher joins. Stay tuned!</p>
                 </div>
             </div>
         )
@@ -406,7 +406,7 @@ export default function LiveClassroom() {
             <div style={{ padding: '1rem 2rem', background: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
                 <div>
                     <h1 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{videoData?.title}</h1>
-                    <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: 0 }}>{isOrganizer ? 'Instructor Control Panel' : 'Live Class Session'}</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>{isOrganizer ? 'Instructor Control Panel' : 'Live Class Session'}</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     {isOrganizer && (
@@ -428,13 +428,13 @@ export default function LiveClassroom() {
                             )}
                         </>
                     )}
-                    <button onClick={toggleFullScreen} style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <button onClick={toggleFullScreen} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         {isFullScreen ? <><Minimize size={14} /> Exit Fullscreen</> : <><Maximize size={14} /> Fullscreen</>}
                     </button>
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: sidebarOpen ? '#818cf8' : '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
+                    <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: sidebarOpen ? '#818cf8' : 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
                         {sidebarOpen ? 'Close Panel' : 'Open Panel'}
                     </button>
-                    <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>Leave Class</button>
+                    <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>Leave Class</button>
                 </div>
             </div>
             {uploading && (
@@ -446,19 +446,19 @@ export default function LiveClassroom() {
                 <div ref={jitsiContainerRef} style={{ flex: 1, height: '100%', background: '#000' }} />
                 
                 {sidebarOpen && channelInstance && (
-                    <div style={{ width: '360px', background: '#0f172a', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', background: '#1e293b', padding: '0.5rem', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
-                            <button onClick={() => setSidebarTab('notes')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'notes' ? '#6366f1' : 'transparent', color: sidebarTab === 'notes' ? 'white' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                    <div style={{ width: '360px', background: 'var(--text-primary)', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', background: 'var(--text-primary)', padding: '0.5rem', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
+                            <button onClick={() => setSidebarTab('notes')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'notes' ? '#6366f1' : 'transparent', color: sidebarTab === 'notes' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
                                 <Edit3 size={14} /> Notes
                             </button>
-                            <button onClick={() => setSidebarTab('polls')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'polls' ? '#6366f1' : 'transparent', color: sidebarTab === 'polls' ? 'white' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                            <button onClick={() => setSidebarTab('polls')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'polls' ? '#6366f1' : 'transparent', color: sidebarTab === 'polls' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
                                 <BarChart2 size={14} /> Polls
                             </button>
-                            <button onClick={() => setSidebarTab('qa')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'qa' ? '#6366f1' : 'transparent', color: sidebarTab === 'qa' ? 'white' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                            <button onClick={() => setSidebarTab('qa')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'qa' ? '#6366f1' : 'transparent', color: sidebarTab === 'qa' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
                                 <MessageSquare size={14} /> Q&A
                             </button>
                             {isOrganizer && (
-                                <button onClick={() => setSidebarTab('attendance')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'attendance' ? '#6366f1' : 'transparent', color: sidebarTab === 'attendance' ? 'white' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                                <button onClick={() => setSidebarTab('attendance')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'attendance' ? '#6366f1' : 'transparent', color: sidebarTab === 'attendance' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
                                     <Users size={14} /> Att.
                                 </button>
                             )}

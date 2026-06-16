@@ -132,7 +132,7 @@ export default function ScheduleLiveClass() {
             <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <button 
                     onClick={() => navigate('/organizer/courses')}
-                    style={{ background: '#f1f5f9', border: 'none', width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}
+                    style={{ background: '#f1f5f9', border: 'none', width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s' }}
                     className="hover-scale"
                     title="Back to Courses"
                 >
@@ -151,21 +151,21 @@ export default function ScheduleLiveClass() {
                 <button
                     type="button"
                     onClick={() => setMode('live')}
-                    style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 9, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', background: mode === 'live' ? 'white' : 'transparent', color: mode === 'live' ? '#6366f1' : '#64748b', boxShadow: mode === 'live' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 9, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', background: mode === 'live' ? 'white' : 'transparent', color: mode === 'live' ? '#6366f1' : 'var(--text-muted)', boxShadow: mode === 'live' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                 >
                     <Radio size={16} /> Live Class
                 </button>
                 <button
                     type="button"
                     onClick={() => setMode('upload')}
-                    style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 9, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', background: mode === 'upload' ? 'white' : 'transparent', color: mode === 'upload' ? '#6366f1' : '#64748b', boxShadow: mode === 'upload' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 9, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', background: mode === 'upload' ? 'white' : 'transparent', color: mode === 'upload' ? '#6366f1' : 'var(--text-muted)', boxShadow: mode === 'upload' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                 >
                     <Upload size={16} /> Upload Video
                 </button>
                 <button
                     type="button"
                     onClick={() => setMode('link')}
-                    style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 9, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', background: mode === 'link' ? 'white' : 'transparent', color: mode === 'link' ? '#6366f1' : '#64748b', boxShadow: mode === 'link' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 9, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', background: mode === 'link' ? 'white' : 'transparent', color: mode === 'link' ? '#6366f1' : 'var(--text-muted)', boxShadow: mode === 'link' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                 >
                     <Link size={16} /> Google Drive/Link
                 </button>

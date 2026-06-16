@@ -43,12 +43,12 @@ const NAV_GROUPS = [
 
 // Rank thresholds
 const RANK_LEVELS = [
-  { name: 'Iron I',      min: 0,    max: 200,   color: '#94a3b8' },
-  { name: 'Iron II',     min: 200,  max: 400,   color: '#94a3b8' },
+  { name: 'Iron I',      min: 0,    max: 200,   color: 'var(--text-muted)' },
+  { name: 'Iron II',     min: 200,  max: 400,   color: 'var(--text-muted)' },
   { name: 'Bronze I',    min: 400,  max: 700,   color: '#cd7c2f' },
   { name: 'Bronze II',   min: 700,  max: 1000,  color: '#cd7c2f' },
-  { name: 'Silver I',    min: 1000, max: 1500,  color: '#64748b' },
-  { name: 'Silver II',   min: 1500, max: 2100,  color: '#64748b' },
+  { name: 'Silver I',    min: 1000, max: 1500,  color: 'var(--text-muted)' },
+  { name: 'Silver II',   min: 1500, max: 2100,  color: 'var(--text-muted)' },
   { name: 'Gold I',      min: 2100, max: 2800,  color: '#f59e0b' },
   { name: 'Gold II',     min: 2800, max: 3600,  color: '#f59e0b' },
   { name: 'Platinum I',  min: 3600, max: 4500,  color: '#06b6d4' },

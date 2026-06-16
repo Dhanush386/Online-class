@@ -49,15 +49,15 @@ export default function ForgotPassword() {
                     <div style={{ width: 56, height: 56, background: 'rgba(99,102,241,0.1)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                         <Key size={28} color="#6366f1" />
                     </div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>Reset Password</h1>
-                    <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.5rem' }}>Enter the unique code provided by your Organizer.</p>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Reset Password</h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Enter the unique code provided by your Organizer.</p>
                 </div>
 
                 {success ? (
                     <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
                         <CheckCircle size={48} color="#10b981" style={{ margin: '0 auto 1rem' }} />
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#10b981', marginBottom: '0.5rem' }}>Password Updated!</h2>
-                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Redirecting to login...</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Redirecting to login...</p>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -70,7 +70,7 @@ export default function ForgotPassword() {
                         <div className="form-group">
                             <label htmlFor="email" className="form-label">Email Address</label>
                             <div style={{ position: 'relative' }}>
-                                <Mail size={18} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 11 }} />
+                                <Mail size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 11 }} />
                                 <input
                                     id="email"
                                     type="email"
@@ -88,7 +88,7 @@ export default function ForgotPassword() {
                         <div className="form-group">
                             <label htmlFor="resetCode" className="form-label">Organizer Reset Code</label>
                             <div style={{ position: 'relative' }}>
-                                <Key size={18} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 11 }} />
+                                <Key size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 11 }} />
                                 <input
                                     id="resetCode"
                                     type="text"
@@ -100,13 +100,13 @@ export default function ForgotPassword() {
                                     style={{ paddingLeft: '2.5rem', letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 700 }}
                                 />
                             </div>
-                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 4 }}>Ask your organizer to generate this code from their dashboard.</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4 }}>Ask your organizer to generate this code from their dashboard.</div>
                         </div>
 
                         <div className="form-group">
                             <label htmlFor="newPassword" className="form-label">New Password</label>
                             <div style={{ position: 'relative' }}>
-                                <Lock size={18} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 11 }} />
+                                <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 11 }} />
                                 <input
                                     id="newPassword"
                                     type="password"

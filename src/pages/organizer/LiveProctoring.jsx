@@ -281,18 +281,18 @@ export default function LiveProctoring() {
         <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: 1400, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
                 <div>
-                    <Link to="/organizer/coding" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 600, marginBottom: '0.5rem' }}>
+                    <Link to="/organizer/coding" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 600, marginBottom: '0.5rem' }}>
                         <ChevronLeft size={16} /> Back to Coding Management
                     </Link>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <ShieldAlert size={28} color="#ef4444" /> Live Proctoring Dashboard
                     </h1>
-                    <p style={{ color: '#64748b', marginTop: '0.25rem' }}>Monitor active students during coding practice sessions in real-time.</p>
+                    <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Monitor active students during coding practice sessions in real-time.</p>
                 </div>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ position: 'relative' }}>
-                        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input
                             type="text"
                             placeholder="Search student..."
@@ -317,11 +317,11 @@ export default function LiveProctoring() {
 
             {studentsList.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'white', borderRadius: 16, border: '1px solid #e2e8f0' }}>
-                    <div style={{ width: 80, height: 80, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: '#94a3b8' }}>
+                    <div style={{ width: 80, height: 80, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'var(--text-muted)' }}>
                         <VideoOff size={32} />
                     </div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>No Students Currently Coding</h3>
-                    <p style={{ color: '#64748b', maxWidth: 400, margin: '0 auto' }}>When students start a coding practice session, their live camera feed will appear here automatically.</p>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Students Currently Coding</h3>
+                    <p style={{ color: 'var(--text-muted)', maxWidth: 400, margin: '0 auto' }}>When students start a coding practice session, their live camera feed will appear here automatically.</p>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
@@ -337,7 +337,7 @@ export default function LiveProctoring() {
                                         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
                                     />
                                 ) : (
-                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569' }}>
+                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
                                         Loading feed...
                                     </div>
                                 )}
@@ -350,8 +350,8 @@ export default function LiveProctoring() {
                             <div style={{ padding: '1rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                     <div>
-                                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>{student.name}</h3>
-                                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>{student.type === 'assessment' ? 'Assessment' : 'Coding Challenge'}</div>
+                                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{student.name}</h3>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{student.type === 'assessment' ? 'Assessment' : 'Coding Challenge'}</div>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#059669', background: '#ecfdf5', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
                                         <CheckCircle2 size={12} /> Proctoring Active
@@ -362,7 +362,7 @@ export default function LiveProctoring() {
                                     {!liveStreams[student.studentId] && (
                                         <button 
                                             onClick={() => startLiveStream(student.studentId)}
-                                            style={{ flex: 1, padding: '0.6rem', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#334155', borderRadius: 6, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s' }}
+                                            style={{ flex: 1, padding: '0.6rem', background: '#f8fafc', border: '1px solid #cbd5e1', color: 'var(--card-border)', borderRadius: 6, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s' }}
                                             onMouseOver={(e) => e.target.style.background = '#f1f5f9'}
                                             onMouseOut={(e) => e.target.style.background = '#f8fafc'}
                                         >

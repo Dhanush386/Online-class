@@ -25,9 +25,9 @@ export default function Leaderboard() {
 
     const getRankInfo = (xp) => {
         const tiers = [
-            { name: 'Iron', color: '#94a3b8', base: 0, step: 200, bg: 'rgba(148,163,184,0.1)' },
+            { name: 'Iron', color: 'var(--text-muted)', base: 0, step: 200, bg: 'rgba(148,163,184,0.1)' },
             { name: 'Bronze', color: '#b45309', base: 1000, step: 200, bg: 'rgba(180,83,9,0.1)' },
-            { name: 'Silver', color: '#64748b', base: 2000, step: 300, bg: 'rgba(100,116,139,0.1)' },
+            { name: 'Silver', color: 'var(--text-muted)', base: 2000, step: 300, bg: 'rgba(100,116,139,0.1)' },
             { name: 'Gold', color: '#f59e0b', base: 3500, step: 800, bg: 'rgba(245,158,11,0.1)' },
             { name: 'Diamond', color: '#a855f7', base: 7500, step: 1000, bg: 'rgba(168,85,247,0.1)' }
         ]
@@ -135,17 +135,17 @@ export default function Leaderboard() {
                         {/* 2nd Place */}
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'transform 0.3s ease' }} className="podium-hover">
                             <div style={{ position: 'relative', marginBottom: '1rem' }}>
-                                <div style={{ width: 80, height: 80, borderRadius: '50%', border: '4px solid #94a3b8', padding: 2, boxShadow: '0 0 20px rgba(148,163,184,0.3)' }}>
+                                <div style={{ width: 80, height: 80, borderRadius: '50%', border: '4px solid var(--text-muted)', padding: 2, boxShadow: '0 0 20px rgba(148,163,184,0.3)' }}>
                                     <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#f1f5f9' }}>
-                                        {topThree[1]?.avatar_url ? <img src={topThree[1].avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={45} style={{ margin: '15px auto', color: '#94a3b8' }} />}
+                                        {topThree[1]?.avatar_url ? <img src={topThree[1].avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={45} style={{ margin: '15px auto', color: 'var(--text-muted)' }} />}
                                     </div>
                                 </div>
-                                <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', background: '#94a3b8', color: 'white', padding: '2px 12px', borderRadius: 10, fontSize: '0.75rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>#2</div>
-                                <Medal size={24} color="#94a3b8" style={{ position: 'absolute', top: -15, right: -10 }} />
+                                <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--text-muted)', color: 'white', padding: '2px 12px', borderRadius: 10, fontSize: '0.75rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>#2</div>
+                                <Medal size={24} color="var(--text-muted)" style={{ position: 'absolute', top: -15, right: -10 }} />
                             </div>
                             <div style={{ textAlign: 'center' }}>
                                 <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>{topThree[1]?.name || '---'}</div>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8' }}>{topThree[1]?.xp || 0} XP</div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>{topThree[1]?.xp || 0} XP</div>
                             </div>
                         </div>
 
@@ -234,7 +234,7 @@ export default function Leaderboard() {
                                                         fontSize: '0.85rem',
                                                         fontWeight: 800,
                                                         background: rank <= 3 ? (rank === 1 ? '#fff7e6' : rank === 2 ? '#f1f5f9' : '#fff7ed') : 'transparent',
-                                                        color: rank === 1 ? '#f59e0b' : rank === 2 ? '#64748b' : rank === 3 ? '#b45309' : 'var(--text-muted)'
+                                                        color: rank === 1 ? '#f59e0b' : rank === 2 ? 'var(--text-muted)' : rank === 3 ? '#b45309' : 'var(--text-muted)'
                                                     }}>
                                                         {rank}
                                                     </div>

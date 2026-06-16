@@ -96,12 +96,12 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
                         border: `2px solid ${myHandRaised ? '#6366f1' : 'transparent'}`,
                         transition: 'all 0.3s'
                     }}>
-                        <Hand size={40} color={myHandRaised ? '#818cf8' : '#94a3b8'} />
+                        <Hand size={40} color={myHandRaised ? '#818cf8' : 'var(--text-muted)'} />
                     </div>
                     <h3 style={{ margin: '0 0 0.5rem 0', color: 'white', fontSize: '1.2rem' }}>
                         {myHandRaised ? 'Hand Raised' : 'Have a Question?'}
                     </h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
                         {myHandRaised ? 'Wait for the instructor to call on you.' : 'Click below to notify the instructor that you want to speak.'}
                     </p>
                     
@@ -110,7 +110,7 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
                             Raise Hand
                         </button>
                     ) : (
-                        <button onClick={handleLowerHand} style={{ width: '100%', background: 'transparent', color: '#94a3b8', border: '1px solid #334155', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                        <button onClick={handleLowerHand} style={{ width: '100%', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--card-border)', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
                             Lower Hand
                         </button>
                     )}
@@ -135,7 +135,7 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
                     <div key={hand.student_id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <p style={{ margin: 0, color: 'white', fontSize: '0.95rem', fontWeight: 500 }}>{hand.student_name}</p>
-                            <p style={{ margin: 0, color: '#64748b', fontSize: '0.75rem' }}>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                                 Raised {new Date(hand.raised_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             </p>
                         </div>
@@ -151,7 +151,7 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
                 ))}
                 
                 {raisedHands.length === 0 && (
-                    <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.9rem', marginTop: '3rem' }}>
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '3rem' }}>
                         No hands raised right now.
                     </div>
                 )}

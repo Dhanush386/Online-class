@@ -15,7 +15,7 @@ export default function MobileBlocker() {
 
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Learnova is optimized for Desktop</h1>
 
-                <p style={{ color: '#64748b', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '2rem' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '2rem' }}>
                     Learnova's coding environment requires a larger screen. Please switch to one of the following devices:
                 </p>
 

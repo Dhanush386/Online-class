@@ -46,7 +46,7 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
             // JS / Python / SQL Common
             // 1. Comments (lowest priority to overlap, but highest to ignore)
             const commentRegex = lang === 'python' ? /(#.*)/g : lang === 'sql' ? /(--.*)/g : /(\/\/.*)/g
-            html = html.replace(commentRegex, m => pushToken(m, theme === 'light' ? '#64748b' : '#94a3b8'))
+            html = html.replace(commentRegex, m => pushToken(m, theme === 'light' ? 'var(--text-muted)' : 'var(--text-muted)'))
 
             // 2. Strings
             html = html.replace(/"([^"]*)"/g, m => pushToken(m, theme === 'light' ? '#059669' : '#34d399'))
@@ -171,7 +171,7 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
                     background: 'transparent',
-                    color: theme === 'light' ? '#1e293b' : '#e2e8f0',
+                    color: theme === 'light' ? 'var(--text-primary)' : '#e2e8f0',
                     fontFamily: 'monospace',
                     fontSize: '1rem',
                     lineHeight: 1.5,
@@ -201,7 +201,7 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
                     padding: '1.5rem',
                     background: 'transparent',
                     color: 'transparent', // Hide the text, use caret only
-                    caretColor: theme === 'light' ? '#1e293b' : '#e2e8f0',
+                    caretColor: theme === 'light' ? 'var(--text-primary)' : '#e2e8f0',
                     fontFamily: 'monospace',
                     fontSize: '1rem',
                     lineHeight: 1.5,
