@@ -27,7 +27,7 @@ serve(async (req) => {
 
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         if (authError || !user) {
-            throw new Error('Unauthorized')
+            throw new Error(`Unauthorized: ${authError?.message || 'No user found'} | Header: ${authHeader ? 'present' : 'missing'}`)
         }
 
         // Get user profile
