@@ -10,7 +10,7 @@ const MAX_ATTEMPTS = 1
 
 export default function TakeAssessment() {
     const { assessmentId } = useParams()
-    const { profile } = useAuth()
+    const { profile, user } = useAuth()
     const navigate = useNavigate()
 
     const [assessment, setAssessment] = useState(null)
@@ -209,7 +209,7 @@ export default function TakeAssessment() {
                 event: 'student_online',
                 payload: {
                     studentId: profile.id,
-                    name: profile?.full_name || profile?.name || 'Student',
+                    name: profile?.full_name || profile?.name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Student',
                     challengeId: assessmentId,
                     type: 'assessment'
                 }

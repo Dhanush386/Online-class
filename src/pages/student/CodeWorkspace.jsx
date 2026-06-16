@@ -32,7 +32,7 @@ export default function CodeWorkspace() {
     const toast = useToast()
     const queryParams = new URLSearchParams(window.location.search)
     const isAdminMode = queryParams.get('admin') === 'true'
-    const { profile, refreshStats } = useAuth()
+    const { profile, refreshStats, user } = useAuth()
     const isOrganizer = profile?.role === 'organizer'
     const canBypass = isAdminMode && isOrganizer
     
@@ -466,7 +466,7 @@ export default function CodeWorkspace() {
                 event: 'student_online',
                 payload: {
                     studentId: profile.id,
-                    name: profile?.full_name || profile?.name || 'Student',
+                    name: profile?.full_name || profile?.name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Student',
                     challengeId,
                     type: 'coding'
                 }

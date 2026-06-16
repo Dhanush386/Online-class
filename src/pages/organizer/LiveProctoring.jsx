@@ -12,9 +12,22 @@ const StreamVideo = ({ stream }) => {
     useEffect(() => {
         if (videoRef.current && stream) {
             videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(e => console.log('Autoplay blocked:', e));
         }
     }, [stream]);
-    return <video ref={videoRef} autoPlay playsInline style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+
+    // Recover video play state when switching tabs back to the dashboard
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden && videoRef.current) {
+                videoRef.current.play().catch(e => console.log('Play on focus failed:', e));
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
+    return <video ref={videoRef} autoPlay playsInline muted style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
 };
 
 const PUBLIC_VAPID_KEY = 'BNjRJsIQS8GspSp6F0wLITvpxMtEYMbkwqETiGDVuBiW065JF75laB-jdKyGN09gDSrvbBrlbKsTxka6-Wk9ftc';
@@ -144,6 +157,20 @@ export default function LiveProctoring() {
         });
         
         peerConnections.current[studentId] = pc;
+
+        // Auto-cleanup on WebRTC disconnect/failure
+        pc.oniceconnectionstatechange = () => {
+            if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') {
+                console.log(`WebRTC connection lost for ${studentId}. Cleaning up stream.`);
+                setLiveStreams(prev => {
+                    const next = { ...prev };
+                    delete next[studentId];
+                    return next;
+                });
+                pc.close();
+                delete peerConnections.current[studentId];
+            }
+        };
 
         pc.onicecandidate = (event) => {
             if (event.candidate) {
