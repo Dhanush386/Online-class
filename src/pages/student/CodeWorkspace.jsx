@@ -81,6 +81,100 @@ export default function CodeWorkspace() {
     const currentQuestion = isCombined ? challenge.test_cases.sub_questions[currentSubIndex] : challenge;
     const currentTestCases = isCombined ? currentQuestion.test_cases : (challenge?.test_cases || []);
 
+    // ── Web Testcase Engine ──
+    const webTestcases = challenge?.web_testcases || null
+    const referenceIframeUrl = challenge?.reference_iframe_url || null
+
+    const hasWebTcs = !!(webTestcases && (
+        webTestcases.html?.length || webTestcases.css?.length || webTestcases.js?.length
+    ))
+
+    // Flat list for the left-panel testcase display
+    const flatWebTcs = hasWebTcs ? [
+        ...(webTestcases.html || []).map(t => ({ description: t.description || `Check: ${t.selector}`, _wtype: 'html', _spec: t })),
+        ...(webTestcases.css  || []).map(t => ({ description: t.description || `${t.selector} → ${t.property}${t.value ? ': ' + t.value : ''}`, _wtype: 'css',  _spec: t })),
+        ...(webTestcases.js   || []).map(t => ({ description: t.description || `Uses: ${t.keyword}`, _wtype: 'js',   _spec: t }))
+    ] : null
+
+    /**
+     * Run all web testcases and return [{description, passed, type, expected, actual}]
+     * HTML: DOMParser on htmlCode
+     * CSS:  getComputedStyle via iframe (after updatePreview)
+     * JS:   word-boundary regex on jsCode
+     */
+    const runWebTestcases = async () => {
+        const results = []
+
+        // ── HTML DOM checks (no iframe needed) ──
+        for (const tc of (webTestcases?.html || [])) {
+            try {
+                const parser = new DOMParser()
+                const doc = parser.parseFromString(htmlCode, 'text/html')
+                const found = doc.querySelectorAll(tc.selector)
+                const minCount = tc.minCount || 1
+                const passed = found.length >= minCount
+                results.push({
+                    description: tc.description || `Check: ${tc.selector}`,
+                    passed,
+                    type: 'html',
+                    expected: minCount > 1 ? `≥ ${minCount} × "${tc.selector}"` : `element "${tc.selector}" exists`,
+                    actual: found.length === 0 ? 'not found' : `found ${found.length}`
+                })
+            } catch {
+                results.push({ description: tc.description || tc.selector, passed: false, type: 'html', expected: tc.selector, actual: 'selector error' })
+            }
+        }
+
+        // ── CSS computed style checks (needs rendered iframe) ──
+        if (webTestcases?.css?.length) {
+            updatePreview()
+            await new Promise(r => setTimeout(r, 450)) // wait for render
+            for (const tc of webTestcases.css) {
+                try {
+                    const iDoc = iframeRef.current?.contentDocument
+                    const iWin = iframeRef.current?.contentWindow
+                    if (!iDoc || !iWin) { results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, actual: 'iframe not ready' }); continue }
+                    const el = iDoc.querySelector(tc.selector)
+                    if (!el) { results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `"${tc.selector}" exists`, actual: 'element not found' }); continue }
+                    const style = iWin.getComputedStyle(el)
+                    // support camelCase and kebab-case property names
+                    const camel = tc.property.replace(/-([a-z])/g, (_, l) => l.toUpperCase())
+                    const actualVal = (style[camel] || style.getPropertyValue(tc.property) || '').trim()
+                    const passed = tc.value
+                        ? actualVal.toLowerCase().includes(tc.value.toLowerCase())
+                        : (actualVal !== '' && actualVal !== 'none' && actualVal !== 'normal' && actualVal !== '0px')
+                    results.push({
+                        description: tc.description || `${tc.selector} → ${tc.property}`,
+                        passed, type: 'css',
+                        expected: tc.value ? `${tc.property}: ${tc.value}` : `${tc.property} to be set`,
+                        actual: actualVal || 'not set'
+                    })
+                } catch (err) {
+                    results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, actual: 'evaluation error' })
+                }
+            }
+        }
+
+        // ── JS code checks (word-boundary regex on jsCode) ──
+        for (const tc of (webTestcases?.js || [])) {
+            try {
+                const pattern = new RegExp(`\\b${tc.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+                const passed = pattern.test(jsCode)
+                results.push({
+                    description: tc.description || `Uses: ${tc.keyword}`,
+                    passed, type: 'js',
+                    expected: `"${tc.keyword}" used in JS`,
+                    actual: passed ? 'found ✓' : 'not found'
+                })
+            } catch {
+                const passed = jsCode.includes(tc.keyword)
+                results.push({ description: tc.description || tc.keyword, passed, type: 'js', expected: `"${tc.keyword}"`, actual: passed ? 'found' : 'not found' })
+            }
+        }
+
+        return results
+    }
+
     const handleSubCodeChange = (val) => {
         setGenericCode(val);
         setSubCodes(prev => ({ ...prev, [currentSubIndex]: val }));
@@ -600,7 +694,21 @@ export default function CodeWorkspace() {
         // Basic local run for HTML, Pyodide for Python, mock for others
         if (challenge.language === 'html') {
             updatePreview()
-            setResult({ status: 'success', message: 'Rendered successfully' })
+            if (hasWebTcs) {
+                // Run testcases (CSS checks need the preview rendered)
+                const tcResults = await runWebTestcases()
+                const passed = tcResults.filter(r => r.passed).length
+                const allPassed = tcResults.every(r => r.passed)
+                setResult({
+                    status: allPassed ? 'success' : 'warning',
+                    message: allPassed
+                        ? `✅ All ${tcResults.length} testcases passed!`
+                        : `🔍 ${passed}/${tcResults.length} passed — fix the failing tests before submitting.`,
+                    testResults: tcResults
+                })
+            } else {
+                setResult({ status: 'success', message: 'Rendered successfully ✓' })
+            }
         } else if (challenge.language.startsWith('python')) {
             try {
                 setResult({ status: 'running', message: 'Initializing Python Engine (this takes a few seconds on the first run)...' })
@@ -632,6 +740,48 @@ sys.stdin = StringIO(test_input)
         setSubmitting(true)
         setResult({ status: 'running', message: 'Running tests...' })
         try {
+            // ── Web Testcase Engine (HTML only) ──
+            if (challenge.language === 'html' && hasWebTcs) {
+                setResult({ status: 'running', message: 'Running testcases...' })
+                const tcResults = await runWebTestcases()
+                const failedTcs = tcResults.filter(r => !r.passed)
+
+                if (failedTcs.length > 0) {
+                    setResult({
+                        status: 'error',
+                        message: `Submission blocked — ${failedTcs.length} testcase${failedTcs.length > 1 ? 's' : ''} failed.\nFix the highlighted tests and try again.`,
+                        testResults: tcResults
+                    })
+                    setSubmitting(false)
+                    return
+                }
+                // All web testcases passed — continue to XP award
+                setResult({ status: 'success', message: `✅ All ${tcResults.length} testcases passed!`, testResults: tcResults })
+                // Skip the visual comparison loop below for pure web-testcase challenges
+                if (overallPassed !== undefined) {}
+                // Award XP
+                let alreadySolved = false
+                const { data: previousSubs } = await supabase.from('coding_submissions')
+                    .select('id').eq('challenge_id', challengeId).eq('student_id', profile.id).eq('status', 'accepted')
+                alreadySolved = previousSubs && previousSubs.length > 0
+                const finalScore = (hasUnlockedAnswer || alreadySolved) ? 0 : (currentQuestion.xp_reward || 15)
+                await supabase.from('coding_submissions').insert({
+                    student_id: profile.id, challenge_id: challengeId,
+                    status: 'accepted', score: finalScore,
+                    code: JSON.stringify({ html: htmlCode, css: cssCode, js: jsCode })
+                })
+                if (!alreadySolved && !hasUnlockedAnswer) {
+                    const { data: userData } = await supabase.from('users').select('xp').eq('id', profile.id).single()
+                    if (userData) {
+                        await supabase.from('users').update({ xp: (userData.xp || 0) + finalScore }).eq('id', profile.id)
+                        if (refreshStats) refreshStats()
+                        toast.success(`Congratulations! You earned ${finalScore} XP!`)
+                    }
+                }
+                stopProctoring()
+                setSubmitting(false)
+                return
+            }
             if (challenge.language.startsWith('python')) {
                 setResult({ status: 'running', message: 'Initializing Python Engine for tests...' })
                 await initPyodide()
@@ -967,13 +1117,87 @@ sys.stdin = StringIO(test_input)
                                     </div>
                                 )}
 
+                                {/* ── Reference iFrame (HTML challenges only) ── */}
+                                {referenceIframeUrl && referenceIframeUrl.startsWith('https://') && (
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                                            <div style={{ width: 20, height: 20, background: '#3b82f6', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <span style={{ color: 'white', fontSize: '0.55rem', fontWeight: 800 }}>{'<>'}</span>
+                                            </div>
+                                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e40af' }}>Reference Demo</span>
+                                            <a
+                                                href={referenceIframeUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ marginLeft: 'auto', fontSize: '0.68rem', color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}
+                                            >
+                                                Open ↗
+                                            </a>
+                                        </div>
+                                        <div style={{ borderRadius: 8, overflow: 'hidden', border: '2px solid #bfdbfe', background: '#f1f5f9', height: 220 }}>
+                                            <iframe
+                                                src={referenceIframeUrl}
+                                                title="Reference Demo"
+                                                sandbox="allow-scripts allow-same-origin allow-forms"
+                                                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                                                loading="lazy"
+                                            />
+                                        </div>
+                                        <p style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.35rem' }}>This is the reference page your output should resemble.</p>
+                                    </div>
+                                )}
+
+                                {/* ── Live Keyword Checklist (HTML challenges only) ── */}
+                                {(() => {
+                                    const kwStatus = getKeywordStatus()
+                                    if (!kwStatus) return null
+                                    const LANG_STYLES = {
+                                        html: { label: 'HTML', color: '#e34c26', bg: '#fff5f2', border: '#fca89a' },
+                                        css:  { label: 'CSS',  color: '#264de4', bg: '#eff4ff', border: '#bfdbfe' },
+                                        js:   { label: 'JS',   color: '#c9a800', bg: '#fffbeb', border: '#fde68a' }
+                                    }
+                                    const allPassed = Object.values(kwStatus).flat().every(k => k.pass)
+                                    return (
+                                        <div style={{ marginBottom: '2rem', border: `1px solid ${allPassed ? '#bbf7d0' : '#e9d5ff'}`, borderRadius: 10, overflow: 'hidden' }}>
+                                            <div style={{ padding: '0.6rem 0.9rem', background: allPassed ? '#f0fdf4' : 'linear-gradient(135deg, #fdf4ff, #fefce8)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.8rem' }}>{allPassed ? '✅' : '🔑'}</span>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: allPassed ? '#15803d' : '#6d28d9' }}>Requirements Checklist</span>
+                                                {allPassed && <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: '#16a34a', fontWeight: 600 }}>All met ✓</span>}
+                                            </div>
+                                            <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'white' }}>
+                                                {Object.entries(kwStatus).map(([lang, items]) => {
+                                                    const st = LANG_STYLES[lang] || LANG_STYLES.html
+                                                    return (
+                                                        <div key={lang}>
+                                                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: st.color, textTransform: 'uppercase', marginBottom: '0.3rem', letterSpacing: '0.05em' }}>{st.label}</div>
+                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                                                                {items.map(({ kw, pass }) => (
+                                                                    <span
+                                                                        key={kw}
+                                                                        style={{
+                                                                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                                                                            fontSize: '0.7rem', fontWeight: 600,
+                                                                            padding: '0.2rem 0.5rem', borderRadius: 5,
+                                                                            background: pass ? '#dcfce7' : st.bg,
+                                                                            color: pass ? '#15803d' : st.color,
+                                                                            border: `1px solid ${pass ? '#bbf7d0' : st.border}`,
+                                                                            transition: 'all 0.2s ease'
+                                                                        }}
+                                                                    >
+                                                                        {pass ? '✓' : '×'} {kw}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
+
                                 {/* Testcases Section */}
                                 {(() => {
-                                    const cases = result?.testResults || currentTestCases
-                                    const total = cases?.length || 0
-                                    const passedCount = result?.testResults ? cases.filter(t => t.passed).length : 0
-                                    const failedCount = result?.testResults ? total - passedCount : 0
-                                    const hasResults = !!result?.testResults
                                     return (
                                         <div style={{ marginTop: '2.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
                                             {/* Collapsible Header */}
@@ -983,77 +1207,116 @@ sys.stdin = StringIO(test_input)
                                             </div>
 
                                             {/* Summary Badges */}
-                                            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                                                    <CodeIcon size={14} color="#94a3b8" />
-                                                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>Total</span>
-                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>{total}</span>
-                                                </div>
-                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #05966930', background: '#05966910' }}>
-                                                    <CheckCircle2 size={14} color="#10b981" />
-                                                    <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>Passed</span>
-                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#10b981' }}>{hasResults ? passedCount : '-'}</span>
-                                                </div>
-                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #ef444430', background: '#ef444410' }}>
-                                                    <XCircle size={14} color="#ef4444" />
-                                                    <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Failed</span>
-                                                    <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#ef4444' }}>{hasResults ? failedCount : '-'}</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Individual Test Case Cards */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                {cases?.map((tc, idx) => {
-                                                    const tcData = currentTestCases[idx] || tc
-                                                    const passed = hasResults ? tc.passed : null
-                                                    
-                                                    let displayContent;
-                                                    if (tcData.is_hidden) {
-                                                        displayContent = (
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b' }}>
-                                                                <Lock size={14} />
-                                                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Hidden Test Case</span>
-                                                            </div>
-                                                        );
-                                                    } else if (tcData.description) {
-                                                        displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b', lineHeight: 1.5, fontWeight: 500 }}>{tcData.description}</span>;
-                                                    } else if (tcData.input || tcData.expected_output) {
-                                                        displayContent = (
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', padding: '0.5rem 0' }}>
-                                                                {tcData.input && (
-                                                                    <div>
-                                                                        <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: '#0f172a' }}>Sample Input {idx + 1}</h5>
-                                                                        <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: '#0f172a', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.input}</div>
-                                                                    </div>
-                                                                )}
-                                                                {tcData.expected_output && (
-                                                                    <div>
-                                                                        <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: '#0f172a' }}>Sample Output {idx + 1}</h5>
-                                                                        <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: '#0f172a', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.expected_output}</div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    } else {
-                                                        displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b', lineHeight: 1.5, fontWeight: 500 }}>Test Case {idx + 1}</span>;
-                                                    }
-
-                                                    return (
-                                                        <div key={idx} style={{ padding: '1rem 1.25rem', borderRadius: 8, background: '#f8fafc', borderLeft: `3px solid ${passed === true ? '#10b981' : passed === false ? '#ef4444' : '#cbd5e1'}`, transition: 'all 0.2s ease' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                                                                {passed === true ? <CheckCircle2 size={18} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} /> : passed === false ? <XCircle size={18} color="#ef4444" style={{ marginTop: 2, flexShrink: 0 }} /> : <Info size={18} color="#475569" style={{ marginTop: 2, flexShrink: 0 }} />}
-                                                                <div style={{ flex: 1 }}>{displayContent}</div>
-                                                            </div>
-                                                            {hasResults && tc.actual && (
-                                                                <div style={{ marginLeft: '2.2rem', marginTop: '0.75rem' }}>
-                                                                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Your Output:</span>
-                                                                    <pre style={{ background: '#f1f5f9', padding: '0.5rem 0.75rem', borderRadius: 6, marginTop: '0.25rem', fontSize: '0.7rem', color: passed ? '#059669' : '#dc2626', overflowX: 'auto', border: '1px solid #1f2937' }}>{tc.actual}</pre>
-                                                                </div>
-                                                            )}
+                                            {(()=>{
+                                                const effectiveTcs = flatWebTcs || currentTestCases
+                                                const cases = result?.testResults || effectiveTcs
+                                                const total = cases?.length || 0
+                                                const hasResults = !!(result?.testResults?.length)
+                                                const passedCount = hasResults ? cases.filter(t => t.passed).length : 0
+                                                const failedCount = hasResults ? total - passedCount : 0
+                                                return (
+                                                    <>
+                                                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                                                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                                                            <CodeIcon size={14} color="#94a3b8" />
+                                                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>Total</span>
+                                                            <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>{total}</span>
                                                         </div>
-                                                    )
-                                                })}
-                                            </div>
+                                                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #05966930', background: '#05966910' }}>
+                                                            <CheckCircle2 size={14} color="#10b981" />
+                                                            <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>Passed</span>
+                                                            <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#10b981' }}>{hasResults ? passedCount : '-'}</span>
+                                                        </div>
+                                                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #ef444430', background: '#ef444410' }}>
+                                                            <XCircle size={14} color="#ef4444" />
+                                                            <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Failed</span>
+                                                            <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: '#ef4444' }}>{hasResults ? failedCount : '-'}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Individual Test Case Cards */}
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                        {cases?.map((tc, idx) => {
+                                                            const tcData = effectiveTcs?.[idx] || tc
+                                                            const passed = hasResults ? tc.passed : null
+                                                            const isWebTc = !!(tc.type || tcData._wtype)
+                                                            const wtype = tc.type || tcData._wtype
+                                                            const typeColor = wtype === 'html' ? '#ef4444' : wtype === 'css' ? '#3b82f6' : '#f59e0b'
+                                                            const typeLabel = wtype ? wtype.toUpperCase() : null
+
+                                                            let displayContent;
+                                                            if (tcData.is_hidden) {
+                                                                displayContent = (
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b' }}>
+                                                                        <Lock size={14} />
+                                                                        <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Hidden Test Case</span>
+                                                                    </div>
+                                                                );
+                                                            } else if (tcData.description || isWebTc) {
+                                                                displayContent = (
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                                        {typeLabel && (
+                                                                            <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.1rem 0.4rem', background: typeColor, color: typeColor === '#f59e0b' ? '#000' : '#fff', borderRadius: 4, flexShrink: 0 }}>{typeLabel}</span>
+                                                                        )}
+                                                                        <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b', lineHeight: 1.5, fontWeight: 500 }}>{tcData.description || tc.description}</span>
+                                                                    </div>
+                                                                );
+                                                            } else if (tcData.input || tcData.expected_output) {
+                                                                displayContent = (
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', padding: '0.5rem 0' }}>
+                                                                        {tcData.input && (
+                                                                            <div>
+                                                                                <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: '#0f172a' }}>Sample Input {idx + 1}</h5>
+                                                                                <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: '#0f172a', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.input}</div>
+                                                                            </div>
+                                                                        )}
+                                                                        {tcData.expected_output && (
+                                                                            <div>
+                                                                                <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: '#0f172a' }}>Sample Output {idx + 1}</h5>
+                                                                                <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: '#0f172a', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.expected_output}</div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            } else {
+                                                                displayContent = <span style={{ fontSize: '0.85rem', color: passed === true ? '#059669' : passed === false ? '#dc2626' : '#64748b', lineHeight: 1.5, fontWeight: 500 }}>Test Case {idx + 1}</span>;
+                                                            }
+
+                                                            return (
+                                                                <div key={idx} style={{ padding: '1rem 1.25rem', borderRadius: 8, background: '#f8fafc', borderLeft: `3px solid ${passed === true ? '#10b981' : passed === false ? '#ef4444' : '#cbd5e1'}`, transition: 'all 0.2s ease' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                                                                        {passed === true ? <CheckCircle2 size={18} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} /> : passed === false ? <XCircle size={18} color="#ef4444" style={{ marginTop: 2, flexShrink: 0 }} /> : <Info size={18} color="#475569" style={{ marginTop: 2, flexShrink: 0 }} />}
+                                                                        <div style={{ flex: 1 }}>{displayContent}</div>
+                                                                    </div>
+                                                                    {/* Web testcase: Expected vs Found detail */}
+                                                                    {hasResults && isWebTc && (
+                                                                        <div style={{ marginLeft: '2.2rem', marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                                                <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Expected</span>
+                                                                                <code style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', background: '#ecfdf5', color: '#059669', borderRadius: 4, border: '1px solid #d1fae5' }}>{tc.expected}</code>
+                                                                            </div>
+                                                                            {!tc.passed && (
+                                                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                                                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Found</span>
+                                                                                    <code style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', background: '#fef2f2', color: '#dc2626', borderRadius: 4, border: '1px solid #fecaca' }}>{tc.actual}</code>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                    {/* Classic testcase: stdout output */}
+                                                                    {hasResults && !isWebTc && tc.actual && (
+                                                                        <div style={{ marginLeft: '2.2rem', marginTop: '0.75rem' }}>
+                                                                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Your Output:</span>
+                                                                            <pre style={{ background: '#f1f5f9', padding: '0.5rem 0.75rem', borderRadius: 6, marginTop: '0.25rem', fontSize: '0.7rem', color: passed ? '#059669' : '#dc2626', overflowX: 'auto', border: '1px solid #1f2937' }}>{tc.actual}</pre>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                    </>
+                                                )
+                                            })()}
                                         </div>
                                     )
                                 })()}
@@ -1158,20 +1421,25 @@ sys.stdin = StringIO(test_input)
                     
                     {challenge.language === 'html' ? (
                         <>
-                            <div style={{ flex: 1, background: '#fff', margin: '1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid #334155' }}>
+                            <div style={{ flex: 1, background: '#fff', margin: '1rem 1rem 0 1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid #334155', minHeight: 0 }}>
                                 <iframe ref={iframeRef} style={{ width: '100%', height: '100%', border: 'none' }} title="preview" />
                             </div>
-                            <div style={{ padding: '1.25rem', background: '#0f172a', borderTop: '1px solid #334155', textAlign: 'center' }}>
-                                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '1rem' }}>Try comparing your output with expected output</p>
+                            {/* Keyword hint / result message strip */}
+                            {result && result.message && (
+                                <div style={{ margin: '0 1rem', padding: '0.6rem 0.75rem', background: result.status === 'error' ? '#450a0a' : result.status === 'warning' ? '#451a03' : '#052e16', borderRadius: 6, maxHeight: 90, overflowY: 'auto' }}>
+                                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.7rem', color: result.status === 'error' ? '#fca5a5' : result.status === 'warning' ? '#fcd34d' : '#86efac', margin: 0, lineHeight: 1.5 }}>{result.message}</pre>
+                                </div>
+                            )}
+                            <div style={{ padding: '0.75rem 1.25rem 1.25rem', background: '#0f172a', borderTop: '1px solid #334155', textAlign: 'center' }}>
                                 <button onClick={handleSubmit} disabled={submitting || running} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                    <Layout size={16} /> {submitting ? 'Comparing...' : 'Compare'}
+                                    <Layout size={16} /> {submitting ? 'Comparing...' : 'Compare & Submit'}
                                 </button>
                             </div>
                         </>
                     ) : (
                         <div style={{ flex: 1, padding: '1rem', background: '#0f172a', overflowY: 'auto', fontFamily: 'monospace', fontSize: '0.85rem', color: '#e2e8f0' }}>
                             {result ? (
-                                <div style={{ color: result.status === 'success' ? '#10b981' : (result.status === 'error' ? '#ef4444' : '#94a3b8') }}>
+                                <div style={{ color: result.status === 'success' ? '#10b981' : result.status === 'warning' ? '#fcd34d' : (result.status === 'error' ? '#ef4444' : '#94a3b8') }}>
                                     <pre style={{ whiteSpace: 'pre-wrap' }}>{result.message}</pre>
                                 </div>
                             ) : (

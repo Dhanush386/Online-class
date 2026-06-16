@@ -34,8 +34,10 @@ export default function TakeAssessment() {
     const [isDeviceAllowed, setIsDeviceAllowed] = useState(true)
     const [cameraEnabled, setCameraEnabled] = useState(false)
     const [aiModel, setAiModel] = useState(null)
+    const [mediaStream, setMediaStream] = useState(null)
     const videoRef = useRef(null)
     const proctorInterval = useRef(null)
+    const peerConnections = useRef({})
 
     // Check Device
     useEffect(() => {
@@ -95,15 +97,123 @@ export default function TakeAssessment() {
 
     const startCamera = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream
-            }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            setMediaStream(stream)
             setCameraEnabled(true)
         } catch (err) {
-            alert('Camera permission is required to take this proctored assessment.')
+            alert('Camera and microphone permissions are required to take this proctored assessment.')
         }
     }
+
+    // WebRTC & Broadcasting to Organizer Dashboard
+    useEffect(() => {
+        if (!isStarted) return
+
+        const channel = supabase.channel('coding_proctoring', {
+            config: {
+                broadcast: { ack: false }
+            }
+        })
+
+        channel
+            .on('broadcast', { event: 'proctor_warning' }, (payload) => {
+                if (payload.payload.studentId === profile.id) {
+                    setViolationCount(prev => {
+                        const next = prev + 1
+                        if (next < 3) {
+                            const msg = payload.payload.message || "Warning from Ai. Please ensure your environment is clear.";
+                            alert(`Security Warning (${next}/3): ${msg}`)
+                        }
+                        return next
+                    })
+                }
+            })
+            .on('broadcast', { event: 'webrtc_offer' }, async (payload) => {
+                const { studentId, offer, organizerId } = payload.payload;
+                if (studentId !== profile.id) return;
+
+                try {
+                    const pc = new RTCPeerConnection({
+                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    });
+                    
+                    peerConnections.current[organizerId] = pc;
+
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => {
+                            pc.addTrack(track, mediaStream);
+                        });
+                    }
+
+                    pc.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            channel.send({
+                                type: 'broadcast',
+                                event: 'webrtc_ice_candidate',
+                                payload: {
+                                    target: 'organizer',
+                                    organizerId,
+                                    studentId: profile.id,
+                                    candidate: event.candidate
+                                }
+                            });
+                        }
+                    };
+
+                    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+
+                    channel.send({
+                        type: 'broadcast',
+                        event: 'webrtc_answer',
+                        payload: {
+                            target: 'organizer',
+                            organizerId,
+                            studentId: profile.id,
+                            answer
+                        }
+                    });
+
+                } catch (err) {
+                    console.error('WebRTC Answer Error:', err);
+                }
+            })
+            .on('broadcast', { event: 'webrtc_ice_candidate' }, async (payload) => {
+                const { target, studentId, organizerId, candidate } = payload.payload;
+                if (target === 'student' && studentId === profile.id) {
+                    const pc = peerConnections.current[organizerId];
+                    if (pc && candidate) {
+                        try {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        } catch (err) {
+                            console.error('Error adding ICE candidate:', err);
+                        }
+                    }
+                }
+            })
+            .subscribe()
+
+        // Tell organizers we are online so they can request streams
+        const pingInterval = setInterval(() => {
+            channel.send({
+                type: 'broadcast',
+                event: 'student_online',
+                payload: {
+                    studentId: profile.id,
+                    name: profile?.full_name || 'Student',
+                    challengeId: assessmentId
+                }
+            }).catch(err => console.error(err))
+        }, 3000)
+
+        return () => {
+            clearInterval(pingInterval)
+            Object.values(peerConnections.current).forEach(pc => pc.close());
+            peerConnections.current = {};
+            channel.unsubscribe()
+        }
+    }, [isStarted, profile, assessmentId, mediaStream])
 
     useEffect(() => {
         if (violationCount >= 3 && isStarted && !submitted && !submitting && !isAutoSubmitted) {
@@ -546,7 +656,16 @@ export default function TakeAssessment() {
             {/* Webcam Feed */}
             {cameraEnabled && (
                 <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: 50, background: '#000' }}>
-                    <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <video 
+                        ref={(node) => {
+                            videoRef.current = node;
+                            if (node && mediaStream) {
+                                if (node.srcObject !== mediaStream) node.srcObject = mediaStream;
+                                if (node.paused) node.play().catch(e => console.error("Video play error:", e));
+                            }
+                        }}
+                        autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
                     <div style={{ position: 'absolute', bottom: '4px', left: '0', right: '0', textAlign: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 800, background: 'rgba(239,68,68,0.8)', padding: '2px 0' }}>
                         AI PROCTORING ACTIVE
                     </div>

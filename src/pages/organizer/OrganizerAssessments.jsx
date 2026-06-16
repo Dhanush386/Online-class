@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, BookOpen, ChevronRight, Clock, Eye, BarChart3, Download, CheckCircle2, XCircle, Search, Users } from 'lucide-react'
+import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, BookOpen, ChevronRight, Clock, Eye, BarChart3, Download, CheckCircle2, XCircle, Search, Users, ShieldAlert } from 'lucide-react'
 
 export default function OrganizerAssessments() {
     const { profile } = useAuth()
     const location = useLocation()
+    const navigate = useNavigate()
     const [courses, setCourses] = useState([])
     const [assessments, setAssessments] = useState([])
     const [loading, setLoading] = useState(true)
@@ -212,13 +213,22 @@ export default function OrganizerAssessments() {
                     <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>Assessment Management</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Create quizzes and evaluations for your students</p>
                 </div>
-                <button
-                    onClick={() => { resetForm(); setShowModal(true) }}
-                    className="btn-primary"
-                    style={{ gap: '0.5rem' }}
-                >
-                    <Plus size={18} /> Create Assessment
-                </button>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                        onClick={() => navigate('/organizer/proctoring')}
+                        className="btn-secondary"
+                        style={{ gap: '0.5rem', background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444' }}
+                    >
+                        <ShieldAlert size={18} /> Live Proctoring
+                    </button>
+                    <button
+                        onClick={() => { resetForm(); setShowModal(true) }}
+                        className="btn-primary"
+                        style={{ gap: '0.5rem' }}
+                    >
+                        <Plus size={18} /> Create Assessment
+                    </button>
+                </div>
             </div>
 
             {loading ? (
