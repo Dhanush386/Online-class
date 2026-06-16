@@ -583,6 +583,7 @@ export default function LiveClassroom() {
                     body: { roomName }
                 })
                 if (error) throw error
+                if (data?.error) throw new Error(`Server Error: ${data.error}`)
                 if (data?.token) {
                     setLivekitToken(data.token)
                 } else {
