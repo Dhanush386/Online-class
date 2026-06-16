@@ -101,14 +101,14 @@ export default function LiveProctoring() {
             })
             .subscribe()
 
-        // Cleanup disconnected students every 5 seconds (if no frame/ping for > 10 seconds)
+        // Cleanup disconnected students every 15 seconds (if no ping for > 45 seconds)
         const cleanupInterval = setInterval(() => {
             const now = Date.now()
             setActiveStudents(prev => {
                 const next = { ...prev }
                 let changed = false
                 Object.keys(next).forEach(id => {
-                    if (now - next[id].lastSeen > 10000) {
+                    if (now - next[id].lastSeen > 45000) {
                         delete next[id]
                         changed = true
                         
@@ -126,7 +126,7 @@ export default function LiveProctoring() {
                 })
                 return changed ? next : prev
             })
-        }, 5000)
+        }, 15000)
 
         return () => {
             channel.unsubscribe()
