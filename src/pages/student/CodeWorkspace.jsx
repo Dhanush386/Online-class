@@ -467,7 +467,8 @@ export default function CodeWorkspace() {
                 payload: {
                     studentId: profile.id,
                     name: profile?.name || 'Student',
-                    challengeId
+                    challengeId,
+                    type: 'coding'
                 }
             }).catch(err => console.error(err))
         }, 3000)

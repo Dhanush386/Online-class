@@ -52,14 +52,26 @@ export default function LiveProctoring() {
             })
             .on('broadcast', { event: 'student_online' }, (payload) => {
                 const data = payload.payload
-                setActiveStudents(prev => ({
-                    ...prev,
-                    [data.studentId]: {
-                        ...prev[data.studentId],
-                        ...data,
-                        lastSeen: Date.now()
+                setActiveStudents(prev => {
+                    const isNew = !prev[data.studentId];
+                    if (isNew) {
+                        toast.info(`${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`);
+                        if (Notification.permission === 'granted') {
+                            new Notification('New Student Online', {
+                                body: `${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`,
+                                icon: '/vite.svg'
+                            });
+                        }
                     }
-                }))
+                    return {
+                        ...prev,
+                        [data.studentId]: {
+                            ...prev[data.studentId],
+                            ...data,
+                            lastSeen: Date.now()
+                        }
+                    };
+                })
             })
             .on('broadcast', { event: 'webrtc_answer' }, async (payload) => {
                 const { target, organizerId, studentId, answer } = payload.payload;
@@ -339,7 +351,7 @@ export default function LiveProctoring() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                     <div>
                                         <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>{student.name}</h3>
-                                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Coding Challenge</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>{student.type === 'assessment' ? 'Assessment' : 'Coding Challenge'}</div>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#059669', background: '#ecfdf5', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
                                         <CheckCircle2 size={12} /> Proctoring Active

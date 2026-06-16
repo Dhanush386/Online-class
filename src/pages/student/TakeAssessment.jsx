@@ -210,7 +210,8 @@ export default function TakeAssessment() {
                 payload: {
                     studentId: profile.id,
                     name: profile?.full_name || 'Student',
-                    challengeId: assessmentId
+                    challengeId: assessmentId,
+                    type: 'assessment'
                 }
             }).catch(err => console.error(err))
         }, 3000)
