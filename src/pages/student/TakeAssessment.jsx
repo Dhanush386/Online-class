@@ -701,8 +701,8 @@ export default function TakeAssessment() {
                                 style={{
                                     padding: '1.25rem 1.5rem',
                                     borderRadius: 12,
-                                    border: `2px solid ${isSelected ? '#6366f1' : '#e2e8f0'}`,
-                                    background: isSelected ? '#6366f108' : 'white',
+                                    border: `2px solid ${isSelected ? '#6366f1' : 'var(--card-border)'}`,
+                                    background: isSelected ? 'rgba(99, 102, 241, 0.08)' : 'var(--card-bg)',
                                     textAlign: 'left',
                                     cursor: 'pointer',
                                     display: 'flex',

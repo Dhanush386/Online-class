@@ -148,10 +148,10 @@ export default function AssessmentReview() {
                                     }
 
                                     const isThisSelected = Array.isArray(selected) ? selected.includes(opt) : opt === selected
-                                    let bg = '#f8fafc', border = '#e2e8f0', textColor = 'var(--text-primary)'
+                                    let bg = 'var(--card-bg)', border = 'var(--card-border)', textColor = 'var(--text-primary)'
 
-                                    if (isThisCorrect) { bg = '#ecfdf5'; border = '#10b98140'; textColor = '#065f46' }
-                                    else if (isThisSelected && !isThisCorrect) { bg = '#fef2f2'; border = '#ef444440'; textColor = '#991b1b' }
+                                    if (isThisCorrect) { bg = 'rgba(16, 185, 129, 0.1)'; border = 'rgba(16, 185, 129, 0.2)'; textColor = 'var(--success)' }
+                                    else if (isThisSelected && !isThisCorrect) { bg = 'rgba(239, 68, 68, 0.1)'; border = 'rgba(239, 68, 68, 0.2)'; textColor = 'var(--danger)' }
 
                                     return (
                                         <div key={i} style={{ padding: '0.75rem 1rem', borderRadius: 10, background: bg, border: `1px solid ${border}`, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: textColor }}>
