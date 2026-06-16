@@ -95,6 +95,14 @@ export default function TakeAssessment() {
         }
     }, [isStarted, cameraEnabled, aiModel])
 
+    useEffect(() => {
+        return () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop())
+            }
+        }
+    }, [mediaStream])
+
     const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
