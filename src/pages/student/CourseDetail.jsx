@@ -545,7 +545,7 @@ export default function CourseDetail() {
                                                                 const live = isLive(s.scheduled_time)
                                                                 const recorded = isRecorded(s)
                                                                 return (
-                                                                    <div key={s.id} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: live ? 'rgba(239,68,68,0.03)' : 'white' }}>
+                                                                    <div key={s.id} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: live ? 'rgba(239,68,68,0.03)' : 'var(--card-bg)' }}>
                                                                         <div style={{ width: 36, height: 36, borderRadius: 10, background: live ? 'rgba(239,68,68,0.08)' : 'rgba(99,102,241,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                                             {live ? <Zap size={18} color="#f87171" /> : <Play size={18} color="#818cf8" />}
                                                                         </div>
