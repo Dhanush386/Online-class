@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import CodeEditor from '../../components/CodeEditor'
-import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image as ImageIcon, Upload, Sparkles, Loader2, ShieldAlert } from 'lucide-react'
+import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image as ImageIcon, Upload, Sparkles, Loader2, ShieldAlert, Eye, BarChart3, CheckCircle2, XCircle, Users } from 'lucide-react'
 import OrganizerCodingDiscussions from '../../components/OrganizerCodingDiscussions'
 import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
@@ -73,6 +73,56 @@ export default function CodingManagement() {
     }, [location.state])
     const [resourceAccess, setResourceAccess] = useState([])
     const [lockingResource, setLockingResource] = useState(null)
+
+    // Submissions View States
+    const [viewingSubmissions, setViewingSubmissions] = useState(null)
+    const [submissionsData, setSubmissionsData] = useState([])
+    const [submissionsLoading, setSubmissionsLoading] = useState(false)
+    const [submissionsSearch, setSubmissionsSearch] = useState('')
+
+    async function loadSubmissions(challenge) {
+        setViewingSubmissions(challenge)
+        setSubmissionsLoading(true)
+        setSubmissionsSearch('')
+        try {
+            const { data: subs } = await supabase
+                .from('coding_submissions')
+                .select('*, users!inner(name, email)')
+                .eq('challenge_id', challenge.id)
+                .order('created_at', { ascending: false })
+
+            // Keep the best attempt (or most recent accepted) per student
+            const bestByStudent = {}
+            ;(subs || []).forEach(s => {
+                if (!bestByStudent[s.student_id]) {
+                    bestByStudent[s.student_id] = s
+                } else {
+                    if (s.status === 'accepted' && bestByStudent[s.student_id].status !== 'accepted') {
+                        bestByStudent[s.student_id] = s
+                    } else if ((s.score || 0) > (bestByStudent[s.student_id].score || 0)) {
+                        bestByStudent[s.student_id] = s
+                    }
+                }
+            })
+            setSubmissionsData(Object.values(bestByStudent))
+        } catch (err) {
+            console.error('Error loading submissions:', err)
+        } finally {
+            setSubmissionsLoading(false)
+        }
+    }
+
+    const filteredSubmissions = submissionsData.filter(m => {
+        if (!submissionsSearch) return true
+        const q = submissionsSearch.toLowerCase()
+        return m.users?.name?.toLowerCase().includes(q) || m.users?.email?.toLowerCase().includes(q)
+    })
+
+    const submissionsStats = {
+        total: submissionsData.length,
+        avgScore: submissionsData.length > 0 ? Math.round(submissionsData.reduce((sum, m) => sum + (m.score || 0), 0) / submissionsData.length) : 0,
+        passed: submissionsData.filter(m => m.status === 'accepted').length,
+    }
 
     useEffect(() => {
         if (profile?.id) {
@@ -538,6 +588,13 @@ export default function CodingManagement() {
                             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.test_cases?.length || 0} Test Cases</span>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                        onClick={() => loadSubmissions(c)}
+                                        className="btn-primary"
+                                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white' }}
+                                    >
+                                        <Eye size={14} /> Submissions
+                                    </button>
                                     <button
                                         onClick={() => window.open(`/student/coding/${c.id}?admin=true`, '_blank')}
                                         className="btn-secondary"
@@ -1334,6 +1391,121 @@ export default function CodingManagement() {
                                     {saving ? 'Saving...' : `Add All ${generatedChallenges.length} Challenges`}
                                 </button>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* View Submissions Modal */}
+            {viewingSubmissions && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                    <div className="glass-card animate-scale-in" style={{ width: '100%', maxWidth: 800, padding: 0, overflow: 'hidden', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+                        {/* Header */}
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <BarChart3 size={20} color="#6366f1" /> Student Submissions
+                                </h2>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{viewingSubmissions.title} — {viewingSubmissions.courses?.title}</p>
+                            </div>
+                            <button onClick={() => setViewingSubmissions(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Summary Stats */}
+                        <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', background: '#f8fafc' }}>
+                            <div style={{ flex: 1, padding: '0.75rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#6366f1' }}>{submissionsStats.total}</div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Submissions</div>
+                            </div>
+                            <div style={{ flex: 1, padding: '0.75rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{submissionsStats.avgScore} XP</div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Avg Score</div>
+                            </div>
+                            <div style={{ flex: 1, padding: '0.75rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{submissionsStats.passed}/{submissionsStats.total}</div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Accepted</div>
+                            </div>
+                        </div>
+
+                        {/* Search */}
+                        <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--card-border)' }}>
+                            <div style={{ position: 'relative' }}>
+                                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Search students by name or email..."
+                                    value={submissionsSearch}
+                                    onChange={e => setSubmissionsSearch(e.target.value)}
+                                    style={{ paddingLeft: '2rem', fontSize: '0.8rem' }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Student List */}
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.5rem' }}>
+                            {submissionsLoading ? (
+                                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading submissions...</p>
+                                </div>
+                            ) : filteredSubmissions.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                                    <Users size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{submissionsData.length === 0 ? 'No students have submitted this challenge yet.' : 'No results match your search.'}</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {/* Table Header */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.75rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
+                                        <span>Student</span>
+                                        <span style={{ textAlign: 'center' }}>Score (XP)</span>
+                                        <span style={{ textAlign: 'center' }}>Status</span>
+                                    </div>
+                                    {filteredSubmissions
+                                        .sort((a, b) => (b.score || 0) - (a.score || 0))
+                                        .map((sub, idx) => {
+                                            const passed = sub.status === 'accepted'
+                                            return (
+                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', padding: '0.75rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                                                    onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
+                                                    onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
+                                                            {sub.users?.name?.[0]?.toUpperCase() || '?'}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{sub.users?.name || 'Unknown'}</div>
+                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{sub.users?.email}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                                        {sub.score || 0} XP
+                                                    </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        {passed ? (
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600, color: '#059669' }}>
+                                                                <CheckCircle2 size={14} /> Accepted
+                                                            </span>
+                                                        ) : (
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600, color: '#dc2626' }}>
+                                                                <XCircle size={14} /> Failed / {sub.status || 'Attempted'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setViewingSubmissions(null)} className="btn-secondary" style={{ fontSize: '0.85rem' }}>Close</button>
                         </div>
                     </div>
                 </div>
