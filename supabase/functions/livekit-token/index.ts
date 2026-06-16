@@ -25,7 +25,8 @@ serve(async (req) => {
             { global: { headers: { Authorization: authHeader } } }
         )
 
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        const jwtToken = authHeader.replace('Bearer ', '')
+        const { data: { user }, error: authError } = await supabase.auth.getUser(jwtToken)
         if (authError || !user) {
             throw new Error(`Unauthorized: ${authError?.message || 'No user found'} | Header: ${authHeader ? 'present' : 'missing'}`)
         }
