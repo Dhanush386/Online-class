@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0"
-import jwt from "npm:jsonwebtoken@9.0.2"
+import { SignJWT } from "https://deno.land/x/jose@v4.15.4/index.ts"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -54,11 +54,7 @@ serve(async (req) => {
 
         // Build LiveKit Access Token (JWT)
         const payload = {
-            iss: apiKey,
-            sub: user.id,
             name: userName,
-            nbf: now,
-            exp: now + 21600, // 6 hours
             video: {
                 roomJoin: true,
                 room: roomName,
@@ -80,13 +76,15 @@ serve(async (req) => {
             payload.video.roomCreate = true
         }
 
-        const token = jwt.sign(payload, apiSecret, {
-            algorithm: 'HS256',
-            header: {
-                typ: 'JWT',
-                alg: 'HS256'
-            }
-        })
+        const secret = new TextEncoder().encode(apiSecret)
+
+        const token = await new SignJWT(payload)
+            .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+            .setIssuer(apiKey)
+            .setSubject(user.id)
+            .setNotBefore(now)
+            .setExpirationTime(now + 21600) // 6 hours
+            .sign(secret)
 
         return new Response(JSON.stringify({ token }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
