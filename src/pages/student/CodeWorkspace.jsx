@@ -466,7 +466,7 @@ export default function CodeWorkspace() {
                 event: 'student_online',
                 payload: {
                     studentId: profile.id,
-                    name: profile?.name || 'Student',
+                    name: profile?.full_name || profile?.name || 'Student',
                     challengeId,
                     type: 'coding'
                 }

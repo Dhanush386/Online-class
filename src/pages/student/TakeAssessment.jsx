@@ -209,7 +209,7 @@ export default function TakeAssessment() {
                 event: 'student_online',
                 payload: {
                     studentId: profile.id,
-                    name: profile?.full_name || 'Student',
+                    name: profile?.full_name || profile?.name || 'Student',
                     challengeId: assessmentId,
                     type: 'assessment'
                 }
