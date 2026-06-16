@@ -150,14 +150,34 @@ export default function LiveClassroom() {
         }
     }, [loading, videoData, profile, instructorPresent, jitsiLoaded])
 
-    function initJitsi(data) {
+    async function initJitsi(data) {
         const appId = import.meta.env.VITE_8X8_APP_ID || '';
         const domain = '8x8.vc' 
+
+        let jwtToken = ''
+        try {
+            const { data: funcData, error } = await supabase.functions.invoke('jaas-token', {
+                body: {
+                    roomName: `Learnova_LiveClass_${data.id}`,
+                    userName: profile?.name || (isOrganizer ? 'Instructor' : 'Student'),
+                    userEmail: profile?.email || '',
+                    isModerator: isOrganizer
+                }
+            })
+            if (error) throw error
+            if (funcData?.token) {
+                jwtToken = funcData.token
+            }
+        } catch (err) {
+            console.error("Failed to fetch JaaS token:", err)
+        }
+
         const options = {
             roomName: appId ? `${appId}/Learnova_LiveClass_${data.id}` : `Learnova_LiveClass_${data.id}`,
             width: '100%',
             height: '100%',
             parentNode: jitsiContainerRef.current,
+            jwt: jwtToken || undefined,
             userInfo: { 
                 displayName: profile?.name || (isOrganizer ? 'Instructor' : 'Student'),
                 role: isOrganizer ? 'moderator' : 'participant'
