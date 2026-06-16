@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  # ── LiveKit Server ──────────────────────────────────────────────────────
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: livekit-server
+    restart: unless-stopped
+    ports:
+      - "7880:7880"   # HTTP API
+      - "7881:7881"   # WebRTC (TCP)
+      - "7882:7882"   # WebRTC (TCP)
+      - "50000-50100:50000-50100/udp"  # WebRTC (UDP)
+    volumes:
+      - ./livekit-config.yaml:/etc/livekit.yaml
+    command: ["--config", "/etc/livekit.yaml"]
+    depends_on:
+      - redis
+    networks:
+      - livekit-net
+
+  # ── Redis ───────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: livekit-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - livekit-net
+
+  # ── Coturn (TURN Server) ────────────────────────────────────────────────
+  coturn:
+    image: coturn/coturn:latest
+    container_name: livekit-coturn
+    restart: unless-stopped
+    ports:
+      - "3478:3478"       # STUN/TURN (TCP & UDP)
+      - "3478:3478/udp"
+      - "5349:5349"       # TURNS (TLS)
+      - "5349:5349/udp"
+      - "49152-49200:49152-49200/udp"  # TURN relay ports
+    volumes:
+      - ./turnserver.conf:/etc/turnserver.conf
+    command: ["-c", "/etc/turnserver.conf"]
+    networks:
+      - livekit-net
+
+  # ── Caddy (Reverse Proxy + Auto SSL) ───────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: livekit-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - livekit
+    networks:
+      - livekit-net
+
+volumes:
+  redis-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  livekit-net:
+    driver: bridge

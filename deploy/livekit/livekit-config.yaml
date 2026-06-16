@@ -1,0 +1,27 @@
+# LiveKit Server Configuration
+# Docs: https://docs.livekit.io/realtime/self-hosting/deployment/
+
+port: 7880
+rtc:
+  port_range_start: 50000
+  port_range_end: 50100
+  tcp_port: 7881
+  use_external_ip: true
+
+redis:
+  address: redis:6379
+
+keys:
+  # IMPORTANT: Replace with your own generated key pair!
+  # Generate with: docker run --rm livekit/generate
+  APIxxxxxxxxxxx: SecretKeyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+turn:
+  enabled: true
+  domain: turn.meet.learnova.com
+  tls_port: 5349
+  udp_port: 3478
+  external_tls: true
+
+logging:
+  level: info

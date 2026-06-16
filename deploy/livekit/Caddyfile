@@ -1,0 +1,11 @@
+# Caddy Reverse Proxy — Auto SSL via Let's Encrypt
+# Replace meet.learnova.com with your actual domain
+
+meet.learnova.com {
+    reverse_proxy livekit:7880
+}
+
+# WebSocket upgrade for LiveKit
+meet.learnova.com:443 {
+    reverse_proxy livekit:7880
+}

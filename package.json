@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@capacitor/push-notifications": "^8.1.1",
+    "@livekit/components-react": "^2.9.21",
+    "@livekit/components-styles": "^1.2.0",
     "@supabase/supabase-js": "^2.98.0",
     "@tensorflow-models/coco-ssd": "^2.2.3",
     "@tensorflow/tfjs": "^4.22.0",
@@ -20,6 +22,7 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
+    "livekit-client": "^2.19.2",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-circular-progressbar": "^2.2.0",
