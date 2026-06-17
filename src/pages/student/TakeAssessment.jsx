@@ -28,6 +28,7 @@ export default function TakeAssessment() {
     const [violationCount, setViolationCount] = useState(0)
     const [isAutoSubmitted, setIsAutoSubmitted] = useState(false)
     const [requiresReentry, setRequiresReentry] = useState(false)
+    const [faceDetected, setFaceDetected] = useState(true)
     const containerRef = useRef(null)
 
     // Proctoring Engine States
@@ -76,6 +77,8 @@ export default function TakeAssessment() {
                         if (p.class === 'cell phone') phoneDetected = true
                         if (p.class === 'person') personCount++
                     })
+
+                    setFaceDetected(personCount > 0)
 
                     if (phoneDetected) {
                         setViolationCount(prev => {
@@ -665,7 +668,7 @@ export default function TakeAssessment() {
 
             {/* Webcam Feed */}
             {cameraEnabled && (
-                <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: 50, background: '#000' }}>
+                <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: !faceDetected ? 10000 : 50, background: '#000', transition: 'all 0.3s ease', transform: !faceDetected ? 'scale(1.5) translate(-20px, -20px)' : 'none' }}>
                     <video 
                         ref={(node) => {
                             videoRef.current = node;
@@ -762,6 +765,19 @@ export default function TakeAssessment() {
                     </button>
                 )}
             </div>
+
+            {/* Face Not Detected Overlay */}
+            {!faceDetected && isStarted && cameraEnabled && !submitted && (
+                <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.95)', backdropFilter: 'blur(15px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', flexDirection: 'column' }}>
+                    <div style={{ width: 100, height: 100, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', color: '#ef4444', animation: 'pulse 2s infinite' }}>
+                        <Camera size={50} />
+                    </div>
+                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'white', marginBottom: '1rem', textAlign: 'center' }}>Face Not Detected</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.2rem', maxWidth: 600, textAlign: 'center', lineHeight: 1.6 }}>
+                        AI Proctoring has lost track of your face. Please ensure you are looking directly at the camera and your face is well-lit to continue the assessment.
+                    </p>
+                </div>
+            )}
         </div>
     )
 }
