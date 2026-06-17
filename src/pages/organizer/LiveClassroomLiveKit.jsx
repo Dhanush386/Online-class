@@ -366,27 +366,32 @@ function VideoGrid() {
     // SINGLE RETURN PATH — no conditional JSX trees
     return (
         <div style={{
-            flex: 1, display: 'grid', padding: '1rem', gap: '0.75rem',
+            flex: 1, display: 'grid', padding: '0.5rem', gap: '0.5rem',
             gridTemplateColumns: hasScreenShare ? '1fr' : `repeat(${cols}, 1fr)`,
             gridTemplateRows: hasScreenShare ? '1fr auto' : undefined,
             gridAutoRows: hasScreenShare ? undefined : '1fr',
             alignContent: (!hasScreenShare && count <= 2) ? 'center' : 'start',
-            overflow: 'auto',
+            overflow: 'hidden',
+            width: '100%',
             height: '100%',
+            minWidth: 0,
+            minHeight: 0,
+            boxSizing: 'border-box',
         }}>
             {allParticipants.map(p => {
                 const isScreenSharer = hasScreenShare && p.identity === screenSharerIdentity
                 return (
-                    <div key={p.identity} style={
-                        isScreenSharer ? {
+                    <div key={p.identity} style={{
+                        minWidth: 0,
+                        minHeight: 0,
+                        overflow: 'hidden',
+                        ...(isScreenSharer ? {
                             gridColumn: '1 / -1',
                             order: -1,
-                            minHeight: 0,
                         } : hasScreenShare ? {
                             height: '160px',
-                            display: 'inline-block',
-                        } : {}
-                    }>
+                        } : {}),
+                    }}>
                         <ParticipantTile
                             participant={p}
                             isLocal={p.identity === localParticipant?.identity}
