@@ -8,6 +8,12 @@ import * as cocoSsd from '@tensorflow-models/coco-ssd'
 
 const MAX_ATTEMPTS = 1
 
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
+import { useDeviceType } from '../../hooks/useDeviceType'
+import MobileBlocker from '../../components/MobileBlocker'
+
 export default function TakeAssessment() {
     const { assessmentId } = useParams()
     const { profile, user } = useAuth()
@@ -32,7 +38,7 @@ export default function TakeAssessment() {
     const containerRef = useRef(null)
 
     // Proctoring Engine States
-    const [isDeviceAllowed, setIsDeviceAllowed] = useState(true)
+    const { isMobile, isTablet, isDesktop } = useDeviceType()
     const [cameraEnabled, setCameraEnabled] = useState(false)
     const [aiModel, setAiModel] = useState(null)
     const [mediaStream, setMediaStream] = useState(null)
@@ -41,12 +47,7 @@ export default function TakeAssessment() {
     const peerConnections = useRef({})
 
     // Check Device
-    useEffect(() => {
-        const ua = navigator.userAgent
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
-            setIsDeviceAllowed(false)
-        }
-    }, [])
+    // Handled by useDeviceType hooks
 
     // Load AI Model
     useEffect(() => {
@@ -546,24 +547,8 @@ export default function TakeAssessment() {
         )
     }
 
-    if (!isDeviceAllowed) {
-        return (
-            <div className="animate-fade-in" style={{ maxWidth: 600, margin: '4rem auto', textAlign: 'center' }}>
-                <div className="glass-card" style={{ padding: '3rem', border: '1px solid #ef4444' }}>
-                    <div style={{ width: 80, height: 80, background: '#fef2f2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#ef4444' }}>
-                        <ShieldAlert size={40} />
-                    </div>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Device Not Allowed</h1>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                        This assessment requires a strict proctoring environment. <strong>Mobile phones and tablets are strictly prohibited.</strong>
-                    </p>
-                    <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Please log in from a Laptop or Desktop computer to take this exam.</p>
-                    <Link to={`/student/courses/${assessment?.course_id}`} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-                        Go Back
-                    </Link>
-                </div>
-            </div>
-        )
+    if (!isDesktop || isMobile || isTablet) {
+        return <MobileBlocker />
     }
 
     if (!isStarted) {

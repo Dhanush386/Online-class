@@ -141,11 +141,13 @@ export default function StudentLayout() {
     { to: '/student/profile',     icon: User,            label: 'Profile' },
   ]
 
+  const inClassroomOnMobile = isMobile && location.pathname.includes('/classroom/')
+
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-base)', position: 'relative' }}>
-      {/* Mobile overlay */}
+    <div style={{ display: 'flex', height: '100dvh', background: 'var(--bg-primary)' }}>
+      {/* ── Mobile Menu Overlay ── */}
       <AnimatePresence>
-        {isMobile && mobileMenuOpen && (
+        {!inClassroomOnMobile && isMobile && mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setMobileMenuOpen(false)}
@@ -155,11 +157,12 @@ export default function StudentLayout() {
       </AnimatePresence>
 
       {/* ══════════════ SIDEBAR ══════════════ */}
-      <motion.aside
-        animate={{
-          width: isMobile ? (mobileMenuOpen ? 260 : 0) : collapsed ? 68 : 260,
-          x: isMobile && !mobileMenuOpen ? -260 : 0,
-        }}
+      {!inClassroomOnMobile && (
+        <motion.aside
+          animate={{
+            width: isMobile ? (mobileMenuOpen ? 260 : 0) : collapsed ? 68 : 260,
+            x: isMobile && !mobileMenuOpen ? -260 : 0,
+          }}
         transition={{ type: 'spring', stiffness: 350, damping: 36 }}
         style={{
           position: isMobile ? 'absolute' : 'relative',
@@ -251,11 +254,12 @@ export default function StudentLayout() {
           </div>
         )}
       </motion.aside>
+      )}
 
-      {/* ══════════════ MAIN CONTENT ══════════════ */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-
-        {/* ── Top Header ── */}
+      {/* ══════════════ MAIN CONTENT AREA ══════════════ */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
+        {/* ── Header ── */}
+        {!inClassroomOnMobile && (
         <header style={{
           height: 60, flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -428,6 +432,7 @@ export default function StudentLayout() {
             </div>
           </div>
         </header>
+        )}
 
         {/* ── Page Content ── */}
         <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: location.pathname.includes('/classroom/') ? 0 : (isMobile ? '1rem 1rem 5rem' : '1.75rem 2rem'), display: 'flex', flexDirection: 'column' }}>
@@ -435,7 +440,7 @@ export default function StudentLayout() {
         </main>
 
         {/* ── Mobile Bottom Nav ── */}
-        {isMobile && (
+        {!inClassroomOnMobile && isMobile && (
           <nav style={{
             position: 'fixed', bottom: 0, left: 0, right: 0,
             height: 60,

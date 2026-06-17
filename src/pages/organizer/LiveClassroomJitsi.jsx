@@ -8,14 +8,31 @@ import { Loader2, Video, StopCircle, Play, UserCheck, MessageSquare, BarChart2, 
 import LiveNotes from '../../components/live-classroom/LiveNotes'
 import LivePolls from '../../components/live-classroom/LivePolls'
 import LiveAttendance from '../../components/live-classroom/LiveAttendance'
-import LiveQA from '../../components/live-classroom/LiveQA'
 import LiveHandRaise from '../../components/live-classroom/LiveHandRaise'
 
 // Constants
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
 
+function useDeviceOrientation() {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+    const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight)
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768)
+            setIsLandscape(window.innerWidth > window.innerHeight)
+        }
+        window.addEventListener('resize', handleResize)
+        handleResize()
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
+
+    return { isMobile, isLandscape }
+}
+
 export default function LiveClassroom() {
+    const { isMobile, isLandscape } = useDeviceOrientation()
     const { videoId } = useParams()
     const { profile, refreshStats } = useAuth()
     const navigate = useNavigate()
@@ -422,14 +439,20 @@ export default function LiveClassroom() {
     }
 
     return (
-        <div ref={containerRef} style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#020617' }}>
-            <div style={{ padding: '1rem 2rem', background: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+        <div ref={containerRef} style={{ 
+            height: '100dvh', display: 'flex', flexDirection: 'column', background: '#020617',
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+            paddingLeft: 'env(safe-area-inset-left)',
+            paddingRight: 'env(safe-area-inset-right)'
+        }}>
+            <div style={{ padding: '0.75rem 1rem', background: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
                 <div>
                     <h1 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{videoData?.title}</h1>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>{isOrganizer ? 'Instructor Control Panel' : 'Live Class Session'}</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    {isOrganizer && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {isOrganizer && !isMobile && (
                         <>
                             {!gToken ? (
                                 <button onClick={() => tokenClientRef.current.requestAccessToken()} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
@@ -448,13 +471,15 @@ export default function LiveClassroom() {
                             )}
                         </>
                     )}
-                    <button onClick={toggleFullScreen} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        {isFullScreen ? <><Minimize size={14} /> Exit Fullscreen</> : <><Maximize size={14} /> Fullscreen</>}
-                    </button>
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: sidebarOpen ? '#818cf8' : 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
+                    {!isMobile && (
+                        <button onClick={toggleFullScreen} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            {isFullScreen ? <><Minimize size={14} /> Exit Fullscreen</> : <><Maximize size={14} /> Fullscreen</>}
+                        </button>
+                    )}
+                    <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: sidebarOpen ? '#818cf8' : 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 0.75rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
                         {sidebarOpen ? 'Close Panel' : 'Open Panel'}
                     </button>
-                    <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>Leave Class</button>
+                    {!isMobile && <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>Leave</button>}
                 </div>
             </div>
             {uploading && (
@@ -462,20 +487,40 @@ export default function LiveClassroom() {
                     💾 Finalizing recording and saving to Google Drive... please wait.
                 </div>
             )}
-            <div style={{ flex: 1, display: 'flex', width: '100%', overflow: 'hidden' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: (isMobile && !isLandscape) ? 'column' : 'row', width: '100%', overflow: 'hidden' }}>
                 <div ref={jitsiContainerRef} style={{ flex: 1, height: '100%', background: '#000' }} />
                 
                 {sidebarOpen && channelInstance && (
-                    <div style={{ width: '360px', background: 'var(--text-primary)', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
+                    <div 
+                        onTouchStart={(e) => { e.currentTarget.dataset.startY = e.touches[0].clientY }}
+                        onTouchEnd={(e) => { 
+                            const startY = Number(e.currentTarget.dataset.startY || 0)
+                            if (e.changedTouches[0].clientY - startY > 50 && isMobile && !isLandscape) {
+                                setSidebarOpen(false)
+                            }
+                        }}
+                        style={{ 
+                            width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape ? '280px' : '360px'),
+                            height: (isMobile && !isLandscape) ? '50%' : '100%',
+                            minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
+                            maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
+                            background: 'var(--text-primary)', 
+                            borderLeft: (isMobile && !isLandscape) ? 'none' : '1px solid rgba(255,255,255,0.1)', 
+                            borderTop: (isMobile && !isLandscape) ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                            display: 'flex', flexDirection: 'column', zIndex: 20
+                        }}>
+                        {/* Drag Handle for Mobile */}
+                        {isMobile && !isLandscape && (
+                            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '8px 0', cursor: 'grab' }}>
+                                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+                            </div>
+                        )}
                         <div style={{ display: 'flex', background: 'var(--text-primary)', padding: '0.5rem', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
                             <button onClick={() => setSidebarTab('notes')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'notes' ? '#6366f1' : 'transparent', color: sidebarTab === 'notes' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
                                 <Edit3 size={14} /> Notes
                             </button>
                             <button onClick={() => setSidebarTab('polls')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'polls' ? '#6366f1' : 'transparent', color: sidebarTab === 'polls' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
                                 <BarChart2 size={14} /> Polls
-                            </button>
-                            <button onClick={() => setSidebarTab('qa')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'qa' ? '#6366f1' : 'transparent', color: sidebarTab === 'qa' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
-                                <MessageSquare size={14} /> Q&A
                             </button>
                             {isOrganizer && (
                                 <button onClick={() => setSidebarTab('attendance')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'attendance' ? '#6366f1' : 'transparent', color: sidebarTab === 'attendance' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
@@ -487,7 +532,6 @@ export default function LiveClassroom() {
                         <div style={{ flex: 1, overflowY: 'auto' }}>
                             {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
-                            {sidebarTab === 'qa' && <LiveQA videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
                         </div>
                     </div>

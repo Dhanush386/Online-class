@@ -6,6 +6,8 @@ import { ShieldAlert, VideoOff, ChevronLeft, Search, AlertTriangle, CheckCircle2
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 import { useToast } from '../../components/Toast'
+import { useDeviceType } from '../../hooks/useDeviceType'
+import MobileBlocker from '../../components/MobileBlocker'
 
 const StreamVideo = ({ stream }) => {
     const videoRef = useRef(null);
@@ -35,6 +37,7 @@ const PUBLIC_VAPID_KEY = 'BNjRJsIQS8GspSp6F0wLITvpxMtEYMbkwqETiGDVuBiW065JF75laB
 export default function LiveProctoring() {
     const { profile } = useAuth()
     const toast = useToast()
+    const { isMobile, isTablet, isDesktop } = useDeviceType()
     const [activeStudents, setActiveStudents] = useState({})
     const [search, setSearch] = useState('')
     const [liveStreams, setLiveStreams] = useState({})
@@ -303,6 +306,10 @@ export default function LiveProctoring() {
     const studentsList = Object.values(activeStudents).filter(s => 
         s.name.toLowerCase().includes(search.toLowerCase())
     )
+
+    if (!isDesktop || isMobile || isTablet) {
+        return <MobileBlocker />
+    }
 
     return (
         <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: 1400, margin: '0 auto' }}>

@@ -8,7 +8,6 @@ import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSqua
 import LiveNotes from '../../components/live-classroom/LiveNotes'
 import LivePolls from '../../components/live-classroom/LivePolls'
 import LiveAttendance from '../../components/live-classroom/LiveAttendance'
-import LiveQA from '../../components/live-classroom/LiveQA'
 import LiveHandRaise from '../../components/live-classroom/LiveHandRaise'
 
 import {
@@ -29,8 +28,26 @@ const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'wss://meet.learnova.com
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
 
+function useDeviceOrientation() {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+    const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight)
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768)
+            setIsLandscape(window.innerWidth > window.innerHeight)
+        }
+        window.addEventListener('resize', handleResize)
+        handleResize()
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
+
+    return { isMobile, isLandscape }
+}
+
 // ─── Participant Tile ────────────────────────────────────────────────────────
 function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
+    const { isMobile } = useDeviceOrientation()
     const tracks = useTracks(
         [
             { source: Track.Source.Camera, withPlaceholder: true },
@@ -112,8 +129,8 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
             transition: 'all 0.3s ease',
             aspectRatio: isSpotlight ? 'auto' : '16/9',
             width: '100%',
-            height: '100%',
-            minHeight: 0,
+            height: (isMobile && !isSpotlight) ? 'auto' : '100%',
+            minHeight: (isMobile && !isSpotlight) ? '180px' : 0,
         }}>
             {/* Audio Track */}
             {audioTrack?.publication?.track && !isLocal && (
@@ -278,14 +295,23 @@ function VideoGrid() {
     }
 
     const count = allParticipants.length
+    const { isMobile, isLandscape } = useDeviceOrientation()
 
     // Dynamic grid sizing
     let cols = 1
-    if (count === 2) cols = 2
-    else if (count <= 4) cols = 2
-    else if (count <= 9) cols = 3
-    else if (count <= 16) cols = 4
-    else cols = 5
+    if (isMobile && !isLandscape) {
+        if (count === 1) cols = 1
+        else if (count === 2) cols = 1
+        else if (count <= 6) cols = 2
+        else if (count <= 12) cols = 3
+        else cols = 4
+    } else {
+        if (count === 2) cols = 2
+        else if (count <= 4) cols = 2
+        else if (count <= 9) cols = 3
+        else if (count <= 16) cols = 4
+        else cols = 5
+    }
 
     return (
         <div style={{
@@ -309,6 +335,7 @@ function VideoGrid() {
 // ─── Control Bar ─────────────────────────────────────────────────────────────
 function MeetControlBar({ onLeave }) {
     const room = useRoomContext()
+    const { isMobile } = useDeviceOrientation()
     const localParticipant = useLocalParticipant()
     const [isMicOn, setIsMicOn] = useState(true)
     const [isCamOn, setIsCamOn] = useState(true)
@@ -375,13 +402,22 @@ function MeetControlBar({ onLeave }) {
             </button>
 
             {/* Screen Share */}
-            <button onClick={toggleScreen} style={{
-                ...btnStyle(true),
-                background: isScreenSharing ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
-                color: isScreenSharing ? '#818cf8' : 'white'
-            }} title="Share Screen">
-                <MonitorUp size={20} />
-            </button>
+            {!isMobile && (
+                <button onClick={toggleScreen} style={{
+                    ...btnStyle(true),
+                    background: isScreenSharing ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
+                    color: isScreenSharing ? '#818cf8' : 'white'
+                }} title="Share Screen">
+                    <MonitorUp size={20} />
+                </button>
+            )}
+
+            {/* Raise Hand for Mobile (Placeholder) */}
+            {isMobile && (
+                <button onClick={() => { /* emit raise hand event */ }} style={{ ...btnStyle(true), background: 'rgba(255,255,255,0.1)' }} title="Raise Hand">
+                    <Hand size={20} />
+                </button>
+            )}
 
             {/* Leave */}
             <button onClick={onLeave} style={btnStyle(false, true)} title="Leave Meeting">
@@ -465,6 +501,7 @@ function WaitingRoomTab({ waitingStudents, setWaitingStudents, channel }) {
 }
 
 function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, refreshStats, toast, waitingStudents, setWaitingStudents }) {
+    const { isMobile, isLandscape } = useDeviceOrientation()
     const room = useRoomContext()
     const joinTimeRef = useRef(Date.now())
     const attendanceMarkedRef = useRef(false)
@@ -487,73 +524,44 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         }
     }
 
-    // ── Attendance Tracking ──
+    // ── Attendance Tracking (Supabase Realtime) ──
     useEffect(() => {
         if (isOrganizer || !profile?.id || !videoData) return
 
         joinTimeRef.current = Date.now()
 
-        // Initial insert
-        supabase.from('live_attendance').upsert({
-            student_id: profile.id,
-            video_id: videoData.id,
-            course_id: videoData.course_id,
-            joined_at: new Date(joinTimeRef.current).toISOString()
-        }, { onConflict: 'student_id,video_id' }).then(({ error }) => {
-            if (error) console.error('Failed to init attendance:', error)
-        })
-
-        // Duration tracking
-        attendanceIntervalRef.current = setInterval(async () => {
-            const durationSec = Math.floor((Date.now() - joinTimeRef.current) / 1000)
-            const isSufficient = durationSec >= 300 // 5 minutes
-
-            const updateData = {
-                student_id: profile.id,
-                video_id: videoData.id,
-                left_at: new Date().toISOString(),
-                duration_seconds: durationSec
-            }
-
-            if (isSufficient && !attendanceMarkedRef.current) {
-                updateData.attendance_status = 'present'
-                updateData.streak_awarded = true
-                attendanceMarkedRef.current = true
-
-                toast.success('🎉 Attendance Marked! +20 XP earned')
-
-                const { data: userProfile } = await supabase.from('users').select('xp').eq('id', profile.id).single()
-                if (userProfile) {
-                    await supabase.from('users').update({ xp: (userProfile.xp || 0) + 20 }).eq('id', profile.id)
-                    refreshStats()
+        // Listen to changes on live_attendance table for THIS student and THIS video
+        const attendanceChannel = supabase.channel(`attendance-${profile.id}-${videoData.id}`)
+            .on('postgres_changes', { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'live_attendance',
+                filter: `student_id=eq.${profile.id}`
+            }, (payload) => {
+                if (payload.new.video_id === videoData.id) {
+                    // Check if xp_awarded changed from false to true
+                    if (payload.new.xp_awarded && !payload.old.xp_awarded) {
+                        if (!attendanceMarkedRef.current) {
+                            attendanceMarkedRef.current = true
+                            toast.success('🎉 Attendance Marked! +50 XP earned')
+                            refreshStats()
+                        }
+                    }
                 }
-            } else if (!attendanceMarkedRef.current) {
-                updateData.attendance_status = 'insufficient_time'
-            }
-
-            supabase.from('live_attendance').upsert(updateData, { onConflict: 'student_id,video_id' })
-                .then(({ error }) => { if (error) console.error(error) })
-        }, 10000)
+            })
+            .subscribe()
 
         return () => {
-            if (attendanceIntervalRef.current) clearInterval(attendanceIntervalRef.current)
+            supabase.removeChannel(attendanceChannel)
         }
     }, [videoData, profile?.id, isOrganizer])
 
     const handleLeave = useCallback(() => {
-        if (attendanceIntervalRef.current) clearInterval(attendanceIntervalRef.current)
-
         if (!isOrganizer && !attendanceMarkedRef.current && joinTimeRef.current) {
             const durationSec = Math.floor((Date.now() - joinTimeRef.current) / 1000)
-            toast.warning(`⚠️ You attended only ${Math.floor(durationSec / 60)} minutes. Stay at least 5 mins for credit.`)
-
-            supabase.from('live_attendance').upsert({
-                student_id: profile.id,
-                video_id: videoData.id,
-                left_at: new Date().toISOString(),
-                duration_seconds: durationSec,
-                attendance_status: 'insufficient_time'
-            }, { onConflict: 'student_id,video_id' }).then()
+            if (durationSec < 300) {
+                toast.warning(`⚠️ You attended only ${Math.floor(durationSec / 60)} minutes. Stay at least 5 mins for credit.`)
+            }
         }
 
         room.disconnect()
@@ -561,7 +569,13 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     }, [room, isOrganizer, profile, videoData])
 
     return (
-        <div ref={containerRef} style={{ height: '100%', flex: 1, display: 'flex', flexDirection: 'column', background: '#020617' }}>
+        <div ref={containerRef} style={{ 
+            height: '100%', flex: 1, display: 'flex', flexDirection: 'column', background: '#020617',
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+            paddingLeft: 'env(safe-area-inset-left)',
+            paddingRight: 'env(safe-area-inset-right)'
+        }}>
             {/* Top Bar */}
             <div style={{
                 padding: '0.75rem 1.5rem',
@@ -589,14 +603,16 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <ParticipantCount />
-                    <button onClick={toggleFullScreen} style={{
-                        background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)',
-                        border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.75rem',
-                        borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '0.3rem'
-                    }}>
-                        {isFullScreen ? <><Minimize size={14} /> Exit</> : <><Maximize size={14} /> Full</>}
-                    </button>
+                    {!isMobile && (
+                        <button onClick={toggleFullScreen} style={{
+                            background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)',
+                            border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.75rem',
+                            borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '0.3rem'
+                        }}>
+                            {isFullScreen ? <><Minimize size={14} /> Exit</> : <><Maximize size={14} /> Full</>}
+                        </button>
+                    )}
                     <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
                         background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
                         color: sidebarOpen ? '#818cf8' : 'var(--text-muted)',
@@ -612,18 +628,43 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
             <ConnectionBanner />
 
             {/* Main Content */}
-            <div style={{ flex: 1, display: 'flex', width: '100%', overflow: 'hidden' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: (isMobile && !isLandscape) ? 'column' : 'row', width: '100%', overflow: 'hidden', position: 'relative' }}>
                 {/* Video Grid */}
                 <VideoGrid />
 
                 {/* Sidebar */}
                 {sidebarOpen && channelInstance && (
-                    <div style={{
-                        width: '360px', background: 'rgba(15,23,42,0.98)',
-                        borderLeft: '1px solid rgba(255,255,255,0.08)',
-                        display: 'flex', flexDirection: 'column',
-                        backdropFilter: 'blur(12px)'
-                    }}>
+                    <div 
+                        onTouchStart={(e) => { e.currentTarget.dataset.startY = e.touches[0].clientY }}
+                        onTouchEnd={(e) => { 
+                            const startY = Number(e.currentTarget.dataset.startY || 0)
+                            if (e.changedTouches[0].clientY - startY > 50 && isMobile && !isLandscape) {
+                                setSidebarOpen(false)
+                            }
+                        }}
+                        style={{
+                            width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape ? '280px' : '360px'),
+                            height: (isMobile && !isLandscape) ? '60%' : '100%',
+                            minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
+                            maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
+                            position: (isMobile && !isLandscape) ? 'absolute' : 'relative',
+                            bottom: (isMobile && !isLandscape) ? 0 : 'auto',
+                            background: 'rgba(15,23,42,0.98)',
+                            borderLeft: (isMobile && !isLandscape) ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                            borderTop: (isMobile && !isLandscape) ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                            borderTopLeftRadius: (isMobile && !isLandscape) ? 16 : 0,
+                            borderTopRightRadius: (isMobile && !isLandscape) ? 16 : 0,
+                            display: 'flex', flexDirection: 'column',
+                            backdropFilter: 'blur(12px)',
+                            zIndex: 20,
+                            boxShadow: (isMobile && !isLandscape) ? '0 -10px 40px rgba(0,0,0,0.5)' : 'none'
+                        }}>
+                        {/* Drag Handle for Mobile */}
+                        {isMobile && !isLandscape && (
+                            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '8px 0', cursor: 'grab' }}>
+                                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+                            </div>
+                        )}
                         <div style={{
                             display: 'flex', padding: '0.5rem', gap: '0.4rem',
                             borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto'
@@ -631,7 +672,6 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             {[
                                 { id: 'notes', icon: Edit3, label: 'Notes' },
                                 { id: 'polls', icon: BarChart2, label: 'Polls' },
-                                { id: 'qa', icon: MessageSquare, label: 'Q&A' },
                                 ...(isOrganizer ? [{ id: 'attendance', icon: Users, label: 'Att.' }, { id: 'waiting', icon: UserPlus, label: `Wait (${waitingStudents?.length || 0})` }] : []),
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setSidebarTab(tab.id)} style={{
@@ -650,7 +690,6 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                         <div style={{ flex: 1, overflowY: 'auto' }}>
                             {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
-                            {sidebarTab === 'qa' && <LiveQA videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
                             {sidebarTab === 'waiting' && isOrganizer && <WaitingRoomTab waitingStudents={waitingStudents} setWaitingStudents={setWaitingStudents} channel={channelInstance} />}
                         </div>
@@ -727,7 +766,7 @@ export default function LiveClassroom() {
     const [tokenError, setTokenError] = useState(null)
     const [instructorPresent, setInstructorPresent] = useState(false)
     const [sidebarTab, setSidebarTab] = useState('notes')
-    const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768)
     const [channelInstance, setChannelInstance] = useState(null)
     const [waitingStudents, setWaitingStudents] = useState([])
     const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)

@@ -12,6 +12,8 @@ import * as tf from '@tensorflow/tfjs'
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
 import CodeEditor from '../../components/CodeEditor'
 import CodingDiscussions from '../../components/CodingDiscussions'
+import MobileBlocker from '../../components/MobileBlocker'
+import { useDeviceType } from '../../hooks/useDeviceType'
 import { useToast } from '../../components/Toast'
 
 const LANGUAGE_CONFIG = {
@@ -35,6 +37,7 @@ export default function CodeWorkspace() {
     const { profile, refreshStats, user } = useAuth()
     const isOrganizer = profile?.role === 'organizer'
     const canBypass = isAdminMode && isOrganizer
+    const { isMobile, isTablet, isDesktop } = useDeviceType()
     
     const [challenge, setChallenge] = useState(null)
     const [code, setCode] = useState('')
@@ -65,7 +68,7 @@ export default function CodeWorkspace() {
     const [violationCount, setViolationCount] = useState(0)
     const [requiresReentry, setRequiresReentry] = useState(false)
     const [faceDetected, setFaceDetected] = useState(true)
-    const [isDeviceAllowed, setIsDeviceAllowed] = useState(true)
+    const [isFullscreen, setIsFullscreen] = useState(false)
     const [cameraEnabled, setCameraEnabled] = useState(false)
     const [mediaStream, setMediaStream] = useState(null)
     const [aiModel, setAiModel] = useState(null)
@@ -203,13 +206,8 @@ export default function CodeWorkspace() {
     }, [challengeId, canBypass]);
 
     // Check Device
-    useEffect(() => {
-        if (canBypass) return;
-        const ua = navigator.userAgent
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
-            setIsDeviceAllowed(false)
-        }
-    }, [canBypass])
+    // Device check is now handled via useDeviceType and MobileBlocker
+
 
     // Load AI Model
     useEffect(() => {
@@ -897,21 +895,8 @@ sys.stdin = StringIO(test_input)
     if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: 'var(--text-primary)' }}>Loading workspace...</div>
     if (!challenge) return <div>Challenge not found</div>
 
-    if (!isDeviceAllowed && !canBypass) {
-        return (
-            <div className="animate-fade-in" style={{ height: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-                <div className="glass-card" style={{ maxWidth: 600, padding: '3rem', border: '1px solid #ef4444', textAlign: 'center' }}>
-                    <div style={{ width: 80, height: 80, background: '#fef2f2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#ef4444' }}>
-                        <ShieldAlert size={40} />
-                    </div>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Device Not Allowed</h1>
-                    <p style={{ color: 'var(--card-border)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                        Coding practice requires a strict proctoring environment. <strong>Mobile phones and tablets are strictly prohibited.</strong>
-                    </p>
-                    <Link to="/student/coding" className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>Go Back</Link>
-                </div>
-            </div>
-        )
+    if ((!isDesktop || isMobile || isTablet) && !canBypass) {
+        return <MobileBlocker />
     }
 
     const handleUnlockAnswer = async () => {

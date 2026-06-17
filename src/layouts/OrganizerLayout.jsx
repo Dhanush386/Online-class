@@ -121,11 +121,13 @@ export default function OrganizerLayout() {
     transition: 'background 0.15s ease',
   })
 
+  const inClassroomOnMobile = isMobile && location.pathname.includes('/classroom/')
+
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-base)', position: 'relative' }}>
+    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--bg-base)', position: 'relative' }}>
       {/* Mobile overlay */}
       <AnimatePresence>
-        {isMobile && mobileMenuOpen && (
+        {!inClassroomOnMobile && isMobile && mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setMobileMenuOpen(false)}
@@ -135,6 +137,7 @@ export default function OrganizerLayout() {
       </AnimatePresence>
 
       {/* ══════════════ SIDEBAR ══════════════ */}
+      {!inClassroomOnMobile && (
       <motion.aside
         animate={{
           width: isMobile ? (mobileMenuOpen ? 260 : 0) : collapsed ? 68 : 260,
@@ -211,11 +214,13 @@ export default function OrganizerLayout() {
           </div>
         )}
       </motion.aside>
+      )}
 
       {/* ══════════════ MAIN ══════════════ */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
 
         {/* ── Top Header ── */}
+        {!inClassroomOnMobile && (
         <header style={{
           height: 60, flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -342,6 +347,7 @@ export default function OrganizerLayout() {
             </div>
           </div>
         </header>
+        )}
 
         {/* ── Page Content ── */}
         <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: location.pathname.includes('/classroom/') ? 0 : (isMobile ? '1rem' : '1.75rem 2rem'), display: 'flex', flexDirection: 'column' }}>
