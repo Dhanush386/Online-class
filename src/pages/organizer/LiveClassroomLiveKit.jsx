@@ -28,6 +28,13 @@ const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'wss://meet.learnova.com
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
 
+const TRACK_SOURCES = [
+    { source: Track.Source.Camera, withPlaceholder: true },
+    { source: Track.Source.Microphone, withPlaceholder: true },
+    { source: Track.Source.ScreenShare, withPlaceholder: false },
+]
+const TRACK_OPTIONS = { onlySubscribed: false }
+
 function useDeviceOrientation() {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
     const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight)
@@ -48,14 +55,7 @@ function useDeviceOrientation() {
 // ─── Participant Tile ────────────────────────────────────────────────────────
 function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
     const { isMobile } = useDeviceOrientation()
-    const tracks = useTracks(
-        [
-            { source: Track.Source.Camera, withPlaceholder: true },
-            { source: Track.Source.Microphone, withPlaceholder: true },
-            { source: Track.Source.ScreenShare, withPlaceholder: false },
-        ],
-        { onlySubscribed: false }
-    )
+    const tracks = useTracks(TRACK_SOURCES, TRACK_OPTIONS)
 
     const participantTracks = tracks.filter(t => t.participant.identity === participant.identity)
     const cameraTrack = participantTracks.find(t => t.source === Track.Source.Camera && t.publication?.track)
