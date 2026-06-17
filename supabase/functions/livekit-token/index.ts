@@ -22,13 +22,24 @@ serve(async (req) => {
         const supabase = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-            { global: { headers: { Authorization: authHeader } } }
+            { 
+                global: { headers: { Authorization: authHeader } },
+                auth: { persistSession: false }
+            }
         )
 
-        const jwtToken = authHeader.replace('Bearer ', '')
+        const jwtToken = authHeader.replace(/^Bearer\s+/i, '').trim()
+        if (!jwtToken) {
+            throw new Error(`Unauthorized: Empty token | Header: ${authHeader}`)
+        }
+        
+        console.log(`Auth Header: ${authHeader.substring(0, 15)}...`)
+        console.log(`JWT Token: ${jwtToken.substring(0, 10)}...`)
+
         const { data: { user }, error: authError } = await supabase.auth.getUser(jwtToken)
         if (authError || !user) {
-            throw new Error(`Unauthorized: ${authError?.message || 'No user found'} | Header: ${authHeader ? 'present' : 'missing'}`)
+            console.error('Auth Error Details:', authError)
+            throw new Error(`Unauthorized: ${authError?.message || 'No user found'} | Header: present | TokenLength: ${jwtToken.length}`)
         }
 
         // Get user profile
