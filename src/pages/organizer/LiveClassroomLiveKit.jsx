@@ -14,23 +14,16 @@ import {
     LiveKitRoom,
     useRemoteParticipants,
     useLocalParticipant,
-    useParticipantTracks,
     useRoomContext,
     useConnectionState
 } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { Track, RoomEvent, ConnectionState } from 'livekit-client'
+import { Track, RoomEvent, ConnectionState, ParticipantEvent } from 'livekit-client'
 
 // Constants
 const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'wss://meet.learnova.com'
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
-
-const TRACK_SOURCES = [
-    Track.Source.Camera,
-    Track.Source.Microphone,
-    Track.Source.ScreenShare,
-]
 
 function useDeviceOrientation() {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
@@ -49,7 +42,7 @@ function useDeviceOrientation() {
     return { isMobile, isLandscape }
 }
 
-// ─── Custom Track Components (Bypass React wrappers to fix #300 loops) ─────────
+// ─── Custom Track Components (raw attach, no LiveKit React wrappers) ─────────
 function CustomVideoTrack({ track, objectFit = 'cover' }) {
     const videoRef = useRef(null)
     useEffect(() => {
@@ -74,20 +67,53 @@ function CustomAudioTrack({ track }) {
     return <audio ref={audioRef} autoPlay />
 }
 
+// ─── Hook: get tracks for a single participant via direct events (no LiveKit hooks) ──
+function useManualParticipantTracks(participant) {
+    const [, setTick] = useState(0)
+    useEffect(() => {
+        if (!participant) return
+        const bump = () => setTick(n => n + 1)
+        participant.on(ParticipantEvent.TrackPublished, bump)
+        participant.on(ParticipantEvent.TrackUnpublished, bump)
+        participant.on(ParticipantEvent.TrackSubscribed, bump)
+        participant.on(ParticipantEvent.TrackUnsubscribed, bump)
+        participant.on(ParticipantEvent.TrackMuted, bump)
+        participant.on(ParticipantEvent.TrackUnmuted, bump)
+        participant.on(ParticipantEvent.LocalTrackPublished, bump)
+        participant.on(ParticipantEvent.LocalTrackUnpublished, bump)
+        return () => {
+            participant.off(ParticipantEvent.TrackPublished, bump)
+            participant.off(ParticipantEvent.TrackUnpublished, bump)
+            participant.off(ParticipantEvent.TrackSubscribed, bump)
+            participant.off(ParticipantEvent.TrackUnsubscribed, bump)
+            participant.off(ParticipantEvent.TrackMuted, bump)
+            participant.off(ParticipantEvent.TrackUnmuted, bump)
+            participant.off(ParticipantEvent.LocalTrackPublished, bump)
+            participant.off(ParticipantEvent.LocalTrackUnpublished, bump)
+        }
+    }, [participant])
+
+    const camera = participant?.getTrackPublication(Track.Source.Camera)
+    const screen = participant?.getTrackPublication(Track.Source.ScreenShare)
+    const mic = participant?.getTrackPublication(Track.Source.Microphone)
+    return { camera, screen, mic }
+}
+
 // ─── Participant Tile ────────────────────────────────────────────────────────
 function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
     const { isMobile } = useDeviceOrientation()
 
-    const participantTracks = useParticipantTracks(TRACK_SOURCES, participant.identity)
-    const cameraTrack = participantTracks.find(t => t.source === Track.Source.Camera && t.publication?.track)
-    const screenTrack = participantTracks.find(t => t.source === Track.Source.ScreenShare && t.publication?.track)
-    const audioTrack = participantTracks.find(t => t.source === Track.Source.Microphone && t.publication?.track)
+    const { camera, screen, mic } = useManualParticipantTracks(participant)
+    const cameraTrack = camera?.track
+    const screenTrack = screen?.track
+    const audioTrack = mic?.track
 
     const isMuted = !participant.isMicrophoneEnabled
     const isCameraOff = !participant.isCameraEnabled
     
     const displayTrack = screenTrack || cameraTrack
-    const shouldShowVideo = displayTrack?.publication?.track && (displayTrack === screenTrack || !isCameraOff)
+    const isScreenShareDisplay = !!screenTrack
+    const shouldShowVideo = !!displayTrack && (isScreenShareDisplay || !isCameraOff)
 
     let metadata = {}
     try { metadata = JSON.parse(participant.metadata || '{}') } catch {}
@@ -100,7 +126,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
     const lastPos = useRef({ x: 0, y: 0 })
 
     const handleWheel = (e) => {
-        if (!isSpotlight || displayTrack !== screenTrack) return;
+        if (!isSpotlight || !isScreenShareDisplay) return;
         const zoomDelta = e.deltaY * -0.002
         let newScale = Math.min(Math.max(1, scale + zoomDelta), 5)
         setScale(newScale)
@@ -108,7 +134,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
     }
 
     const handlePointerDown = (e) => {
-        if (scale <= 1 || !isSpotlight || displayTrack !== screenTrack) return;
+        if (scale <= 1 || !isSpotlight || !isScreenShareDisplay) return;
         isDragging.current = true
         lastPos.current = { x: e.clientX, y: e.clientY }
         e.target.setPointerCapture(e.pointerId)
@@ -155,8 +181,8 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
             minHeight: (isMobile && !isSpotlight) ? '180px' : 0,
         }}>
             {/* Audio Track */}
-            {audioTrack?.publication?.track && !isLocal && (
-                <CustomAudioTrack track={audioTrack.publication.track} />
+            {audioTrack && !isLocal && (
+                <CustomAudioTrack track={audioTrack} />
             )}
 
             {/* Video or Avatar */}
@@ -181,8 +207,8 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
                         cursor: scale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'auto'
                     }}>
                         <CustomVideoTrack
-                            track={displayTrack.publication.track}
-                            objectFit={displayTrack === screenTrack ? 'contain' : 'cover'}
+                            track={displayTrack}
+                            objectFit={isScreenShareDisplay ? 'contain' : 'cover'}
                         />
                     </div>
                 </div>
@@ -205,7 +231,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
             )}
 
             {/* Screen Share Badge */}
-            {screenTrack?.publication?.track && (
+            {screenTrack && (
                 <div style={{
                     position: 'absolute', top: 8, left: 8,
                     background: 'rgba(99,102,241,0.9)', color: 'white',
@@ -217,7 +243,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
             )}
 
             {/* Zoom Controls (only if screen share in spotlight) */}
-            {displayTrack === screenTrack && isSpotlight && (
+            {isScreenShareDisplay && isSpotlight && (
                 <div style={{
                     position: 'absolute', top: 8, right: participant.isSpeaking ? 24 : 8,
                     display: 'flex', alignItems: 'center', gap: 4, 
@@ -269,9 +295,30 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
 }
 
 // ─── Video Grid ──────────────────────────────────────────────────────────────
+// CRITICAL: Single return path. All participants rendered in a flat list with
+// stable keys. Layout changes are CSS-only (gridColumn/order). No component
+// unmount/remount when screen sharing starts — that was the root cause of #300.
 function VideoGrid() {
     const remoteParticipants = useRemoteParticipants()
     const { localParticipant } = useLocalParticipant()
+    const room = useRoomContext()
+    const [, setTick] = useState(0)
+
+    // Listen for screen-share track events at the Room level to detect layout changes
+    useEffect(() => {
+        if (!room) return
+        const bump = () => setTick(n => n + 1)
+        room.on(RoomEvent.TrackPublished, bump)
+        room.on(RoomEvent.TrackUnpublished, bump)
+        room.on(RoomEvent.LocalTrackPublished, bump)
+        room.on(RoomEvent.LocalTrackUnpublished, bump)
+        return () => {
+            room.off(RoomEvent.TrackPublished, bump)
+            room.off(RoomEvent.TrackUnpublished, bump)
+            room.off(RoomEvent.LocalTrackPublished, bump)
+            room.off(RoomEvent.LocalTrackUnpublished, bump)
+        }
+    }, [room])
 
     // Build participant list: local first, then remotes (no duplicates)
     const allParticipants = useMemo(() => {
@@ -279,48 +326,8 @@ function VideoGrid() {
         return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)]
     }, [localParticipant, remoteParticipants])
 
-    const screenSharer = allParticipants.find(p => p.isScreenShareEnabled)
-
-    if (screenSharer) {
-        // Spotlight layout for screen sharing
-        const otherParticipants = allParticipants.filter(p => p.identity !== screenSharer.identity)
-
-        return (
-            <div style={{
-                flex: 1, display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem',
-                overflow: 'hidden', height: '100%'
-            }}>
-                {/* Main Spotlight (Screen Share) */}
-                <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', justifyContent: 'center' }}>
-                    <div style={{ height: '100%', width: '100%', maxWidth: '100%' }}>
-                        <ParticipantTile 
-                            key={`spotlight-${screenSharer.identity}`}
-                            participant={screenSharer} 
-                            isLocal={screenSharer.identity === localParticipant?.identity} 
-                            isSpotlight={true} 
-                        />
-                    </div>
-                </div>
-                
-                {/* Bottom Row for other participants */}
-                {otherParticipants.length > 0 && (
-                    <div style={{
-                        display: 'flex', gap: '0.75rem', overflowX: 'auto',
-                        paddingBottom: '0.5rem', height: '160px', flexShrink: 0
-                    }}>
-                        {otherParticipants.map(p => (
-                            <div key={p.identity} style={{ width: '240px', flexShrink: 0, height: '100%' }}>
-                                <ParticipantTile
-                                    participant={p}
-                                    isLocal={p.identity === localParticipant?.identity}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        )
-    }
+    const screenSharerIdentity = allParticipants.find(p => p.isScreenShareEnabled)?.identity
+    const hasScreenShare = !!screenSharerIdentity
 
     const count = allParticipants.length
     const { isMobile, isLandscape } = useDeviceOrientation()
@@ -341,21 +348,38 @@ function VideoGrid() {
         else cols = 5
     }
 
+    // SINGLE RETURN PATH — no conditional JSX trees
     return (
         <div style={{
             flex: 1, display: 'grid', padding: '1rem', gap: '0.75rem',
-            gridTemplateColumns: `repeat(${cols}, 1fr)`,
-            gridAutoRows: '1fr',
-            alignContent: count <= 2 ? 'center' : 'start',
+            gridTemplateColumns: hasScreenShare ? '1fr' : `repeat(${cols}, 1fr)`,
+            gridTemplateRows: hasScreenShare ? '1fr auto' : undefined,
+            gridAutoRows: hasScreenShare ? undefined : '1fr',
+            alignContent: (!hasScreenShare && count <= 2) ? 'center' : 'start',
             overflow: 'auto',
+            height: '100%',
         }}>
-            {allParticipants.map(p => (
-                <ParticipantTile
-                    key={p.identity}
-                    participant={p}
-                    isLocal={p.identity === localParticipant?.identity}
-                />
-            ))}
+            {allParticipants.map(p => {
+                const isScreenSharer = hasScreenShare && p.identity === screenSharerIdentity
+                return (
+                    <div key={p.identity} style={
+                        isScreenSharer ? {
+                            gridColumn: '1 / -1',
+                            order: -1,
+                            minHeight: 0,
+                        } : hasScreenShare ? {
+                            height: '160px',
+                            display: 'inline-block',
+                        } : {}
+                    }>
+                        <ParticipantTile
+                            participant={p}
+                            isLocal={p.identity === localParticipant?.identity}
+                            isSpotlight={isScreenSharer}
+                        />
+                    </div>
+                )
+            })}
         </div>
     )
 }
