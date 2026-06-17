@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
-import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle, ZoomIn, ZoomOut } from 'lucide-react'
+import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle, ZoomIn, ZoomOut, UserPlus, XCircle, CheckCircle, Clock } from 'lucide-react'
 
 import LiveNotes from '../../components/live-classroom/LiveNotes'
 import LivePolls from '../../components/live-classroom/LivePolls'
@@ -417,13 +417,61 @@ function ConnectionBanner() {
 }
 
 // ─── Room Content (inside LiveKitRoom context) ───────────────────────────────
-function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, refreshStats, toast }) {
+function WaitingRoomTab({ waitingStudents, setWaitingStudents, channel }) {
+    const handleAdmit = (studentId) => {
+        channel.send({ type: 'broadcast', event: 'join_response', payload: { studentId, admitted: true } })
+        setWaitingStudents(prev => prev.filter(s => s.id !== studentId))
+    }
+    const handleDeny = (studentId) => {
+        channel.send({ type: 'broadcast', event: 'join_response', payload: { studentId, admitted: false } })
+        setWaitingStudents(prev => prev.filter(s => s.id !== studentId))
+    }
+    const handleAdmitAll = () => {
+        waitingStudents.forEach(s => {
+            channel.send({ type: 'broadcast', event: 'join_response', payload: { studentId: s.id, admitted: true } })
+        })
+        setWaitingStudents([])
+    }
+
+    if (waitingStudents.length === 0) return (
+        <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            No students waiting.
+        </div>
+    )
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+                {waitingStudents.map(s => (
+                    <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: 8, marginBottom: '0.5rem' }}>
+                        <div>
+                            <div style={{ fontWeight: 600, color: 'white', fontSize: '0.9rem' }}>{s.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button onClick={() => handleAdmit(s.id)} style={{ background: '#22c55e', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Admit</button>
+                            <button onClick={() => handleDeny(s.id)} style={{ background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '0.4rem 0.75rem', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Deny</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <button onClick={handleAdmitAll} style={{ width: '100%', background: '#6366f1', color: 'white', border: 'none', padding: '0.75rem', borderRadius: 8, cursor: 'pointer', fontWeight: 600, display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center' }}>
+                    <CheckCircle size={16} /> Admit All ({waitingStudents.length})
+                </button>
+            </div>
+        </div>
+    )
+}
+
+function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, refreshStats, toast, waitingStudents, setWaitingStudents }) {
     const room = useRoomContext()
     const joinTimeRef = useRef(Date.now())
     const attendanceMarkedRef = useRef(false)
     const attendanceIntervalRef = useRef(null)
     const containerRef = useRef(null)
     const [isFullScreen, setIsFullScreen] = useState(false)
+    const [admittedStudents, setAdmittedStudents] = useState([])
 
     useEffect(() => {
         const handleFullscreenChange = () => setIsFullScreen(!!document.fullscreenElement)
@@ -584,7 +632,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                 { id: 'notes', icon: Edit3, label: 'Notes' },
                                 { id: 'polls', icon: BarChart2, label: 'Polls' },
                                 { id: 'qa', icon: MessageSquare, label: 'Q&A' },
-                                ...(isOrganizer ? [{ id: 'attendance', icon: Users, label: 'Att.' }] : []),
+                                ...(isOrganizer ? [{ id: 'attendance', icon: Users, label: 'Att.' }, { id: 'waiting', icon: UserPlus, label: `Wait (${waitingStudents?.length || 0})` }] : []),
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setSidebarTab(tab.id)} style={{
                                     flex: 1, padding: '0.5rem',
@@ -604,10 +652,47 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'qa' && <LiveQA videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
+                            {sidebarTab === 'waiting' && isOrganizer && <WaitingRoomTab waitingStudents={waitingStudents} setWaitingStudents={setWaitingStudents} channel={channelInstance} />}
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Quick Admit Floating Toasts for Organizer */}
+            {isOrganizer && waitingStudents?.length > 0 && (
+                <div style={{ position: 'fixed', bottom: 100, left: 24, zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {waitingStudents.slice(-3).map(s => (
+                        <div key={s.id} style={{
+                            background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12,
+                            padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem',
+                            boxShadow: '0 10px 25px rgba(0,0,0,0.5)', width: 280, backdropFilter: 'blur(8px)',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ background: 'rgba(99,102,241,0.2)', padding: 8, borderRadius: '50%' }}><UserPlus size={18} color="#818cf8"/></div>
+                                <div>
+                                    <p style={{ margin: 0, color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>Join Request</p>
+                                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }}>{s.name} wants to join.</p>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={() => {
+                                    channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: s.id, admitted: true } })
+                                    setWaitingStudents(prev => prev.filter(x => x.id !== s.id))
+                                }} style={{ flex: 1, background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Admit</button>
+                                <button onClick={() => {
+                                    channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: s.id, admitted: false } })
+                                    setWaitingStudents(prev => prev.filter(x => x.id !== s.id))
+                                }} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Deny</button>
+                            </div>
+                        </div>
+                    ))}
+                    {waitingStudents.length > 3 && (
+                        <div style={{ background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.8rem', padding: '0.5rem', borderRadius: 8, textAlign: 'center', width: 280 }}>
+                            + {waitingStudents.length - 3} more waiting
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Control Bar */}
             <MeetControlBar onLeave={handleLeave} />
@@ -644,8 +729,21 @@ export default function LiveClassroom() {
     const [sidebarTab, setSidebarTab] = useState('notes')
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [channelInstance, setChannelInstance] = useState(null)
-
+    const [waitingStudents, setWaitingStudents] = useState([])
     const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
+
+    const [askCooldown, setAskCooldown] = useState(0)
+
+    const [joinStatus, setJoinStatus] = useState(() => {
+        if (isOrganizer) return 'admitted'
+        try {
+            const admitted = JSON.parse(sessionStorage.getItem('admitted_classes') || '{}')
+            if (admitted[videoId] && (Date.now() - admitted[videoId] < 1000 * 60 * 60 * 2)) {
+                return 'admitted'
+            }
+        } catch {}
+        return 'idle' // idle, requesting, timeout, admitted_animating, admitted, denied
+    })
 
     // ── Fetch Video Data & Setup Real-time Channel ──
     useEffect(() => {
@@ -671,6 +769,38 @@ export default function LiveClassroom() {
                     if (p.payload.instructorJoined) {
                         setInstructorPresent(true)
                         if (intervalId) { clearInterval(intervalId); intervalId = null }
+                    }
+                })
+                .on('broadcast', { event: 'join_request' }, (p) => {
+                    if (isOrganizer) {
+                        setWaitingStudents(prev => {
+                            if (prev.some(s => s.id === p.payload.studentId)) return prev
+                            return [...prev, {
+                                id: p.payload.studentId,
+                                name: p.payload.studentName,
+                                timestamp: Date.now()
+                            }]
+                        })
+                    }
+                })
+                .on('broadcast', { event: 'join_cancelled' }, (p) => {
+                    if (isOrganizer) {
+                        setWaitingStudents(prev => prev.filter(s => s.id !== p.payload.studentId))
+                    }
+                })
+                .on('broadcast', { event: 'join_response' }, (p) => {
+                    if (!isOrganizer && p.payload.studentId === profile?.id) {
+                        if (p.payload.admitted) {
+                            setJoinStatus('admitted_animating')
+                            setTimeout(() => setJoinStatus('admitted'), 1500)
+                            try {
+                                const admitted = JSON.parse(sessionStorage.getItem('admitted_classes') || '{}')
+                                admitted[videoId] = Date.now()
+                                sessionStorage.setItem('admitted_classes', JSON.stringify(admitted))
+                            } catch {}
+                        } else {
+                            setJoinStatus('denied')
+                        }
                     }
                 })
                 .subscribe((status) => {
@@ -699,7 +829,7 @@ export default function LiveClassroom() {
 
     // ── Fetch LiveKit Token ──
     useEffect(() => {
-        const canJoin = isOrganizer || instructorPresent
+        const canJoin = isOrganizer || (instructorPresent && joinStatus === 'admitted')
         if (!canJoin || !videoData || livekitToken) return
 
         async function fetchToken() {
@@ -722,7 +852,7 @@ export default function LiveClassroom() {
         }
 
         fetchToken()
-    }, [videoData, isOrganizer, instructorPresent])
+    }, [videoData, isOrganizer, instructorPresent, joinStatus, livekitToken])
 
     // ── Loading State ──
     if (loading) {
@@ -756,6 +886,180 @@ export default function LiveClassroom() {
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>
                         The class will start automatically when your teacher joins. Stay tuned!
                     </p>
+                </div>
+            </div>
+        )
+    }
+
+    const handleAskToJoin = () => {
+        if (askCooldown > 0) {
+            toast.error(`Please wait ${askCooldown} seconds before asking again.`)
+            return
+        }
+
+        setJoinStatus('requesting')
+        if (channelInstance) {
+            channelInstance.send({
+                type: 'broadcast',
+                event: 'join_request',
+                payload: { studentId: profile?.id, studentName: profile?.name || 'Student' }
+            })
+            // Set a timeout for 2 minutes
+            setTimeout(() => {
+                setJoinStatus(prev => prev === 'requesting' ? 'timeout' : prev)
+            }, 1000 * 60 * 2)
+        }
+
+        setAskCooldown(15)
+        const cInterval = setInterval(() => {
+            setAskCooldown(c => {
+                if (c <= 1) { clearInterval(cInterval); return 0 }
+                return c - 1
+            })
+        }, 1000)
+    }
+
+    const cancelRequest = () => {
+        setJoinStatus('idle')
+        if (channelInstance) {
+            channelInstance.send({
+                type: 'broadcast',
+                event: 'join_cancelled',
+                payload: { studentId: profile?.id }
+            })
+        }
+    }
+
+    // ── Student Ask To Join / Waiting Room UI ──
+    if (!isOrganizer && joinStatus !== 'admitted') {
+        return (
+            <div style={{
+                height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: '#020617', color: 'white', textAlign: 'center', padding: '2rem'
+            }}>
+                <div style={{ maxWidth: 400, background: 'linear-gradient(145deg, rgba(15,23,42,0.9), rgba(30,41,59,0.8))', padding: '3rem 2rem', borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', width: '100%' }}>
+                    {joinStatus === 'idle' && (
+                        <>
+                            <div style={{
+                                width: 72, height: 72, background: 'rgba(99,102,241,0.1)',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 1.5rem'
+                            }}>
+                                <Hand size={32} color="#6366f1" />
+                            </div>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>Learnova Meet</h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+                                Class: {videoData?.title || 'Live Session'}
+                            </p>
+                            <button onClick={handleAskToJoin} style={{
+                                width: '100%', background: '#6366f1', color: 'white', border: 'none',
+                                padding: '0.875rem', borderRadius: 12, cursor: 'pointer',
+                                fontWeight: 600, fontSize: '1rem', transition: 'all 0.2s ease',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                            }}>
+                                Ask to Join
+                            </button>
+                        </>
+                    )}
+
+                    {joinStatus === 'requesting' && (
+                        <>
+                            <div style={{
+                                width: 72, height: 72, background: 'rgba(34,197,94,0.1)',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 1.5rem'
+                            }}>
+                                <Loader2 size={32} className="animate-spin" color="#22c55e" />
+                            </div>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>Waiting for approval...</h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+                                The organizer will admit you shortly.
+                            </p>
+                            <button onClick={cancelRequest} style={{
+                                background: 'transparent', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)',
+                                padding: '0.5rem 1.5rem', borderRadius: 8, cursor: 'pointer',
+                                fontWeight: 500, fontSize: '0.875rem'
+                            }}>
+                                Cancel Request
+                            </button>
+                        </>
+                    )}
+
+                    {joinStatus === 'timeout' && (
+                        <>
+                            <div style={{
+                                width: 72, height: 72, background: 'rgba(245,158,11,0.1)',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 1.5rem'
+                            }}>
+                                <Clock size={32} color="#f59e0b" />
+                            </div>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>No Response</h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+                                Still waiting for organizer approval.
+                            </p>
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                                <button onClick={() => navigate(-1)} style={{
+                                    background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.1)',
+                                    padding: '0.75rem 1.5rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600
+                                }}>
+                                    Leave
+                                </button>
+                                <button onClick={handleAskToJoin} style={{
+                                    background: '#f59e0b', color: 'white', border: 'none',
+                                    padding: '0.75rem 1.5rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600
+                                }}>
+                                    Retry
+                                </button>
+                            </div>
+                        </>
+                    )}
+
+                    {joinStatus === 'denied' && (
+                        <>
+                            <div style={{
+                                width: 72, height: 72, background: 'rgba(239,68,68,0.1)',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 1.5rem'
+                            }}>
+                                <XCircle size={32} color="#ef4444" />
+                            </div>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>Entry Denied</h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+                                You weren't admitted to this session. Please contact the organizer.
+                            </p>
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                                <button onClick={() => navigate(-1)} style={{
+                                    background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.1)',
+                                    padding: '0.75rem 1.5rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600
+                                }}>
+                                    Return
+                                </button>
+                                <button onClick={handleAskToJoin} disabled={askCooldown > 0} style={{
+                                    background: askCooldown > 0 ? 'rgba(99,102,241,0.5)' : '#6366f1', color: 'white', border: 'none',
+                                    padding: '0.75rem 1.5rem', borderRadius: 10, cursor: askCooldown > 0 ? 'not-allowed' : 'pointer', fontWeight: 600
+                                }}>
+                                    {askCooldown > 0 ? `Wait ${askCooldown}s` : 'Ask Again'}
+                                </button>
+                            </div>
+                        </>
+                    )}
+
+                    {joinStatus === 'admitted_animating' && (
+                        <>
+                            <div style={{
+                                width: 72, height: 72, background: 'rgba(34,197,94,0.1)',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 1.5rem'
+                            }}>
+                                <CheckCircle size={32} color="#22c55e" />
+                            </div>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>🎉 You've been admitted!</h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                Joining Learnova Meet...
+                            </p>
+                        </>
+                    )}
                 </div>
             </div>
         )
@@ -830,6 +1134,8 @@ export default function LiveClassroom() {
                 onLeave={() => navigate(-1)}
                 refreshStats={refreshStats}
                 toast={toast}
+                waitingStudents={waitingStudents}
+                setWaitingStudents={setWaitingStudents}
             />
         </LiveKitRoom>
     )
