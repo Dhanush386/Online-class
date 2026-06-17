@@ -73,6 +73,7 @@ serve(async (req) => {
                 canPublish: true,
                 canSubscribe: true,
                 canPublishData: true,
+                canUpdateOwnMetadata: true,
             },
             metadata: JSON.stringify({
                 userId: user.id,

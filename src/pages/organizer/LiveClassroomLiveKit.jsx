@@ -470,16 +470,28 @@ function ReactionPicker({ onSelect, onClose }) {
 }
 
 // ─── Raised Hands Panel (Speaking Queue) ─────────────────────────────────────
-function RaisedHandsPanel({ participants, onLowerHand, onLowerAll }) {
-    const handsUp = participants
-        .filter(p => {
-            try { const m = JSON.parse(p.metadata || '{}'); return m.handRaised } catch { return false }
-        })
-        .map(p => {
-            let meta = {}; try { meta = JSON.parse(p.metadata || '{}') } catch {}
-            return { identity: p.identity, name: p.name || meta.name || p.identity, raisedAt: meta.handRaisedAt || 0 }
-        })
-        .sort((a, b) => a.raisedAt - b.raisedAt)
+function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLowerHand, onLowerAll }) {
+    // Merge metadata-based and data-channel-based hand raises
+    const handsMap = new Map()
+    
+    // From participant metadata
+    participants.forEach(p => {
+        try {
+            const m = JSON.parse(p.metadata || '{}')
+            if (m.handRaised) {
+                handsMap.set(p.identity, { identity: p.identity, name: p.name || m.name || p.identity, raisedAt: m.handRaisedAt || 0 })
+            }
+        } catch {}
+    })
+    
+    // From data channel (fallback)
+    Object.entries(raisedHandsFromDataChannel).forEach(([identity, data]) => {
+        if (!handsMap.has(identity)) {
+            handsMap.set(identity, { identity, name: data.name || identity, raisedAt: data.raisedAt || 0 })
+        }
+    })
+
+    const handsUp = Array.from(handsMap.values()).sort((a, b) => a.raisedAt - b.raisedAt)
 
     return (
         <div style={{ padding: '1rem' }}>
@@ -932,6 +944,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     const [handRaised, setHandRaised] = useState(false)
     const [micLocked, setMicLocked] = useState(false)
     const [reactionsDisabled, setReactionsDisabled] = useState(false)
+    const [raisedHands, setRaisedHands] = useState({}) // { identity: { name, raisedAt } } — data channel fallback
     const lastReactionTime = useRef(0)
     const reactionIdCounter = useRef(0)
 
@@ -941,12 +954,15 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)]
     }, [localParticipant, remoteParticipants])
 
-    // Count raised hands
+    // Count raised hands (merge metadata + data channel sources)
     const raisedHandsCount = useMemo(() => {
-        return allParticipants.filter(p => {
-            try { return JSON.parse(p.metadata || '{}').handRaised } catch { return false }
-        }).length
-    }, [allParticipants])
+        const fromMetadata = new Set()
+        allParticipants.forEach(p => {
+            try { if (JSON.parse(p.metadata || '{}').handRaised) fromMetadata.add(p.identity) } catch {}
+        })
+        const fromDataChannel = new Set(Object.keys(raisedHands))
+        return new Set([...fromMetadata, ...fromDataChannel]).size
+    }, [allParticipants, raisedHands])
 
     useEffect(() => {
         const handleFullscreenChange = () => setIsFullScreen(!!document.fullscreenElement)
@@ -977,6 +993,15 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                     setReactions(prev => [...prev, { id, emoji: msg.emoji, senderName: msg.senderName, x }])
                     // Auto-remove after animation
                     setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
+                }
+
+                // Hand raise via data channel (works even without metadata permission)
+                if (msg.type === 'hand_raise') {
+                    if (msg.raised) {
+                        setRaisedHands(prev => ({ ...prev, [msg.identity]: { name: msg.name, raisedAt: msg.timestamp } }))
+                    } else {
+                        setRaisedHands(prev => { const n = { ...prev }; delete n[msg.identity]; return n })
+                    }
                 }
 
                 if (msg.type === 'host_command' && !isOrganizer) {
@@ -1017,19 +1042,25 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             break
                         case 'lower_hand':
                             if (msg.identity === lp.identity) {
-                                const meta = JSON.parse(lp.metadata || '{}')
-                                lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+                                try {
+                                    const meta = JSON.parse(lp.metadata || '{}')
+                                    lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+                                } catch {}
                                 setHandRaised(false)
+                                setRaisedHands(prev => { const n = { ...prev }; delete n[lp.identity]; return n })
                                 toast.info('✋ Instructor lowered your hand')
                             }
                             break
                         case 'lower_all_hands': {
-                            const meta = JSON.parse(lp.metadata || '{}')
-                            if (meta.handRaised) {
-                                lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-                                setHandRaised(false)
-                                toast.info('✋ Instructor lowered all hands')
-                            }
+                            try {
+                                const meta = JSON.parse(lp.metadata || '{}')
+                                if (meta.handRaised) {
+                                    lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+                                }
+                            } catch {}
+                            setHandRaised(false)
+                            setRaisedHands({})
+                            toast.info('✋ Instructor lowered all hands')
                             break
                         }
                         case 'remove_participant':
@@ -1071,18 +1102,33 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
     }, [room, reactionsDisabled])
 
-    // ── Toggle Hand Raise (metadata-based) ──
-    const toggleHandRaise = useCallback(() => {
+    // ── Toggle Hand Raise (hybrid: metadata + data channel fallback) ──
+    const toggleHandRaise = useCallback(async () => {
         if (!room) return
         const lp = room.localParticipant
         const newRaised = !handRaised
-        let meta = {}
-        try { meta = JSON.parse(lp.metadata || '{}') } catch {}
-        lp.setMetadata(JSON.stringify({
-            ...meta,
-            handRaised: newRaised,
-            handRaisedAt: newRaised ? Date.now() : null,
-        }))
+        const now = Date.now()
+
+        // Try metadata first (survives reconnects)
+        try {
+            let meta = {}
+            try { meta = JSON.parse(lp.metadata || '{}') } catch {}
+            await lp.setMetadata(JSON.stringify({
+                ...meta,
+                handRaised: newRaised,
+                handRaisedAt: newRaised ? now : null,
+            }))
+        } catch (e) {
+            // Permission denied — metadata not available, that's OK
+            console.warn('Metadata update not permitted, using data channel only')
+        }
+
+        // Always broadcast via data channel for immediate visibility
+        const senderName = lp.name || lp.identity
+        const msg = JSON.stringify({ type: 'hand_raise', raised: newRaised, identity: lp.identity, name: senderName, timestamp: now })
+        const encoder = new TextEncoder()
+        lp.publishData(encoder.encode(msg), { reliable: true })
+
         setHandRaised(newRaised)
     }, [room, handRaised])
 
@@ -1094,8 +1140,10 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
         // Also update locally for the instructor's own hand
         if (identity === room.localParticipant.identity) {
-            const meta = JSON.parse(room.localParticipant.metadata || '{}')
-            room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+            try {
+                const meta = JSON.parse(room.localParticipant.metadata || '{}')
+                room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+            } catch {}
             setHandRaised(false)
         }
     }, [room])
@@ -1107,11 +1155,13 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         const encoder = new TextEncoder()
         room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
         // Also lower own hand
-        const meta = JSON.parse(room.localParticipant.metadata || '{}')
-        if (meta.handRaised) {
-            room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-            setHandRaised(false)
-        }
+        try {
+            const meta = JSON.parse(room.localParticipant.metadata || '{}')
+            if (meta.handRaised) {
+                room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+            }
+        } catch {}
+        setHandRaised(false)
     }, [room])
 
     // ── Remove Participant (instructor) ──
@@ -1299,7 +1349,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
                             {sidebarTab === 'waiting' && isOrganizer && <WaitingRoomTab waitingStudents={waitingStudents} setWaitingStudents={setWaitingStudents} channel={channelInstance} />}
-                            {sidebarTab === 'hands' && isOrganizer && <RaisedHandsPanel participants={allParticipants} onLowerHand={lowerHand} onLowerAll={lowerAllHands} />}
+                            {sidebarTab === 'hands' && isOrganizer && <RaisedHandsPanel participants={allParticipants} raisedHandsFromDataChannel={raisedHands} onLowerHand={lowerHand} onLowerAll={lowerAllHands} />}
                             {sidebarTab === 'host' && isOrganizer && (
                                 <HostControlsTab
                                     room={room}
