@@ -12,8 +12,6 @@ import LiveHandRaise from '../../components/live-classroom/LiveHandRaise'
 
 import {
     LiveKitRoom,
-    VideoTrack,
-    AudioTrack,
     useRemoteParticipants,
     useLocalParticipant,
     useParticipantTracks,
@@ -49,6 +47,31 @@ function useDeviceOrientation() {
     }, [])
 
     return { isMobile, isLandscape }
+}
+
+// ─── Custom Track Components (Bypass React wrappers to fix #300 loops) ─────────
+function CustomVideoTrack({ track, objectFit = 'cover' }) {
+    const videoRef = useRef(null)
+    useEffect(() => {
+        const el = videoRef.current
+        if (el && track) {
+            track.attach(el)
+            return () => track.detach(el)
+        }
+    }, [track])
+    return <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit, background: 'black', pointerEvents: 'none' }} />
+}
+
+function CustomAudioTrack({ track }) {
+    const audioRef = useRef(null)
+    useEffect(() => {
+        const el = audioRef.current
+        if (el && track) {
+            track.attach(el)
+            return () => track.detach(el)
+        }
+    }, [track])
+    return <audio ref={audioRef} autoPlay />
 }
 
 // ─── Participant Tile ────────────────────────────────────────────────────────
@@ -133,7 +156,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
         }}>
             {/* Audio Track */}
             {audioTrack?.publication?.track && !isLocal && (
-                <AudioTrack trackRef={audioTrack} />
+                <CustomAudioTrack track={audioTrack.publication.track} />
             )}
 
             {/* Video or Avatar */}
@@ -157,9 +180,9 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
                         transition: isDragging.current ? 'none' : 'transform 0.1s ease',
                         cursor: scale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'auto'
                     }}>
-                        <VideoTrack
-                            trackRef={displayTrack}
-                            style={{ width: '100%', height: '100%', objectFit: displayTrack === screenTrack ? 'contain' : 'cover', background: 'black', pointerEvents: 'none' }}
+                        <CustomVideoTrack
+                            track={displayTrack.publication.track}
+                            objectFit={displayTrack === screenTrack ? 'contain' : 'cover'}
                         />
                     </div>
                 </div>
