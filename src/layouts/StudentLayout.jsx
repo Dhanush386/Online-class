@@ -430,7 +430,7 @@ export default function StudentLayout() {
         </header>
 
         {/* ── Page Content ── */}
-        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: isMobile ? '1rem 1rem 5rem' : '1.75rem 2rem' }}>
+        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: location.pathname.includes('/classroom/') ? 0 : (isMobile ? '1rem 1rem 5rem' : '1.75rem 2rem'), display: 'flex', flexDirection: 'column' }}>
           <Outlet />
         </main>
 

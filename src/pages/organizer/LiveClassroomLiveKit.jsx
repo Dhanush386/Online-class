@@ -561,7 +561,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     }, [room, isOrganizer, profile, videoData])
 
     return (
-        <div ref={containerRef} style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#020617' }}>
+        <div ref={containerRef} style={{ height: '100%', flex: 1, display: 'flex', flexDirection: 'column', background: '#020617' }}>
             {/* Top Bar */}
             <div style={{
                 padding: '0.75rem 1.5rem',
@@ -858,7 +858,7 @@ export default function LiveClassroom() {
     if (loading) {
         return (
             <div style={{
-                height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                height: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: '#020617', flexDirection: 'column', gap: '1rem'
             }}>
                 <Loader2 size={32} className="animate-spin" color="#6366f1" />
@@ -871,7 +871,7 @@ export default function LiveClassroom() {
     if (!isOrganizer && !instructorPresent) {
         return (
             <div style={{
-                height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                height: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: '#020617', color: 'white', textAlign: 'center', padding: '2rem'
             }}>
                 <div style={{ maxWidth: 400 }}>
@@ -934,7 +934,7 @@ export default function LiveClassroom() {
     if (!isOrganizer && joinStatus !== 'admitted') {
         return (
             <div style={{
-                height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                height: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: '#020617', color: 'white', textAlign: 'center', padding: '2rem'
             }}>
                 <div style={{ maxWidth: 400, background: 'linear-gradient(145deg, rgba(15,23,42,0.9), rgba(30,41,59,0.8))', padding: '3rem 2rem', borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', width: '100%' }}>
@@ -1069,7 +1069,7 @@ export default function LiveClassroom() {
     if (tokenError) {
         return (
             <div style={{
-                height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                height: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: '#020617', color: 'white', textAlign: 'center', padding: '2rem'
             }}>
                 <div style={{ maxWidth: 400 }}>
@@ -1101,7 +1101,7 @@ export default function LiveClassroom() {
     if (!livekitToken) {
         return (
             <div style={{
-                height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                height: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: '#020617', flexDirection: 'column', gap: '1rem'
             }}>
                 <Loader2 size={32} className="animate-spin" color="#6366f1" />
@@ -1119,7 +1119,7 @@ export default function LiveClassroom() {
             audio={isOrganizer}
             video={isOrganizer}
             onDisconnected={() => navigate(-1)}
-            style={{ height: '100vh' }}
+            style={{ height: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}
         >
             <RoomContent
                 videoId={videoId}
