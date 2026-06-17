@@ -52,14 +52,19 @@ function useDeviceOrientation() {
 }
 
 // ─── Participant Tile ────────────────────────────────────────────────────────
-function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
+function ParticipantTile({ participant, isLocal, isSpotlight = false, allTracks = [] }) {
     const { isMobile } = useDeviceOrientation()
+
+    const participantTracks = allTracks.filter(t => t.participant.identity === participant.identity)
+    const cameraTrack = participantTracks.find(t => t.source === Track.Source.Camera && t.publication?.track)
+    const screenTrack = participantTracks.find(t => t.source === Track.Source.ScreenShare && t.publication?.track)
+    const audioTrack = participantTracks.find(t => t.source === Track.Source.Microphone && t.publication?.track)
 
     const isMuted = !participant.isMicrophoneEnabled
     const isCameraOff = !participant.isCameraEnabled
     
-    const hasScreenShare = participant.isScreenShareEnabled
-    const hasCamera = participant.isCameraEnabled
+    const displayTrack = screenTrack || cameraTrack
+    const shouldShowVideo = displayTrack?.publication?.track && (displayTrack === screenTrack || !isCameraOff)
 
     let metadata = {}
     try { metadata = JSON.parse(participant.metadata || '{}') } catch {}
@@ -72,7 +77,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
     const lastPos = useRef({ x: 0, y: 0 })
 
     const handleWheel = (e) => {
-        if (!isSpotlight || !hasScreenShare) return;
+        if (!isSpotlight || displayTrack !== screenTrack) return;
         const zoomDelta = e.deltaY * -0.002
         let newScale = Math.min(Math.max(1, scale + zoomDelta), 5)
         setScale(newScale)
@@ -80,7 +85,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
     }
 
     const handlePointerDown = (e) => {
-        if (scale <= 1 || !isSpotlight || !hasScreenShare) return;
+        if (scale <= 1 || !isSpotlight || displayTrack !== screenTrack) return;
         isDragging.current = true
         lastPos.current = { x: e.clientX, y: e.clientY }
         e.target.setPointerCapture(e.pointerId)
@@ -127,12 +132,12 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
             minHeight: (isMobile && !isSpotlight) ? '180px' : 0,
         }}>
             {/* Audio Track */}
-            {!isLocal && (
-                <AudioTrack participant={participant} source={Track.Source.Microphone} />
+            {audioTrack?.publication?.track && !isLocal && (
+                <AudioTrack trackRef={audioTrack} />
             )}
 
             {/* Video or Avatar */}
-            {hasScreenShare || (!isCameraOff && hasCamera) ? (
+            {shouldShowVideo ? (
                 <div 
                     onWheel={handleWheel}
                     onPointerDown={handlePointerDown}
@@ -152,19 +157,10 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
                         transition: isDragging.current ? 'none' : 'transform 0.1s ease',
                         cursor: scale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'auto'
                     }}>
-                        {hasScreenShare ? (
-                            <VideoTrack
-                                participant={participant}
-                                source={Track.Source.ScreenShare}
-                                style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'black', pointerEvents: 'none' }}
-                            />
-                        ) : (
-                            <VideoTrack
-                                participant={participant}
-                                source={Track.Source.Camera}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'black', pointerEvents: 'none' }}
-                            />
-                        )}
+                        <VideoTrack
+                            trackRef={displayTrack}
+                            style={{ width: '100%', height: '100%', objectFit: displayTrack === screenTrack ? 'contain' : 'cover', background: 'black', pointerEvents: 'none' }}
+                        />
                     </div>
                 </div>
             ) : (
@@ -186,7 +182,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
             )}
 
             {/* Screen Share Badge */}
-            {hasScreenShare && (
+            {screenTrack?.publication?.track && (
                 <div style={{
                     position: 'absolute', top: 8, left: 8,
                     background: 'rgba(99,102,241,0.9)', color: 'white',
@@ -198,7 +194,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
             )}
 
             {/* Zoom Controls (only if screen share in spotlight) */}
-            {hasScreenShare && isSpotlight && (
+            {displayTrack === screenTrack && isSpotlight && (
                 <div style={{
                     position: 'absolute', top: 8, right: participant.isSpeaking ? 24 : 8,
                     display: 'flex', alignItems: 'center', gap: 4, 
@@ -253,6 +249,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
 function VideoGrid() {
     const participants = useParticipants()
     const localParticipant = useLocalParticipant()
+    const tracks = useTracks(TRACK_SOURCES)
 
     // Ensure local participant is included so they can see themselves (and their own screen share)
     const allParticipants = [localParticipant.localParticipant, ...participants].filter(Boolean)
@@ -275,6 +272,7 @@ function VideoGrid() {
                             participant={screenSharer} 
                             isLocal={screenSharer.identity === localParticipant.localParticipant?.identity} 
                             isSpotlight={true} 
+                            allTracks={tracks}
                         />
                     </div>
                 </div>
@@ -290,6 +288,7 @@ function VideoGrid() {
                                 <ParticipantTile
                                     participant={p}
                                     isLocal={p.identity === localParticipant.localParticipant?.identity}
+                                    allTracks={tracks}
                                 />
                             </div>
                         ))}
@@ -331,6 +330,7 @@ function VideoGrid() {
                     key={p.identity}
                     participant={p}
                     isLocal={p.identity === localParticipant.localParticipant?.identity}
+                    allTracks={tracks}
                 />
             ))}
         </div>
