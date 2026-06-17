@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
-import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle } from 'lucide-react'
+import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle, ZoomIn, ZoomOut } from 'lucide-react'
 
 import LiveNotes from '../../components/live-classroom/LiveNotes'
 import LivePolls from '../../components/live-classroom/LivePolls'
@@ -55,6 +55,52 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
     const name = participant.name || metadata.name || participant.identity
     const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
+    const [scale, setScale] = useState(1)
+    const [pan, setPan] = useState({ x: 0, y: 0 })
+    const isDragging = useRef(false)
+    const lastPos = useRef({ x: 0, y: 0 })
+
+    const handleWheel = (e) => {
+        if (!isSpotlight || displayTrack !== screenTrack) return;
+        const zoomDelta = e.deltaY * -0.002
+        let newScale = Math.min(Math.max(1, scale + zoomDelta), 5)
+        setScale(newScale)
+        if (newScale === 1) setPan({ x: 0, y: 0 })
+    }
+
+    const handlePointerDown = (e) => {
+        if (!isSpotlight || scale <= 1 || displayTrack !== screenTrack) return;
+        isDragging.current = true
+        lastPos.current = { x: e.clientX, y: e.clientY }
+        e.target.setPointerCapture(e.pointerId)
+    }
+
+    const handlePointerMove = (e) => {
+        if (!isDragging.current) return;
+        const dx = e.clientX - lastPos.current.x
+        const dy = e.clientY - lastPos.current.y
+        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+        lastPos.current = { x: e.clientX, y: e.clientY }
+    }
+
+    const handlePointerUp = (e) => {
+        isDragging.current = false
+        if (e.target.hasPointerCapture(e.pointerId)) {
+            e.target.releasePointerCapture(e.pointerId)
+        }
+    }
+
+    const handleZoomIn = () => setScale(s => Math.min(s + 0.5, 5))
+    const handleZoomOut = () => setScale(s => {
+        const newScale = Math.max(s - 0.5, 1)
+        if (newScale === 1) setPan({ x: 0, y: 0 })
+        return newScale
+    })
+    const handleResetZoom = () => {
+        setScale(1)
+        setPan({ x: 0, y: 0 })
+    }
+
     return (
         <div style={{
             position: 'relative',
@@ -76,10 +122,31 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
 
             {/* Video or Avatar */}
             {shouldShowVideo ? (
-                <VideoTrack
-                    trackRef={displayTrack}
-                    style={{ width: '100%', height: '100%', objectFit: displayTrack === screenTrack ? 'contain' : 'cover', background: 'black' }}
-                />
+                <div 
+                    onWheel={handleWheel}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                    style={{ 
+                        width: '100%', height: '100%', 
+                        overflow: 'hidden',
+                        touchAction: scale > 1 ? 'none' : 'auto'
+                    }}
+                >
+                    <div style={{
+                        width: '100%', height: '100%',
+                        transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+                        transformOrigin: 'center',
+                        transition: isDragging.current ? 'none' : 'transform 0.1s ease',
+                        cursor: scale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'auto'
+                    }}>
+                        <VideoTrack
+                            trackRef={displayTrack}
+                            style={{ width: '100%', height: '100%', objectFit: displayTrack === screenTrack ? 'contain' : 'cover', background: 'black', pointerEvents: 'none' }}
+                        />
+                    </div>
+                </div>
             ) : (
                 <div style={{
                     width: '100%', height: '100%',
@@ -107,6 +174,20 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
                     display: 'flex', alignItems: 'center', gap: 4
                 }}>
                     <MonitorUp size={12} /> Screen
+                </div>
+            )}
+
+            {/* Zoom Controls (only if screen share in spotlight) */}
+            {displayTrack === screenTrack && isSpotlight && (
+                <div style={{
+                    position: 'absolute', top: 8, right: participant.isSpeaking ? 24 : 8,
+                    display: 'flex', alignItems: 'center', gap: 4, 
+                    background: 'rgba(15,23,42,0.8)', padding: '4px 8px', borderRadius: 8, zIndex: 10,
+                    border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                    <button onClick={handleZoomOut} disabled={scale <= 1} style={{ background: 'transparent', border: 'none', color: scale > 1 ? 'white' : 'rgba(255,255,255,0.3)', cursor: scale > 1 ? 'pointer' : 'default', padding: 4, display: 'flex' }}><ZoomOut size={16} /></button>
+                    <button onClick={handleResetZoom} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '0 8px', fontSize: '0.75rem', fontWeight: 600, minWidth: '48px' }}>{Math.round(scale * 100)}%</button>
+                    <button onClick={handleZoomIn} disabled={scale >= 5} style={{ background: 'transparent', border: 'none', color: scale < 5 ? 'white' : 'rgba(255,255,255,0.3)', cursor: scale < 5 ? 'pointer' : 'default', padding: 4, display: 'flex' }}><ZoomIn size={16} /></button>
                 </div>
             )}
 
