@@ -8,9 +8,7 @@ import * as cocoSsd from '@tensorflow-models/coco-ssd'
 
 const MAX_ATTEMPTS = 1
 
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
-import { useAuth } from '../../contexts/AuthContext'
+
 import { useDeviceType } from '../../hooks/useDeviceType'
 import MobileBlocker from '../../components/MobileBlocker'
 
