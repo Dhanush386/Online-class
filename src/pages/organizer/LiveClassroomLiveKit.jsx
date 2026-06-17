@@ -48,6 +48,7 @@ function ParticipantTile({ participant, isLocal }) {
     const isMuted = !participant.isMicrophoneEnabled
     const isCameraOff = !participant.isCameraEnabled
     const displayTrack = screenTrack || cameraTrack
+    const shouldShowVideo = displayTrack?.publication?.track && (displayTrack === screenTrack || !isCameraOff)
 
     let metadata = {}
     try { metadata = JSON.parse(participant.metadata || '{}') } catch {}
@@ -72,10 +73,10 @@ function ParticipantTile({ participant, isLocal }) {
             )}
 
             {/* Video or Avatar */}
-            {displayTrack?.publication?.track && !isCameraOff ? (
+            {shouldShowVideo ? (
                 <VideoTrack
                     trackRef={displayTrack}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ width: '100%', height: '100%', objectFit: displayTrack === screenTrack ? 'contain' : 'cover', background: 'black' }}
                 />
             ) : (
                 <div style={{
