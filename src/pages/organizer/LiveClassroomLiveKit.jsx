@@ -53,11 +53,10 @@ function useDeviceOrientation() {
 }
 
 // ─── Participant Tile ────────────────────────────────────────────────────────
-function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
+function ParticipantTile({ participant, isLocal, isSpotlight = false, allTracks = [] }) {
     const { isMobile } = useDeviceOrientation()
-    const tracks = useTracks(TRACK_SOURCES, TRACK_OPTIONS)
 
-    const participantTracks = tracks.filter(t => t.participant.identity === participant.identity)
+    const participantTracks = allTracks.filter(t => t.participant.identity === participant.identity)
     const cameraTrack = participantTracks.find(t => t.source === Track.Source.Camera && t.publication?.track)
     const screenTrack = participantTracks.find(t => t.source === Track.Source.ScreenShare && t.publication?.track)
     const audioTrack = participantTracks.find(t => t.source === Track.Source.Microphone && t.publication?.track)
@@ -250,8 +249,10 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
 function VideoGrid() {
     const participants = useParticipants()
     const localParticipant = useLocalParticipant()
+    const tracks = useTracks(TRACK_SOURCES, TRACK_OPTIONS)
 
-    const allParticipants = participants
+    // Ensure local participant is included so they can see themselves (and their own screen share)
+    const allParticipants = [localParticipant.localParticipant, ...participants].filter(Boolean)
     const screenSharer = allParticipants.find(p => p.isScreenShareEnabled)
 
     if (screenSharer) {
@@ -267,9 +268,11 @@ function VideoGrid() {
                 <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', justifyContent: 'center' }}>
                     <div style={{ height: '100%', width: '100%', maxWidth: '100%' }}>
                         <ParticipantTile 
+                            key={`spotlight-${screenSharer.identity}`}
                             participant={screenSharer} 
                             isLocal={screenSharer.identity === localParticipant.localParticipant?.identity} 
                             isSpotlight={true} 
+                            allTracks={tracks}
                         />
                     </div>
                 </div>
@@ -285,6 +288,7 @@ function VideoGrid() {
                                 <ParticipantTile
                                     participant={p}
                                     isLocal={p.identity === localParticipant.localParticipant?.identity}
+                                    allTracks={tracks}
                                 />
                             </div>
                         ))}
@@ -326,6 +330,7 @@ function VideoGrid() {
                     key={p.identity}
                     participant={p}
                     isLocal={p.identity === localParticipant.localParticipant?.identity}
+                    allTracks={tracks}
                 />
             ))}
         </div>
@@ -748,7 +753,7 @@ function ParticipantCount() {
             background: 'rgba(255,255,255,0.05)', padding: '0.4rem 0.75rem',
             borderRadius: 8, fontSize: '0.8rem', color: 'var(--text-muted)'
         }}>
-            <Users size={14} /> {participants.length}
+            <Users size={14} /> {participants.length + 1}
         </div>
     )
 }
@@ -772,6 +777,7 @@ export default function LiveClassroom() {
     const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
 
     const [askCooldown, setAskCooldown] = useState(0)
+    const joinTimeoutRef = useRef(null)
 
     const [joinStatus, setJoinStatus] = useState(() => {
         if (isOrganizer) return 'admitted'
@@ -787,6 +793,7 @@ export default function LiveClassroom() {
     // ── Fetch Video Data & Setup Real-time Channel ──
     useEffect(() => {
         let intervalId = null
+        let localChannel = null
 
         async function fetchVideo() {
             const { data, error } = await supabase.from('videos').select('*, courses(title)').eq('id', videoId).single()
@@ -799,6 +806,7 @@ export default function LiveClassroom() {
 
             // Real-time Handshake for instructor presence
             const channel = supabase.channel(`class-lobby-${videoId}`, { config: { broadcast: { self: true } } })
+            localChannel = channel
             setChannelInstance(channel)
             channel
                 .on('broadcast', { event: 'check_instructor' }, () => {
@@ -848,12 +856,12 @@ export default function LiveClassroom() {
                             channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
                             intervalId = setInterval(() => {
                                 channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
-                            }, 3000)
+                            }, 15000)
                         } else {
                             channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
                             intervalId = setInterval(() => {
                                 channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
-                            }, 3000)
+                            }, 15000)
                         }
                     }
                 })
@@ -862,7 +870,7 @@ export default function LiveClassroom() {
         fetchVideo()
         return () => {
             if (intervalId) clearInterval(intervalId)
-            if (channelInstance) supabase.removeChannel(channelInstance)
+            if (localChannel) supabase.removeChannel(localChannel)
         }
     }, [videoId])
 
@@ -944,7 +952,8 @@ export default function LiveClassroom() {
                 payload: { studentId: profile?.id, studentName: profile?.name || 'Student' }
             })
             // Set a timeout for 2 minutes
-            setTimeout(() => {
+            if (joinTimeoutRef.current) clearTimeout(joinTimeoutRef.current)
+            joinTimeoutRef.current = setTimeout(() => {
                 setJoinStatus(prev => prev === 'requesting' ? 'timeout' : prev)
             }, 1000 * 60 * 2)
         }
