@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
@@ -14,7 +14,7 @@ import {
     LiveKitRoom,
     VideoTrack,
     AudioTrack,
-    useParticipants,
+    useRemoteParticipants,
     useLocalParticipant,
     useTracks,
     useRoomContext,
@@ -247,12 +247,20 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, allTracks 
 
 // ─── Video Grid ──────────────────────────────────────────────────────────────
 function VideoGrid() {
-    const participants = useParticipants()
-    const localParticipant = useLocalParticipant()
-    const tracks = useTracks(TRACK_SOURCES)
+    const remoteParticipants = useRemoteParticipants()
+    const { localParticipant } = useLocalParticipant()
+    const rawTracks = useTracks(TRACK_SOURCES)
 
-    // Ensure local participant is included so they can see themselves (and their own screen share)
-    const allParticipants = [localParticipant.localParticipant, ...participants].filter(Boolean)
+    // Stabilize tracks reference to prevent infinite re-renders during layout switches
+    const trackKey = rawTracks.map(t => `${t.participant.identity}:${t.source}:${!!t.publication?.track}`).join('|')
+    const tracks = useMemo(() => rawTracks, [trackKey])
+
+    // Build participant list: local first, then remotes (no duplicates)
+    const allParticipants = useMemo(() => {
+        if (!localParticipant) return remoteParticipants
+        return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)]
+    }, [localParticipant, remoteParticipants])
+
     const screenSharer = allParticipants.find(p => p.isScreenShareEnabled)
 
     if (screenSharer) {
@@ -270,7 +278,7 @@ function VideoGrid() {
                         <ParticipantTile 
                             key={`spotlight-${screenSharer.identity}`}
                             participant={screenSharer} 
-                            isLocal={screenSharer.identity === localParticipant.localParticipant?.identity} 
+                            isLocal={screenSharer.identity === localParticipant?.identity} 
                             isSpotlight={true} 
                             allTracks={tracks}
                         />
@@ -287,7 +295,7 @@ function VideoGrid() {
                             <div key={p.identity} style={{ width: '240px', flexShrink: 0, height: '100%' }}>
                                 <ParticipantTile
                                     participant={p}
-                                    isLocal={p.identity === localParticipant.localParticipant?.identity}
+                                    isLocal={p.identity === localParticipant?.identity}
                                     allTracks={tracks}
                                 />
                             </div>
@@ -329,7 +337,7 @@ function VideoGrid() {
                 <ParticipantTile
                     key={p.identity}
                     participant={p}
-                    isLocal={p.identity === localParticipant.localParticipant?.identity}
+                    isLocal={p.identity === localParticipant?.identity}
                     allTracks={tracks}
                 />
             ))}
