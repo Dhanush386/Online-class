@@ -754,7 +754,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
 
 // ─── Participant Count Badge ─────────────────────────────────────────────────
 function ParticipantCount() {
-    const participants = useParticipants()
+    const participants = useRemoteParticipants()
     return (
         <div style={{
             display: 'flex', alignItems: 'center', gap: 4,
