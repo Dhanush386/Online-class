@@ -543,7 +543,7 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
 }
 
 // ─── Host Controls Tab ───────────────────────────────────────────────────────
-function HostControlsTab({ room, participants, micLocked, setMicLocked, videoLocked, setVideoLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant }) {
+function HostControlsTab({ room, participants, micLocked, setMicLocked, videoLocked, setVideoLocked, screenShareLocked, setScreenShareLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant }) {
     const sendHostCommand = (command, extra = {}) => {
         const msg = JSON.stringify({ type: 'host_command', command, ...extra })
         const encoder = new TextEncoder()
@@ -561,6 +561,11 @@ function HostControlsTab({ room, participants, micLocked, setMicLocked, videoLoc
         const newVal = !videoLocked
         setVideoLocked(newVal)
         sendHostCommand('video_lock', { enabled: newVal })
+    }
+    const handleToggleScreenShareLock = () => {
+        const newVal = !screenShareLocked
+        setScreenShareLocked(newVal)
+        sendHostCommand('screen_share_lock', { enabled: newVal })
     }
     const handleToggleHandsLock = () => {
         const newVal = !handsLocked
@@ -624,6 +629,14 @@ function HostControlsTab({ room, participants, micLocked, setMicLocked, videoLoc
                 }}>
                     {videoLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
                     {videoLocked ? 'Video Locked — Students Cannot Enable Camera' : 'Video Unlocked — Students Can Enable Camera'}
+                </button>
+                <button onClick={handleToggleScreenShareLock} style={{
+                    ...controlBtnStyle(), marginTop: '0.5rem',
+                    background: screenShareLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
+                    border: screenShareLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                }}>
+                    {screenShareLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
+                    {screenShareLocked ? 'Screen Share Locked — Students Cannot Share' : 'Screen Share Unlocked — Students Can Share'}
                 </button>
                 <button onClick={handleToggleHandsLock} style={{
                     ...controlBtnStyle(), marginTop: '0.5rem',
@@ -754,7 +767,7 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
 }
 
 // ─── Control Bar ─────────────────────────────────────────────────────────────
-function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, handsLocked, onSendReaction, onToggleHand }) {
+function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, screenShareLocked, handsLocked, onSendReaction, onToggleHand }) {
     const room = useRoomContext()
     const { isMobile } = useDeviceOrientation()
     const localParticipant = useLocalParticipant()
@@ -795,6 +808,8 @@ function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, re
 
     const toggleScreen = async () => {
         if (!lp) return
+        // If screen share is locked by instructor and user is not organizer, block
+        if (!isOrganizer && screenShareLocked && !isScreenSharing) return
         try {
             await lp.setScreenShareEnabled(!isScreenSharing)
             setIsScreenSharing(!isScreenSharing)
@@ -843,9 +858,10 @@ function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, re
                 <button onClick={toggleScreen} style={{
                     ...btnStyle(true),
                     background: isScreenSharing ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
-                    color: isScreenSharing ? '#818cf8' : 'white'
-                }} title="Share Screen">
-                    <MonitorUp size={20} />
+                    color: isScreenSharing ? '#818cf8' : 'white',
+                    ...(!isOrganizer && screenShareLocked && !isScreenSharing ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+                }} title={!isOrganizer && screenShareLocked && !isScreenSharing ? 'Screen share locked by instructor' : 'Share Screen'}>
+                    {!isOrganizer && screenShareLocked && !isScreenSharing ? <Lock size={20} /> : <MonitorUp size={20} />}
                 </button>
             )}
 
@@ -981,6 +997,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     const [handRaised, setHandRaised] = useState(false)
     const [micLocked, setMicLocked] = useState(false)
     const [videoLocked, setVideoLocked] = useState(false)
+    const [screenShareLocked, setScreenShareLocked] = useState(false)
     const [handsLocked, setHandsLocked] = useState(false)
     const [reactionsDisabled, setReactionsDisabled] = useState(false)
     const [raisedHands, setRaisedHands] = useState({}) // { identity: { name, raisedAt } } — data channel fallback
@@ -1082,6 +1099,17 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                 toast.warning('🔒 Instructor locked cameras')
                             } else {
                                 toast.success('🔓 Cameras unlocked')
+                            }
+                            break
+                        case 'screen_share_lock':
+                            setScreenShareLocked(msg.enabled)
+                            if (msg.enabled) {
+                                if (lp.isScreenShareEnabled) {
+                                    lp.setScreenShareEnabled(false)
+                                }
+                                toast.warning('🔒 Instructor locked screen sharing')
+                            } else {
+                                toast.success('🔓 Screen sharing unlocked')
                             }
                             break
                         case 'hands_lock':
@@ -1422,6 +1450,8 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                     setMicLocked={setMicLocked}
                                     videoLocked={videoLocked}
                                     setVideoLocked={setVideoLocked}
+                                    screenShareLocked={screenShareLocked}
+                                    setScreenShareLocked={setScreenShareLocked}
                                     handsLocked={handsLocked}
                                     setHandsLocked={setHandsLocked}
                                     reactionsDisabled={reactionsDisabled}
@@ -1480,6 +1510,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                 reactionsDisabled={reactionsDisabled}
                 micLocked={micLocked}
                 videoLocked={videoLocked}
+                screenShareLocked={screenShareLocked}
                 handsLocked={handsLocked}
                 onSendReaction={sendReaction}
                 onToggleHand={toggleHandRaise}
