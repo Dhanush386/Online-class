@@ -16,7 +16,7 @@ import {
     AudioTrack,
     useRemoteParticipants,
     useLocalParticipant,
-    useTracks,
+    useParticipantTracks,
     useRoomContext,
     useConnectionState
 } from '@livekit/components-react'
@@ -52,10 +52,10 @@ function useDeviceOrientation() {
 }
 
 // ─── Participant Tile ────────────────────────────────────────────────────────
-function ParticipantTile({ participant, isLocal, isSpotlight = false, allTracks = [] }) {
+function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
     const { isMobile } = useDeviceOrientation()
 
-    const participantTracks = allTracks.filter(t => t.participant.identity === participant.identity)
+    const participantTracks = useParticipantTracks(TRACK_SOURCES, participant.identity)
     const cameraTrack = participantTracks.find(t => t.source === Track.Source.Camera && t.publication?.track)
     const screenTrack = participantTracks.find(t => t.source === Track.Source.ScreenShare && t.publication?.track)
     const audioTrack = participantTracks.find(t => t.source === Track.Source.Microphone && t.publication?.track)
@@ -249,11 +249,6 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, allTracks 
 function VideoGrid() {
     const remoteParticipants = useRemoteParticipants()
     const { localParticipant } = useLocalParticipant()
-    const rawTracks = useTracks(TRACK_SOURCES)
-
-    // Stabilize tracks reference to prevent infinite re-renders during layout switches
-    const trackKey = rawTracks.map(t => `${t.participant.identity}:${t.source}:${!!t.publication?.track}`).join('|')
-    const tracks = useMemo(() => rawTracks, [trackKey])
 
     // Build participant list: local first, then remotes (no duplicates)
     const allParticipants = useMemo(() => {
@@ -280,7 +275,6 @@ function VideoGrid() {
                             participant={screenSharer} 
                             isLocal={screenSharer.identity === localParticipant?.identity} 
                             isSpotlight={true} 
-                            allTracks={tracks}
                         />
                     </div>
                 </div>
@@ -296,7 +290,6 @@ function VideoGrid() {
                                 <ParticipantTile
                                     participant={p}
                                     isLocal={p.identity === localParticipant?.identity}
-                                    allTracks={tracks}
                                 />
                             </div>
                         ))}
@@ -338,7 +331,6 @@ function VideoGrid() {
                     key={p.identity}
                     participant={p}
                     isLocal={p.identity === localParticipant?.identity}
-                    allTracks={tracks}
                 />
             ))}
         </div>
