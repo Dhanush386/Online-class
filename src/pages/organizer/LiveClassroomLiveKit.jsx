@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
-import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle, ZoomIn, ZoomOut, UserPlus, XCircle, CheckCircle, Clock, Smile, ShieldCheck, Lock, Unlock, UserMinus, ArrowDown, MoreVertical } from 'lucide-react'
+import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle, ZoomIn, ZoomOut, UserPlus, XCircle, CheckCircle, Clock, Smile, ShieldCheck, Lock, Unlock, UserMinus, ArrowDown, MoreVertical, Pin, PinOff } from 'lucide-react'
 
 import LiveNotes from '../../components/live-classroom/LiveNotes'
 import LivePolls from '../../components/live-classroom/LivePolls'
@@ -102,7 +102,7 @@ function useManualParticipantTracks(participant) {
 }
 
 // ─── Participant Tile ────────────────────────────────────────────────────────
-function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
+function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isPinned = false }) {
     const { isMobile } = useDeviceOrientation()
 
     const { camera, screen, mic } = useManualParticipantTracks(participant)
@@ -271,6 +271,25 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
                 </div>
             )}
 
+            {/* Pin / Unpin Button */}
+            {onPin && (
+                <button onClick={(e) => { e.stopPropagation(); onPin(participant.identity) }} title={isPinned ? 'Unpin' : 'Pin'} style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: (isScreenShareDisplay && isSpotlight) ? (participant.isSpeaking ? 160 : 144) : (participant.isSpeaking ? 24 : 8),
+                    zIndex: 11,
+                    width: 32, height: 32, borderRadius: 8,
+                    background: isPinned ? 'rgba(99,102,241,0.9)' : 'rgba(15,23,42,0.8)',
+                    border: isPinned ? '1px solid #818cf8' : '1px solid rgba(255,255,255,0.15)',
+                    color: 'white', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                    backdropFilter: 'blur(4px)',
+                }}>
+                    {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+                </button>
+            )}
+
             {/* Bottom Bar: Name + Mic Status */}
             <div style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -318,6 +337,7 @@ function VideoGrid() {
     const { localParticipant } = useLocalParticipant()
     const room = useRoomContext()
     const [, setTick] = useState(0)
+    const [pinnedIdentity, setPinnedIdentity] = useState(null)
 
     // Listen for screen-share track events at the Room level to detect layout changes
     useEffect(() => {
@@ -344,8 +364,56 @@ function VideoGrid() {
     const screenSharerIdentity = allParticipants.find(p => p.isScreenShareEnabled)?.identity
     const hasScreenShare = !!screenSharerIdentity
 
+    // Auto-clear pinned identity if the participant left
+    useEffect(() => {
+        if (pinnedIdentity && !allParticipants.find(p => p.identity === pinnedIdentity)) {
+            setPinnedIdentity(null)
+        }
+    }, [allParticipants, pinnedIdentity])
+
+    // Toggle pin: if already pinned, unpin; otherwise pin
+    const handlePin = useCallback((identity) => {
+        setPinnedIdentity(prev => prev === identity ? null : identity)
+    }, [])
+
     const count = allParticipants.length
     const { isMobile, isLandscape } = useDeviceOrientation()
+
+    // If a participant is pinned, show ONLY that participant
+    const pinnedParticipant = pinnedIdentity ? allParticipants.find(p => p.identity === pinnedIdentity) : null
+
+    if (pinnedParticipant) {
+        return (
+            <div style={{
+                flex: 1,
+                display: 'flex',
+                padding: '0.5rem',
+                overflow: 'hidden',
+                width: '100%',
+                height: '100%',
+                minWidth: 0,
+                minHeight: 0,
+                boxSizing: 'border-box',
+                position: 'relative',
+            }}>
+                <div style={{
+                    flex: 1,
+                    minWidth: 0,
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    borderRadius: 16,
+                }}>
+                    <ParticipantTile
+                        participant={pinnedParticipant}
+                        isLocal={pinnedParticipant.identity === localParticipant?.identity}
+                        isSpotlight={true}
+                        onPin={handlePin}
+                        isPinned={true}
+                    />
+                </div>
+            </div>
+        )
+    }
 
     // Dynamic grid sizing
     let cols = 1
@@ -363,12 +431,21 @@ function VideoGrid() {
         else cols = 5
     }
 
+    // Separate screen sharer from other participants for layout purposes
+    const screenSharer = hasScreenShare ? allParticipants.find(p => p.identity === screenSharerIdentity) : null
+    const otherParticipants = hasScreenShare ? allParticipants.filter(p => p.identity !== screenSharerIdentity) : allParticipants
+
     // SINGLE RETURN PATH — no conditional JSX trees
+    // When screen sharing: flex row layout (main area + right filmstrip like Google Meet)
+    // When no screen share: normal grid layout
     return (
         <div style={{
-            flex: 1, display: 'grid', padding: '0.5rem', gap: '0.5rem',
-            gridTemplateColumns: hasScreenShare ? '1fr' : `repeat(${cols}, 1fr)`,
-            gridTemplateRows: hasScreenShare ? '1fr auto' : undefined,
+            flex: 1,
+            display: hasScreenShare ? 'flex' : 'grid',
+            flexDirection: hasScreenShare ? 'row' : undefined,
+            padding: '0.5rem',
+            gap: '0.5rem',
+            gridTemplateColumns: hasScreenShare ? undefined : `repeat(${cols}, 1fr)`,
             gridAutoRows: hasScreenShare ? undefined : '1fr',
             alignContent: (!hasScreenShare && count <= 2) ? 'center' : 'start',
             overflow: 'hidden',
@@ -378,28 +455,76 @@ function VideoGrid() {
             minHeight: 0,
             boxSizing: 'border-box',
         }}>
-            {allParticipants.map(p => {
-                const isScreenSharer = hasScreenShare && p.identity === screenSharerIdentity
-                return (
+            {/* Screen share spotlight: fills main area */}
+            {screenSharer && (
+                <div key={screenSharer.identity} style={{
+                    flex: 1,
+                    minWidth: 0,
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    borderRadius: 16,
+                }}>
+                    <ParticipantTile
+                        participant={screenSharer}
+                        isLocal={screenSharer.identity === localParticipant?.identity}
+                        isSpotlight={true}
+                        onPin={handlePin}
+                        isPinned={false}
+                    />
+                </div>
+            )}
+
+            {/* Right filmstrip (when screen sharing) or normal grid tiles */}
+            {hasScreenShare ? (
+                otherParticipants.length > 0 && (
+                    <div style={{
+                        width: isMobile ? '100px' : '180px',
+                        flexShrink: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        paddingRight: '2px',
+                    }}>
+                        {otherParticipants.map(p => (
+                            <div key={p.identity} style={{
+                                width: '100%',
+                                height: isMobile ? '70px' : '120px',
+                                flexShrink: 0,
+                                minWidth: 0,
+                                minHeight: 0,
+                                overflow: 'hidden',
+                                borderRadius: 12,
+                            }}>
+                                <ParticipantTile
+                                    participant={p}
+                                    isLocal={p.identity === localParticipant?.identity}
+                                    isSpotlight={false}
+                                    onPin={handlePin}
+                                    isPinned={false}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )
+            ) : (
+                otherParticipants.map(p => (
                     <div key={p.identity} style={{
                         minWidth: 0,
                         minHeight: 0,
                         overflow: 'hidden',
-                        ...(isScreenSharer ? {
-                            gridColumn: '1 / -1',
-                            order: -1,
-                        } : hasScreenShare ? {
-                            height: '160px',
-                        } : {}),
                     }}>
                         <ParticipantTile
                             participant={p}
                             isLocal={p.identity === localParticipant?.identity}
-                            isSpotlight={isScreenSharer}
+                            isSpotlight={false}
+                            onPin={handlePin}
+                            isPinned={false}
                         />
                     </div>
-                )
-            })}
+                ))
+            )}
         </div>
     )
 }
