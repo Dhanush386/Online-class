@@ -30,7 +30,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
 
 // ─── Participant Tile ────────────────────────────────────────────────────────
-function ParticipantTile({ participant, isLocal }) {
+function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
     const tracks = useTracks(
         [
             { source: Track.Source.Camera, withPlaceholder: true },
@@ -64,7 +64,9 @@ function ParticipantTile({ participant, isLocal }) {
             border: participant.isSpeaking ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.08)',
             boxShadow: participant.isSpeaking ? '0 0 20px rgba(99,102,241,0.3)' : 'none',
             transition: 'all 0.3s ease',
-            aspectRatio: '16/9',
+            aspectRatio: isSpotlight ? 'auto' : '16/9',
+            width: '100%',
+            height: '100%',
             minHeight: 0,
         }}>
             {/* Audio Track */}
@@ -152,6 +154,48 @@ function VideoGrid() {
     const localParticipant = useLocalParticipant()
 
     const allParticipants = participants
+    const screenSharer = allParticipants.find(p => p.isScreenShareEnabled)
+
+    if (screenSharer) {
+        // Spotlight layout for screen sharing
+        const otherParticipants = allParticipants.filter(p => p.identity !== screenSharer.identity)
+
+        return (
+            <div style={{
+                flex: 1, display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem',
+                overflow: 'hidden', height: '100%'
+            }}>
+                {/* Main Spotlight (Screen Share) */}
+                <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ height: '100%', width: '100%', maxWidth: '100%' }}>
+                        <ParticipantTile 
+                            participant={screenSharer} 
+                            isLocal={screenSharer.identity === localParticipant.localParticipant?.identity} 
+                            isSpotlight={true} 
+                        />
+                    </div>
+                </div>
+                
+                {/* Bottom Row for other participants */}
+                {otherParticipants.length > 0 && (
+                    <div style={{
+                        display: 'flex', gap: '0.75rem', overflowX: 'auto',
+                        paddingBottom: '0.5rem', height: '160px', flexShrink: 0
+                    }}>
+                        {otherParticipants.map(p => (
+                            <div key={p.identity} style={{ width: '240px', flexShrink: 0, height: '100%' }}>
+                                <ParticipantTile
+                                    participant={p}
+                                    isLocal={p.identity === localParticipant.localParticipant?.identity}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        )
+    }
+
     const count = allParticipants.length
 
     // Dynamic grid sizing
