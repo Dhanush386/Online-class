@@ -1939,7 +1939,7 @@ export default function LiveClassroom() {
             serverUrl={LIVEKIT_URL}
             token={livekitToken}
             connect={true}
-            audio={isOrganizer}
+            audio={true}
             video={isOrganizer}
             onDisconnected={() => navigate(-1)}
             style={{ height: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}
