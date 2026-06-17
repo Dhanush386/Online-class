@@ -538,7 +538,7 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
 }
 
 // ─── Host Controls Tab ───────────────────────────────────────────────────────
-function HostControlsTab({ room, participants, micLocked, setMicLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant }) {
+function HostControlsTab({ room, participants, micLocked, setMicLocked, videoLocked, setVideoLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant }) {
     const sendHostCommand = (command, extra = {}) => {
         const msg = JSON.stringify({ type: 'host_command', command, ...extra })
         const encoder = new TextEncoder()
@@ -551,6 +551,16 @@ function HostControlsTab({ room, participants, micLocked, setMicLocked, reaction
         const newVal = !micLocked
         setMicLocked(newVal)
         sendHostCommand('mic_lock', { enabled: newVal })
+    }
+    const handleToggleVideoLock = () => {
+        const newVal = !videoLocked
+        setVideoLocked(newVal)
+        sendHostCommand('video_lock', { enabled: newVal })
+    }
+    const handleToggleHandsLock = () => {
+        const newVal = !handsLocked
+        setHandsLocked(newVal)
+        sendHostCommand('hands_lock', { enabled: newVal })
     }
     const handleToggleReactions = () => {
         const newVal = !reactionsDisabled
@@ -601,6 +611,22 @@ function HostControlsTab({ room, participants, micLocked, setMicLocked, reaction
                 }}>
                     {micLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
                     {micLocked ? 'Mic Locked — Students Cannot Unmute' : 'Mic Unlocked — Students Can Unmute'}
+                </button>
+                <button onClick={handleToggleVideoLock} style={{
+                    ...controlBtnStyle(), marginTop: '0.5rem',
+                    background: videoLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
+                    border: videoLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                }}>
+                    {videoLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
+                    {videoLocked ? 'Video Locked — Students Cannot Enable Camera' : 'Video Unlocked — Students Can Enable Camera'}
+                </button>
+                <button onClick={handleToggleHandsLock} style={{
+                    ...controlBtnStyle(), marginTop: '0.5rem',
+                    background: handsLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
+                    border: handsLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                }}>
+                    {handsLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
+                    {handsLocked ? 'Hands Locked — Students Cannot Raise Hand' : 'Hands Unlocked — Students Can Raise Hand'}
                 </button>
                 <button onClick={handleToggleReactions} style={{
                     ...controlBtnStyle(), marginTop: '0.5rem',
@@ -723,7 +749,7 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
 }
 
 // ─── Control Bar ─────────────────────────────────────────────────────────────
-function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, onSendReaction, onToggleHand }) {
+function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, handsLocked, onSendReaction, onToggleHand }) {
     const room = useRoomContext()
     const { isMobile } = useDeviceOrientation()
     const localParticipant = useLocalParticipant()
@@ -756,6 +782,8 @@ function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, re
 
     const toggleCam = async () => {
         if (!lp) return
+        // If video is locked by instructor and user is not organizer, block enable
+        if (!isOrganizer && videoLocked && !isCamOn) return
         await lp.setCameraEnabled(!isCamOn)
         setIsCamOn(!isCamOn)
     }
@@ -798,8 +826,11 @@ function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, re
             </button>
 
             {/* Camera */}
-            <button onClick={toggleCam} style={btnStyle(isCamOn)} title={isCamOn ? 'Camera Off' : 'Camera On'}>
-                {isCamOn ? <Video size={20} /> : <VideoOff size={20} />}
+            <button onClick={toggleCam} style={{
+                ...btnStyle(isCamOn),
+                ...(!isOrganizer && videoLocked && !isCamOn ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+            }} title={!isOrganizer && videoLocked && !isCamOn ? 'Video locked by instructor' : isCamOn ? 'Camera Off' : 'Camera On'}>
+                {!isOrganizer && videoLocked && !isCamOn ? <Lock size={20} /> : isCamOn ? <Video size={20} /> : <VideoOff size={20} />}
             </button>
 
             {/* Screen Share (desktop only) */}
@@ -829,12 +860,13 @@ function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, re
             </div>
 
             {/* Hand Raise */}
-            <button onClick={onToggleHand} style={{
+            <button onClick={() => { if (!isOrganizer && handsLocked && !handRaised) return; onToggleHand() }} style={{
                 ...btnStyle(true),
                 background: handRaised ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)',
                 color: handRaised ? '#f59e0b' : 'white',
                 position: 'relative',
-            }} title={handRaised ? 'Lower Hand' : 'Raise Hand'}>
+                ...(!isOrganizer && handsLocked && !handRaised ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+            }} title={!isOrganizer && handsLocked && !handRaised ? 'Hands locked by instructor' : handRaised ? 'Lower Hand' : 'Raise Hand'}>
                 <Hand size={20} />
                 {raisedHandsCount > 0 && (
                     <span style={{
@@ -943,6 +975,8 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     const [reactions, setReactions] = useState([])
     const [handRaised, setHandRaised] = useState(false)
     const [micLocked, setMicLocked] = useState(false)
+    const [videoLocked, setVideoLocked] = useState(false)
+    const [handsLocked, setHandsLocked] = useState(false)
     const [reactionsDisabled, setReactionsDisabled] = useState(false)
     const [raisedHands, setRaisedHands] = useState({}) // { identity: { name, raisedAt } } — data channel fallback
     const lastReactionTime = useRef(0)
@@ -1034,6 +1068,31 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                 toast.warning('🔒 Instructor locked microphones')
                             } else {
                                 toast.success('🔓 Microphones unlocked')
+                            }
+                            break
+                        case 'video_lock':
+                            setVideoLocked(msg.enabled)
+                            if (msg.enabled) {
+                                lp.setCameraEnabled(false)
+                                toast.warning('🔒 Instructor locked cameras')
+                            } else {
+                                toast.success('🔓 Cameras unlocked')
+                            }
+                            break
+                        case 'hands_lock':
+                            setHandsLocked(msg.enabled)
+                            if (msg.enabled) {
+                                // Lower hand if currently raised
+                                try {
+                                    const meta = JSON.parse(lp.metadata || '{}')
+                                    if (meta.handRaised) {
+                                        lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+                                    }
+                                } catch {}
+                                setHandRaised(false)
+                                toast.warning('🔒 Instructor locked hand raising')
+                            } else {
+                                toast.success('🔓 Hand raising unlocked')
                             }
                             break
                         case 'reactions_disabled':
@@ -1356,6 +1415,10 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                     participants={allParticipants}
                                     micLocked={micLocked}
                                     setMicLocked={setMicLocked}
+                                    videoLocked={videoLocked}
+                                    setVideoLocked={setVideoLocked}
+                                    handsLocked={handsLocked}
+                                    setHandsLocked={setHandsLocked}
                                     reactionsDisabled={reactionsDisabled}
                                     setReactionsDisabled={setReactionsDisabled}
                                     onLowerAllHands={lowerAllHands}
@@ -1411,6 +1474,8 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                 raisedHandsCount={raisedHandsCount}
                 reactionsDisabled={reactionsDisabled}
                 micLocked={micLocked}
+                videoLocked={videoLocked}
+                handsLocked={handsLocked}
                 onSendReaction={sendReaction}
                 onToggleHand={toggleHandRaise}
             />
