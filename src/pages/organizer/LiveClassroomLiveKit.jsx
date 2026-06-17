@@ -29,11 +29,10 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
 
 const TRACK_SOURCES = [
-    { source: Track.Source.Camera, withPlaceholder: true },
-    { source: Track.Source.Microphone, withPlaceholder: true },
-    { source: Track.Source.ScreenShare, withPlaceholder: false },
+    Track.Source.Camera,
+    Track.Source.Microphone,
+    Track.Source.ScreenShare,
 ]
-const TRACK_OPTIONS = { onlySubscribed: false }
 
 function useDeviceOrientation() {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
@@ -249,7 +248,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, allTracks 
 function VideoGrid() {
     const participants = useParticipants()
     const localParticipant = useLocalParticipant()
-    const tracks = useTracks(TRACK_SOURCES, TRACK_OPTIONS)
+    const tracks = useTracks(TRACK_SOURCES)
 
     // Ensure local participant is included so they can see themselves (and their own screen share)
     const allParticipants = [localParticipant.localParticipant, ...participants].filter(Boolean)
