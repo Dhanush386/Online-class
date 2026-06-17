@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
-import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle, ZoomIn, ZoomOut, UserPlus, XCircle, CheckCircle, Clock } from 'lucide-react'
+import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle, ZoomIn, ZoomOut, UserPlus, XCircle, CheckCircle, Clock, Smile, ShieldCheck, Lock, Unlock, UserMinus, ArrowDown, MoreVertical } from 'lucide-react'
 
 import LiveNotes from '../../components/live-classroom/LiveNotes'
 import LivePolls from '../../components/live-classroom/LivePolls'
@@ -18,7 +18,7 @@ import {
     useConnectionState
 } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { Track, RoomEvent, ConnectionState, ParticipantEvent } from 'livekit-client'
+import { Track, RoomEvent, ConnectionState, ParticipantEvent, DataPacket_Kind } from 'livekit-client'
 
 // Constants
 const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'wss://meet.learnova.com'
@@ -81,6 +81,7 @@ function useManualParticipantTracks(participant) {
         participant.on(ParticipantEvent.TrackUnmuted, bump)
         participant.on(ParticipantEvent.LocalTrackPublished, bump)
         participant.on(ParticipantEvent.LocalTrackUnpublished, bump)
+        participant.on(ParticipantEvent.ParticipantMetadataChanged, bump)
         return () => {
             participant.off(ParticipantEvent.TrackPublished, bump)
             participant.off(ParticipantEvent.TrackUnpublished, bump)
@@ -90,6 +91,7 @@ function useManualParticipantTracks(participant) {
             participant.off(ParticipantEvent.TrackUnmuted, bump)
             participant.off(ParticipantEvent.LocalTrackPublished, bump)
             participant.off(ParticipantEvent.LocalTrackUnpublished, bump)
+            participant.off(ParticipantEvent.ParticipantMetadataChanged, bump)
         }
     }, [participant])
 
@@ -242,6 +244,19 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false }) {
                 </div>
             )}
 
+            {/* Hand Raise Badge */}
+            {metadata.handRaised && (
+                <div style={{
+                    position: 'absolute', top: screenTrack ? 36 : 8, left: 8,
+                    background: 'rgba(245,158,11,0.9)', color: 'white',
+                    padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700,
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    animation: 'pulse 2s infinite',
+                }}>
+                    ✋
+                </div>
+            )}
+
             {/* Zoom Controls (only if screen share in spotlight) */}
             {isScreenShareDisplay && isSpotlight && (
                 <div style={{
@@ -384,14 +399,327 @@ function VideoGrid() {
     )
 }
 
+// ─── Reaction Overlay (floating emojis) ──────────────────────────────────────
+const REACTION_KEYFRAMES = `
+@keyframes floatReaction {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    70% { opacity: 1; transform: translateY(-120px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-180px) scale(0.8); }
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.15); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+`
+
+function ReactionOverlay({ reactions }) {
+    return (
+        <>
+            <style>{REACTION_KEYFRAMES}</style>
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30, overflow: 'hidden' }}>
+                {reactions.map(r => (
+                    <div key={r.id} style={{
+                        position: 'absolute',
+                        bottom: '80px',
+                        left: `${r.x}%`,
+                        animation: 'floatReaction 2.5s ease-out forwards',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                    }}>
+                        <span style={{ fontSize: '2.5rem' }}>{r.emoji}</span>
+                        <span style={{
+                            fontSize: '0.65rem', color: 'white', fontWeight: 600,
+                            background: 'rgba(0,0,0,0.5)', padding: '1px 6px', borderRadius: 4,
+                            whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                        }}>{r.senderName}</span>
+                    </div>
+                ))}
+            </div>
+        </>
+    )
+}
+
+// ─── Reaction Picker ─────────────────────────────────────────────────────────
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '👏', '😮']
+
+function ReactionPicker({ onSelect, onClose }) {
+    return (
+        <div style={{
+            position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+            marginBottom: 8, background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 16, padding: '8px 12px', display: 'flex', gap: 4,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)',
+            animation: 'fadeIn 0.15s ease-out',
+        }}>
+            {REACTION_EMOJIS.map(emoji => (
+                <button key={emoji} onClick={() => { onSelect(emoji); onClose() }} style={{
+                    width: 44, height: 44, fontSize: '1.5rem', background: 'transparent',
+                    border: 'none', borderRadius: 12, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.15s ease',
+                }} onMouseEnter={e => { e.target.style.background = 'rgba(255,255,255,0.1)'; e.target.style.transform = 'scale(1.3)' }}
+                   onMouseLeave={e => { e.target.style.background = 'transparent'; e.target.style.transform = 'scale(1)' }}>
+                    {emoji}
+                </button>
+            ))}
+        </div>
+    )
+}
+
+// ─── Raised Hands Panel (Speaking Queue) ─────────────────────────────────────
+function RaisedHandsPanel({ participants, onLowerHand, onLowerAll }) {
+    const handsUp = participants
+        .filter(p => {
+            try { const m = JSON.parse(p.metadata || '{}'); return m.handRaised } catch { return false }
+        })
+        .map(p => {
+            let meta = {}; try { meta = JSON.parse(p.metadata || '{}') } catch {}
+            return { identity: p.identity, name: p.name || meta.name || p.identity, raisedAt: meta.handRaisedAt || 0 }
+        })
+        .sort((a, b) => a.raisedAt - b.raisedAt)
+
+    return (
+        <div style={{ padding: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ color: 'white', fontSize: '0.9rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Hand size={16} /> Raised Hands ({handsUp.length})
+                </h3>
+                {handsUp.length > 0 && (
+                    <button onClick={onLowerAll} style={{
+                        background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none',
+                        padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600,
+                    }}>Lower All</button>
+                )}
+            </div>
+            {handsUp.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '2rem 0' }}>No hands raised</p>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {handsUp.map((h, i) => (
+                        <div key={h.identity} style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: 'rgba(255,255,255,0.03)', padding: '0.6rem 0.75rem', borderRadius: 10,
+                            border: '1px solid rgba(255,255,255,0.05)',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ color: '#f59e0b', fontSize: '1.1rem' }}>✋</span>
+                                <div>
+                                    <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 600 }}>#{i + 1} {h.name}</span>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', margin: 0 }}>
+                                        {h.raisedAt ? new Date(h.raisedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                    </p>
+                                </div>
+                            </div>
+                            <button onClick={() => onLowerHand(h.identity)} style={{
+                                background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)',
+                                padding: '4px 8px', borderRadius: 6, fontSize: '0.7rem', cursor: 'pointer',
+                            }}>Lower</button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ─── Host Controls Tab ───────────────────────────────────────────────────────
+function HostControlsTab({ room, participants, micLocked, setMicLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant }) {
+    const sendHostCommand = (command, extra = {}) => {
+        const msg = JSON.stringify({ type: 'host_command', command, ...extra })
+        const encoder = new TextEncoder()
+        room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
+    }
+
+    const handleMuteAll = () => sendHostCommand('mute_all')
+    const handleRequestCameraOffAll = () => sendHostCommand('request_camera_off_all')
+    const handleToggleMicLock = () => {
+        const newVal = !micLocked
+        setMicLocked(newVal)
+        sendHostCommand('mic_lock', { enabled: newVal })
+    }
+    const handleToggleReactions = () => {
+        const newVal = !reactionsDisabled
+        setReactionsDisabled(newVal)
+        sendHostCommand('reactions_disabled', { value: newVal })
+    }
+
+    const remoteParticipants = participants.filter(p => !p.isLocal)
+
+    const controlBtnStyle = (color = '#6366f1') => ({
+        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+        padding: '0.75rem 1rem', borderRadius: 10, cursor: 'pointer', color: 'white',
+        fontSize: '0.85rem', fontWeight: 500, transition: 'all 0.15s ease',
+    })
+
+    return (
+        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <h3 style={{ color: 'white', fontSize: '0.9rem', fontWeight: 700, margin: '0 0 0.5rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ShieldCheck size={16} color="#6366f1" /> Host Controls
+            </h3>
+
+            {/* Quick Actions */}
+            <button onClick={handleMuteAll} style={controlBtnStyle()}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>
+                <MicOff size={16} color="#ef4444" /> Mute All Participants
+            </button>
+
+            <button onClick={handleRequestCameraOffAll} style={controlBtnStyle()}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.1)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>
+                <VideoOff size={16} color="#f59e0b" /> Request Camera Off (All)
+            </button>
+
+            <button onClick={onLowerAllHands} style={controlBtnStyle()}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.1)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>
+                <ArrowDown size={16} color="#f59e0b" /> Lower All Hands
+            </button>
+
+            {/* Toggles */}
+            <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Locks</p>
+                <button onClick={handleToggleMicLock} style={{
+                    ...controlBtnStyle(), background: micLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
+                    border: micLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                }}>
+                    {micLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
+                    {micLocked ? 'Mic Locked — Students Cannot Unmute' : 'Mic Unlocked — Students Can Unmute'}
+                </button>
+                <button onClick={handleToggleReactions} style={{
+                    ...controlBtnStyle(), marginTop: '0.5rem',
+                    background: reactionsDisabled ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
+                    border: reactionsDisabled ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                }}>
+                    <Smile size={16} color={reactionsDisabled ? '#ef4444' : '#22c55e'} />
+                    {reactionsDisabled ? 'Reactions Disabled' : 'Reactions Enabled'}
+                </button>
+            </div>
+
+            {/* Per-participant list */}
+            {remoteParticipants.length > 0 && (
+                <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Participants</p>
+                    {remoteParticipants.map(p => {
+                        let meta = {}; try { meta = JSON.parse(p.metadata || '{}') } catch {}
+                        const pName = p.name || meta.name || p.identity
+                        return (
+                            <div key={p.identity} style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '0.5rem 0.75rem', borderRadius: 8,
+                                background: 'rgba(255,255,255,0.02)', marginBottom: 4,
+                            }}>
+                                <span style={{ color: 'white', fontSize: '0.8rem', fontWeight: 500 }}>{pName}</span>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                    <button onClick={() => sendHostCommand('mute_participant', { identity: p.identity })} title="Mute" style={{
+                                        background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6,
+                                        padding: 4, cursor: 'pointer', display: 'flex',
+                                    }}><MicOff size={14} color="#ef4444" /></button>
+                                    <button onClick={() => sendHostCommand('request_camera_off', { identity: p.identity })} title="Request Camera Off" style={{
+                                        background: 'rgba(245,158,11,0.1)', border: 'none', borderRadius: 6,
+                                        padding: 4, cursor: 'pointer', display: 'flex',
+                                    }}><VideoOff size={14} color="#f59e0b" /></button>
+                                    <button onClick={() => onRemoveParticipant(p.identity)} title="Remove" style={{
+                                        background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6,
+                                        padding: 4, cursor: 'pointer', display: 'flex',
+                                    }}><UserMinus size={14} color="#ef4444" /></button>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ─── Participant Control Overlay (hover desktop / tap mobile) ────────────────
+function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room }) {
+    const [showControls, setShowControls] = useState(false)
+
+    const sendHostCommand = (command) => {
+        const msg = JSON.stringify({ type: 'host_command', command, identity: participant.identity })
+        const encoder = new TextEncoder()
+        room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
+    }
+
+    if (!isOrganizer || participant.isLocal) return null
+
+    const buttonStyle = {
+        background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(255,255,255,0.15)',
+        borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: 'white',
+        fontSize: '0.7rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4,
+        backdropFilter: 'blur(8px)', transition: 'all 0.15s ease',
+    }
+
+    if (isMobile) {
+        // Tap to show bottom sheet
+        return (
+            <>
+                <button onClick={(e) => { e.stopPropagation(); setShowControls(!showControls) }} style={{
+                    position: 'absolute', top: 8, right: 8, zIndex: 15,
+                    background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%',
+                    width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                    <MoreVertical size={14} color="white" />
+                </button>
+                {showControls && (
+                    <div onClick={(e) => e.stopPropagation()} style={{
+                        position: 'absolute', bottom: 40, left: 8, right: 8, zIndex: 20,
+                        background: 'rgba(15,23,42,0.95)', borderRadius: 12, padding: 8,
+                        border: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 6, justifyContent: 'center',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                    }}>
+                        <button onClick={() => { sendHostCommand('mute_participant'); setShowControls(false) }} style={buttonStyle}>
+                            <MicOff size={12} /> Mute
+                        </button>
+                        <button onClick={() => { sendHostCommand('request_camera_off'); setShowControls(false) }} style={buttonStyle}>
+                            <VideoOff size={12} /> Cam Off
+                        </button>
+                        <button onClick={() => { sendHostCommand('remove_participant'); setShowControls(false) }} style={{
+                            ...buttonStyle, background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)',
+                        }}>
+                            <UserMinus size={12} /> Remove
+                        </button>
+                    </div>
+                )}
+            </>
+        )
+    }
+
+    // Desktop: hover overlay
+    return (
+        <div className="participant-hover-controls" style={{
+            position: 'absolute', inset: 0, zIndex: 15,
+            background: 'rgba(0,0,0,0.4)', opacity: 0,
+            transition: 'opacity 0.2s ease', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}
+        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+        onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
+            <button onClick={() => sendHostCommand('mute_participant')} style={buttonStyle}><MicOff size={12} /> Mute</button>
+            <button onClick={() => sendHostCommand('request_camera_off')} style={buttonStyle}><VideoOff size={12} /> Cam Off</button>
+            <button onClick={() => sendHostCommand('remove_participant')} style={{
+                ...buttonStyle, background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)',
+            }}><UserMinus size={12} /> Remove</button>
+        </div>
+    )
+}
+
 // ─── Control Bar ─────────────────────────────────────────────────────────────
-function MeetControlBar({ onLeave }) {
+function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, onSendReaction, onToggleHand }) {
     const room = useRoomContext()
     const { isMobile } = useDeviceOrientation()
     const localParticipant = useLocalParticipant()
     const [isMicOn, setIsMicOn] = useState(true)
     const [isCamOn, setIsCamOn] = useState(true)
     const [isScreenSharing, setIsScreenSharing] = useState(false)
+    const [showReactionPicker, setShowReactionPicker] = useState(false)
+    const [forceMutedUntil, setForceMutedUntil] = useState(0)
 
     const lp = localParticipant.localParticipant
 
@@ -406,6 +734,10 @@ function MeetControlBar({ onLeave }) {
 
     const toggleMic = async () => {
         if (!lp) return
+        // If mic is locked by instructor and user is not organizer, block unmute
+        if (!isOrganizer && micLocked && !isMicOn) return
+        // If force-muted recently, block unmute for 5 seconds
+        if (!isOrganizer && !isMicOn && Date.now() < forceMutedUntil) return
         await lp.setMicrophoneEnabled(!isMicOn)
         setIsMicOn(!isMicOn)
     }
@@ -436,16 +768,21 @@ function MeetControlBar({ onLeave }) {
         boxShadow: danger ? '0 4px 15px rgba(239,68,68,0.4)' : 'none',
     })
 
+    const isMicBlocked = !isOrganizer && micLocked && !isMicOn
+
     return (
         <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem',
-            padding: '1rem 2rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.5rem' : '0.75rem',
+            padding: isMobile ? '0.75rem 1rem' : '1rem 2rem',
             background: 'rgba(15,23,42,0.95)',
             borderTop: '1px solid rgba(255,255,255,0.05)',
         }}>
             {/* Mic */}
-            <button onClick={toggleMic} style={btnStyle(isMicOn)} title={isMicOn ? 'Mute' : 'Unmute'}>
-                {isMicOn ? <Mic size={20} /> : <MicOff size={20} />}
+            <button onClick={toggleMic} style={{
+                ...btnStyle(isMicOn),
+                ...(isMicBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+            }} title={isMicBlocked ? 'Mic locked by instructor' : isMicOn ? 'Mute' : 'Unmute'}>
+                {isMicBlocked ? <Lock size={20} /> : isMicOn ? <Mic size={20} /> : <MicOff size={20} />}
             </button>
 
             {/* Camera */}
@@ -453,7 +790,7 @@ function MeetControlBar({ onLeave }) {
                 {isCamOn ? <Video size={20} /> : <VideoOff size={20} />}
             </button>
 
-            {/* Screen Share */}
+            {/* Screen Share (desktop only) */}
             {!isMobile && (
                 <button onClick={toggleScreen} style={{
                     ...btnStyle(true),
@@ -464,12 +801,38 @@ function MeetControlBar({ onLeave }) {
                 </button>
             )}
 
-            {/* Raise Hand for Mobile (Placeholder) */}
-            {isMobile && (
-                <button onClick={() => { /* emit raise hand event */ }} style={{ ...btnStyle(true), background: 'rgba(255,255,255,0.1)' }} title="Raise Hand">
-                    <Hand size={20} />
+            {/* Reactions */}
+            <div style={{ position: 'relative' }}>
+                <button onClick={() => !reactionsDisabled && setShowReactionPicker(!showReactionPicker)}
+                    style={{
+                        ...btnStyle(true),
+                        background: showReactionPicker ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
+                        ...(reactionsDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+                    }} title={reactionsDisabled ? 'Reactions disabled by instructor' : 'Send Reaction'}>
+                    <Smile size={20} />
                 </button>
-            )}
+                {showReactionPicker && !reactionsDisabled && (
+                    <ReactionPicker onSelect={onSendReaction} onClose={() => setShowReactionPicker(false)} />
+                )}
+            </div>
+
+            {/* Hand Raise */}
+            <button onClick={onToggleHand} style={{
+                ...btnStyle(true),
+                background: handRaised ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)',
+                color: handRaised ? '#f59e0b' : 'white',
+                position: 'relative',
+            }} title={handRaised ? 'Lower Hand' : 'Raise Hand'}>
+                <Hand size={20} />
+                {raisedHandsCount > 0 && (
+                    <span style={{
+                        position: 'absolute', top: -4, right: -4,
+                        background: '#f59e0b', color: '#000', fontSize: '0.6rem', fontWeight: 800,
+                        width: 18, height: 18, borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{raisedHandsCount}</span>
+                )}
+            </button>
 
             {/* Leave */}
             <button onClick={onLeave} style={btnStyle(false, true)} title="Leave Meeting">
@@ -555,12 +918,35 @@ function WaitingRoomTab({ waitingStudents, setWaitingStudents, channel }) {
 function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, refreshStats, toast, waitingStudents, setWaitingStudents }) {
     const { isMobile, isLandscape } = useDeviceOrientation()
     const room = useRoomContext()
+    const remoteParticipants = useRemoteParticipants()
+    const { localParticipant } = useLocalParticipant()
     const joinTimeRef = useRef(Date.now())
     const attendanceMarkedRef = useRef(false)
     const attendanceIntervalRef = useRef(null)
     const containerRef = useRef(null)
     const [isFullScreen, setIsFullScreen] = useState(false)
     const [admittedStudents, setAdmittedStudents] = useState([])
+
+    // ── New Feature State ──
+    const [reactions, setReactions] = useState([])
+    const [handRaised, setHandRaised] = useState(false)
+    const [micLocked, setMicLocked] = useState(false)
+    const [reactionsDisabled, setReactionsDisabled] = useState(false)
+    const lastReactionTime = useRef(0)
+    const reactionIdCounter = useRef(0)
+
+    // All participants list for host controls
+    const allParticipants = useMemo(() => {
+        if (!localParticipant) return remoteParticipants
+        return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)]
+    }, [localParticipant, remoteParticipants])
+
+    // Count raised hands
+    const raisedHandsCount = useMemo(() => {
+        return allParticipants.filter(p => {
+            try { return JSON.parse(p.metadata || '{}').handRaised } catch { return false }
+        }).length
+    }, [allParticipants])
 
     useEffect(() => {
         const handleFullscreenChange = () => setIsFullScreen(!!document.fullscreenElement)
@@ -575,6 +961,167 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
             document.exitFullscreen()
         }
     }
+
+    // ── Data Channel Listener (reactions + host commands) ──
+    useEffect(() => {
+        if (!room) return
+        const decoder = new TextDecoder()
+
+        const handleDataReceived = (payload, participant) => {
+            try {
+                const msg = JSON.parse(decoder.decode(payload))
+
+                if (msg.type === 'reaction') {
+                    const id = `reaction-${Date.now()}-${reactionIdCounter.current++}`
+                    const x = 10 + Math.random() * 80 // random horizontal position
+                    setReactions(prev => [...prev, { id, emoji: msg.emoji, senderName: msg.senderName, x }])
+                    // Auto-remove after animation
+                    setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
+                }
+
+                if (msg.type === 'host_command' && !isOrganizer) {
+                    const lp = room.localParticipant
+                    switch (msg.command) {
+                        case 'mute_all':
+                            lp.setMicrophoneEnabled(false)
+                            toast.info('🔇 Instructor muted all participants')
+                            break
+                        case 'mute_participant':
+                            if (msg.identity === lp.identity) {
+                                lp.setMicrophoneEnabled(false)
+                                toast.info('🔇 Instructor muted your microphone')
+                            }
+                            break
+                        case 'request_camera_off_all':
+                            lp.setCameraEnabled(false)
+                            toast.info('📷 Instructor requested cameras off')
+                            break
+                        case 'request_camera_off':
+                            if (msg.identity === lp.identity) {
+                                lp.setCameraEnabled(false)
+                                toast.info('📷 Instructor requested your camera off')
+                            }
+                            break
+                        case 'mic_lock':
+                            setMicLocked(msg.enabled)
+                            if (msg.enabled) {
+                                lp.setMicrophoneEnabled(false)
+                                toast.warning('🔒 Instructor locked microphones')
+                            } else {
+                                toast.success('🔓 Microphones unlocked')
+                            }
+                            break
+                        case 'reactions_disabled':
+                            setReactionsDisabled(msg.value)
+                            toast.info(msg.value ? '😶 Reactions disabled by instructor' : '😀 Reactions enabled')
+                            break
+                        case 'lower_hand':
+                            if (msg.identity === lp.identity) {
+                                const meta = JSON.parse(lp.metadata || '{}')
+                                lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+                                setHandRaised(false)
+                                toast.info('✋ Instructor lowered your hand')
+                            }
+                            break
+                        case 'lower_all_hands': {
+                            const meta = JSON.parse(lp.metadata || '{}')
+                            if (meta.handRaised) {
+                                lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+                                setHandRaised(false)
+                                toast.info('✋ Instructor lowered all hands')
+                            }
+                            break
+                        }
+                        case 'remove_participant':
+                            if (msg.identity === lp.identity) {
+                                toast.error('🚫 You have been removed from this meeting')
+                                setTimeout(() => { room.disconnect(); onLeave() }, 1500)
+                            }
+                            break
+                    }
+                }
+            } catch (e) {
+                // Not a JSON data message, ignore
+            }
+        }
+
+        room.on(RoomEvent.DataReceived, handleDataReceived)
+        return () => room.off(RoomEvent.DataReceived, handleDataReceived)
+    }, [room, isOrganizer, toast, onLeave])
+
+    // ── Send Reaction ──
+    const sendReaction = useCallback((emoji) => {
+        if (!room || reactionsDisabled) return
+        const now = Date.now()
+        if (now - lastReactionTime.current < 2000) return // 2-second cooldown
+        lastReactionTime.current = now
+
+        let meta = {}
+        try { meta = JSON.parse(room.localParticipant.metadata || '{}') } catch {}
+        const senderName = room.localParticipant.name || meta.name || room.localParticipant.identity
+
+        const msg = JSON.stringify({ type: 'reaction', emoji, senderName, timestamp: now })
+        const encoder = new TextEncoder()
+        room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
+
+        // Also show locally
+        const id = `reaction-${now}-${reactionIdCounter.current++}`
+        const x = 10 + Math.random() * 80
+        setReactions(prev => [...prev, { id, emoji, senderName, x }])
+        setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
+    }, [room, reactionsDisabled])
+
+    // ── Toggle Hand Raise (metadata-based) ──
+    const toggleHandRaise = useCallback(() => {
+        if (!room) return
+        const lp = room.localParticipant
+        const newRaised = !handRaised
+        let meta = {}
+        try { meta = JSON.parse(lp.metadata || '{}') } catch {}
+        lp.setMetadata(JSON.stringify({
+            ...meta,
+            handRaised: newRaised,
+            handRaisedAt: newRaised ? Date.now() : null,
+        }))
+        setHandRaised(newRaised)
+    }, [room, handRaised])
+
+    // ── Lower Specific Hand (instructor) ──
+    const lowerHand = useCallback((identity) => {
+        if (!room) return
+        const msg = JSON.stringify({ type: 'host_command', command: 'lower_hand', identity })
+        const encoder = new TextEncoder()
+        room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
+        // Also update locally for the instructor's own hand
+        if (identity === room.localParticipant.identity) {
+            const meta = JSON.parse(room.localParticipant.metadata || '{}')
+            room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+            setHandRaised(false)
+        }
+    }, [room])
+
+    // ── Lower All Hands (instructor) ──
+    const lowerAllHands = useCallback(() => {
+        if (!room) return
+        const msg = JSON.stringify({ type: 'host_command', command: 'lower_all_hands' })
+        const encoder = new TextEncoder()
+        room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
+        // Also lower own hand
+        const meta = JSON.parse(room.localParticipant.metadata || '{}')
+        if (meta.handRaised) {
+            room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+            setHandRaised(false)
+        }
+    }, [room])
+
+    // ── Remove Participant (instructor) ──
+    const removeParticipant = useCallback((identity) => {
+        if (!room) return
+        const msg = JSON.stringify({ type: 'host_command', command: 'remove_participant', identity })
+        const encoder = new TextEncoder()
+        room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
+        toast.success(`Removed participant`)
+    }, [room, toast])
 
     // ── Attendance Tracking (Supabase Realtime) ──
     useEffect(() => {
@@ -684,6 +1231,9 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                 {/* Video Grid */}
                 <VideoGrid />
 
+                {/* Reaction Overlay */}
+                <ReactionOverlay reactions={reactions} />
+
                 {/* Sidebar */}
                 {sidebarOpen && channelInstance && (
                     <div 
@@ -724,7 +1274,12 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             {[
                                 { id: 'notes', icon: Edit3, label: 'Notes' },
                                 { id: 'polls', icon: BarChart2, label: 'Polls' },
-                                ...(isOrganizer ? [{ id: 'attendance', icon: Users, label: 'Att.' }, { id: 'waiting', icon: UserPlus, label: `Wait (${waitingStudents?.length || 0})` }] : []),
+                                ...(isOrganizer ? [
+                                    { id: 'attendance', icon: Users, label: 'Att.' },
+                                    { id: 'waiting', icon: UserPlus, label: `Wait (${waitingStudents?.length || 0})` },
+                                    { id: 'hands', icon: Hand, label: `✋ (${raisedHandsCount})` },
+                                    { id: 'host', icon: ShieldCheck, label: 'Host' },
+                                ] : []),
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setSidebarTab(tab.id)} style={{
                                     flex: 1, padding: '0.5rem',
@@ -732,7 +1287,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                     color: sidebarTab === tab.id ? 'white' : 'var(--text-muted)',
                                     border: 'none', borderRadius: '6px', cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    gap: '0.3rem', fontSize: '0.8rem', minWidth: '60px'
+                                    gap: '0.3rem', fontSize: '0.75rem', minWidth: '50px'
                                 }}>
                                     <tab.icon size={14} /> {tab.label}
                                 </button>
@@ -744,6 +1299,19 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
                             {sidebarTab === 'waiting' && isOrganizer && <WaitingRoomTab waitingStudents={waitingStudents} setWaitingStudents={setWaitingStudents} channel={channelInstance} />}
+                            {sidebarTab === 'hands' && isOrganizer && <RaisedHandsPanel participants={allParticipants} onLowerHand={lowerHand} onLowerAll={lowerAllHands} />}
+                            {sidebarTab === 'host' && isOrganizer && (
+                                <HostControlsTab
+                                    room={room}
+                                    participants={allParticipants}
+                                    micLocked={micLocked}
+                                    setMicLocked={setMicLocked}
+                                    reactionsDisabled={reactionsDisabled}
+                                    setReactionsDisabled={setReactionsDisabled}
+                                    onLowerAllHands={lowerAllHands}
+                                    onRemoveParticipant={removeParticipant}
+                                />
+                            )}
                         </div>
                     </div>
                 )}
@@ -786,7 +1354,16 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
             )}
 
             {/* Control Bar */}
-            <MeetControlBar onLeave={handleLeave} />
+            <MeetControlBar
+                onLeave={handleLeave}
+                isOrganizer={isOrganizer}
+                handRaised={handRaised}
+                raisedHandsCount={raisedHandsCount}
+                reactionsDisabled={reactionsDisabled}
+                micLocked={micLocked}
+                onSendReaction={sendReaction}
+                onToggleHand={toggleHandRaise}
+            />
         </div>
     )
 }
