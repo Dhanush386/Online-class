@@ -1214,6 +1214,36 @@ function ConnectionBanner() {
     )
 }
 
+// ─── Notification Sound (Web Audio API) ──────────────────────────────────────
+const playNotificationSound = () => {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext
+        if (!AudioContext) return
+        const ctx = new AudioContext()
+        
+        const playTone = (freq, startTime, duration) => {
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+            osc.type = 'sine'
+            osc.frequency.value = freq
+            
+            gain.gain.setValueAtTime(0, startTime)
+            gain.gain.linearRampToValueAtTime(0.3, startTime + 0.02)
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
+            
+            osc.connect(gain)
+            gain.connect(ctx.destination)
+            osc.start(startTime)
+            osc.stop(startTime + duration)
+        }
+        
+        playTone(659.25, ctx.currentTime, 0.4) // E5
+        playTone(880.00, ctx.currentTime + 0.1, 0.6) // A5
+    } catch (e) {
+        console.error('Failed to play notification sound', e)
+    }
+}
+
 // ─── Room Content (inside LiveKitRoom context) ───────────────────────────────
 function WaitingRoomTab({ waitingStudents, setWaitingStudents, channel }) {
     const handleAdmit = (studentId) => {
@@ -1337,6 +1367,9 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                 if (msg.type === 'hand_raise') {
                     if (msg.raised) {
                         setRaisedHands(prev => ({ ...prev, [msg.identity]: { name: msg.name, raisedAt: msg.timestamp } }))
+                        if (msg.identity !== room.localParticipant.identity) {
+                            playNotificationSound()
+                        }
                     } else {
                         setRaisedHands(prev => { const n = { ...prev }; delete n[msg.identity]; return n })
                     }

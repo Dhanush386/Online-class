@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Mic, MicOff, Maximize2, PhoneOff, Users, MonitorUp } from 'lucide-react'
+import { Track, RoomEvent } from 'livekit-client'
 import { useMeeting } from '../contexts/MeetingContext'
 
 // ─── Custom Video Preview (attaches track to <video>) ────────────────────────
@@ -47,6 +48,63 @@ function MiniVideoPreview({ track, fallbackName }) {
                 pointerEvents: 'none',
             }}
         />
+    )
+}
+
+// ─── Custom Audio Track ──────────────────────────────────────────────────────
+function CustomAudioTrack({ track }) {
+    const audioRef = useRef(null)
+    useEffect(() => {
+        const el = audioRef.current
+        if (el && track) {
+            track.attach(el)
+            return () => track.detach(el)
+        }
+    }, [track])
+    return <audio ref={audioRef} autoPlay />
+}
+
+// ─── Remote Audio Renderer (Global for Widget) ───────────────────────────────
+function RemoteAudioRenderer() {
+    const { room } = useMeeting()
+    const [tracks, setTracks] = useState([])
+
+    useEffect(() => {
+        if (!room) return
+        const updateTracks = () => {
+            const newTracks = []
+            room.remoteParticipants.forEach(p => {
+                const pub = p.getTrackPublication(Track.Source.Microphone)
+                if (pub && pub.track) {
+                    newTracks.push(pub.track)
+                }
+            })
+            setTracks(newTracks)
+        }
+        
+        updateTracks()
+        
+        room.on(RoomEvent.TrackSubscribed, updateTracks)
+        room.on(RoomEvent.TrackUnsubscribed, updateTracks)
+        room.on(RoomEvent.ParticipantConnected, updateTracks)
+        room.on(RoomEvent.ParticipantDisconnected, updateTracks)
+        room.on(RoomEvent.TrackMuted, updateTracks)
+        room.on(RoomEvent.TrackUnmuted, updateTracks)
+
+        return () => {
+            room.off(RoomEvent.TrackSubscribed, updateTracks)
+            room.off(RoomEvent.TrackUnsubscribed, updateTracks)
+            room.off(RoomEvent.ParticipantConnected, updateTracks)
+            room.off(RoomEvent.ParticipantDisconnected, updateTracks)
+            room.off(RoomEvent.TrackMuted, updateTracks)
+            room.off(RoomEvent.TrackUnmuted, updateTracks)
+        }
+    }, [room])
+
+    return (
+        <div style={{ display: 'none' }}>
+            {tracks.map(t => <CustomAudioTrack key={t.sid} track={t} />)}
+        </div>
     )
 }
 
@@ -351,9 +409,11 @@ export default function FloatingMeetingWidget() {
     const title = videoData?.title || 'Live Meeting'
     const truncatedTitle = title.length > 20 ? title.slice(0, 18) + '…' : title
 
+    let widgetContentUI;
+
     // ─── Mobile: Compact Pill ────────────────────────────────────────────────
     if (isMobile) {
-        return (
+        widgetContentUI = (
             <div style={{
                 position: 'fixed',
                 bottom: 24,
@@ -396,10 +456,9 @@ export default function FloatingMeetingWidget() {
             </div>
         )
     }
-
     // ─── Desktop: Picture-in-Picture Mode ────────────────────────────────────
-    if (pipWindow) {
-        return (
+    else if (pipWindow) {
+        widgetContentUI = (
             <>
                 {createPortal(<WidgetContent isPip={true} />, pipWindow.document.body)}
                 {/* Banner inside Main Window */}
@@ -445,37 +504,45 @@ export default function FloatingMeetingWidget() {
             </>
         )
     }
-
     // ─── Desktop: Fallback Floating Widget ───────────────────────────────────
+    else {
+        widgetContentUI = (
+            <div
+                ref={widgetRef}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                style={{
+                    position: 'fixed',
+                    left: pos.x,
+                    top: pos.y,
+                    width: WIDGET_W,
+                    height: WIDGET_H,
+                    zIndex: 99999,
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    background: 'rgba(15,23,42,0.98)',
+                    border: '1px solid rgba(99,102,241,0.25)',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.1)',
+                    backdropFilter: 'blur(16px)',
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    userSelect: 'none',
+                    transition: isDragging ? 'none' : 'left 300ms ease, top 300ms ease',
+                    animation: 'widgetSlideUp 300ms ease-out',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}
+            >
+                <WidgetContent isPip={false} />
+            </div>
+        )
+    }
+
     return (
-        <div
-            ref={widgetRef}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            style={{
-                position: 'fixed',
-                left: pos.x,
-                top: pos.y,
-                width: WIDGET_W,
-                height: WIDGET_H,
-                zIndex: 99999,
-                borderRadius: 16,
-                overflow: 'hidden',
-                background: 'rgba(15,23,42,0.98)',
-                border: '1px solid rgba(99,102,241,0.25)',
-                boxShadow: '0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.1)',
-                backdropFilter: 'blur(16px)',
-                cursor: isDragging ? 'grabbing' : 'grab',
-                userSelect: 'none',
-                transition: isDragging ? 'none' : 'left 300ms ease, top 300ms ease',
-                animation: 'widgetSlideUp 300ms ease-out',
-                display: 'flex',
-                flexDirection: 'column',
-            }}
-        >
-            <WidgetContent isPip={false} />
-        </div>
+        <>
+            <RemoteAudioRenderer />
+            {widgetContentUI}
+        </>
     )
 }
