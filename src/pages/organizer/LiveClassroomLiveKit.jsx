@@ -2255,6 +2255,14 @@ export default function LiveClassroom() {
     return (
         <LiveKitRoom
             room={room}
+            adaptiveStream={true}
+            dynacast={true}
+            videoCaptureDefaults={{
+                resolution: {
+                    width: 1280,
+                    height: 720,
+                },
+            }}
             style={{ height: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}
         >
             <RoomContent

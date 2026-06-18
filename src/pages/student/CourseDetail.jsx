@@ -163,8 +163,20 @@ export default function CourseDetail() {
     async function handleWatchVideo(video) {
         if (!video.video_url) return
         
-        // If it's a Google Drive link, open in new tab directly as requested
+        // If it's a Google Drive link, extract file ID and play the raw media stream to bypass processing delay
         if (video.video_url.includes('drive.google.com')) {
+            const fileIdMatch = video.video_url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+            const fileId = fileIdMatch ? fileIdMatch[1] : video.drive_file_id
+            const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
+            
+            if (fileId && GOOGLE_API_KEY) {
+                const streamUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${GOOGLE_API_KEY}`
+                setActiveVideo(video)
+                setSignedUrl(streamUrl)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+                return
+            }
+            
             window.open(video.video_url, '_blank')
             markComplete(video.id) // Automatically mark as watched
             return
