@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { useMeeting } from '../../contexts/MeetingContext'
 import { useToast } from '../../components/Toast'
 import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle, ZoomIn, ZoomOut, UserPlus, XCircle, CheckCircle, Clock, Smile, ShieldCheck, Lock, Unlock, UserMinus, ArrowDown, MoreVertical, Pin, PinOff } from 'lucide-react'
 
@@ -361,8 +362,24 @@ function VideoGrid() {
         return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)]
     }, [localParticipant, remoteParticipants])
 
-    const screenSharerIdentity = allParticipants.find(p => p.isScreenShareEnabled)?.identity
+    // TWEAK 1: Multiple screen sharers — latest (last in list) wins priority
+    // This prevents flickering when two organizers accidentally share at the same time
+    const screenSharers = allParticipants.filter(p => p.isScreenShareEnabled)
+    const screenSharerIdentity = screenSharers.length > 0 ? screenSharers[screenSharers.length - 1].identity : null
     const hasScreenShare = !!screenSharerIdentity
+
+    // Track previous screen share state for exit animation
+    const prevHadScreenShare = useRef(false)
+    const [layoutTransition, setLayoutTransition] = useState(false)
+
+    useEffect(() => {
+        if (prevHadScreenShare.current !== hasScreenShare) {
+            setLayoutTransition(true)
+            const timer = setTimeout(() => setLayoutTransition(false), 300)
+            prevHadScreenShare.current = hasScreenShare
+            return () => clearTimeout(timer)
+        }
+    }, [hasScreenShare])
 
     // Auto-clear pinned identity if the participant left
     useEffect(() => {
@@ -378,6 +395,7 @@ function VideoGrid() {
 
     const count = allParticipants.length
     const { isMobile, isLandscape } = useDeviceOrientation()
+    const isMobilePortrait = isMobile && !isLandscape
 
     // If a participant is pinned, show ONLY that participant
     const pinnedParticipant = pinnedIdentity ? allParticipants.find(p => p.identity === pinnedIdentity) : null
@@ -417,7 +435,7 @@ function VideoGrid() {
 
     // Dynamic grid sizing
     let cols = 1
-    if (isMobile && !isLandscape) {
+    if (isMobilePortrait) {
         if (count === 1) cols = 1
         else if (count === 2) cols = 1
         else if (count <= 6) cols = 2
@@ -435,14 +453,29 @@ function VideoGrid() {
     const screenSharer = hasScreenShare ? allParticipants.find(p => p.identity === screenSharerIdentity) : null
     const otherParticipants = hasScreenShare ? allParticipants.filter(p => p.identity !== screenSharerIdentity) : allParticipants
 
+    // Get presenter display name for the banner
+    let presenterName = ''
+    if (screenSharer) {
+        try {
+            const m = JSON.parse(screenSharer.metadata || '{}')
+            presenterName = screenSharer.name || m.name || screenSharer.identity
+        } catch {
+            presenterName = screenSharer.name || screenSharer.identity
+        }
+    }
+
     // SINGLE RETURN PATH — no conditional JSX trees
-    // When screen sharing: flex row layout (main area + right filmstrip like Google Meet)
+    // When screen sharing:
+    //   Desktop / Mobile Landscape: flex row (spotlight + right filmstrip)
+    //   Mobile Portrait: flex column (spotlight + bottom horizontal filmstrip)
     // When no screen share: normal grid layout
     return (
         <div style={{
             flex: 1,
             display: hasScreenShare ? 'flex' : 'grid',
-            flexDirection: hasScreenShare ? 'row' : undefined,
+            flexDirection: hasScreenShare
+                ? (isMobilePortrait ? 'column' : 'row')
+                : undefined,
             padding: '0.5rem',
             gap: '0.5rem',
             gridTemplateColumns: hasScreenShare ? undefined : `repeat(${cols}, 1fr)`,
@@ -454,6 +487,10 @@ function VideoGrid() {
             minWidth: 0,
             minHeight: 0,
             boxSizing: 'border-box',
+            // TWEAK 2: Smooth fade transition when entering/exiting spotlight
+            animation: layoutTransition
+                ? (hasScreenShare ? 'spotlightFadeIn 300ms ease-out' : 'gridFadeIn 300ms ease-out')
+                : 'none',
         }}>
             {/* Screen share spotlight: fills main area */}
             {screenSharer && (
@@ -463,35 +500,87 @@ function VideoGrid() {
                     minHeight: 0,
                     overflow: 'hidden',
                     borderRadius: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
                 }}>
-                    <ParticipantTile
-                        participant={screenSharer}
-                        isLocal={screenSharer.identity === localParticipant?.identity}
-                        isSpotlight={true}
-                        onPin={handlePin}
-                        isPinned={false}
-                    />
+                    {/* TWEAK 4: Presenter name banner — Google Meet style */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 12px',
+                        background: 'rgba(15,23,42,0.85)',
+                        borderRadius: '12px 12px 0 0',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        borderBottom: 'none',
+                        backdropFilter: 'blur(8px)',
+                        flexShrink: 0,
+                    }}>
+                        <MonitorUp size={14} color="#818cf8" />
+                        <span style={{
+                            color: 'rgba(255,255,255,0.9)',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}>
+                            📺 {presenterName} is presenting
+                        </span>
+                    </div>
+                    <div style={{
+                        flex: 1,
+                        minHeight: 0,
+                        overflow: 'hidden',
+                        borderRadius: '0 0 12px 12px',
+                    }}>
+                        <ParticipantTile
+                            participant={screenSharer}
+                            isLocal={screenSharer.identity === localParticipant?.identity}
+                            isSpotlight={true}
+                            onPin={handlePin}
+                            isPinned={false}
+                        />
+                    </div>
                 </div>
             )}
 
-            {/* Right filmstrip (when screen sharing) or normal grid tiles */}
+            {/* Filmstrip: right sidebar (desktop/landscape) or bottom row (mobile portrait) */}
             {hasScreenShare ? (
                 otherParticipants.length > 0 && (
                     <div style={{
-                        width: isMobile ? '100px' : '180px',
-                        flexShrink: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.5rem',
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                        paddingRight: '2px',
+                        // TWEAK 3: Mobile portrait → horizontal bottom filmstrip
+                        ...(isMobilePortrait ? {
+                            height: '90px',
+                            flexShrink: 0,
+                            display: 'flex',
+                            flexDirection: 'row',
+                            gap: '0.5rem',
+                            overflowX: 'auto',
+                            overflowY: 'hidden',
+                            paddingBottom: '2px',
+                        } : {
+                            width: isMobile ? '120px' : '180px',
+                            flexShrink: 0,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.5rem',
+                            overflowY: 'auto',
+                            overflowX: 'hidden',
+                            paddingRight: '2px',
+                        }),
                     }}>
                         {otherParticipants.map(p => (
                             <div key={p.identity} style={{
-                                width: '100%',
-                                height: isMobile ? '70px' : '120px',
-                                flexShrink: 0,
+                                ...(isMobilePortrait ? {
+                                    width: '120px',
+                                    height: '100%',
+                                    flexShrink: 0,
+                                } : {
+                                    width: '100%',
+                                    height: isMobile ? '80px' : '120px',
+                                    flexShrink: 0,
+                                }),
                                 minWidth: 0,
                                 minHeight: 0,
                                 overflow: 'hidden',
@@ -543,6 +632,14 @@ const REACTION_KEYFRAMES = `
 @keyframes fadeIn {
     from { opacity: 0; transform: translateX(-50%) translateY(8px); }
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes spotlightFadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+@keyframes gridFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 `
 
@@ -892,7 +989,8 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
 }
 
 // ─── Control Bar ─────────────────────────────────────────────────────────────
-function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, screenShareLocked, handsLocked, onSendReaction, onToggleHand }) {
+function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, screenShareLocked, handsLocked, onSendReaction, onToggleHand }) {
+    const { isRecording, isUploading, recordingSession, gToken, loginToDrive, startRecording, stopAndUploadRecording } = useMeeting()
     const room = useRoomContext()
     const { isMobile } = useDeviceOrientation()
     const localParticipant = useLocalParticipant()
@@ -901,8 +999,29 @@ function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, re
     const [isScreenSharing, setIsScreenSharing] = useState(false)
     const [showReactionPicker, setShowReactionPicker] = useState(false)
     const [forceMutedUntil, setForceMutedUntil] = useState(0)
+    const [recordingDuration, setRecordingDuration] = useState(0)
 
     const lp = localParticipant.localParticipant
+
+    useEffect(() => {
+        let interval;
+        if (isRecording && recordingSession?.startedAt) {
+            interval = setInterval(() => {
+                setRecordingDuration(Math.floor((Date.now() - recordingSession.startedAt) / 1000))
+            }, 1000)
+            setRecordingDuration(Math.floor((Date.now() - recordingSession.startedAt) / 1000))
+        } else {
+            setRecordingDuration(0)
+        }
+        return () => clearInterval(interval)
+    }, [isRecording, recordingSession?.startedAt])
+
+    const formatDuration = (seconds) => {
+        const h = Math.floor(seconds / 3600)
+        const m = Math.floor((seconds % 3600) / 60)
+        const s = seconds % 60
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    }
 
     // Sync state with actual track state
     useEffect(() => {
@@ -962,6 +1081,39 @@ function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, re
             background: 'rgba(15,23,42,0.95)',
             borderTop: '1px solid rgba(255,255,255,0.05)',
         }}>
+            {/* Recording Controls (Organizer Only) */}
+            {isOrganizer && !isMobile && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: 'auto' }}>
+                    {!gToken ? (
+                        <button onClick={loginToDrive} style={{
+                            background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)',
+                            padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                        }}>
+                            🔴 Drive Login
+                        </button>
+                    ) : (
+                        !isRecording && !isUploading ? (
+                            <>
+                                <div style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+                                    ☁️ Drive Connected
+                                </div>
+                                <button onClick={startRecording} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
+                                    Start Record
+                                </button>
+                            </>
+                        ) : isRecording ? (
+                            <button onClick={stopAndUploadRecording} style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center', animation: 'pulse 2s infinite' }}>
+                                ⏹ REC {formatDuration(recordingDuration)}
+                            </button>
+                        ) : (
+                            <div style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700 }}>
+                                ⏳ Uploading...
+                            </div>
+                        )
+                    )}
+                </div>
+            )}
+
             {/* Mic */}
             <button onClick={toggleMic} style={{
                 ...btnStyle(isMicOn),
@@ -1004,6 +1156,11 @@ function MeetControlBar({ onLeave, isOrganizer, handRaised, raisedHandsCount, re
                     <ReactionPicker onSelect={onSendReaction} onClose={() => setShowReactionPicker(false)} />
                 )}
             </div>
+
+            {/* Minimize */}
+            <button onClick={onMinimize} style={btnStyle(true)} title="Minimize Meeting">
+                <Minimize size={20} />
+            </button>
 
             {/* Hand Raise */}
             <button onClick={() => { if (!isOrganizer && handsLocked && !handRaised) return; onToggleHand() }} style={{
@@ -1105,7 +1262,7 @@ function WaitingRoomTab({ waitingStudents, setWaitingStudents, channel }) {
     )
 }
 
-function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, refreshStats, toast, waitingStudents, setWaitingStudents }) {
+function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, onMinimize, refreshStats, toast, waitingStudents, setWaitingStudents }) {
     const { isMobile, isLandscape } = useDeviceOrientation()
     const room = useRoomContext()
     const remoteParticipants = useRemoteParticipants()
@@ -1629,6 +1786,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
             {/* Control Bar */}
             <MeetControlBar
                 onLeave={handleLeave}
+                onMinimize={onMinimize}
                 isOrganizer={isOrganizer}
                 handRaised={handRaised}
                 raisedHandsCount={raisedHandsCount}
@@ -1664,6 +1822,7 @@ export default function LiveClassroom() {
     const { profile, refreshStats } = useAuth()
     const navigate = useNavigate()
     const toast = useToast()
+    const { room, startMeeting, minimizeMeeting, endMeeting } = useMeeting()
 
     const [videoData, setVideoData] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -1789,6 +1948,7 @@ export default function LiveClassroom() {
                 if (data?.error) throw new Error(`Server Error: ${data.error}`)
                 if (data?.token) {
                     setLivekitToken(data.token)
+                    startMeeting({ token: data.token, videoId, videoData, isOrganizer })
                 } else {
                     throw new Error('No token returned')
                 }
@@ -2046,7 +2206,7 @@ export default function LiveClassroom() {
     }
 
     // ── Fetching Token ──
-    if (!livekitToken) {
+    if (!livekitToken || !room) {
         return (
             <div style={{
                 height: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -2061,12 +2221,7 @@ export default function LiveClassroom() {
     // ── LiveKit Room ──
     return (
         <LiveKitRoom
-            serverUrl={LIVEKIT_URL}
-            token={livekitToken}
-            connect={true}
-            audio={true}
-            video={isOrganizer}
-            onDisconnected={() => navigate(-1)}
+            room={room}
             style={{ height: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}
         >
             <RoomContent
@@ -2079,7 +2234,8 @@ export default function LiveClassroom() {
                 setSidebarOpen={setSidebarOpen}
                 sidebarTab={sidebarTab}
                 setSidebarTab={setSidebarTab}
-                onLeave={() => navigate(-1)}
+                onLeave={() => { endMeeting(); navigate(-1); }}
+                onMinimize={() => { navigate(-1); minimizeMeeting(); }}
                 refreshStats={refreshStats}
                 toast={toast}
                 waitingStudents={waitingStudents}

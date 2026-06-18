@@ -3,11 +3,12 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useMeeting } from '../contexts/MeetingContext'
 import {
   LayoutDashboard, Radio, Calendar, Users, LogOut,
   GraduationCap, Menu, Bell, BookOpen, ClipboardList, Code, Globe,
   MessageSquare, Info, AlertTriangle, CheckCircle, Clock, Trophy,
-  CreditCard, ChevronDown, Search, Settings, BarChart2, Shield
+  CreditCard, ChevronDown, Search, Settings, BarChart2, Shield, FolderOpen
 } from 'lucide-react'
 import AIChatbot from '../components/shared/AIChatbot'
 import CommandPalette from '../components/CommandPalette'
@@ -34,12 +35,14 @@ const NAV_GROUPS = [
       { to: '/organizer/assessments',icon: ClipboardList,   label: 'Assessments' },
       { to: '/organizer/coding',     icon: Code,            label: 'Coding Practice' },
       { to: '/organizer/upload',     icon: Radio,           label: 'Live Class' },
+      { to: '/organizer/recordings', icon: FolderOpen,      label: 'Recording History' },
       { to: '/organizer/schedule',   icon: Calendar,        label: 'Schedule' },
     ],
   },
   {
     label: 'Analytics',
     items: [
+      { to: '/organizer/analytics',  icon: BarChart2,       label: 'Overview' },
       { to: '/organizer/leaderboard',icon: Trophy,          label: 'Leaderboard' },
     ],
   },
@@ -56,6 +59,7 @@ const NAV_GROUPS = [
 
 export default function OrganizerLayout() {
   const { profile, signOut } = useAuth()
+  const { requestNavigation } = useMeeting()
   const navigate  = useNavigate()
   const location  = useLocation()
   const [collapsed,         setCollapsed]         = useState(false)
@@ -112,7 +116,10 @@ export default function OrganizerLayout() {
     } catch (err) { console.error(err) }
   }
 
-  async function handleSignOut() { await signOut(); navigate('/login') }
+  async function handleSignOut() { 
+    if (requestNavigation('/login')) return;
+    await signOut(); navigate('/login') 
+  }
 
   const navIconStyle = (isActive) => ({
     width: 30, height: 30, borderRadius: 8, flexShrink: 0,
@@ -184,7 +191,10 @@ export default function OrganizerLayout() {
                 {filtered.map(({ to, icon: Icon, label: itemLabel, end }) => (
                   <NavLink
                     key={to} to={to} end={end}
-                    onClick={() => isMobile && setMobileMenuOpen(false)}
+                    onClick={(e) => {
+                      if (requestNavigation(to)) e.preventDefault();
+                      if (isMobile) setMobileMenuOpen(false);
+                    }}
                     className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                     style={{ justifyContent: collapsed && !isMobile ? 'center' : 'flex-start' }}
                     title={collapsed && !isMobile ? itemLabel : undefined}
@@ -205,7 +215,7 @@ export default function OrganizerLayout() {
         {/* Footer */}
         {(!collapsed || isMobile) && (
           <div style={{ padding: '0.75rem', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
-            <button onClick={() => { navigate('/student'); }} className="dropdown-item" style={{ background: 'rgba(16,185,129,0.06)', borderRadius: 8, color: '#10b981', fontWeight: 700, marginBottom: '0.25rem', border: '1px solid rgba(16,185,129,0.15)' }}>
+            <button onClick={() => { if (requestNavigation('/student')) return; navigate('/student'); }} className="dropdown-item" style={{ background: 'rgba(16,185,129,0.06)', borderRadius: 8, color: '#10b981', fontWeight: 700, marginBottom: '0.25rem', border: '1px solid rgba(16,185,129,0.15)' }}>
               <GraduationCap size={14} /> Student View
             </button>
             <button onClick={handleSignOut} className="btn-ghost" style={{ width: '100%', justifyContent: 'flex-start', gap: '0.6rem', fontSize: '0.8rem', padding: '0.5rem 0.6rem' }}>
@@ -335,9 +345,9 @@ export default function OrganizerLayout() {
                           </div>
                         </div>
                       </div>
-                      <button onClick={() => { navigate('/student'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: '#10b981', fontWeight: 600 }}><GraduationCap size={15} /> Student View</button>
-                      <button onClick={() => { navigate('/organizer'); setShowProfileMenu(false) }} className="dropdown-item"><LayoutDashboard size={15} /> Dashboard</button>
-                      <button onClick={() => { navigate('/organizer/profile'); setShowProfileMenu(false) }} className="dropdown-item"><Settings size={15} /> My Profile</button>
+                      <button onClick={() => { if (requestNavigation('/student')) return; navigate('/student'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: '#10b981', fontWeight: 600 }}><GraduationCap size={15} /> Student View</button>
+                      <button onClick={() => { if (requestNavigation('/organizer')) return; navigate('/organizer'); setShowProfileMenu(false) }} className="dropdown-item"><LayoutDashboard size={15} /> Dashboard</button>
+                      <button onClick={() => { if (requestNavigation('/organizer/profile')) return; navigate('/organizer/profile'); setShowProfileMenu(false) }} className="dropdown-item"><Settings size={15} /> My Profile</button>
                       <div className="dropdown-divider" />
                       <button onClick={() => { handleSignOut(); setShowProfileMenu(false) }} className="dropdown-item danger"><LogOut size={15} /> Sign Out</button>
                     </motion.div>

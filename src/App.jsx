@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { MeetingProvider } from './contexts/MeetingContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ToastProvider } from './components/Toast'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -58,6 +59,8 @@ const Notifications         = lazy(() => import('./pages/organizer/Notifications
 const OrganizerProfile      = lazy(() => import('./pages/organizer/OrganizerProfile'))
 const RenewalManagement     = lazy(() => import('./pages/organizer/RenewalManagement'))
 const LiveClassroom         = lazy(() => import('./pages/organizer/LiveClassroom'))
+const OrganizerRecordings   = lazy(() => import('./pages/organizer/OrganizerRecordings'))
+const OrganizerAnalytics    = lazy(() => import('./pages/organizer/OrganizerAnalytics'))
 const CodePlayground        = lazy(() => import('./pages/shared/CodePlayground'))
 const Support               = lazy(() => import('./pages/shared/Support'))
 
@@ -101,7 +104,7 @@ function AppInner() {
   }, []);
 
   return (
-    <>
+    <MeetingProvider>
       <CustomCursor />
       <PWAInstallBanner />
       <Suspense fallback={<PageLoader />}>
@@ -126,7 +129,9 @@ function AppInner() {
             <Route path="coding"                            element={<CodingManagement />} />
             <Route path="proctoring"                        element={<LiveProctoring />} />
             <Route path="upload"                            element={<UploadVideo />} />
+            <Route path="recordings"                        element={<OrganizerRecordings />} />
             <Route path="schedule"                          element={<ScheduleManager />} />
+            <Route path="analytics"                         element={<OrganizerAnalytics />} />
             <Route path="students"                          element={<StudentManagement />} />
             <Route path="leaderboard"                       element={<Leaderboard />} />
             <Route path="notifications"                     element={<Notifications />} />
@@ -165,7 +170,7 @@ function AppInner() {
           <Route path="*"  element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-    </>
+    </MeetingProvider>
   )
 }
 

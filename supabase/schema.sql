@@ -32,7 +32,13 @@ create table if not exists public.videos (
   course_id uuid references public.courses(id) on delete cascade,
   title text not null,
   description text,
-  video_url text,              -- stores the live meeting link (Google Meet / Zoom / Teams)
+  video_url text,              -- stores the live meeting link (Google Meet / Zoom / Teams) or Drive Recording Link
+  drive_file_id text,          -- Google Drive File ID for recording
+  recording_status text,       -- 'recording', 'uploading', 'completed', 'failed'
+  duration_seconds integer,    -- Duration of the recording in seconds
+  recorded_by uuid references public.users(id),
+  recorded_at timestamptz,
+  file_size_mb numeric(10,2),
   scheduled_time timestamptz,
   duration_minutes integer,
   created_at timestamptz default now()

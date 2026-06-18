@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useMeeting } from '../contexts/MeetingContext'
 import {
   LayoutDashboard, BookOpen, Calendar, ClipboardList, LogOut,
   GraduationCap, Menu, X, Bell, Award, Code, Globe,
@@ -67,6 +68,7 @@ function getRankInfo(xp = 0) {
 
 export default function StudentLayout() {
   const { profile, signOut, stats } = useAuth()
+  const { requestNavigation } = useMeeting()
   const navigate  = useNavigate()
   const location  = useLocation()
   const [collapsed,       setCollapsed]       = useState(false)
@@ -123,7 +125,10 @@ export default function StudentLayout() {
     } catch (err) { console.error(err) }
   }
 
-  async function handleSignOut() { await signOut(); navigate('/login') }
+  async function handleSignOut() { 
+    if (requestNavigation('/login')) return;
+    await signOut(); navigate('/login') 
+  }
 
   const navIconStyle = (isActive) => ({
     width: 32, height: 32, borderRadius: 8, flexShrink: 0,
@@ -208,7 +213,10 @@ export default function StudentLayout() {
                   key={to}
                   to={to}
                   end={end}
-                  onClick={() => isMobile && setMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    if (requestNavigation(to)) e.preventDefault();
+                    if (isMobile) setMobileMenuOpen(false);
+                  }}
                   className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                   style={{ justifyContent: collapsed && !isMobile ? 'center' : 'flex-start' }}
                   title={collapsed && !isMobile ? itemLabel : undefined}
@@ -231,7 +239,7 @@ export default function StudentLayout() {
         {(!collapsed || isMobile) && (
           <div style={{ padding: '1rem', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
             {isOrganizer && (
-              <button onClick={() => navigate('/organizer')} className="btn-secondary" style={{ width: '100%', marginBottom: '1rem', padding: '0.5rem', fontSize: '0.8rem', gap: '0.5rem', background: 'rgba(99,102,241,0.1)', color: 'var(--primary-600)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 10 }}>
+              <button onClick={() => { if (requestNavigation('/organizer')) return; navigate('/organizer'); }} className="btn-secondary" style={{ width: '100%', marginBottom: '1rem', padding: '0.5rem', fontSize: '0.8rem', gap: '0.5rem', background: 'rgba(99,102,241,0.1)', color: 'var(--primary-600)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 10 }}>
                 <LayoutDashboard size={14} /> Back to Organizer
               </button>
             )}
@@ -303,7 +311,7 @@ export default function StudentLayout() {
             <CommandPalette role="student" onSignOut={handleSignOut} />
 
             {/* Achievements shortcut */}
-            <button onClick={() => navigate('/student/achievements')} className="btn-icon hide-mobile" title="Achievements">
+            <button onClick={() => { if (requestNavigation('/student/achievements')) return; navigate('/student/achievements'); }} className="btn-icon hide-mobile" title="Achievements">
               <Award size={16} color="var(--secondary-500)" />
             </button>
 
@@ -415,14 +423,14 @@ export default function StudentLayout() {
                         </div>
                       </div>
 
-                      <button onClick={() => { navigate('/student/profile'); setShowProfileMenu(false) }} className="dropdown-item"><User size={15} /> My Profile</button>
-                      {isOrganizer && <button onClick={() => { navigate('/organizer'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: 'var(--primary-600)', fontWeight: 700 }}><LayoutDashboard size={15} /> Back to Organizer</button>}
-                      <button onClick={() => { navigate('/student'); setShowProfileMenu(false) }} className="dropdown-item"><Mountain size={15} /> My Journey</button>
-                      <button onClick={() => { navigate('/student/playground'); setShowProfileMenu(false) }} className="dropdown-item"><Globe size={15} /> Playground</button>
-                      <button onClick={() => { navigate('/student/renew'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: 'var(--primary-600)' }}><CreditCard size={15} /> Renew Access</button>
+                      <button onClick={() => { if (requestNavigation('/student/profile')) return; navigate('/student/profile'); setShowProfileMenu(false) }} className="dropdown-item"><User size={15} /> My Profile</button>
+                      {isOrganizer && <button onClick={() => { if (requestNavigation('/organizer')) return; navigate('/organizer'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: 'var(--primary-600)', fontWeight: 700 }}><LayoutDashboard size={15} /> Back to Organizer</button>}
+                      <button onClick={() => { if (requestNavigation('/student')) return; navigate('/student'); setShowProfileMenu(false) }} className="dropdown-item"><Mountain size={15} /> My Journey</button>
+                      <button onClick={() => { if (requestNavigation('/student/playground')) return; navigate('/student/playground'); setShowProfileMenu(false) }} className="dropdown-item"><Globe size={15} /> Playground</button>
+                      <button onClick={() => { if (requestNavigation('/student/renew')) return; navigate('/student/renew'); setShowProfileMenu(false) }} className="dropdown-item" style={{ color: 'var(--primary-600)' }}><CreditCard size={15} /> Renew Access</button>
 
                       <div className="dropdown-divider" />
-                      <button onClick={() => { navigate('/student/support'); setShowProfileMenu(false) }} className="dropdown-item"><MessageCircle size={15} /> Contact Us</button>
+                      <button onClick={() => { if (requestNavigation('/student/support')) return; navigate('/student/support'); setShowProfileMenu(false) }} className="dropdown-item"><MessageCircle size={15} /> Contact Us</button>
                       <div className="dropdown-divider" />
                       <button onClick={() => { handleSignOut(); setShowProfileMenu(false) }} className="dropdown-item danger"><LogOut size={15} /> Sign Out</button>
                     </motion.div>
@@ -453,7 +461,7 @@ export default function StudentLayout() {
             paddingBottom: 'var(--safe-area-bottom)',
           }}>
             {BOTTOM_NAV.map(({ to, icon: Icon, label, end }) => (
-              <NavLink key={to} to={to} end={end} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0.5rem 0', textDecoration: 'none' }}>
+              <NavLink key={to} to={to} end={end} onClick={(e) => { if (requestNavigation(to)) e.preventDefault(); }} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0.5rem 0', textDecoration: 'none' }}>
                 {({ isActive }) => (
                   <>
                     <div style={{
