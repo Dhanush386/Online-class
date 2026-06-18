@@ -109,6 +109,7 @@ export function MeetingProvider({ children }) {
 
         // Recording state
         isRecording: false,
+        isRecordingPaused: false,
         isUploading: false,
         uploadProgress: 0,
         recordingSession: null,
@@ -394,7 +395,9 @@ export function MeetingProvider({ children }) {
 
             let micStream;
             try {
-                micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+                micStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+                })
             } catch (e) {
                 console.warn('Microphone access denied or not available.')
             }
@@ -402,14 +405,58 @@ export function MeetingProvider({ children }) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)()
             const mixedOutput = audioContext.createMediaStreamDestination()
 
+            // 1. Screen Audio
             if (screenStream.getAudioTracks().length > 0) {
                 const systemSource = audioContext.createMediaStreamSource(screenStream)
-                systemSource.connect(mixedOutput)
+                const gainNode = audioContext.createGain()
+                gainNode.gain.value = 0.8 // Slightly lower screen audio
+                systemSource.connect(gainNode)
+                gainNode.connect(mixedOutput)
             }
 
+            // 2. Teacher Mic Audio
             if (micStream && micStream.getAudioTracks().length > 0) {
                 const micSource = audioContext.createMediaStreamSource(micStream)
-                micSource.connect(mixedOutput)
+                const gainNode = audioContext.createGain()
+                gainNode.gain.value = 1.0 // Normal mic volume
+                micSource.connect(gainNode)
+                gainNode.connect(mixedOutput)
+            }
+
+            // 3. LiveKit Students Audio
+            const remoteAudioNodes = new Map();
+            const room = roomRef.current;
+            
+            const addRemoteTrack = (track) => {
+                if (track.kind === 'audio' && track.mediaStreamTrack) {
+                    const stream = new MediaStream([track.mediaStreamTrack]);
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.value = 1.0; // Normal student volume
+                    source.connect(gainNode);
+                    gainNode.connect(mixedOutput);
+                    remoteAudioNodes.set(track.sid, { source, gainNode });
+                }
+            };
+            
+            const removeRemoteTrack = (track) => {
+                if (track.kind === 'audio' && remoteAudioNodes.has(track.sid)) {
+                    const { source, gainNode } = remoteAudioNodes.get(track.sid);
+                    source.disconnect();
+                    gainNode.disconnect();
+                    remoteAudioNodes.delete(track.sid);
+                }
+            };
+
+            if (room) {
+                room.remoteParticipants.forEach(participant => {
+                    participant.audioTrackPublications.forEach(pub => {
+                        if (pub.track) addRemoteTrack(pub.track);
+                    });
+                });
+                
+                room.on(RoomEvent.TrackSubscribed, addRemoteTrack);
+                room.on(RoomEvent.TrackUnsubscribed, removeRemoteTrack);
             }
 
             const combinedStream = new MediaStream([
@@ -429,11 +476,20 @@ export function MeetingProvider({ children }) {
             const startedAt = Date.now()
             const fileName = `Class_Recording_${meeting.videoData?.title || 'Unknown'}_${startedAt}.webm`
             
-            mediaRecorderRef.current.__streamsToStop = { screenStream, micStream, audioContext }
+            mediaRecorderRef.current.__streamsToStop = { 
+                screenStream, 
+                micStream, 
+                audioContext,
+                room,
+                addRemoteTrack,
+                removeRemoteTrack,
+                remoteAudioNodes
+            }
             mediaRecorderRef.current.start(30000) // Generate chunks every 30 seconds for safety
             setMeeting(prev => ({ 
                 ...prev, 
                 isRecording: true,
+                isRecordingPaused: false,
                 recordingSession: { startedAt, fileName }
             }))
         } catch (err) { 
@@ -447,13 +503,27 @@ export function MeetingProvider({ children }) {
         
         return new Promise((resolve) => {
             mediaRecorderRef.current.onstop = async () => {
-                setMeeting(prev => ({ ...prev, isRecording: false, isUploading: true, uploadProgress: 0 }));
+                setMeeting(prev => ({ ...prev, isRecording: false, isRecordingPaused: false, isUploading: true, uploadProgress: 0 }));
                 let success = false;
                 
                 const streams = mediaRecorderRef.current.__streamsToStop;
                 if (streams) {
                     streams.screenStream.getTracks().forEach(t => t.stop())
                     if (streams.micStream) streams.micStream.getTracks().forEach(t => t.stop())
+                    
+                    // Clean up LiveKit listeners to prevent duplicate recordings/echoes
+                    if (streams.room) {
+                        streams.room.off(RoomEvent.TrackSubscribed, streams.addRemoteTrack)
+                        streams.room.off(RoomEvent.TrackUnsubscribed, streams.removeRemoteTrack)
+                    }
+                    if (streams.remoteAudioNodes) {
+                        streams.remoteAudioNodes.forEach(({ source, gainNode }) => {
+                            source.disconnect();
+                            gainNode.disconnect();
+                        });
+                        streams.remoteAudioNodes.clear();
+                    }
+                    
                     streams.audioContext.close()
                 }
 
@@ -582,6 +652,20 @@ export function MeetingProvider({ children }) {
             mediaRecorderRef.current.stop();
         })
     }, [meeting.videoId, meeting.gToken, meeting.recordingSession])
+
+    const pauseRecording = useCallback(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.pause()
+            setMeeting(prev => ({ ...prev, isRecordingPaused: true }))
+        }
+    }, [])
+
+    const resumeRecording = useCallback(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+            mediaRecorderRef.current.resume()
+            setMeeting(prev => ({ ...prev, isRecordingPaused: false }))
+        }
+    }, [])
 
     // ── Retry Failed Upload ──
     const retryUpload = useCallback(async (vidId) => {
@@ -742,7 +826,7 @@ export function MeetingProvider({ children }) {
             isActive: false, isMinimized: false, room: null, token: null,
             videoId: null, videoData: null, isOrganizer: false, classroomPath: null,
             participantCount: 0, isMicOn: false, hasScreenShare: false, previewTrack: null,
-            isRecording: false, // isUploading, uploadProgress, recordingSession stay if uploading
+            isRecording: false, isRecordingPaused: false, // isUploading, uploadProgress, recordingSession stay if uploading
         }))
     }, [meeting.isOrganizer, meeting.videoId, meeting.videoData, stopAndUploadRecording])
 
@@ -845,6 +929,8 @@ export function MeetingProvider({ children }) {
         isInClassroom,
         loginToDrive,
         startRecording,
+        pauseRecording,
+        resumeRecording,
         stopAndUploadRecording,
         retryUpload,
         deleteFailedUpload,

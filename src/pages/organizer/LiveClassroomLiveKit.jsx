@@ -1102,9 +1102,20 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
                                 </button>
                             </>
                         ) : isRecording ? (
-                            <button onClick={stopAndUploadRecording} style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center', animation: 'pulse 2s infinite' }}>
-                                ⏹ REC {formatDuration(recordingDuration)}
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                {isRecordingPaused ? (
+                                    <button onClick={resumeRecording} style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center' }}>
+                                        ▶ Resume
+                                    </button>
+                                ) : (
+                                    <button onClick={pauseRecording} style={{ background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center' }}>
+                                        ⏸ Pause
+                                    </button>
+                                )}
+                                <button onClick={stopAndUploadRecording} style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center', animation: isRecordingPaused ? 'none' : 'pulse 2s infinite' }}>
+                                    ⏹ REC {formatDuration(recordingDuration)}
+                                </button>
+                            </div>
                         ) : (
                             <div style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700 }}>
                                 ⏳ Uploading...
