@@ -32,8 +32,10 @@ function NavigationGuardDialog({ onMinimize, onStay, onLeave }) {
                     background: 'rgba(99,102,241,0.15)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     margin: '0 auto 1.25rem',
+                    fontSize: '1.75rem', fontWeight: 600, color: 'var(--primary)',
+                    textTransform: 'uppercase'
                 }}>
-                    <span style={{ fontSize: '1.5rem' }}>📺</span>
+                    {meeting.fallbackName ? meeting.fallbackName.charAt(0) : 'A'}
                 </div>
                 <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem' }}>
                     You're in a live meeting
@@ -99,9 +101,11 @@ export function MeetingProvider({ children }) {
 
         // Widget display state (updated from room events)
         participantCount: 0,
-        isMicOn: true,
+        isMicOn: false,
         hasScreenShare: false,
         previewTrack: null,
+        pipWindow: null,
+        livekitToken: null,
 
         // Recording state
         isRecording: false,
@@ -192,12 +196,27 @@ export function MeetingProvider({ children }) {
             }
         }
 
+        let fallbackName = null
+        if (!previewTrack) {
+            const speaker = room.activeSpeakers?.find(s => s.identity !== room.localParticipant.identity)
+            if (speaker) {
+                fallbackName = speaker.name || speaker.identity
+            } else if (participants.length > 0) {
+                fallbackName = participants[0].name || participants[0].identity
+            } else {
+                let meta = {}
+                try { meta = JSON.parse(room.localParticipant.metadata || '{}') } catch {}
+                fallbackName = room.localParticipant.name || meta.name || room.localParticipant.identity
+            }
+        }
+
         setMeeting(prev => ({
             ...prev,
             participantCount: participants.length + 1,
             isMicOn: room.localParticipant.isMicrophoneEnabled,
             hasScreenShare,
             previewTrack,
+            fallbackName,
         }))
     }, [])
 
@@ -212,11 +231,20 @@ export function MeetingProvider({ children }) {
         // End any existing meeting first
         if (roomRef.current) {
             cleanupRef.current?.()
-            roomRef.current.disconnect()
+            roomRef.current.forceDisconnect ? roomRef.current.forceDisconnect() : roomRef.current.disconnect()
             roomRef.current = null
         }
 
         const room = new Room({ adaptiveStream: true, dynacast: true })
+        
+        // Save original disconnect so we can call it manually
+        room.forceDisconnect = room.disconnect.bind(room);
+        room.disconnect = (...args) => {
+            // Prevent third-party components (like LiveKitRoom) from disconnecting 
+            // the room automatically when they unmount during navigation/minimization.
+            console.log('Intercepted room.disconnect call. Connection kept alive.');
+            return;
+        }
 
         try {
             await room.connect(LIVEKIT_URL, token)
@@ -266,16 +294,18 @@ export function MeetingProvider({ children }) {
         const rolePrefix = isOrganizer ? '/organizer' : '/student'
         const classroomPath = `${rolePrefix}/classroom/${videoId}`
 
+        roomRef.current = room
+
         setMeeting(prev => ({
             ...prev,
             isActive: true,
             isMinimized: false,
             room,
-            token,
             videoId,
             videoData,
-            isOrganizer,
             classroomPath,
+            isOrganizer,
+            livekitToken: token,
             participantCount: 1,
             isMicOn: true,
             hasScreenShare: false,
@@ -289,14 +319,52 @@ export function MeetingProvider({ children }) {
     }, [meeting.isActive, meeting.videoId, updateWidgetState])
 
     // ── Minimize Meeting ──
-    const minimizeMeeting = useCallback(() => {
+    const minimizeMeeting = useCallback(async () => {
         isMinimizingRef.current = true
         setMeeting(prev => ({ ...prev, isMinimized: true }))
+
+        // Attempt to open Document PiP if supported
+        if (window.documentPictureInPicture) {
+            try {
+                const pip = await window.documentPictureInPicture.requestWindow({
+                    width: 320,
+                    height: 480,
+                    disallowReturnToOpener: true
+                });
+                
+                // Copy styles for React components and theme color
+                const styles = [...document.head.querySelectorAll('style, link[rel="stylesheet"], meta[name="theme-color"]')];
+                styles.forEach(node => {
+                    pip.document.head.appendChild(node.cloneNode(true));
+                });
+                
+                // Listen to PiP close
+                pip.addEventListener('pagehide', () => {
+                    // Close the PiP window state
+                    setMeeting(prev => {
+                        // If it's still minimized, it means user clicked OS X button, so restore
+                        if (prev.isMinimized) {
+                            setTimeout(() => restoreMeeting(), 0)
+                        }
+                        return { ...prev, pipWindow: null }
+                    });
+                });
+
+                setMeeting(prev => ({ ...prev, pipWindow: pip }))
+            } catch (error) {
+                console.warn('PiP failed or was blocked by browser', error);
+            }
+        }
     }, [])
 
     // ── Restore Meeting (expand from widget) ──
     const restoreMeeting = useCallback(() => {
-        setMeeting(prev => ({ ...prev, isMinimized: false }))
+        setMeeting(prev => {
+            if (prev.pipWindow) {
+                prev.pipWindow.close();
+            }
+            return { ...prev, isMinimized: false, pipWindow: null }
+        })
         if (meeting.classroomPath) {
             navigate(meeting.classroomPath)
         }
@@ -661,7 +729,7 @@ export function MeetingProvider({ children }) {
 
         cleanupRef.current?.()
         if (roomRef.current) {
-            roomRef.current.disconnect()
+            roomRef.current.forceDisconnect ? roomRef.current.forceDisconnect() : roomRef.current.disconnect()
             roomRef.current = null
         }
         

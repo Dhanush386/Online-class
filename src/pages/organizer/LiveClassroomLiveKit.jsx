@@ -1130,8 +1130,8 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
                 {!isOrganizer && videoLocked && !isCamOn ? <Lock size={20} /> : isCamOn ? <Video size={20} /> : <VideoOff size={20} />}
             </button>
 
-            {/* Screen Share (desktop only) */}
-            {!isMobile && (
+            {/* Screen Share (if supported by browser) */}
+            {typeof navigator !== 'undefined' && navigator.mediaDevices?.getDisplayMedia && (
                 <button onClick={toggleScreen} style={{
                     ...btnStyle(true),
                     background: isScreenSharing ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
@@ -1440,7 +1440,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                         case 'remove_participant':
                             if (msg.identity === lp.identity) {
                                 toast.error('🚫 You have been removed from this meeting')
-                                setTimeout(() => { room.disconnect(); onLeave() }, 1500)
+                                setTimeout(() => { room.forceDisconnect ? room.forceDisconnect() : room.disconnect(); onLeave() }, 1500)
                             }
                             break
                     }
@@ -1587,7 +1587,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
             }
         }
 
-        room.disconnect()
+        room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
         onLeave()
     }, [room, isOrganizer, profile, videoData])
 
@@ -1822,11 +1822,11 @@ export default function LiveClassroom() {
     const { profile, refreshStats } = useAuth()
     const navigate = useNavigate()
     const toast = useToast()
-    const { room, startMeeting, minimizeMeeting, endMeeting } = useMeeting()
+    const { room, livekitToken: cachedToken, startMeeting, minimizeMeeting, endMeeting } = useMeeting()
 
     const [videoData, setVideoData] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [livekitToken, setLivekitToken] = useState(null)
+    const [livekitToken, setLivekitToken] = useState(cachedToken || null)
     const [tokenError, setTokenError] = useState(null)
     const [instructorPresent, setInstructorPresent] = useState(false)
     const [sidebarTab, setSidebarTab] = useState('notes')
