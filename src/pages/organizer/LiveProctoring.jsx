@@ -408,7 +408,7 @@ export default function LiveProctoring() {
                     {highestRiskStudent && highestRiskStudent.riskScore > 0 && (
                         <div style={{ background: '#fef2f2', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #fee2e2', gridColumn: isMobile ? 'auto' : 'span 2' }}>
                             <div style={{ fontSize: '0.8rem', color: '#dc2626', fontWeight: 700 }}>⚠️ HIGHEST RISK STUDENT</div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.25rem' }}>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#991b1b', marginTop: '0.25rem' }}>
                                 {highestRiskStudent.name} (Risk: {highestRiskStudent.riskScore})
                             </div>
                         </div>
