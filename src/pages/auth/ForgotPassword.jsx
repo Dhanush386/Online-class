@@ -1,56 +1,86 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Key, Mail, Lock, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Key, Mail, Lock, CheckCircle, ArrowLeft, Send } from 'lucide-react'
 
 export default function ForgotPassword() {
     const navigate = useNavigate()
     const [email, setEmail] = useState('')
+    const [otpSent, setOtpSent] = useState(false)
     const [resetCode, setResetCode] = useState('')
     const [newPassword, setNewPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(false)
 
-    const handleSubmit = async (e) => {
+    const handleSendOtp = async (e) => {
+        e.preventDefault()
+        if (!email) {
+            setError("Please enter your email first.")
+            return
+        }
+        setLoading(true)
+        setError(null)
+
+        try {
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase())
+            if (resetError) throw resetError
+            
+            setOtpSent(true)
+            setError(null)
+        } catch (err) {
+            setError(err.message || 'Failed to send OTP.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleResetPassword = async (e) => {
         e.preventDefault()
         setLoading(true)
         setError(null)
         setSuccess(false)
 
         try {
-            // Call the custom RPC function securely
-            const { data, error: rpcError } = await supabase.rpc('reset_student_password', {
-                p_email: email.trim().toLowerCase(),
-                p_reset_code: resetCode.trim(),
-                p_new_password: newPassword
+            // Verify the OTP
+            const { data, error: verifyError } = await supabase.auth.verifyOtp({
+                email: email.trim().toLowerCase(),
+                token: resetCode.trim(),
+                type: 'recovery'
             })
 
-            if (rpcError) throw rpcError
+            if (verifyError) throw verifyError
 
-            if (data === true) {
-                setSuccess(true)
-                setTimeout(() => navigate('/login'), 2500)
-            } else {
-                throw new Error("Invalid or expired reset code. If this code was already used, ask your Organizer for the new one.")
-            }
+            // Update to the new password
+            const { error: updateError } = await supabase.auth.updateUser({
+                password: newPassword
+            })
+
+            if (updateError) throw updateError
+
+            setSuccess(true)
+            // Sign out the user so they can log in normally, as verifyOtp creates a session
+            await supabase.auth.signOut()
+            setTimeout(() => navigate('/login'), 2500)
 
         } catch (err) {
-            setError(err.message || 'An unexpected error occurred.')
+            setError(err.message || 'Invalid OTP or an error occurred.')
         } finally {
             setLoading(false)
         }
     }
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: '1.5rem' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', padding: '1.5rem' }}>
             <div className="glass-card animate-scale-up" style={{ width: '100%', maxWidth: 420, padding: '2.5rem' }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <div style={{ width: 56, height: 56, background: 'rgba(99,102,241,0.1)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                         <Key size={28} color="#6366f1" />
                     </div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Reset Password</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Enter the unique code provided by your Organizer.</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                        {otpSent ? "Enter the OTP sent to your email and your new password." : "Enter your email to receive a password reset OTP."}
+                    </p>
                 </div>
 
                 {success ? (
@@ -60,7 +90,7 @@ export default function ForgotPassword() {
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Redirecting to login...</p>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <form onSubmit={otpSent ? handleResetPassword : handleSendOtp} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         {error && (
                             <div style={{ background: '#fef2f2', color: '#ef4444', padding: '0.75rem 1rem', borderRadius: 8, fontSize: '0.85rem', border: '1px solid #fee2e2' }}>
                                 {error}
@@ -76,6 +106,7 @@ export default function ForgotPassword() {
                                     type="email"
                                     autoComplete="email"
                                     required
+                                    disabled={otpSent}
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
                                     className="form-input"
@@ -85,50 +116,54 @@ export default function ForgotPassword() {
                             </div>
                         </div>
 
-                        <div className="form-group">
-                            <label htmlFor="resetCode" className="form-label">Organizer Reset Code</label>
-                            <div style={{ position: 'relative' }}>
-                                <Key size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 11 }} />
-                                <input
-                                    id="resetCode"
-                                    type="text"
-                                    required
-                                    value={resetCode}
-                                    onChange={e => setResetCode(e.target.value)}
-                                    className="form-input"
-                                    placeholder="e.g. 123456"
-                                    style={{ paddingLeft: '2.5rem', letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 700 }}
-                                />
-                            </div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4 }}>Ask your organizer to generate this code from their dashboard.</div>
-                        </div>
+                        {otpSent && (
+                            <>
+                                <div className="form-group">
+                                    <label htmlFor="resetCode" className="form-label">6-Digit OTP</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Key size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 11 }} />
+                                        <input
+                                            id="resetCode"
+                                            type="text"
+                                            required
+                                            value={resetCode}
+                                            onChange={e => setResetCode(e.target.value)}
+                                            className="form-input"
+                                            placeholder="e.g. 123456"
+                                            style={{ paddingLeft: '2.5rem', letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 700 }}
+                                        />
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4 }}>Check your inbox (and spam folder) for the OTP.</div>
+                                </div>
 
-                        <div className="form-group">
-                            <label htmlFor="newPassword" className="form-label">New Password</label>
-                            <div style={{ position: 'relative' }}>
-                                <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 11 }} />
-                                <input
-                                    id="newPassword"
-                                    type="password"
-                                    autoComplete="new-password"
-                                    required
-                                    value={newPassword}
-                                    onChange={e => setNewPassword(e.target.value)}
-                                    className="form-input"
-                                    placeholder="Must be at least 6 characters"
-                                    minLength={6}
-                                    style={{ paddingLeft: '2.5rem' }}
-                                />
-                            </div>
-                        </div>
+                                <div className="form-group">
+                                    <label htmlFor="newPassword" className="form-label">New Password</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 11 }} />
+                                        <input
+                                            id="newPassword"
+                                            type="password"
+                                            autoComplete="new-password"
+                                            required
+                                            value={newPassword}
+                                            onChange={e => setNewPassword(e.target.value)}
+                                            className="form-input"
+                                            placeholder="Must be at least 6 characters"
+                                            minLength={6}
+                                            style={{ paddingLeft: '2.5rem' }}
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         <button
                             type="submit"
                             disabled={loading}
                             className="btn-primary"
-                            style={{ padding: '0.875rem', marginTop: '0.5rem', fontSize: '1rem' }}
+                            style={{ padding: '0.875rem', marginTop: '0.5rem', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                         >
-                            {loading ? 'Verifying...' : 'Reset Password'}
+                            {loading ? 'Processing...' : (otpSent ? 'Reset Password' : <><Send size={18} /> Send OTP</>)}
                         </button>
 
                         <div style={{ textAlign: 'center', marginTop: '1rem' }}>
@@ -142,3 +177,4 @@ export default function ForgotPassword() {
         </div>
     )
 }
+

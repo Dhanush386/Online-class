@@ -22,8 +22,6 @@ export default function OrganizerDashboard() {
         { name: 'Mon', uploads: 0 }, { name: 'Tue', uploads: 0 }, { name: 'Wed', uploads: 0 },
         { name: 'Thu', uploads: 0 }, { name: 'Fri', uploads: 0 }, { name: 'Sat', uploads: 0 }, { name: 'Sun', uploads: 0 }
     ])
-    const [resetCode, setResetCode] = useState(null)
-    const [generatingCode, setGeneratingCode] = useState(false)
 
     useEffect(() => {
         async function load() {
@@ -79,28 +77,9 @@ export default function OrganizerDashboard() {
             setLoading(false)
         }
 
-        async function fetchResetCode() {
-            const { data } = await supabase.from('organizer_reset_codes').select('code').eq('organizer_id', profile?.id).maybeSingle()
-            if (data) setResetCode(data.code)
-        }
-
-        if (profile) { load(); fetchResetCode() }
+        if (profile) { load() }
     }, [profile])
 
-    const generateResetCode = async () => {
-        setGeneratingCode(true)
-        try {
-            const { data: existing } = await supabase.from('organizer_reset_codes').select('code').eq('organizer_id', profile.id).maybeSingle()
-            const newCode = Math.floor(100000 + Math.random() * 900000).toString()
-            if (existing) {
-                await supabase.from('organizer_reset_codes').update({ code: newCode }).eq('organizer_id', profile.id)
-            } else {
-                await supabase.from('organizer_reset_codes').insert({ organizer_id: profile.id, code: newCode })
-            }
-            setResetCode(newCode)
-        } catch (err) { console.error('Error generating code:', err) }
-        finally { setGeneratingCode(false) }
-    }
 
     const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
     const itemVariants = {
@@ -159,41 +138,6 @@ export default function OrganizerDashboard() {
                 <StatCard icon={TrendingUp} label="Avg Completion"   value={stats.completion} color="violet"  suffix="%" isLoading={loading} />
             </motion.div>
 
-            {/* ══════════════ RESET CODE ══════════════ */}
-            <motion.div variants={itemVariants} style={{ marginBottom: '1.75rem' }}>
-                <GlassCard padding="1.25rem 1.5rem" style={{ border: '1px solid rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ width: 44, height: 44, background: 'rgba(99,102,241,0.12)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <Key size={20} color="#6366f1" />
-                        </div>
-                        <div>
-                            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Student Password Reset Code</h3>
-                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Share this code with students who forgot their password.</p>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{
-                            background: 'var(--text-primary)', color: '#10b981',
-                            padding: '0.55rem 1.1rem', borderRadius: 10,
-                            fontSize: '1.4rem', fontWeight: 800, letterSpacing: '4px',
-                            fontFamily: 'var(--font-mono)',
-                        }}>
-                            {resetCode || '------'}
-                        </div>
-                        <motion.button
-                            onClick={generateResetCode}
-                            disabled={generatingCode}
-                            className="btn-secondary"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.97 }}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem' }}
-                        >
-                            <RefreshCw size={14} className={generatingCode ? 'animate-spin' : ''} />
-                            {resetCode ? 'Regenerate' : 'Generate'}
-                        </motion.button>
-                    </div>
-                </GlassCard>
-            </motion.div>
 
             {/* ══════════════ CHART + RECENT ══════════════ */}
             <div className="dashboard-grid">
