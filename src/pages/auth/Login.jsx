@@ -112,13 +112,13 @@ export default function Login() {
                 transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                 style={{
                   position: 'absolute', inset: 0,
-                  background: 'rgba(255,255,255,0.72)',
+                  background: 'rgba(15, 17, 24, 0.85)',
                   backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255,255,255,0.4)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
                   borderRadius: 16,
                   padding: '1.1rem 1.25rem',
                   display: 'flex', alignItems: 'center', gap: '1rem',
-                  boxShadow: '0 8px 32px rgba(99,102,241,0.1)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
                 }}
               >
                 <div style={{
