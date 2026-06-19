@@ -42,6 +42,7 @@ export default function CourseDetail() {
     const [savingNote, setSavingNote] = useState(false)
     const [signedUrl, setSignedUrl] = useState(null)
     const [loadingVideo, setLoadingVideo] = useState(false)
+    const [videoType, setVideoType] = useState('native') // 'native' | 'drive'
 
     useEffect(() => {
         async function load() {
@@ -160,43 +161,52 @@ export default function CourseDetail() {
         setProgress(p => ({ ...(p || {}), completion_percentage: finalPct }))
     }
 
+    // Extract Google Drive file ID from any share-link format
+    function extractDriveFileId(url) {
+        // Format: /file/d/FILE_ID/view or /file/d/FILE_ID/preview
+        const slashMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+        if (slashMatch) return slashMatch[1]
+        // Format: ?id=FILE_ID or open?id=FILE_ID
+        const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+        if (idMatch) return idMatch[1]
+        return null
+    }
+
     async function handleWatchVideo(video) {
         if (!video.video_url) return
-        
-        // If it's a Google Drive link, extract file ID and play the raw media stream to bypass processing delay
-        if (video.video_url.includes('drive.google.com')) {
-            const fileIdMatch = video.video_url.match(/\/d\/([a-zA-Z0-9_-]+)/)
-            const fileId = fileIdMatch ? fileIdMatch[1] : video.drive_file_id
-            const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
-            
-            if (fileId && GOOGLE_API_KEY) {
-                const streamUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${GOOGLE_API_KEY}`
-                setActiveVideo(video)
-                setSignedUrl(streamUrl)
-                window.scrollTo({ top: 0, behavior: 'smooth' })
+
+        setActiveVideo(video)
+        setSignedUrl(null)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+
+        // ── Google Drive ────────────────────────────────────────────────
+        if (video.video_url.includes('drive.google.com') || video.drive_file_id) {
+            const fileId = extractDriveFileId(video.video_url) || video.drive_file_id
+            if (fileId) {
+                const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`
+                setVideoType('drive-iframe')
+                setSignedUrl(previewUrl)
+                setTimeout(() => markComplete(video.id), 8000)
                 return
             }
             
+            // Fallback if no file ID could be extracted
             window.open(video.video_url, '_blank')
-            markComplete(video.id) // Automatically mark as watched
-            return
-        }
-        
-        // If it's another external link (YouTube/Meet), set active for internal player
-        if (video.video_url.startsWith('http') && !video.video_url.includes('supabase.co/storage')) {
-            setActiveVideo(video)
-            setSignedUrl(video.video_url)
-            window.scrollTo({ top: 0, behavior: 'smooth' })
+            markComplete(video.id)
             return
         }
 
+        // ── YouTube / external HTTP links ────────────────────────────────
+        if (video.video_url.startsWith('http') && !video.video_url.includes('supabase.co/storage')) {
+            setVideoType('native')
+            setSignedUrl(video.video_url)
+            return
+        }
+
+        // ── Supabase Storage ─────────────────────────────────────────────
         try {
             setLoadingVideo(true)
-            setActiveVideo(video)
-            setSignedUrl(null)
-            window.scrollTo({ top: 0, behavior: 'smooth' })
 
-            // Extract path if it's a full URL or just a path
             let path = video.video_url
             if (path.includes('/storage/v1/object/public/videos/')) {
                 path = path.split('/storage/v1/object/public/videos/')[1]
@@ -204,12 +214,12 @@ export default function CourseDetail() {
                 path = path.split('/storage/v1/object/sign/videos/')[1].split('?')[0]
             }
 
-            // Get Signed URL (expires in 2 hours)
             const { data, error } = await supabase.storage
                 .from('videos')
                 .createSignedUrl(path, 7200)
 
             if (error) throw error
+            setVideoType('native')
             setSignedUrl(data.signedUrl)
         } catch (err) {
             console.error('Error getting signed URL:', err)
@@ -366,7 +376,7 @@ export default function CourseDetail() {
                                 <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{activeVideo.title}</h2>
                             </div>
                             <button 
-                                onClick={() => { setActiveVideo(null); setSignedUrl(null); }} 
+                                onClick={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }} 
                                 style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '0.6rem', cursor: 'pointer', color: 'white', display: 'flex' }}
                             >
                                 <X size={20} />
@@ -381,24 +391,38 @@ export default function CourseDetail() {
                                     <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Securing your connection...</span>
                                 </div>
                             ) : signedUrl ? (
-                                <ReactPlayer
-                                    url={signedUrl}
-                                    controls
-                                    playing={true}
-                                    width="100%"
-                                    height="100%"
-                                    style={{ position: 'absolute', top: 0, left: 0 }}
-                                    onEnded={() => markComplete(activeVideo.id)}
-                                    config={{
-                                        file: {
-                                            attributes: {
-                                                controlsList: 'nodownload',
-                                                disablePictureInPicture: true,
-                                                onContextMenu: e => e.preventDefault()
+                                videoType === 'drive-iframe' ? (
+                                    // Google Drive Preview iframe
+                                    <iframe
+                                        src={signedUrl}
+                                        width="100%"
+                                        height="100%"
+                                        style={{ position: 'absolute', top: 0, left: 0, border: 'none' }}
+                                        allow="autoplay; fullscreen"
+                                        allowFullScreen
+                                        title={activeVideo.title}
+                                    />
+                                ) : (
+                                    // ReactPlayer for Supabase/YouTube/other URLs
+                                    <ReactPlayer
+                                        url={signedUrl}
+                                        controls
+                                        playing={true}
+                                        width="100%"
+                                        height="100%"
+                                        style={{ position: 'absolute', top: 0, left: 0 }}
+                                        onEnded={() => markComplete(activeVideo.id)}
+                                        config={{
+                                            file: {
+                                                attributes: {
+                                                    controlsList: 'nodownload',
+                                                    disablePictureInPicture: true,
+                                                    onContextMenu: e => e.preventDefault()
+                                                }
                                             }
-                                        }
-                                    }}
-                                />
+                                        }}
+                                    />
+                                )
                             ) : null}
                         </div>
 
@@ -408,18 +432,6 @@ export default function CourseDetail() {
                                 <Lock size={14} />
                                 <span>Secured by Learnova Protection System</span>
                             </div>
-                            {signedUrl && signedUrl.includes('google.com') && (
-                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <a 
-                                        href={signedUrl.replace('uc?export=download&id=', 'file/d/') + '/view'} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        style={{ color: '#818cf8', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                    >
-                                        Direct Link <ExternalLink size={14} />
-                                    </a>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>

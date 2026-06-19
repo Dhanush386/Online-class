@@ -581,7 +581,7 @@ export function MeetingProvider({ children }) {
                                         console.error('Failed to set permissions on Drive file', permErr)
                                     }
 
-                                    const driveLink = `https://drive.google.com/file/d/${fileId}/view`
+                                    const driveLink = `https://drive.google.com/file/d/${fileId}/preview`
                                     if (vidId) {
                                         await supabase
                                             .from('videos')
@@ -717,7 +717,7 @@ export function MeetingProvider({ children }) {
                             } catch (e) {}
 
                             await supabase.from('videos').update({ 
-                                video_url: `https://drive.google.com/file/d/${fileId}/view`,
+                                video_url: `https://drive.google.com/file/d/${fileId}/preview`,
                                 drive_file_id: fileId,
                                 duration_seconds: durationSeconds,
                                 file_size_mb: fileSizeMb,

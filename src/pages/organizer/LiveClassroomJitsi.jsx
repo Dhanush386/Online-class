@@ -383,8 +383,10 @@ export default function LiveClassroom() {
                             } catch (permErr) {
                                 console.error('Failed to set permissions on Drive file', permErr)
                             }
+                            
+                            // Store the /preview URL for immediate seamless iframe embedding
+                            const driveLink = `https://drive.google.com/file/d/${fileId}/preview`
 
-                            const driveLink = `https://drive.google.com/file/d/${fileId}/view`
                             // Update database with the recording link
                             await supabase
                                 .from('videos')
