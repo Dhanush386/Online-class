@@ -307,32 +307,30 @@ export default function LiveProctoring() {
         s.name.toLowerCase().includes(search.toLowerCase())
     )
 
-    if (!isDesktop || isMobile || isTablet) {
-        return <MobileBlocker />
-    }
+    // Removed MobileBlocker to allow mobile access
 
     return (
         <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: 1400, margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                <div>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: '2rem', flexDirection: isMobile ? 'column' : 'row', gap: '1rem' }}>
+                <div style={{ width: isMobile ? '100%' : 'auto' }}>
                     <Link to="/organizer/coding" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 600, marginBottom: '0.5rem' }}>
-                        <ChevronLeft size={16} /> Back to Coding Management
+                        <ChevronLeft size={16} /> Back
                     </Link>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <ShieldAlert size={28} color="#ef4444" /> Live Proctoring Dashboard
+                    <h1 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <ShieldAlert size={isMobile ? 24 : 28} color="#ef4444" /> Live Proctoring
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Monitor active students during coding practice sessions in real-time.</p>
+                    <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem', fontSize: isMobile ? '0.85rem' : '1rem' }}>Monitor active students in real-time.</p>
                 </div>
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ position: 'relative' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
+                    <div style={{ position: 'relative', flex: isMobile ? '1 1 100%' : 'auto' }}>
                         <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input
                             type="text"
                             placeholder="Search student..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            style={{ padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: 8, border: '1px solid #cbd5e1', width: 250, fontSize: '0.9rem' }}
+                            style={{ padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: 8, border: '1px solid #cbd5e1', width: isMobile ? '100%' : 250, fontSize: '0.9rem', boxSizing: 'border-box' }}
                         />
                     </div>
                     <div style={{ background: '#ecfdf5', color: '#059669', padding: '0.75rem 1rem', borderRadius: 8, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid #a7f3d0' }}>
@@ -358,7 +356,7 @@ export default function LiveProctoring() {
                     <p style={{ color: 'var(--text-muted)', maxWidth: 400, margin: '0 auto' }}>When students start a coding practice session, their live camera feed will appear here automatically.</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '1.5rem' }}>
                     {studentsList.map(student => (
                         <div key={student.studentId} style={{ background: 'white', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                             <div style={{ position: 'relative', width: '100%', paddingBottom: '75%', background: '#000' }}>
