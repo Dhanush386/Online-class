@@ -197,10 +197,17 @@ export default function OrganizerAssessments() {
     async function handleDeleteSubmission(studentId, assessmentId) {
         if (!confirm('Are you sure you want to reset this student\'s attempts? This will delete all their submissions and allow them to retake the assessment.')) return
         try {
-            const { error } = await supabase.from('assessment_submissions').delete()
+            const { data, error } = await supabase.from('assessment_submissions').delete()
                 .eq('student_id', studentId)
                 .eq('assessment_id', assessmentId)
+                .select()
+            
             if (error) throw error
+
+            if (data && data.length === 0) {
+                throw new Error("No rows were deleted. This is likely due to a missing Supabase RLS Policy for organizers to delete assessment submissions.")
+            }
+
             setMarksData(prev => prev.filter(m => m.student_id !== studentId))
         } catch (err) {
             alert('Failed to delete submission: ' + err.message)
