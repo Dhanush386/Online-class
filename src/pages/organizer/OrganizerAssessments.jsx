@@ -609,8 +609,9 @@ export default function OrganizerAssessments() {
                                         .map((sub, idx) => {
                                             const pct = sub.total_questions > 0 ? Math.round((sub.score / sub.total_questions) * 100) : 0
                                             const passed = pct >= 50
+                                            const pSession = proctorSessionsMap?.[sub.student_id]
                                             return (
-                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr', gap: '1rem', padding: '0.75rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr 0.5fr', gap: '1rem', padding: '0.75rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
                                                     onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
                                                     onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
                                                 >
