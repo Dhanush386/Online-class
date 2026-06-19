@@ -451,7 +451,8 @@ export default function LiveProctoring() {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
