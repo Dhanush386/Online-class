@@ -76,6 +76,7 @@ export default function CodeWorkspace() {
     const videoRef = useRef(null)
     const proctorInterval = useRef(null)
     const peerConnections = useRef({})
+    const iceCandidateBuffer = useRef({})
 
     const [timeLeft, setTimeLeft] = useState(30 * 60)
     const [hasRequestedHelp, setHasRequestedHelp] = useState(false)
@@ -402,7 +403,10 @@ export default function CodeWorkspace() {
 
                 try {
                     const pc = new RTCPeerConnection({
-                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:global.stun.twilio.com:3478' }
+                        ]
                     });
                     
                     peerConnections.current[organizerId] = pc;
@@ -432,6 +436,14 @@ export default function CodeWorkspace() {
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
 
+                    // Flush buffered ICE candidates
+                    if (iceCandidateBuffer.current[organizerId]) {
+                        for (const c of iceCandidateBuffer.current[organizerId]) {
+                            await pc.addIceCandidate(new RTCIceCandidate(c));
+                        }
+                        delete iceCandidateBuffer.current[organizerId];
+                    }
+
                     channel.send({
                         type: 'broadcast',
                         event: 'webrtc_answer',
@@ -453,7 +465,12 @@ export default function CodeWorkspace() {
                     const pc = peerConnections.current[organizerId];
                     if (pc && candidate) {
                         try {
-                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                            if (!pc.remoteDescription) {
+                                if (!iceCandidateBuffer.current[organizerId]) iceCandidateBuffer.current[organizerId] = [];
+                                iceCandidateBuffer.current[organizerId].push(candidate);
+                            } else {
+                                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                            }
                         } catch (err) {
                             console.error('Error adding ICE candidate:', err);
                         }

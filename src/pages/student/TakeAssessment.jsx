@@ -44,6 +44,7 @@ export default function TakeAssessment() {
     const videoRef = useRef(null)
     const proctorInterval = useRef(null)
     const peerConnections = useRef({})
+    const iceCandidateBuffer = useRef({})
 
     // Check Device
     // Handled by useDeviceType hooks
@@ -145,7 +146,10 @@ export default function TakeAssessment() {
 
                 try {
                     const pc = new RTCPeerConnection({
-                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:global.stun.twilio.com:3478' }
+                        ]
                     });
                     
                     peerConnections.current[organizerId] = pc;
@@ -175,6 +179,14 @@ export default function TakeAssessment() {
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
 
+                    // Flush buffered ICE candidates
+                    if (iceCandidateBuffer.current[organizerId]) {
+                        for (const c of iceCandidateBuffer.current[organizerId]) {
+                            await pc.addIceCandidate(new RTCIceCandidate(c));
+                        }
+                        delete iceCandidateBuffer.current[organizerId];
+                    }
+
                     channel.send({
                         type: 'broadcast',
                         event: 'webrtc_answer',
@@ -196,7 +208,12 @@ export default function TakeAssessment() {
                     const pc = peerConnections.current[organizerId];
                     if (pc && candidate) {
                         try {
-                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                            if (!pc.remoteDescription) {
+                                if (!iceCandidateBuffer.current[organizerId]) iceCandidateBuffer.current[organizerId] = [];
+                                iceCandidateBuffer.current[organizerId].push(candidate);
+                            } else {
+                                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                            }
                         } catch (err) {
                             console.error('Error adding ICE candidate:', err);
                         }

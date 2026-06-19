@@ -12,9 +12,12 @@ import MobileBlocker from '../../components/MobileBlocker'
 const StreamVideo = ({ stream }) => {
     const videoRef = useRef(null);
     useEffect(() => {
-        if (videoRef.current && stream) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.play().catch(e => console.log('Autoplay blocked:', e));
+        const video = videoRef.current;
+        if (video && stream) {
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+                video.play().catch(e => console.error('Autoplay blocked:', e));
+            };
         }
     }, [stream]);
 
@@ -43,6 +46,7 @@ export default function LiveProctoring() {
     const [liveStreams, setLiveStreams] = useState({})
     const channelRef = useRef(null)
     const peerConnections = useRef({})
+    const iceCandidateBuffer = useRef({})
 
     useEffect(() => {
         // Subscribe to the proctoring broadcast channel
@@ -100,6 +104,13 @@ export default function LiveProctoring() {
                     if (pc && answer) {
                         try {
                             await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                            // Flush buffered ICE candidates
+                            if (iceCandidateBuffer.current[studentId]) {
+                                for (const c of iceCandidateBuffer.current[studentId]) {
+                                    await pc.addIceCandidate(new RTCIceCandidate(c));
+                                }
+                                delete iceCandidateBuffer.current[studentId];
+                            }
                         } catch (err) {
                             console.error('Failed to set remote answer:', err);
                         }
@@ -112,7 +123,12 @@ export default function LiveProctoring() {
                     const pc = peerConnections.current[studentId];
                     if (pc && candidate) {
                         try {
-                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                            if (!pc.remoteDescription) {
+                                if (!iceCandidateBuffer.current[studentId]) iceCandidateBuffer.current[studentId] = [];
+                                iceCandidateBuffer.current[studentId].push(candidate);
+                            } else {
+                                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                            }
                         } catch (err) {
                             console.error('Failed to add remote candidate:', err);
                         }
@@ -160,7 +176,10 @@ export default function LiveProctoring() {
         if (peerConnections.current[studentId]) return;
 
         const pc = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
         });
         
         peerConnections.current[studentId] = pc;
