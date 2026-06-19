@@ -15,6 +15,9 @@ const StreamVideo = ({ stream }) => {
         const video = videoRef.current;
         if (video && stream) {
             video.srcObject = stream;
+            // Explicitly set muted and playsInline in JS to bypass strict iOS Safari autoplay rules
+            video.muted = true;
+            video.playsInline = true;
             video.onloadedmetadata = () => {
                 video.play().catch(e => console.error('Autoplay blocked:', e));
             };
