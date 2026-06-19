@@ -1005,16 +1005,15 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
 
     useEffect(() => {
         let interval;
-        if (isRecording && recordingSession?.startedAt) {
+        if (isRecording && !isRecordingPaused) {
             interval = setInterval(() => {
-                setRecordingDuration(Math.floor((Date.now() - recordingSession.startedAt) / 1000))
+                setRecordingDuration(prev => prev + 1)
             }, 1000)
-            setRecordingDuration(Math.floor((Date.now() - recordingSession.startedAt) / 1000))
-        } else {
+        } else if (!isRecording) {
             setRecordingDuration(0)
         }
         return () => clearInterval(interval)
-    }, [isRecording, recordingSession?.startedAt])
+    }, [isRecording, isRecordingPaused])
 
     const formatDuration = (seconds) => {
         const h = Math.floor(seconds / 3600)
