@@ -72,7 +72,7 @@ export default function LiveProctoring() {
                     const isNew = !prev[data.studentId];
                     if (isNew) {
                         toast.info(`${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`);
-                        if (Notification.permission === 'granted') {
+                        if ('Notification' in window && Notification.permission === 'granted') {
                             new Notification('New Student Online', {
                                 body: `${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`,
                                 icon: '/vite.svg'
@@ -249,6 +249,10 @@ export default function LiveProctoring() {
                 // Web Push
                 if (PUBLIC_VAPID_KEY === 'REPLACE_WITH_YOUR_PUBLIC_VAPID_KEY') {
                     toast.error("Please configure the VAPID keys in LiveProctoring.jsx first.");
+                    return;
+                }
+                if (!('Notification' in window)) {
+                    toast.error("Web Push Notifications are not supported in this browser");
                     return;
                 }
                 const permission = await Notification.requestPermission();
