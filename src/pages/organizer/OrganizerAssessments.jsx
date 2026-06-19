@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, BookOpen, ChevronRight, Clock, Eye, BarChart3, Download, CheckCircle2, XCircle, Search, Users, ShieldAlert } from 'lucide-react'
+import ProctoringReportModal from '../../components/organizer/ProctoringReportModal'
 
 export default function OrganizerAssessments() {
     const { profile } = useAuth()
@@ -14,12 +15,14 @@ export default function OrganizerAssessments() {
     const [showModal, setShowModal] = useState(false)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
-    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '', day_number: 1 })
+    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '', day_number: 1, duration: 30 })
     const [editingId, setEditingId] = useState(null)
     const [viewingMarks, setViewingMarks] = useState(null)
     const [marksData, setMarksData] = useState([])
     const [marksLoading, setMarksLoading] = useState(false)
     const [marksSearch, setMarksSearch] = useState('')
+    const [proctorSessionsMap, setProctorSessionsMap] = useState({})
+    const [viewingReportSession, setViewingReportSession] = useState(null)
 
     const [groups, setGroups] = useState([])
     const [resourceAccess, setResourceAccess] = useState([])
@@ -118,7 +121,8 @@ export default function OrganizerAssessments() {
                 type: formData.type,
                 due_date: formData.due_date || null,
                 description: formData.description,
-                day_number: parseInt(formData.day_number) || 1
+                day_number: parseInt(formData.day_number) || 1,
+                duration: parseInt(formData.duration) || 30
             }
 
             if (editingId) {
@@ -157,13 +161,14 @@ export default function OrganizerAssessments() {
             type: a.type,
             due_date: a.due_date ? a.due_date.split('T')[0] : '',
             description: a.description || '',
-            day_number: a.day_number || 1
+            day_number: a.day_number || 1,
+            duration: a.duration || 30
         })
         setShowModal(true)
     }
 
     function resetForm() {
-        setFormData({ title: '', course_id: '', type: 'daily', due_date: '', description: '', day_number: 1 })
+        setFormData({ title: '', course_id: '', type: 'daily', due_date: '', description: '', day_number: 1, duration: 30 })
         setEditingId(null)
         setError('')
     }
@@ -173,11 +178,28 @@ export default function OrganizerAssessments() {
         setMarksLoading(true)
         setMarksSearch('')
         try {
-            const { data: subs } = await supabase
-                .from('assessment_submissions')
-                .select('*, users!assessment_submissions_student_id_fkey(name, email)')
-                .eq('assessment_id', assessment.id)
-                .order('created_at', { ascending: false })
+            const [
+                { data: subs },
+                { data: pSessions }
+            ] = await Promise.all([
+                supabase
+                    .from('assessment_submissions')
+                    .select('*, users!assessment_submissions_student_id_fkey(name, email)')
+                    .eq('assessment_id', assessment.id)
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('proctoring_sessions')
+                    .select('id, student_id, final_risk_score, review_status')
+                    .eq('assessment_id', assessment.id)
+            ])
+
+            const pMap = {}
+            if (pSessions) {
+                pSessions.forEach(s => {
+                    pMap[s.student_id] = s
+                })
+            }
+            setProctorSessionsMap(pMap)
 
             // Group by student — keep best attempt
             const bestByStudent = {}
@@ -469,6 +491,21 @@ export default function OrganizerAssessments() {
                                 </div>
                             </div>
 
+                            <div style={{ marginBottom: '1.25rem' }}>
+                                <label htmlFor="duration-input" className="form-label">Duration (minutes)</label>
+                                <input
+                                    id="duration-input"
+                                    name="duration"
+                                    type="number"
+                                    className="form-input"
+                                    min="1"
+                                    placeholder="e.g. 30"
+                                    value={formData.duration}
+                                    onChange={e => setFormData(p => ({ ...p, duration: e.target.value }))}
+                                    required
+                                />
+                            </div>
+
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label htmlFor="assessment-desc" className="form-label">Instructions / Description</label>
                                 <textarea
@@ -559,11 +596,12 @@ export default function OrganizerAssessments() {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     {/* Table Header */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr', gap: '1rem', padding: '0.5rem 0.75rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 0.5fr', gap: '1rem', padding: '0.5rem 0.75rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
                                         <span>Student</span>
                                         <span style={{ textAlign: 'center' }}>Score</span>
                                         <span style={{ textAlign: 'center' }}>Percentage</span>
                                         <span style={{ textAlign: 'center' }}>Status</span>
+                                        <span style={{ textAlign: 'center' }}>Proctoring</span>
                                         <span style={{ textAlign: 'right' }}>Actions</span>
                                     </div>
                                     {filteredMarks
@@ -604,6 +642,30 @@ export default function OrganizerAssessments() {
                                                             </span>
                                                         )}
                                                     </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        {pSession ? (
+                                                            <button
+                                                                onClick={() => setViewingReportSession({ studentId: sub.student_id, assessmentId: sub.assessment_id })}
+                                                                style={{
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px',
+                                                                    padding: '0.25rem 0.5rem',
+                                                                    borderRadius: 6,
+                                                                    background: pSession.final_risk_score >= 100 ? '#fef2f2' : pSession.final_risk_score >= 60 ? '#fff7ed' : '#ecfdf5',
+                                                                    color: pSession.final_risk_score >= 100 ? '#ef4444' : pSession.final_risk_score >= 60 ? '#f97316' : '#10b981',
+                                                                    border: `1px solid ${pSession.final_risk_score >= 100 ? '#fecaca' : pSession.final_risk_score >= 60 ? '#ffedd5' : '#a7f3d0'}`,
+                                                                    fontSize: '0.75rem',
+                                                                    fontWeight: 700,
+                                                                    cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                🛡️ {pSession.final_risk_score} Risk
+                                                            </button>
+                                                        ) : (
+                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None</span>
+                                                        )}
+                                                    </div>
                                                     <div style={{ textAlign: 'right' }}>
                                                         <button 
                                                             onClick={() => handleDeleteSubmission(sub.student_id, sub.assessment_id)} 
@@ -628,6 +690,13 @@ export default function OrganizerAssessments() {
                         </div>
                     </div>
                 </div>
+            )}
+            {viewingReportSession && (
+                <ProctoringReportModal 
+                    studentId={viewingReportSession.studentId}
+                    assessmentId={viewingReportSession.assessmentId}
+                    onClose={() => setViewingReportSession(null)}
+                />
             )}
         </div>
     )

@@ -122,7 +122,7 @@ export default function AssessmentReview() {
                                     {idx + 1}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                                         {q.question_text}
                                     </h3>
                                     {q.image_url && (

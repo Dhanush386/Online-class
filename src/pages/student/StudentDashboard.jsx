@@ -5,108 +5,273 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Clock, BookOpen, Trophy, Award, Code as CodeIcon, ChevronRight,
-  Flame, Star, Bell, Globe, ArrowRight, Zap, CheckCircle, Calendar,
-  TrendingUp, Target, Sparkles
+  Flame, Star, ArrowRight, Zap, CheckCircle, Calendar,
+  TrendingUp, Sparkles, ShieldCheck, Play, RefreshCw
 } from 'lucide-react'
-import { subscribeToPush, checkPushSubscription } from '../../utils/pushService'
-import { useToast } from '../../components/Toast'
-import { getLevelProgress, getTierForXP } from '../../constants/ranks'
-import { StatCard, GlassCard, ProgressRing, Avatar } from '../../design-system'
-
-// Greeting based on time of day
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 17) return 'Good afternoon'
-  return 'Good evening'
-}
-
-// Motivational messages
-const MOTIVATIONS = [
-  "Every expert was once a beginner. Keep going! 🚀",
-  "Consistency beats talent. Show up every day. 🔥",
-  "You're building a skill set that will last a lifetime. 💡",
-  "Small progress every day adds up to big results. ⭐",
-  "Learning is the only thing that compounds. 📈",
-]
+import { 
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+  Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend, RadialBarChart, RadialBar 
+} from 'recharts'
+import { GlassCard, Avatar } from '../../design-system'
+import { getLevelProgress } from '../../constants/ranks'
 
 export default function StudentDashboard() {
   const { profile, stats } = useAuth()
-  const toast    = useToast()
   const navigate = useNavigate()
-
-  const [data,         setData]         = useState({ courses: 0, completion: 0, timeSpent: 0, topics: 0 })
-  const [loading,      setLoading]      = useState(true)
-  const [isSubscribed, setIsSubscribed] = useState(true)
-  const [schedule,     setSchedule]     = useState([])
-  const [topStudents,  setTopStudents]  = useState([])
-  const [motivation]   = useState(MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)])
-
-  const xp       = stats?.xp       || 0
-  const streak   = stats?.streak   || 0
-  const rankName = stats?.rankName || 'Iron I'
-  const rankColor= stats?.rankColor || 'var(--text-muted)'
-  const levelProgress = getLevelProgress(xp)
+  const [loading, setLoading] = useState(true)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  
+  // Dashboard states
+  const [kpis, setKpis] = useState({
+    streak: 0,
+    xp: 0,
+    rank: 'Iron I',
+    completedCourses: 0,
+    rankColor: 'var(--text-muted)'
+  })
+  
+  const [weeklyActivity, setWeeklyActivity] = useState([])
+  const [attendanceRate, setAttendanceRate] = useState(94) // Default/calculated attendance
+  const [assessmentScores, setAssessmentScores] = useState([])
+  const [schedule, setSchedule] = useState([])
+  const [nextMilestone, setNextMilestone] = useState({
+    currentLevel: 1,
+    nextLevel: 2,
+    currentXp: 0,
+    neededXp: 1000,
+    progressPct: 0,
+    nextBadge: 'Attendance Champion',
+    badgeProgress: '2 classes remaining'
+  })
 
   useEffect(() => {
-    fetchDashboardData()
-    checkSubscription()
-    fetchSchedule()
-    fetchTopStudents()
-  }, [profile?.id])
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
-  async function checkSubscription() {
-    try { setIsSubscribed(await checkPushSubscription()) } catch {}
-  }
+  useEffect(() => {
+    if (profile?.id) {
+      loadDashboardAnalytics()
+    }
+  }, [profile, stats])
 
-  async function handleEnableNotifications() {
+  const loadDashboardAnalytics = async () => {
+    setLoading(true)
     try {
-      const sub = await subscribeToPush(profile.id)
-      if (sub) { setIsSubscribed(true); toast.success('Notifications enabled!') }
-    } catch { toast.error('Could not enable notifications.') }
-  }
+      // 1. Fetch Student stats (streak, XP, etc.)
+      const studentXp = stats?.xp || 0
+      const studentStreak = stats?.streak || 0
+      
+      // Calculate level metrics dynamically
+      const currentLevel = Math.max(1, Math.floor(studentXp / 1000) + 1)
+      const nextLevel = currentLevel + 1
+      const currentXpInLevel = studentXp % 1000
+      const neededXpInLevel = 1000
+      const levelProgressPct = Math.round((currentXpInLevel / neededXpInLevel) * 100)
 
-  async function fetchDashboardData() {
-    if (!profile?.id) return
-    try {
-      const { data: rawEnrollments } = await supabase
-        .from('enrollments').select('course_id, courses(start_date)').eq('student_id', profile.id)
+      // Get rank name based on XP
+      const rank_name = stats?.rankName || 'Iron I'
+      const rank_color = stats?.rankColor || '#94a3b8'
 
-      const seen = new Set()
-      const enrollments = (rawEnrollments || []).filter(e => {
-        if (!e.courses || seen.has(e.course_id)) return false
-        const started = !e.courses.start_date || new Date(e.courses.start_date) <= new Date()
-        if (started) { seen.add(e.course_id); return true }
-        return false
-      })
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      const sevenDaysAgoStr = sevenDaysAgo.toISOString()
 
-      const { data: progress } = await supabase.from('progress').select('completion_percentage, time_spent_minutes').eq('student_id', profile.id)
-      const avgComp  = progress?.length ? Math.round(progress.reduce((s, p) => s + (p.completion_percentage || 0), 0) / progress.length) : 0
-      const totalTime = progress?.reduce((s, p) => s + (p.time_spent_minutes || 0), 0) || 0
-      setData({ courses: enrollments.length, completion: avgComp, timeSpent: totalTime, topics: enrollments.length * 5 })
-    } catch (err) { console.error(err) }
-    finally { setLoading(false) }
-  }
+      // Define all parallel queries
+      const enrollmentsPromise = supabase
+        .from('enrollments')
+        .select('course_id')
+        .eq('student_id', profile.id)
 
-  async function fetchSchedule() {
-    if (!profile?.id) return
-    try {
-      // Use videos table (which exists) for upcoming scheduled classes
-      const { data, error } = await supabase
+      const progressPromise = supabase
+        .from('progress')
+        .select('completion_percentage')
+        .eq('student_id', profile.id)
+
+      const submissionsPromise = supabase
+        .from('assessment_submissions')
+        .select(`
+          score,
+          total_questions,
+          created_at,
+          assessments(title)
+        `)
+        .eq('student_id', profile.id)
+        .order('created_at', { ascending: true })
+        .limit(5)
+
+      const upcomingVideosPromise = supabase
         .from('videos')
         .select('id, title, scheduled_time, duration_minutes, courses(title)')
         .gte('scheduled_time', new Date().toISOString())
         .order('scheduled_time', { ascending: true })
-        .limit(3)
-      if (!error) setSchedule(data || [])
-    } catch {}
+        .limit(2)
+
+      const pastVideosPromise = supabase
+        .from('videos')
+        .select('id')
+        .lte('scheduled_time', new Date().toISOString())
+
+      const attendedCountPromise = supabase
+        .from('live_attendance')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', profile.id)
+        .eq('attendance_status', 'present')
+
+      const codingSubsPromise = supabase
+        .from('coding_submissions')
+        .select('score, created_at, status')
+        .eq('student_id', profile.id)
+        .gte('created_at', sevenDaysAgoStr)
+
+      const liveAttPromise = supabase
+        .from('live_attendance')
+        .select('joined_at')
+        .eq('student_id', profile.id)
+        .eq('attendance_status', 'present')
+        .gte('joined_at', sevenDaysAgoStr)
+
+      // Execute all queries concurrently!
+      const [
+        enrollmentsRes,
+        progressRes,
+        submissionsRes,
+        upcomingVideosRes,
+        pastVideosRes,
+        attendedCountRes,
+        codingSubsRes,
+        liveAttRes
+      ] = await Promise.all([
+        enrollmentsPromise,
+        progressPromise,
+        submissionsPromise,
+        upcomingVideosPromise,
+        pastVideosPromise,
+        attendedCountPromise,
+        codingSubsPromise,
+        liveAttPromise
+      ])
+
+      if (enrollmentsRes.error) throw enrollmentsRes.error
+      if (progressRes.error) throw progressRes.error
+      if (submissionsRes.error) throw submissionsRes.error
+      
+      const enrollments = enrollmentsRes.data
+      const progress = progressRes.data
+      const subs = submissionsRes.data
+      const scheduleData = upcomingVideosRes.data
+      const pastClasses = pastVideosRes.data
+      const attendedCount = attendedCountRes.count
+      const codingSubs = codingSubsRes.data
+      const liveAtt = liveAttRes.data
+
+      const completedCount = (progress || []).filter(p => p.completion_percentage === 100).length
+
+      const formattedScores = (subs || []).map(s => ({
+        name: s.assessments?.title?.substring(0, 10) || 'Quiz',
+        Score: s.total_questions > 0 ? Math.round((s.score / s.total_questions) * 100) : 0
+      }))
+
+      setAssessmentScores(formattedScores)
+      setSchedule(scheduleData || [])
+
+      const totalClassesCount = pastClasses?.length || 0
+      const realAttendance = totalClassesCount > 0 
+        ? Math.min(100, Math.round((attendedCount / totalClassesCount) * 100))
+        : 100
+
+      setAttendanceRate(realAttendance)
+
+      // Set state values
+      setKpis({
+        streak: studentStreak,
+        xp: studentXp,
+        rank: rank_name,
+        completedCourses: completedCount,
+        rankColor: rank_color
+      })
+
+      // Calculate dynamic next milestone badge
+      let nextBadgeName = 'XP Explorer'
+      let badgeProgressText = ''
+
+      if (studentXp < 100) {
+        nextBadgeName = 'XP Beginner'
+        badgeProgressText = `${100 - studentXp} XP remaining`
+      } else if (studentXp < 500) {
+        nextBadgeName = 'XP Explorer'
+        badgeProgressText = `${500 - studentXp} XP remaining`
+      } else if (studentXp < 1000) {
+        nextBadgeName = 'XP Challenger'
+        badgeProgressText = `${1000 - studentXp} XP remaining`
+      } else {
+        nextBadgeName = 'XP Master'
+        badgeProgressText = `${5000 - studentXp} XP remaining`
+      }
+
+      setNextMilestone({
+        currentLevel,
+        nextLevel,
+        currentXp: currentXpInLevel,
+        neededXp: neededXpInLevel,
+        progressPct: levelProgressPct,
+        nextBadge: nextBadgeName,
+        badgeProgress: badgeProgressText
+      })
+
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      const activityMap = {}
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        const dayLabel = days[d.getDay()]
+        activityMap[dayLabel] = 0
+      }
+
+      if (codingSubs) {
+        codingSubs.forEach(sub => {
+          if (sub.status === 'accepted') {
+            const date = new Date(sub.created_at)
+            const dayLabel = days[date.getDay()]
+            if (activityMap[dayLabel] !== undefined) {
+              activityMap[dayLabel] += sub.score || 0
+            }
+          }
+        })
+      }
+
+      if (liveAtt) {
+        liveAtt.forEach(att => {
+          const date = new Date(att.joined_at)
+          const dayLabel = days[date.getDay()]
+          if (activityMap[dayLabel] !== undefined) {
+            activityMap[dayLabel] += 20
+          }
+        })
+      }
+
+      const weeklyActivityData = Object.entries(activityMap).map(([day, xp]) => ({
+        day,
+        XP: xp
+      }))
+      
+      setWeeklyActivity(weeklyActivityData)
+
+    } catch (err) {
+      console.error('Failed to load student dashboard:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getRankInfo = (xp) => {
     const tiers = [
-      { name: 'Iron', color: 'var(--text-muted)', base: 0, step: 200 },
+      { name: 'Iron', color: '#94a3b8', base: 0, step: 200 },
       { name: 'Bronze', color: '#b45309', base: 1000, step: 200 },
-      { name: 'Silver', color: 'var(--text-muted)', base: 2000, step: 300 },
+      { name: 'Silver', color: '#cbd5e1', base: 2000, step: 300 },
       { name: 'Gold', color: '#f59e0b', base: 3500, step: 800 },
       { name: 'Diamond', color: '#a855f7', base: 7500, step: 1000 }
     ]
@@ -122,321 +287,374 @@ export default function StudentDashboard() {
       rank_color: currentTier.color
     }
   }
+  const getUnlockedBadges = () => {
+    const list = []
+    const studentXp = stats?.xp || 0
+    const studentStreak = stats?.streak || 0
+    const solvedCount = stats?.solved || 0
 
-  async function fetchTopStudents() {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, name, xp, avatar_url')
-        .eq('role', 'student')
-        .order('xp', { ascending: false })
-        .order('name', { ascending: true })
-        .limit(3)
-      
-      if (!error && data) {
-        setTopStudents(data.map(s => ({
-          ...s,
-          xp: s.xp || 0,
-          ...getRankInfo(s.xp || 0)
-        })))
+    // Streak
+    if (studentStreak >= 3) list.push({ icon: '🔥', name: 'Momentum' })
+    if (studentStreak >= 7) list.push({ icon: '⚔️', name: 'Weekly Warrior' })
+    if (studentStreak >= 30) list.push({ icon: '🌟', name: 'Monthly Master' })
+
+    // XP
+    if (studentXp >= 100) list.push({ icon: '⭐', name: 'XP Beginner' })
+    if (studentXp >= 500) list.push({ icon: '🧭', name: 'XP Explorer' })
+    if (studentXp >= 1000) list.push({ icon: '🏆', name: 'XP Challenger' })
+    if (studentXp >= 5000) list.push({ icon: '⚡', name: 'XP Master' })
+
+    // Coding
+    if (solvedCount >= 5) list.push({ icon: '💻', name: 'Code Starter' })
+    if (solvedCount >= 20) list.push({ icon: '🚀', name: 'Code Climber' })
+    if (solvedCount >= 50) list.push({ icon: '🛡️', name: 'Code Challenger' })
+
+    const result = [...list]
+    const defaultLocked = [
+      { icon: '⭐', name: 'XP Beginner', locked: true },
+      { icon: '🔥', name: 'Momentum', locked: true },
+      { icon: '💻', name: 'Code Starter', locked: true }
+    ]
+
+    while (result.length < 3) {
+      const nextDefault = defaultLocked.find(d => !result.some(r => r.name === d.name))
+      if (nextDefault) {
+        result.push(nextDefault)
+      } else {
+        result.push({ icon: '🔒', name: 'Locked', locked: true })
       }
-    } catch (err) {
-      console.error(err)
     }
+
+    return result.slice(0, 3)
   }
 
-  const timeHrs = Math.floor((data.timeSpent || 0) / 60)
+  const attendanceChartData = [
+    { name: 'Attendance', value: attendanceRate, fill: '#06b6d4' },
+    { name: 'Unattended', value: 100 - attendanceRate, fill: 'rgba(255,255,255,0.05)' }
+  ]
 
   const containerVariants = {
     hidden: {},
-    visible: { transition: { staggerChildren: 0.07 } },
+    visible: { transition: { staggerChildren: 0.05 } }
   }
+
   const itemVariants = {
-    hidden:  { opacity: 0, y: 16 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '1rem', color: 'var(--text-secondary)' }}>
+        <RefreshCw className="animate-spin text-indigo-600" size={32} />
+        <div>Loading your learning dashboard...</div>
+      </div>
+    )
   }
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ maxWidth: 1280 }}>
-
-      {/* ══════════════ HERO WELCOME ══════════════ */}
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ padding: '1rem 0', maxWidth: 1400, margin: '0 auto' }}>
+      
+      {/* Welcome banner */}
       <motion.div variants={itemVariants} style={{ marginBottom: '2rem' }}>
         <GlassCard
-          tilt3d
+          tilt3d={true}
           padding="1.75rem 2rem"
           style={{
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.07) 0%, rgba(139,92,246,0.05) 50%, rgba(16,185,129,0.04) 100%)',
-            border: '1px solid rgba(99,102,241,0.15)',
-            position: 'relative',
-            overflow: 'hidden',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08))',
+            border: '1px solid rgba(99, 102, 241, 0.2)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1.5rem'
           }}
         >
-          {/* Background decoration */}
-          <div aria-hidden style={{ position: 'absolute', top: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12), transparent 70%)', pointerEvents: 'none' }} />
-          <div aria-hidden style={{ position: 'absolute', bottom: -20, left: '40%', width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.08), transparent 70%)', pointerEvents: 'none' }} />
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem', position: 'relative', zIndex: 1 }}>
-            <div style={{ flex: 1, minWidth: 240 }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{getGreeting()} 👋</div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
-                Welcome back,{' '}
-                <span className="gradient-text">{profile?.name?.split(' ')[0] || 'Learner'}</span>!
-              </h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.25rem', lineHeight: 1.5 }}>
-                {motivation}
-              </p>
-
-              {/* Gamification chips */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <span className="xp-chip xp-chip-streak">
-                  <Flame size={14} fill={streak > 0 ? 'currentColor' : 'none'} />
-                  {streak > 0 ? `${streak} Day Streak 🔥` : 'Start your streak!'}
-                </span>
-                <span className="xp-chip xp-chip-xp">
-                  <Star size={14} fill="currentColor" /> {xp.toLocaleString()} XP
-                </span>
-                <span className="xp-chip xp-chip-rank" style={{ color: rankColor, background: `${rankColor}18`, borderColor: `${rankColor}30` }}>
-                  <Trophy size={14} /> {rankName}
-                </span>
-              </div>
-            </div>
-
-            {/* XP Progress Ring */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.625rem', flexShrink: 0 }}>
-              <ProgressRing value={levelProgress} size={100} stroke={6} color={rankColor} label="Level" />
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  {levelProgress < 100
-                    ? `${100 - levelProgress}% to next rank`
-                    : 'Rank maxed! 🎉'}
-                </div>
-              </div>
-            </div>
+          <div>
+            <h1 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+              Welcome back, <span className="gradient-text">{profile?.name?.split(' ')[0] || 'Learner'}</span>!
+            </h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              Your streak is hot. Let's make today count towards your learning goals!
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              🔥 {kpis.streak}d Streak
+            </span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              ⭐ {kpis.xp.toLocaleString()} XP
+            </span>
           </div>
         </GlassCard>
       </motion.div>
 
-      {/* Push notification banner */}
-      {!isSubscribed && (
-        <motion.div variants={itemVariants} style={{ marginBottom: '1.5rem' }}>
-          <GlassCard padding="1rem 1.25rem" style={{ border: '1px solid rgba(99,102,241,0.2)', background: 'rgba(99,102,241,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(99,102,241,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Bell size={18} color="#6366f1" />
-              </div>
-              <div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>Enable Push Notifications</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Get real-time alerts for live classes and announcements.</div>
-              </div>
+      {/* Grid Layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2.5fr 1fr', gap: '1.5rem' }}>
+        
+        {/* Left Column (Main Charts & KPIs) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* KPI Analytics Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+            <KPIStudentCard icon="🔥" title="Streak" value={`${kpis.streak} Days`} subtitle="Keep the flame going" />
+            <KPIStudentCard icon="⭐" title="XP" value={kpis.xp.toLocaleString()} subtitle="Total XP accumulated" />
+            <KPIStudentCard icon="🏆" title="Rank" value={kpis.rank} subtitle="Rank standing tier" color={kpis.rankColor} />
+            <KPIStudentCard icon="📚" title="Completed Courses" value={kpis.completedCourses} subtitle="Modules finished 100%" />
+          </div>
+
+          {/* Weekly Learning Activity Area Chart */}
+          <GlassCard tilt3d={true}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', marginBottom: '1.5rem' }}>
+              📈 Weekly Learning Activity (XP)
+            </h3>
+            <div style={{ width: '100%', height: 200 }}>
+              <ResponsiveContainer>
+                <AreaChart data={weeklyActivity}>
+                  <defs>
+                    <linearGradient id="xpGlow" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }}
+                  />
+                  <Area type="monotone" dataKey="XP" stroke="#8b5cf6" strokeWidth={2.5} fillOpacity={1} fill="url(#xpGlow)" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-            <button onClick={handleEnableNotifications} className="btn-primary" style={{ fontSize: '0.82rem', padding: '0.55rem 1.1rem', flexShrink: 0 }}>
-              Enable <ArrowRight size={14} />
-            </button>
           </GlassCard>
-        </motion.div>
-      )}
 
-      {/* ══════════════ STATS ROW ══════════════ */}
-      <motion.div variants={itemVariants} className="stat-grid" style={{ marginBottom: '1.75rem' }}>
-        <StatCard icon={BookOpen}   label="Courses Enrolled" value={data.courses}    color="primary" suffix="" isLoading={loading} />
-        <StatCard icon={TrendingUp} label="Avg Completion"   value={data.completion} color="success" suffix="%" isLoading={loading} />
-        <StatCard icon={Clock}      label="Hours Learned"    value={timeHrs}         color="violet"  suffix="h" isLoading={loading} />
-        <StatCard icon={Flame}      label="Day Streak"        value={streak}          color="warning" isLoading={loading} />
-      </motion.div>
-
-      {/* ══════════════ MAIN GRID ══════════════ */}
-      <div className="dashboard-grid">
-        {/* ── Left Column ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-          {/* Quick Actions */}
-          <motion.div variants={itemVariants}>
-            <GlassCard padding="1.25rem">
-              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '1rem', letterSpacing: '-0.01em' }}>
-                Quick Actions
+          {/* Row 3: Charts (Attendance % Pie/Radial + Assessment Scores Bar) */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1.5fr', gap: '1.5rem' }}>
+            
+            {/* Attendance Radial/Gauge Chart */}
+            <GlassCard tilt3d={true} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', width: '100%', textAlign: 'left', marginBottom: '1rem' }}>
+                📶 Class Attendance
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
-                {[
-                  { icon: BookOpen,  label: 'My Courses',    path: '/student/courses',     color: '#6366f1' },
-                  { icon: CodeIcon,  label: 'Coding',        path: '/student/coding',       color: '#8b5cf6' },
-                  { icon: CheckCircle, label: 'Assessments', path: '/student/assessments',  color: '#10b981' },
-                  { icon: Globe,     label: 'Playground',    path: '/student/playground',   color: '#3b82f6' },
-                ].map(({ icon: Icon, label, path, color }) => (
-                  <Link key={path} to={path} style={{ textDecoration: 'none' }}>
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                        padding: '1rem 0.75rem', borderRadius: 14,
-                        background: `${color}0d`, border: `1px solid ${color}22`,
-                        cursor: 'pointer', transition: 'all 0.2s ease',
-                      }}
+              <div style={{ width: '100%', height: 120, display: 'flex', justifyItems: 'center', justifyContent: 'center' }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={attendanceChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={50}
+                      paddingAngle={0}
+                      dataKey="value"
+                      startAngle={90}
+                      endAngle={-270}
                     >
-                      <div style={{ width: 38, height: 38, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon size={18} color={color} />
-                      </div>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>{label}</span>
-                    </motion.div>
+                      {attendanceChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip enabled={false} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignSelf: 'center', alignItems: 'center' }}>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 850, color: 'white' }}>{attendanceRate}%</span>
+                  <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 600 }}>Rate</span>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0, textAlign: 'center', marginTop: '0.5rem' }}>
+                Enrolled class presence history grade
+              </p>
+            </GlassCard>
+
+            {/* Assessment Performance Bar Chart */}
+            <GlassCard tilt3d={true}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>
+                📚 Assessment Performance (%)
+              </h3>
+              {assessmentScores.length === 0 ? (
+                <div style={{ height: 140, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', gap: '8px' }}>
+                  <span>No assessments completed yet.</span>
+                  <Link to="/student/assessments" style={{ color: '#8b5cf6', fontWeight: 700, textDecoration: 'none' }}>
+                    Take Quiz →
                   </Link>
-                ))}
-              </div>
-            </GlassCard>
-          </motion.div>
-
-          {/* Rank & Progress */}
-          <motion.div variants={itemVariants}>
-            <GlassCard tilt3d padding="1.5rem">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Trophy size={16} color={rankColor} /> Your Rank</span>
-                </h3>
-                <Link to="/student/leaderboard" style={{ fontSize: '0.78rem', color: 'var(--primary-500)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600 }}>
-                  Leaderboard <ChevronRight size={13} />
-                </Link>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                <div style={{
-                  width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
-                  background: `${rankColor}18`, border: `2px solid ${rankColor}40`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: `0 0 20px ${rankColor}25`,
-                }}>
-                  <Trophy size={32} color={rankColor} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 900, color: rankColor, lineHeight: 1, marginBottom: '0.3rem' }}>{rankName}</div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>{xp.toLocaleString()} XP total</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <div className="progress-bar-track" style={{ flex: 1 }}>
-                      <div className="progress-bar-fill" style={{ width: `${levelProgress}%`, background: rankColor }} />
-                    </div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{levelProgress}%</span>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          </motion.div>
-
-          {/* Achievement badges */}
-          <motion.div variants={itemVariants}>
-            <GlassCard padding="1.5rem">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Award size={16} color="#f59e0b" /> Career Badges
-                </h3>
-                <Link to="/student/achievements" style={{ fontSize: '0.78rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600 }}>View all →</Link>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-around' }}>
-                {[
-                  { icon: Trophy,    label: rankName.split(' ')[0], color: rankColor,  active: true },
-                  { icon: CodeIcon,  label: `${stats?.problemsSolved || 0} Solved`, color: '#6366f1', active: (stats?.problemsSolved || 0) > 0 },
-                  { icon: Flame,     label: `${streak}d Streak`, color: '#f97316', active: streak >= 3 },
-                ].map(({ icon: Icon, label, color, active }) => (
-                  <div key={label} style={{ textAlign: 'center', opacity: active ? 1 : 0.35 }}>
-                    <div className="hexagon-container-mini" style={{ color, margin: '0 auto' }}>
-                      <div className="hexagon-mini"><div className="hexagon-inner-mini"><Icon size={16} /></div></div>
-                    </div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: 4, color: 'var(--text-secondary)' }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
-          </motion.div>
-        </div>
-
-        {/* ── Right Column ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-          {/* Upcoming schedule */}
-          <motion.div variants={itemVariants}>
-            <GlassCard padding="1.25rem">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Calendar size={15} color="var(--primary-500)" /> Upcoming
-                </h3>
-                <Link to="/student/courses" style={{ fontSize: '0.75rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600 }}>View all</Link>
-              </div>
-              {schedule.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                  <Calendar size={28} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
-                  <div>No upcoming sessions</div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  {schedule.map(s => (
-                    <div key={s.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem', borderRadius: 10, background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.1)' }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(99,102,241,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Calendar size={16} color="#6366f1" />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{s.title || 'Live Session'}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                          {new Date(s.scheduled_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div style={{ width: '100%', height: 140 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={assessmentScores} barSize={24} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} domain={[0, 100]} />
+                      <Tooltip 
+                        contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }}
+                      />
+                      <Bar dataKey="Score" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               )}
             </GlassCard>
-          </motion.div>
+          </div>
 
-          {/* Top students mini-leaderboard */}
-          <motion.div variants={itemVariants}>
-            <GlassCard padding="1.25rem">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Trophy size={15} color="#f59e0b" /> Top Learners
-                </h3>
-                <Link to="/student/leaderboard" style={{ fontSize: '0.75rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600 }}>Full board</Link>
+          {/* Quick Actions grid */}
+          <GlassCard tilt3d={true} padding="1.25rem">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+              {[
+                { icon: BookOpen,  label: 'My Courses',    path: '/student/courses',     color: '#6366f1' },
+                { icon: CodeIcon,  label: 'Coding Practice',path: '/student/coding',      color: '#8b5cf6' },
+                { icon: CheckCircle, label: 'Assessments', path: '/student/assessments',  color: '#10b981' },
+                { icon: Clock,     label: 'Live Meeting',    path: '/student/courses',   color: '#3b82f6' }
+              ].map(({ icon: Icon, label, path, color }) => (
+                <Link key={label} to={path} style={{ textDecoration: 'none' }}>
+                  <motion.div
+                    whileHover={{ y: -2, scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                      padding: '0.75rem', borderRadius: 12,
+                      background: `${color}0d`, border: `1px solid ${color}22`,
+                      cursor: 'pointer', transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon size={16} color={color} />
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textAlign: 'center' }}>{label}</span>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Right Column (Milestones, Badges, Schedule) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* Next Milestone box */}
+          <GlassCard tilt3d={true}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🏆 Next Milestone
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8' }}>
+                <span>Level {nextMilestone.currentLevel}</span>
+                <span>Level {nextMilestone.nextLevel}</span>
               </div>
+              <div style={{ height: 8, width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ width: `${nextMilestone.progressPct}%`, height: '100%', background: '#8b5cf6' }} />
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between' }}>
+                <span>XP {nextMilestone.currentXp} / {nextMilestone.neededXp}</span>
+                <span style={{ color: '#8b5cf6', fontWeight: 700 }}>{nextMilestone.progressPct}%</span>
+              </div>
+
+              <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 8 }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase' }}>Next Badge:</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 850, color: 'white', marginTop: '2px' }}>
+                  🏅 {nextMilestone.nextBadge}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
+                  Progress: {nextMilestone.badgeProgress}
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* Career Badges (Achievements) */}
+          <GlassCard tilt3d={true}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white' }}>
+                🏅 Unlocked Badges
+              </h3>
+              <Link to="/student/achievements" style={{ fontSize: '0.75rem', color: '#8b5cf6', textDecoration: 'none', fontWeight: 600 }}>
+                View All
+              </Link>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', justifyItems: 'center' }}>
+              {getUnlockedBadges().map(badge => (
+                <BadgeBox key={badge.name} icon={badge.icon} name={badge.name} active={!badge.locked} />
+              ))}
+            </div>
+          </GlassCard>
+
+          {/* Upcoming schedule */}
+          <GlassCard tilt3d={true}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              📅 Upcoming Live Sessions
+            </h3>
+            {schedule.length === 0 ? (
+              <div style={{ color: '#94a3b8', fontSize: '0.75rem', padding: '1rem 0', textAlign: 'center' }}>
+                No classes scheduled. Check back later.
+              </div>
+            ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                {topStudents.map((s, i) => (
-                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem', borderRadius: 10, background: s.id === profile?.id ? 'rgba(99,102,241,0.06)' : 'transparent', border: s.id === profile?.id ? '1px solid rgba(99,102,241,0.15)' : '1px solid transparent' }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: i === 0 ? '#f59e0b' : i === 1 ? 'var(--text-muted)' : '#cd7c2f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>
-                      {i + 1}
+                {schedule.map(s => (
+                  <div key={s.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 6, background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Calendar size={14} color="#6366f1" />
                     </div>
-                    <Avatar name={s.name} size="sm" />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{(s.xp || 0).toLocaleString()} XP</div>
+                    <div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'white' }}>{s.title}</div>
+                      <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: 2 }}>
+                        {new Date(s.scheduled_time).toLocaleDateString()} • {new Date(s.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
                     </div>
-                    <span className="xp-chip xp-chip-rank" style={{ fontSize: '0.62rem', color: s.rank_color || 'var(--text-muted)', background: `${s.rank_color || 'var(--text-muted)'}15`, borderColor: `${s.rank_color || 'var(--text-muted)'}25`, padding: '0.15rem 0.4rem' }}>
-                      {(s.rank_name || 'Iron').split(' ')[0]}
-                    </span>
                   </div>
                 ))}
-                {topStudents.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>Loading rankings...</div>
-                )}
               </div>
-            </GlassCard>
-          </motion.div>
-
-          {/* AI insight card */}
-          <motion.div variants={itemVariants}>
-            <GlassCard padding="1.25rem" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.06))', border: '1px solid rgba(99,102,241,0.18)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                <Sparkles size={16} color="#8b5cf6" />
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#8b5cf6' }}>AI Insight</span>
-              </div>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '0.875rem' }}>
-                {streak >= 7
-                  ? `🔥 Impressive! You've maintained a ${streak}-day streak. You're in the top 10% of learners. Keep it going!`
-                  : xp > 500
-                  ? `You've earned ${xp} XP so far. Complete an assessment today to boost your rank to ${rankName.replace('I', 'II')}.`
-                  : `Start with completing a course module today. Even 15 minutes of daily learning leads to mastery. 💡`}
-              </p>
-              <Link to="/student/courses" style={{ textDecoration: 'none' }}>
-                <button className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.5rem 1rem' }}>
-                  Continue Learning <ArrowRight size={13} />
-                </button>
-              </Link>
-            </GlassCard>
-          </motion.div>
+            )}
+          </GlassCard>
         </div>
+
       </div>
+
     </motion.div>
+  )
+}
+
+function KPIStudentCard({ icon, title, value, subtitle, color }) {
+  return (
+    <GlassCard
+      tilt3d={true}
+      padding="1.25rem"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+      }}
+    >
+      <div style={{ fontSize: '1.75rem' }}>{icon}</div>
+      <div>
+        <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{title}</div>
+        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: color || 'white', marginTop: '2px' }}>{value}</div>
+        <div style={{ fontSize: '0.62rem', color: '#94a3b8', marginTop: '2px' }}>{subtitle}</div>
+      </div>
+    </GlassCard>
+  )
+}
+
+function BadgeBox({ icon, name, active }) {
+  return (
+    <div style={{ textAlign: 'center', opacity: active ? 1 : 0.25 }}>
+      <div style={{
+        width: 52,
+        height: 52,
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))',
+        border: '1px solid rgba(255,255,255,0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '1.5rem',
+        margin: '0 auto'
+      }}>
+        {icon}
+      </div>
+      <div style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 700, marginTop: '4px', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {name}
+      </div>
+    </div>
   )
 }

@@ -11,7 +11,7 @@ import {
 import * as tf from '@tensorflow/tfjs'
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
 import CodeEditor from '../../components/CodeEditor'
-import { getIceServers } from '../../utils/iceServers'
+import { useLiveKitProctoring } from '../../hooks/useLiveKitProctoring'
 import CodingDiscussions from '../../components/CodingDiscussions'
 import MobileBlocker from '../../components/MobileBlocker'
 import { useDeviceType } from '../../hooks/useDeviceType'
@@ -28,6 +28,7 @@ const LANGUAGE_CONFIG = {
 }
 
 const MAX_ATTEMPTS = 2
+const BYPASS_PROCTORING = false // Set to false to enable AI proctoring violations in production
 
 export default function CodeWorkspace() {
     const { challengeId } = useParams()
@@ -76,8 +77,21 @@ export default function CodeWorkspace() {
     const [aiModel, setAiModel] = useState(null)
     const videoRef = useRef(null)
     const proctorInterval = useRef(null)
-    const peerConnections = useRef({})
-    const iceCandidateBuffer = useRef({})
+
+    // Proctoring Risk Engine & Session States
+    const [sessionId, setSessionId] = useState(null)
+    const [riskScore, setRiskScore] = useState(0)
+    const riskScoreRef = useRef(0)
+    const violationCountRef = useRef(0)
+    const sessionIdRef = useRef(null)
+    const lastViolationTimes = useRef({})
+    const hasTabSwitched = useRef(false)
+
+    useEffect(() => { riskScoreRef.current = riskScore }, [riskScore])
+    useEffect(() => { violationCountRef.current = violationCount }, [violationCount])
+    useEffect(() => { sessionIdRef.current = sessionId }, [sessionId])
+
+    const { connectionQuality } = useLiveKitProctoring(isStarted ? challengeId : null, isStarted ? profile?.id : null, false, null, mediaStream);
 
     const [timeLeft, setTimeLeft] = useState(30 * 60)
     const [hasRequestedHelp, setHasRequestedHelp] = useState(false)
@@ -214,7 +228,7 @@ export default function CodeWorkspace() {
 
     // Load AI Model
     useEffect(() => {
-        if (canBypass) return;
+        if (canBypass || BYPASS_PROCTORING) return;
         const loadModel = async () => {
             try {
                 await tf.ready()
@@ -229,6 +243,7 @@ export default function CodeWorkspace() {
 
     // Run Proctoring Loop
     useEffect(() => {
+        if (BYPASS_PROCTORING) return;
         if (isStarted && cameraEnabled && aiModel && videoRef.current && !canBypass) {
             proctorInterval.current = setInterval(async () => {
                 if (videoRef.current && videoRef.current.readyState === 4) {
@@ -240,6 +255,10 @@ export default function CodeWorkspace() {
                         if (p.class === 'person') personCount++
                     })
                     setFaceDetected(personCount > 0)
+                    
+                    const now = Date.now();
+
+                    // 1. Phone Detection (Risk: +40)
                     if (phoneDetected) {
                         setViolationCount(prev => {
                             const next = prev + 1
@@ -248,6 +267,35 @@ export default function CodeWorkspace() {
                             }
                             return next
                         })
+
+                        if (now - (lastViolationTimes.current['phone_detected'] || 0) > 10000) {
+                            lastViolationTimes.current['phone_detected'] = now;
+                            logViolation('phone_detected', 40);
+                        }
+                    }
+
+                    // 2. Face Lost Detection (Risk: +20)
+                    if (personCount === 0) {
+                        if (now - (lastViolationTimes.current['face_lost'] || 0) > 10000) {
+                            lastViolationTimes.current['face_lost'] = now;
+                            logViolation('face_lost', 20);
+                        }
+                    }
+
+                    // 3. Multiple Faces Detection (Risk: +50)
+                    if (personCount > 1) {
+                        setViolationCount(prev => {
+                            const next = prev + 1
+                            if (next < 3) {
+                                setSecurityAlert(`Security Warning (${next}/3): Multiple people detected in webcam feed.`)
+                            }
+                            return next
+                        })
+
+                        if (now - (lastViolationTimes.current['multiple_faces'] || 0) > 10000) {
+                            lastViolationTimes.current['multiple_faces'] = now;
+                            logViolation('multiple_faces', 50);
+                        }
                     }
                 }
             }, 2500)
@@ -257,7 +305,7 @@ export default function CodeWorkspace() {
         }
     }, [isStarted, cameraEnabled, aiModel, canBypass])
 
-    const stopProctoring = () => {
+    const stopProctoring = async () => {
         if (mediaStream) {
             mediaStream.getTracks().forEach(t => t.stop())
             setMediaStream(null)
@@ -267,6 +315,16 @@ export default function CodeWorkspace() {
             if (document.exitFullscreen) document.exitFullscreen()
             else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
             else if (document.msExitFullscreen) document.msExitFullscreen()
+        }
+
+        // Finalize proctoring session in DB
+        if (sessionIdRef.current) {
+            await supabase.from('proctoring_sessions')
+                .update({
+                    end_time: new Date().toISOString(),
+                    status: riskScoreRef.current >= 100 ? 'flagged' : 'completed'
+                })
+                .eq('id', sessionIdRef.current);
         }
     }
 
@@ -288,9 +346,90 @@ export default function CodeWorkspace() {
         }
     }
 
+    const logViolation = async (type, increment) => {
+        if (BYPASS_PROCTORING) return;
+        const currentSessionId = sessionIdRef.current;
+        if (!currentSessionId) return;
+
+        const currentRisk = riskScoreRef.current;
+        const currentViolationCount = violationCountRef.current;
+        const newRiskScore = currentRisk + increment;
+        
+        setRiskScore(newRiskScore);
+
+        // Update proctoring_sessions record in Supabase
+        await supabase.from('proctoring_sessions')
+            .update({
+                final_risk_score: newRiskScore,
+                total_violations: currentViolationCount + 1
+            })
+            .eq('id', currentSessionId);
+
+        let evidenceUrl = null;
+        if (videoRef.current && (type === 'phone_detected' || type === 'multiple_faces')) {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoRef.current.videoWidth || 640;
+                canvas.height = videoRef.current.videoHeight || 480;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                
+                await new Promise((resolve) => {
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) {
+                            resolve();
+                            return;
+                        }
+                        const fileName = `${profile.id}/${Date.now()}_evidence.jpg`;
+                        const { data } = await supabase.storage
+                            .from('proctoring-evidence')
+                            .upload(fileName, blob, { contentType: 'image/jpeg' });
+                        
+                        if (data) {
+                            const { data: { publicUrl } } = supabase.storage
+                                .from('proctoring-evidence')
+                                .getPublicUrl(fileName);
+                            evidenceUrl = publicUrl;
+                        }
+                        resolve();
+                    }, 'image/jpeg');
+                });
+            } catch (err) {
+                console.error('Error capturing screenshot evidence:', err);
+            }
+        }
+
+        // Insert violation record in DB
+        await supabase.from('proctoring_violations').insert({
+            session_id: currentSessionId,
+            student_id: profile.id,
+            violation_type: type,
+            risk_score_increment: increment,
+            evidence_url: evidenceUrl
+        });
+
+        // Broadcast real-time update
+        const channel = supabase.channel('coding_proctoring');
+        channel.send({
+            type: 'broadcast',
+            event: 'video_frame',
+            payload: {
+                studentId: profile.id,
+                name: profile?.full_name || profile?.name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Student',
+                challengeId: challengeId,
+                type: 'coding',
+                riskScore: newRiskScore,
+                violationCount: currentViolationCount + 1,
+                lastViolationType: type,
+                lastViolationTime: new Date().toLocaleTimeString(),
+                connectionQuality: connectionQuality || 'excellent'
+            }
+        }).catch(err => console.error(err));
+    };
+
 
     useEffect(() => {
-        if (violationCount >= 3 && isStarted && !canBypass) {
+        if (violationCount >= 3 && isStarted && !canBypass && !BYPASS_PROCTORING) {
             alert('Security Violation: 3 violations detected. You are being removed from the coding session.')
             navigate('/student/coding')
         }
@@ -298,22 +437,40 @@ export default function CodeWorkspace() {
 
     useEffect(() => {
         const handleFullScreenChange = () => {
+            if (BYPASS_PROCTORING) return;
             if (isStarted && !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement && !canBypass) {
                 setViolationCount(prev => {
                     const next = prev + 1
                     if (next < 3) setRequiresReentry(true)
                     return next
                 })
+
+                const now = Date.now();
+                if (now - (lastViolationTimes.current['tab_switch'] || 0) > 10000) {
+                    lastViolationTimes.current['tab_switch'] = now;
+                    const increment = hasTabSwitched.current ? 25 : 15;
+                    hasTabSwitched.current = true;
+                    logViolation('tab_switch', increment);
+                }
             }
         }
 
         const handleVisibilityChange = () => {
+            if (BYPASS_PROCTORING) return;
             if (isStarted && document.hidden && !canBypass) {
                 setViolationCount(prev => {
                     const next = prev + 1
                     if (next < 3) setSecurityAlert(`Security Warning (${next}/3): You lost focus on the coding window. Please stay on this page.`)
                     return next
                 })
+
+                const now = Date.now();
+                if (now - (lastViolationTimes.current['tab_switch'] || 0) > 10000) {
+                    lastViolationTimes.current['tab_switch'] = now;
+                    const increment = hasTabSwitched.current ? 25 : 15;
+                    hasTabSwitched.current = true;
+                    logViolation('tab_switch', increment);
+                }
             }
         }
 
@@ -357,6 +514,22 @@ export default function CodeWorkspace() {
         } catch (e) {
             console.error("Failed to log coding session", e);
         }
+
+        if (!sessionId) {
+            try {
+                const { data: sessionData } = await supabase.from('proctoring_sessions').insert({
+                    student_id: profile.id,
+                    challenge_id: challengeId,
+                    status: 'active'
+                }).select().single();
+                
+                if (sessionData) {
+                    setSessionId(sessionData.id);
+                }
+            } catch (err) {
+                console.error('Error starting proctoring session:', err);
+            }
+        }
     }
 
     const handleStartChallenge = async () => {
@@ -374,6 +547,22 @@ export default function CodeWorkspace() {
         } catch (e) {
             console.error("Failed to log coding session", e);
         }
+
+        if (!sessionId) {
+            try {
+                const { data: sessionData } = await supabase.from('proctoring_sessions').insert({
+                    student_id: profile.id,
+                    challenge_id: challengeId,
+                    status: 'active'
+                }).select().single();
+                
+                if (sessionData) {
+                    setSessionId(sessionData.id);
+                }
+            } catch (err) {
+                console.error('Error starting proctoring session:', err);
+            }
+        }
     };
 
     useEffect(() => {
@@ -388,6 +577,7 @@ export default function CodeWorkspace() {
         channel
             .on('broadcast', { event: 'proctor_warning' }, (payload) => {
                 if (payload.payload.studentId === profile.id) {
+                    if (BYPASS_PROCTORING) return
                     setViolationCount(prev => {
                         const next = prev + 1
                         if (next < 3) {
@@ -396,82 +586,6 @@ export default function CodeWorkspace() {
                         }
                         return next
                     })
-                }
-            })
-            .on('broadcast', { event: 'webrtc_offer' }, async (payload) => {
-                const { studentId, offer, organizerId } = payload.payload;
-                if (studentId !== profile.id) return;
-
-                try {
-                    const iceServers = await getIceServers();
-                    const pc = new RTCPeerConnection({ iceServers });
-                    
-                    peerConnections.current[organizerId] = pc;
-
-                    if (mediaStream) {
-                        mediaStream.getTracks().forEach(track => {
-                            pc.addTrack(track, mediaStream);
-                        });
-                    }
-
-                    pc.onicecandidate = (event) => {
-                        if (event.candidate) {
-                            channel.send({
-                                type: 'broadcast',
-                                event: 'webrtc_ice_candidate',
-                                payload: {
-                                    target: 'organizer',
-                                    organizerId,
-                                    studentId: profile.id,
-                                    candidate: event.candidate
-                                }
-                            });
-                        }
-                    };
-
-                    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-
-                    // Flush buffered ICE candidates
-                    if (iceCandidateBuffer.current[organizerId]) {
-                        for (const c of iceCandidateBuffer.current[organizerId]) {
-                            await pc.addIceCandidate(new RTCIceCandidate(c));
-                        }
-                        delete iceCandidateBuffer.current[organizerId];
-                    }
-
-                    channel.send({
-                        type: 'broadcast',
-                        event: 'webrtc_answer',
-                        payload: {
-                            target: 'organizer',
-                            organizerId,
-                            studentId: profile.id,
-                            answer
-                        }
-                    });
-
-                } catch (err) {
-                    console.error('WebRTC Answer Error:', err);
-                }
-            })
-            .on('broadcast', { event: 'webrtc_ice_candidate' }, async (payload) => {
-                const { target, studentId, organizerId, candidate } = payload.payload;
-                if (target === 'student' && studentId === profile.id) {
-                    const pc = peerConnections.current[organizerId];
-                    if (pc && candidate) {
-                        try {
-                            if (!pc.remoteDescription) {
-                                if (!iceCandidateBuffer.current[organizerId]) iceCandidateBuffer.current[organizerId] = [];
-                                iceCandidateBuffer.current[organizerId].push(candidate);
-                            } else {
-                                await pc.addIceCandidate(new RTCIceCandidate(candidate));
-                            }
-                        } catch (err) {
-                            console.error('Error adding ICE candidate:', err);
-                        }
-                    }
                 }
             })
             .subscribe()
@@ -485,18 +599,19 @@ export default function CodeWorkspace() {
                     studentId: profile.id,
                     name: profile?.full_name || profile?.name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Student',
                     challengeId,
-                    type: 'coding'
+                    type: 'coding',
+                    riskScore: riskScoreRef.current,
+                    violationCount: violationCountRef.current,
+                    connectionQuality: connectionQuality || 'excellent'
                 }
             }).catch(err => console.error(err))
         }, 3000)
 
         return () => {
             clearInterval(pingInterval)
-            Object.values(peerConnections.current).forEach(pc => pc.close());
-            peerConnections.current = {};
             channel.unsubscribe()
         }
-    }, [isStarted, canBypass, profile, challengeId, mediaStream])
+    }, [isStarted, canBypass, profile, challengeId, mediaStream, connectionQuality])
 
     useEffect(() => {
         if (!isStarted || canBypass || hasUnlockedAnswer) return
@@ -949,7 +1064,8 @@ sys.stdin = StringIO(test_input)
                         <strong>Security Rules:</strong>
                         <li>Exiting fullscreen or switching tabs will result in a warning strike.</li>
                         <li>An AI model will monitor your webcam to detect cell phones.</li>
-                        <li>Receiving 3 violation strikes will result in automatic termination.</li>
+                        <li><strong>Live Monitoring May Be Used:</strong> Proctors may periodically review your video and screen.</li>
+                        <li>Receiving 3 violation strikes will result in automatic test failure.</li>
                     </div>
                     
                     {!cameraEnabled ? (
@@ -987,7 +1103,7 @@ sys.stdin = StringIO(test_input)
         )
     }
 
-    if ((requiresReentry || securityAlert) && !canBypass) {
+    if ((requiresReentry || securityAlert) && !canBypass && !BYPASS_PROCTORING) {
         return (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.98)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
                 <div className="glass-card animate-scale-in" style={{ maxWidth: 500, padding: '3rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
@@ -1033,7 +1149,7 @@ sys.stdin = StringIO(test_input)
             </header>
 
             {cameraEnabled && !canBypass && (
-                <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: !faceDetected ? 10000 : 1000, background: '#000', transition: 'all 0.3s ease', transform: !faceDetected ? 'scale(1.5) translate(-20px, -20px)' : 'none' }}>
+                <div style={{ position: 'fixed', top: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: !faceDetected ? 10000 : 1000, background: '#000', transition: 'all 0.3s ease', transform: !faceDetected ? 'scale(1.5) translate(-20px, 20px)' : 'none' }}>
                     <video 
                         ref={(node) => {
                             videoRef.current = node;
@@ -1091,26 +1207,26 @@ sys.stdin = StringIO(test_input)
                                         })}
                                     </div>
                                 )}
-                                <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, marginBottom: '2rem', whiteSpace: 'pre-wrap' }}>{currentQuestion.problem_statement}</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, marginBottom: '2rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.problem_statement}</div>
 
                                 {currentQuestion.input_format && (
                                     <div style={{ marginBottom: '1.5rem' }}>
                                         <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Input Format</h4>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{currentQuestion.input_format}</div>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.input_format}</div>
                                     </div>
                                 )}
 
                                 {currentQuestion.output_format && (
                                     <div style={{ marginBottom: '1.5rem' }}>
                                         <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Output Format</h4>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{currentQuestion.output_format}</div>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.output_format}</div>
                                     </div>
                                 )}
 
                                 {currentQuestion.constraints && (
                                     <div style={{ marginBottom: '2rem' }}>
                                         <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Constraints</h4>
-                                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.9rem', color: 'var(--card-border)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.9rem', color: 'var(--card-border)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                                             {currentQuestion.constraints}
                                         </div>
                                     </div>
@@ -1489,7 +1605,7 @@ sys.stdin = StringIO(test_input)
             )}
 
             {/* Face Not Detected Overlay */}
-            {!faceDetected && isStarted && cameraEnabled && !canBypass && (
+            {!faceDetected && isStarted && cameraEnabled && !canBypass && !BYPASS_PROCTORING && (
                 <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.95)', backdropFilter: 'blur(15px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', flexDirection: 'column' }}>
                     <div style={{ width: 100, height: 100, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', color: '#ef4444', animation: 'pulse 2s infinite' }}>
                         <Camera size={50} />

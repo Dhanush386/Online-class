@@ -235,7 +235,7 @@ export default function OrganizerLayout() {
           height: 60, flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 1.25rem',
-          background: 'rgba(255,255,255,0.85)',
+          background: 'var(--bg-overlay)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderBottom: '1px solid var(--sidebar-border)',

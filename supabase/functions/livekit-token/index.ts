@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0"
-import { SignJWT } from "https://deno.land/x/jose@v4.15.4/index.ts"
+import { SignJWT, decodeJwt } from "https://deno.land/x/jose@v4.15.4/index.ts"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -36,6 +36,14 @@ serve(async (req) => {
         console.log(`Auth Header: ${authHeader.substring(0, 15)}...`)
         console.log(`JWT Token: ${jwtToken.substring(0, 10)}...`)
 
+        // Decode claims locally for debug logging
+        try {
+            const decoded = decodeJwt(jwtToken)
+            console.log('Decoded claims:', JSON.stringify(decoded))
+        } catch (jwtErr) {
+            console.error('Failed to decode JWT locally:', jwtErr)
+        }
+
         const { data: { user }, error: authError } = await supabase.auth.getUser(jwtToken)
         if (authError || !user) {
             console.error('Auth Error Details:', authError)
@@ -49,7 +57,7 @@ serve(async (req) => {
             .eq('id', user.id)
             .single()
 
-        const { roomName } = await req.json()
+        const { roomName, proctoringMode } = await req.json()
         if (!roomName) throw new Error('roomName is required')
 
         const apiKey = Deno.env.get('LIVEKIT_API_KEY')
@@ -81,6 +89,19 @@ serve(async (req) => {
                 role: profile?.role || 'student',
                 email: profile?.email || user.email || ''
             })
+        }
+
+        // Apply strict permissions for Proctoring Mode
+        if (proctoringMode) {
+            if (isOrganizer) {
+                // Organizers can watch, but don't need to publish their own video to students
+                payload.video.canPublish = false;
+                payload.video.canSubscribe = true;
+            } else {
+                // Students can publish their video, but cannot watch other students
+                payload.video.canPublish = true;
+                payload.video.canSubscribe = false;
+            }
         }
 
         // Organizers get admin permissions

@@ -269,14 +269,14 @@ export default function CodePlayground() {
                         value={language}
                         onChange={(e) => handleLanguageChange(e.target.value)}
                         className="form-input"
-                        style={{ width: 'auto', padding: '0.5rem 2rem 0.5rem 1rem', background: '#fff' }}
+                        style={{ width: 'auto', padding: '0.5rem 2rem 0.5rem 1rem', background: 'var(--bg-elevated)', color: 'var(--text-primary)', borderColor: 'var(--card-border)' }}
                     >
                         {Object.entries(LANGUAGE_CONFIG).map(([id, config]) => (
-                            <option key={id} value={id}>{config.name}</option>
+                            <option key={id} value={id} style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}>{config.name}</option>
                         ))}
                     </select>
 
-                    <div style={{ width: 1, height: 24, background: '#e2e8f0', margin: '0 0.5rem' }}></div>
+                    <div style={{ width: 1, height: 24, background: 'var(--card-border)', margin: '0 0.5rem' }}></div>
 
                     {language === 'html' && (
                         <button onClick={() => { setPublishedUrl(null); setShowPublishModal(true); }} className="btn-primary" style={{ gap: '0.5rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}>
@@ -284,10 +284,10 @@ export default function CodePlayground() {
                         </button>
                     )}
 
-                    <button onClick={() => setShowSaveModal(true)} className="btn-secondary" style={{ gap: '0.5rem', background: 'white' }}>
+                    <button onClick={() => setShowSaveModal(true)} className="btn-secondary" style={{ gap: '0.5rem' }}>
                         <Save size={18} /> Save
                     </button>
-                    <button onClick={() => { fetchSnippets(); setShowLoadModal(true); }} className="btn-secondary" style={{ gap: '0.5rem', background: 'white' }}>
+                    <button onClick={() => { fetchSnippets(); setShowLoadModal(true); }} className="btn-secondary" style={{ gap: '0.5rem' }}>
                         <Folder size={18} /> My Code
                     </button>
 
@@ -299,18 +299,18 @@ export default function CodePlayground() {
 
             <div className="glass-card" style={{ flex: 1, display: 'flex', overflow: 'hidden', padding: 0 }}>
                 {/* Left: Input (Code and Stdin) */}
-                <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', borderRight: '1px solid #e2e8f0' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--text-primary)' }}>
-                        <div style={{ padding: '0', background: 'var(--text-primary)', display: 'flex', borderBottom: '1px solid var(--card-border)', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--card-border)' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
+                        <div style={{ padding: '0', background: 'var(--bg-elevated)', display: 'flex', borderBottom: '1px solid var(--card-border)', justifyContent: 'space-between', alignItems: 'center' }}>
                             {language === 'html' ? (
                                 <div style={{ display: 'flex' }}>
-                                    <button onClick={() => setWebTab('html')} style={{ padding: '0.6rem 1rem', background: webTab === 'html' ? 'var(--text-primary)' : 'transparent', border: 'none', color: webTab === 'html' ? '#e2e8f0' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'html' ? '2px solid #e34c26' : '2px solid transparent' }}>
+                                    <button onClick={() => setWebTab('html')} style={{ padding: '0.6rem 1rem', background: webTab === 'html' ? 'var(--bg-base)' : 'transparent', border: 'none', color: webTab === 'html' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'html' ? '2px solid #e34c26' : '2px solid transparent' }}>
                                         HTML
                                     </button>
-                                    <button onClick={() => setWebTab('css')} style={{ padding: '0.6rem 1rem', background: webTab === 'css' ? 'var(--text-primary)' : 'transparent', border: 'none', color: webTab === 'css' ? '#e2e8f0' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'css' ? '2px solid #264de4' : '2px solid transparent' }}>
+                                    <button onClick={() => setWebTab('css')} style={{ padding: '0.6rem 1rem', background: webTab === 'css' ? 'var(--bg-base)' : 'transparent', border: 'none', color: webTab === 'css' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'css' ? '2px solid #264de4' : '2px solid transparent' }}>
                                         CSS
                                     </button>
-                                    <button onClick={() => setWebTab('js')} style={{ padding: '0.6rem 1rem', background: webTab === 'js' ? 'var(--text-primary)' : 'transparent', border: 'none', color: webTab === 'js' ? '#e2e8f0' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'js' ? '2px solid #f0db4f' : '2px solid transparent' }}>
+                                    <button onClick={() => setWebTab('js')} style={{ padding: '0.6rem 1rem', background: webTab === 'js' ? 'var(--bg-base)' : 'transparent', border: 'none', color: webTab === 'js' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'js' ? '2px solid #f0db4f' : '2px solid transparent' }}>
                                         JS
                                     </button>
                                 </div>
@@ -368,23 +368,23 @@ export default function CodePlayground() {
                         )}
                     </div>
                     {language !== 'html' && (
-                        <div style={{ height: '120px', borderTop: '4px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ padding: '0.4rem 1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                        <div style={{ height: '120px', borderTop: '4px solid var(--card-border)', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ padding: '0.4rem 1rem', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--card-border)', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>
                                 STDIN (INPUT)
                             </div>
                             <textarea
                                 value={stdin}
                                 onChange={e => setStdin(e.target.value)}
                                 placeholder="Paste input here if your code expects any..."
-                                style={{ flex: 1, padding: '0.75rem', border: 'none', outline: 'none', resize: 'none', fontSize: '0.85rem' }}
+                                style={{ flex: 1, padding: '0.75rem', border: 'none', outline: 'none', resize: 'none', fontSize: '0.85rem', background: 'var(--bg-base)', color: 'var(--text-primary)' }}
                             />
                         </div>
                     )}
                 </div>
 
                 {/* Right: Output/Preview */}
-                <div style={{ flex: 0.8, display: 'flex', flexDirection: 'column', background: '#fff' }}>
-                    <div style={{ height: 44, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', background: '#f8fafc' }}>
+                <div style={{ flex: 0.8, display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
+                    <div style={{ height: 44, borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)' }}>
                         <div style={{ display: 'flex', gap: '1rem', height: '100%', px: '1rem', marginLeft: '1rem' }}>
                             <button
                                 onClick={() => setActiveTab('output')}
@@ -417,7 +417,7 @@ export default function CodePlayground() {
 
                     <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
                         {activeTab === 'preview' ? (
-                            <iframe ref={iframeRef} style={{ width: '100%', height: '100%', border: '1px solid #e2e8f0', borderRadius: 8, background: 'white' }} title="playground-preview" />
+                            <iframe ref={iframeRef} style={{ width: '100%', height: '100%', border: '1px solid var(--card-border)', borderRadius: 8, background: 'white' }} title="playground-preview" />
                         ) : (
                             <div>
                                 {!result ? (
@@ -429,30 +429,30 @@ export default function CodePlayground() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         <div style={{
                                             padding: '1rem', borderRadius: 10,
-                                            background: result.status === 'success' ? '#f0fdf4' : result.status === 'error' ? '#fef2f2' : '#f8fafc',
-                                            border: `1px solid ${result.status === 'success' ? '#10b98140' : result.status === 'error' ? '#ef444440' : '#e2e8f0'}`,
+                                            background: result.status === 'success' ? 'rgba(16, 185, 129, 0.1)' : result.status === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'var(--bg-elevated)',
+                                            border: `1px solid ${result.status === 'success' ? 'rgba(16, 185, 129, 0.2)' : result.status === 'error' ? 'rgba(239, 68, 68, 0.2)' : 'var(--card-border)'}`,
                                             display: 'flex', alignItems: 'center', gap: '0.75rem'
                                         }}>
                                             {result.status === 'success' ? <CheckCircle2 color="#10b981" /> : result.status === 'error' ? <XCircle color="#ef4444" /> : <Clock className="animate-spin" color="#6366f1" />}
                                             <div>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{result.message || result.status.toUpperCase()}</div>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: result.status === 'success' ? '#10b981' : result.status === 'error' ? '#ef4444' : 'var(--text-primary)' }}>{result.message || result.status.toUpperCase()}</div>
                                                 {result.time && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Time: {result.time}s · Memory: {result.memory}KB</div>}
                                             </div>
                                         </div>
                                         {result.output && (
-                                            <pre style={{ background: '#f1f5f9', color: 'var(--text-primary)', padding: '1rem', borderRadius: 8, fontSize: '0.85rem', overflowX: 'auto', fontFamily: 'monospace' }}>{result.output}</pre>
+                                            <pre style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--card-border)', padding: '1rem', borderRadius: 8, fontSize: '0.85rem', overflowX: 'auto', fontFamily: 'monospace' }}>{result.output}</pre>
                                         )}
                                         {result.compile_output && (
                                             <div style={{ marginTop: '0.5rem' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                                     <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Console Output</h4>
                                                     {language === 'python' && (
-                                                        <div style={{ fontSize: '0.7rem', color: '#6366f1', background: '#eef2ff', padding: '0.25rem 0.6rem', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--primary-400)', background: 'rgba(99, 102, 241, 0.1)', padding: '0.25rem 0.6rem', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                                                             <Info size={12} /> Memory Limit: 256MB
                                                         </div>
                                                     )}
                                                 </div>
-                                                <pre style={{ background: 'var(--text-primary)', color: '#e2e8f0', padding: '1rem', borderRadius: 8, fontSize: '0.8rem', overflowX: 'auto' }}>{result.compile_output}</pre>
+                                                <pre style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--card-border)', padding: '1rem', borderRadius: 8, fontSize: '0.8rem', overflowX: 'auto' }}>{result.compile_output}</pre>
                                             </div>
                                         )}
                                     </div>
@@ -512,7 +512,7 @@ export default function CodePlayground() {
                                     </div>
                                 ) : (
                                     savedSnippets.map(snippet => (
-                                        <div key={snippet.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                                        <div key={snippet.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8 }}>
                                             <div>
                                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{snippet.title}</div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
@@ -546,10 +546,10 @@ export default function CodePlayground() {
                             </p>
 
                             {publishedUrl ? (
-                                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '1.5rem', borderRadius: 12, textAlign: 'center' }}>
-                                    <h3 style={{ color: '#166534', fontWeight: 700, marginBottom: '1rem' }}>Project Published! 🎉</h3>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid #dcfce3', marginBottom: '1rem' }}>
-                                        <input type="text" readOnly value={publishedUrl} style={{ flex: 1, border: 'none', outline: 'none', fontSize: '0.8rem', color: 'var(--text-primary)' }} />
+                                <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '1.5rem', borderRadius: 12, textAlign: 'center' }}>
+                                    <h3 style={{ color: 'var(--secondary-500)', fontWeight: 700, marginBottom: '1rem' }}>Project Published! 🎉</h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-elevated)', padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid var(--card-border)', marginBottom: '1rem' }}>
+                                        <input type="text" readOnly value={publishedUrl} style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '0.8rem', color: 'var(--text-primary)' }} />
                                     </div>
                                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                                         <button onClick={() => { navigator.clipboard.writeText(publishedUrl); alert("Copied!"); }} className="btn-primary" style={{ padding: '0.5rem 1.5rem', background: '#10b981' }}>

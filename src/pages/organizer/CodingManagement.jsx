@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import CodeEditor from '../../components/CodeEditor'
 import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image as ImageIcon, Upload, Sparkles, Loader2, ShieldAlert, Eye, BarChart3, CheckCircle2, XCircle, Users } from 'lucide-react'
+import ProctoringReportModal from '../../components/organizer/ProctoringReportModal'
 import OrganizerCodingDiscussions from '../../components/OrganizerCodingDiscussions'
 import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
@@ -79,17 +80,36 @@ export default function CodingManagement() {
     const [submissionsData, setSubmissionsData] = useState([])
     const [submissionsLoading, setSubmissionsLoading] = useState(false)
     const [submissionsSearch, setSubmissionsSearch] = useState('')
+    const [proctorSessionsMap, setProctorSessionsMap] = useState({})
+    const [viewingReportSession, setViewingReportSession] = useState(null)
 
     async function loadSubmissions(challenge) {
         setViewingSubmissions(challenge)
         setSubmissionsLoading(true)
         setSubmissionsSearch('')
         try {
-            const { data: subs } = await supabase
-                .from('coding_submissions')
-                .select('*, users!inner(name, email)')
-                .eq('challenge_id', challenge.id)
-                .order('created_at', { ascending: false })
+            const [
+                { data: subs },
+                { data: pSessions }
+            ] = await Promise.all([
+                supabase
+                    .from('coding_submissions')
+                    .select('*, users!inner(name, email)')
+                    .eq('challenge_id', challenge.id)
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('proctoring_sessions')
+                    .select('id, student_id, final_risk_score, review_status')
+                    .eq('challenge_id', challenge.id)
+            ])
+
+            const pMap = {}
+            if (pSessions) {
+                pSessions.forEach(s => {
+                    pMap[s.student_id] = s
+                })
+            }
+            setProctorSessionsMap(pMap)
 
             // Keep the best attempt (or most recent accepted) per student
             const bestByStudent = {}
@@ -1459,17 +1479,18 @@ export default function CodingManagement() {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     {/* Table Header */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.75rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.75rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
                                         <span>Student</span>
                                         <span style={{ textAlign: 'center' }}>Score (XP)</span>
                                         <span style={{ textAlign: 'center' }}>Status</span>
+                                        <span style={{ textAlign: 'center' }}>Proctoring</span>
                                     </div>
                                     {filteredSubmissions
                                         .sort((a, b) => (b.score || 0) - (a.score || 0))
                                         .map((sub, idx) => {
                                             const passed = sub.status === 'accepted'
                                             return (
-                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', padding: '0.75rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.75rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
                                                     onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
                                                     onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
                                                 >
@@ -1496,6 +1517,30 @@ export default function CodingManagement() {
                                                             </span>
                                                         )}
                                                     </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        {proctorSessionsMap[sub.student_id] ? (
+                                                            <button
+                                                                onClick={() => setViewingReportSession({ studentId: sub.student_id, challengeId: sub.challenge_id })}
+                                                                style={{
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px',
+                                                                    padding: '0.25rem 0.5rem',
+                                                                    borderRadius: 6,
+                                                                    background: proctorSessionsMap[sub.student_id].final_risk_score >= 100 ? '#fef2f2' : proctorSessionsMap[sub.student_id].final_risk_score >= 60 ? '#fff7ed' : '#ecfdf5',
+                                                                    color: proctorSessionsMap[sub.student_id].final_risk_score >= 100 ? '#ef4444' : proctorSessionsMap[sub.student_id].final_risk_score >= 60 ? '#f97316' : '#10b981',
+                                                                    border: `1px solid ${proctorSessionsMap[sub.student_id].final_risk_score >= 100 ? '#fecaca' : proctorSessionsMap[sub.student_id].final_risk_score >= 60 ? '#ffedd5' : '#a7f3d0'}`,
+                                                                    fontSize: '0.75rem',
+                                                                    fontWeight: 700,
+                                                                    cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                🛡️ {proctorSessionsMap[sub.student_id].final_risk_score} Risk
+                                                            </button>
+                                                        ) : (
+                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None</span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )
                                         })}
@@ -1509,6 +1554,13 @@ export default function CodingManagement() {
                         </div>
                     </div>
                 </div>
+            )}
+            {viewingReportSession && (
+                <ProctoringReportModal 
+                    studentId={viewingReportSession.studentId}
+                    challengeId={viewingReportSession.challengeId}
+                    onClose={() => setViewingReportSession(null)}
+                />
             )}
         </div>
     )

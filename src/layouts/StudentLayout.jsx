@@ -272,7 +272,7 @@ export default function StudentLayout() {
           height: 60, flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 1.25rem',
-          background: 'rgba(255,255,255,0.85)',
+          background: 'var(--bg-overlay)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderBottom: '1px solid var(--sidebar-border)',
@@ -452,7 +452,7 @@ export default function StudentLayout() {
           <nav style={{
             position: 'fixed', bottom: 0, left: 0, right: 0,
             height: 60,
-            background: 'rgba(255,255,255,0.95)',
+            background: 'var(--bg-elevated)',
             backdropFilter: 'blur(16px)',
             borderTop: '1px solid var(--sidebar-border)',
             display: 'flex', alignItems: 'center',
