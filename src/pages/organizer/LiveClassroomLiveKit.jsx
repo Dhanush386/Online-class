@@ -990,7 +990,7 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
 
 // ─── Control Bar ─────────────────────────────────────────────────────────────
 function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, screenShareLocked, handsLocked, onSendReaction, onToggleHand }) {
-    const { isRecording, isUploading, recordingSession, gToken, loginToDrive, startRecording, stopAndUploadRecording } = useMeeting()
+    const { isRecording, isRecordingPaused, isUploading, recordingSession, gToken, loginToDrive, startRecording, pauseRecording, resumeRecording, stopAndUploadRecording } = useMeeting()
     const room = useRoomContext()
     const { isMobile } = useDeviceOrientation()
     const localParticipant = useLocalParticipant()
