@@ -11,6 +11,7 @@ import {
 import * as tf from '@tensorflow/tfjs'
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
 import CodeEditor from '../../components/CodeEditor'
+import { ICE_SERVERS } from '../../utils/iceServers'
 import CodingDiscussions from '../../components/CodingDiscussions'
 import MobileBlocker from '../../components/MobileBlocker'
 import { useDeviceType } from '../../hooks/useDeviceType'
@@ -402,12 +403,7 @@ export default function CodeWorkspace() {
                 if (studentId !== profile.id) return;
 
                 try {
-                    const pc = new RTCPeerConnection({
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:global.stun.twilio.com:3478' }
-                        ]
-                    });
+                    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
                     
                     peerConnections.current[organizerId] = pc;
 
