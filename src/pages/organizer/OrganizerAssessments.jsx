@@ -194,6 +194,17 @@ export default function OrganizerAssessments() {
         }
     }
 
+    async function handleDeleteSubmission(submissionId) {
+        if (!confirm('Are you sure you want to delete this submission? This will allow the student to retake the assessment.')) return
+        try {
+            const { error } = await supabase.from('assessment_submissions').delete().eq('id', submissionId)
+            if (error) throw error
+            setMarksData(prev => prev.filter(m => m.id !== submissionId))
+        } catch (err) {
+            alert('Failed to delete submission: ' + err.message)
+        }
+    }
+
     const filteredMarks = marksData.filter(m => {
         if (!marksSearch) return true
         const q = marksSearch.toLowerCase()
@@ -539,11 +550,12 @@ export default function OrganizerAssessments() {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     {/* Table Header */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.75rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr', gap: '1rem', padding: '0.5rem 0.75rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
                                         <span>Student</span>
                                         <span style={{ textAlign: 'center' }}>Score</span>
                                         <span style={{ textAlign: 'center' }}>Percentage</span>
                                         <span style={{ textAlign: 'center' }}>Status</span>
+                                        <span style={{ textAlign: 'right' }}>Actions</span>
                                     </div>
                                     {filteredMarks
                                         .sort((a, b) => b.score - a.score)
@@ -551,7 +563,7 @@ export default function OrganizerAssessments() {
                                             const pct = sub.total_questions > 0 ? Math.round((sub.score / sub.total_questions) * 100) : 0
                                             const passed = pct >= 50
                                             return (
-                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.75rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr', gap: '1rem', padding: '0.75rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
                                                     onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
                                                     onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
                                                 >
@@ -582,6 +594,17 @@ export default function OrganizerAssessments() {
                                                                 <XCircle size={14} /> Failed
                                                             </span>
                                                         )}
+                                                    </div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <button 
+                                                            onClick={() => handleDeleteSubmission(sub.id)} 
+                                                            title="Delete submission and allow retake" 
+                                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem', opacity: 0.7, transition: 'opacity 0.2s' }}
+                                                            onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                                                            onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
                                                     </div>
                                                 </div>
                                             )
