@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Key, Mail, Lock, CheckCircle, ArrowLeft, Send } from 'lucide-react'
@@ -12,6 +12,15 @@ export default function ForgotPassword() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(false)
+    const [resendCooldown, setResendCooldown] = useState(0)
+
+    useEffect(() => {
+        let timer;
+        if (resendCooldown > 0) {
+            timer = setTimeout(() => setResendCooldown(c => c - 1), 1000)
+        }
+        return () => clearTimeout(timer)
+    }, [resendCooldown])
 
     const handleSendOtp = async (e) => {
         e.preventDefault()
@@ -27,9 +36,26 @@ export default function ForgotPassword() {
             if (resetError) throw resetError
             
             setOtpSent(true)
+            setResendCooldown(60)
             setError(null)
         } catch (err) {
             setError(err.message || 'Failed to send OTP.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleResendOtp = async () => {
+        if (resendCooldown > 0 || !email) return
+        setLoading(true)
+        setError(null)
+        try {
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase())
+            if (resetError) throw resetError
+            setResendCooldown(60)
+            setError(null)
+        } catch (err) {
+            setError(err.message || 'Failed to resend OTP.')
         } finally {
             setLoading(false)
         }
@@ -133,7 +159,22 @@ export default function ForgotPassword() {
                                             style={{ paddingLeft: '2.5rem', letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 700 }}
                                         />
                                     </div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4 }}>Check your inbox (and spam folder) for the OTP.</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>Check your inbox (and spam folder) for the OTP.</span>
+                                        <button 
+                                            type="button" 
+                                            onClick={handleResendOtp}
+                                            disabled={resendCooldown > 0 || loading}
+                                            style={{ 
+                                                background: 'none', border: 'none', padding: 0, 
+                                                color: resendCooldown > 0 ? 'var(--text-muted)' : '#6366f1', 
+                                                cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+                                                fontWeight: 600, fontSize: '0.75rem'
+                                            }}
+                                        >
+                                            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="form-group">
