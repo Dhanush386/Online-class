@@ -678,32 +678,34 @@ export default function TakeAssessment() {
 
     if (submitted) {
         return (
-            <div className="animate-fade-in" style={{ maxWidth: 600, margin: '4rem auto', textAlign: 'center' }}>
-                <div className="glass-card" style={{ padding: '3rem' }}>
-                    <div style={{ width: 80, height: 80, background: '#ecfdf5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#10b981' }}>
-                        <CheckCircle2 size={40} />
-                    </div>
-                    <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Assessment Completed!</h1>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>You have successfully submitted your answers for <strong>{assessment?.title}</strong>.</p>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
-                        <div style={{ padding: '1.5rem', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#6366f1' }}>{result.score} / {result.total}</div>
-                            <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Correct Answers</div>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg-base)', overflowY: 'auto', padding: '4rem 1.25rem' }}>
+                <div className="animate-fade-in" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
+                    <div className="glass-card" style={{ padding: '3rem' }}>
+                        <div style={{ width: 80, height: 80, background: 'rgba(16, 185, 129, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                            <CheckCircle2 size={40} />
                         </div>
-                        <div style={{ padding: '1.5rem', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>{result.percentage}%</div>
-                            <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Final Score</div>
-                        </div>
-                    </div>
+                        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Assessment Completed!</h1>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>You have successfully submitted your answers for <strong>{assessment?.title}</strong>.</p>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <button onClick={() => navigate(`/student/assessments/${assessmentId}/review`)} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                            View Detailed Results
-                        </button>
-                        <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-                            Back to Course
-                        </button>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                            <div style={{ padding: '1.5rem', background: 'var(--bg-elevated)', borderRadius: 16, border: '1px solid var(--card-border)' }}>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#6366f1' }}>{result.score} / {result.total}</div>
+                                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Correct Answers</div>
+                            </div>
+                            <div style={{ padding: '1.5rem', background: 'var(--bg-elevated)', borderRadius: 16, border: '1px solid var(--card-border)' }}>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>{result.percentage}%</div>
+                                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Final Score</div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <button onClick={() => navigate(`/student/assessments/${assessmentId}/review`)} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                                View Detailed Results
+                            </button>
+                            <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                                Back to Course
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -716,41 +718,43 @@ export default function TakeAssessment() {
 
     if (!isStarted) {
         return (
-            <div className="animate-fade-in" style={{ maxWidth: 600, margin: '4rem auto', textAlign: 'center' }}>
-                <div className="glass-card" style={{ padding: '3rem' }}>
-                    <div style={{ width: 80, height: 80, background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#6366f1' }}>
-                        <Lock size={40} />
-                    </div>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Secure AI Proctored Assessment</h1>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                        This assessment will be taken in <strong>Fullscreen Mode</strong> with <strong>AI Webcam Monitoring</strong> to ensure a fair environment.
-                    </p>
-                    <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', color: '#9a3412', fontSize: '0.875rem', marginBottom: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <strong>Security Rules:</strong>
-                        <li>Exiting fullscreen or switching tabs will result in a warning strike.</li>
-                        <li>An AI model will monitor your webcam to detect cell phones.</li>
-                        <li><strong>Live Monitoring May Be Used:</strong> Proctors may periodically review your video stream.</li>
-                        <li>Receiving 3 violation strikes will result in automatic test failure.</li>
-                    </div>
-                    
-                    {!cameraEnabled ? (
-                        <button onClick={startCamera} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem', marginBottom: '1rem', border: '1px solid #6366f1', color: '#6366f1' }}>
-                            <Camera size={20} style={{ marginRight: '0.5rem' }} /> Enable Webcam to Continue
-                        </button>
-                    ) : (
-                        <div style={{ marginBottom: '1rem' }}>
-                            <div style={{ background: '#ecfdf5', color: '#059669', padding: '0.75rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600 }}>
-                                <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
-                            </div>
-                            <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem' }}>
-                                Enter Secure Mode & Start
-                            </button>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg-base)', overflowY: 'auto', padding: '4rem 1.25rem' }}>
+                <div className="animate-fade-in" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
+                    <div className="glass-card" style={{ padding: '3rem' }}>
+                        <div style={{ width: 80, height: 80, background: 'rgba(99, 102, 241, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#6366f1', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                            <Lock size={40} />
                         </div>
-                    )}
+                        <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Secure AI Proctored Assessment</h1>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                            This assessment will be taken in <strong>Fullscreen Mode</strong> with <strong>AI Webcam Monitoring</strong> to ensure a fair environment.
+                        </p>
+                        <div style={{ padding: '1.25rem', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 12, border: '1px solid rgba(245, 158, 11, 0.2)', color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <strong style={{ color: '#f59e0b' }}>Security Rules:</strong>
+                            <li style={{ listStyleType: 'disc', marginLeft: '1rem' }}>Exiting fullscreen or switching tabs will result in a warning strike.</li>
+                            <li style={{ listStyleType: 'disc', marginLeft: '1rem' }}>An AI model will monitor your webcam to detect cell phones.</li>
+                            <li style={{ listStyleType: 'disc', marginLeft: '1rem' }}><strong>Live Monitoring May Be Used:</strong> Proctors may periodically review your video stream.</li>
+                            <li style={{ listStyleType: 'disc', marginLeft: '1rem' }}>Receiving 3 violation strikes will result in automatic test failure.</li>
+                        </div>
+                        
+                        {!cameraEnabled ? (
+                            <button onClick={startCamera} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem', marginBottom: '1rem', border: '1.5px solid var(--primary-500)', color: 'var(--primary-400)', background: 'transparent' }}>
+                                <Camera size={20} style={{ marginRight: '0.5rem' }} /> Enable Webcam to Continue
+                            </button>
+                        ) : (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <div style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', padding: '0.75rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                    <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
+                                </div>
+                                <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem' }}>
+                                    Enter Secure Mode & Start
+                                </button>
+                            </div>
+                        )}
 
-                    <Link to={`/student/courses/${assessment?.course_id}`} style={{ display: 'block', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                        Cancel and Go Back
-                    </Link>
+                        <Link to={`/student/courses/${assessment?.course_id}`} style={{ display: 'block', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            Cancel and Go Back
+                        </Link>
+                    </div>
                 </div>
             </div>
         )
@@ -806,7 +810,7 @@ export default function TakeAssessment() {
         : (currentAnswer !== undefined && currentAnswer !== null && currentAnswer !== '')
 
     return (
-        <>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg-base)', overflowY: 'auto', padding: '2rem 1.25rem' }}>
             <div className="animate-fade-in" style={{ maxWidth: 800, margin: '0 auto' }}>
                 {/* Header */}
                 <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -842,7 +846,7 @@ export default function TakeAssessment() {
                         )}
                         <div>
                             <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Question {currentIdx + 1} of {questions.length}</div>
-                            <div style={{ width: 120, height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ width: 120, height: 6, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 3, overflow: 'hidden' }}>
                                 <div style={{ width: `${progress}%`, height: '100%', background: '#6366f1', transition: 'width 0.3s ease' }} />
                             </div>
                         </div>
@@ -881,14 +885,14 @@ export default function TakeAssessment() {
                                         alignItems: 'center',
                                         gap: '1rem',
                                         transition: 'all 0.2s ease',
-                                        color: isSelected ? '#4f46e5' : 'var(--text-primary)',
+                                        color: isSelected ? 'var(--primary-400)' : 'var(--text-primary)',
                                         fontWeight: isSelected ? 600 : 500
                                     }}
                                 >
                                     <div style={{
                                         width: 24, height: 24,
                                         borderRadius: isMulti(currentQ) ? '6px' : '50%',
-                                        border: `2px solid ${isSelected ? '#6366f1' : '#cbd5e1'}`,
+                                        border: `2px solid ${isSelected ? '#6366f1' : 'var(--text-muted)'}`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         background: isSelected ? '#6366f1' : 'transparent',
                                         color: 'white',
@@ -976,6 +980,6 @@ export default function TakeAssessment() {
                     </p>
                 </div>
             )}
-        </>
+        </div>
     )
 }
