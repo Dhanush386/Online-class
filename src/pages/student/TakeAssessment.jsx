@@ -673,6 +673,11 @@ export default function TakeAssessment() {
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                     {currentQ?.question_text}
                 </h2>
+                {currentQ?.image_url && (
+                    <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+                        <img src={currentQ.image_url} alt="Question Reference" style={{ maxWidth: '100%', maxHeight: '350px', borderRadius: '12px', border: '1px solid var(--card-border)', objectFit: 'contain' }} />
+                    </div>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {currentQ?.options.map((opt, i) => {

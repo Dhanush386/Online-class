@@ -90,6 +90,7 @@ create table if not exists public.questions (
   id uuid primary key default uuid_generate_v4(),
   assessment_id uuid references public.assessments(id) on delete cascade,
   question_text text not null,
+  image_url text,
   options jsonb not null, -- Array of strings
   correct_answer text not null,
   created_at timestamptz default now()

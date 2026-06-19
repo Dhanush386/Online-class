@@ -14,6 +14,8 @@ export default function AssessmentQuestions() {
 
     const [formData, setFormData] = useState({
         question_text: '',
+        image_url: '',
+        image_file: null,
         options: ['', '', '', ''],
         correct_answer: [] // Changed to array for multi-select support
     })
@@ -97,9 +99,31 @@ export default function AssessmentQuestions() {
         setError('')
 
         try {
+            let finalImageUrl = formData.image_url;
+
+            if (formData.image_file) {
+                const file = formData.image_file;
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+                const filePath = `questions/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('study-materials')
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('study-materials')
+                    .getPublicUrl(filePath);
+                
+                finalImageUrl = publicUrl;
+            }
+
             const payload = {
                 assessment_id: assessmentId,
                 question_text: formData.question_text,
+                image_url: finalImageUrl || null,
                 options: formData.options,
                 // Store as JSON string if it's an array to support multi-choice cleanly
                 correct_answer: JSON.stringify(formData.correct_answer)
@@ -221,6 +245,8 @@ export default function AssessmentQuestions() {
         setEditingId(q.id)
         setFormData({
             question_text: q.question_text,
+            image_url: q.image_url || '',
+            image_file: null,
             options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
             correct_answer: correctAnswers
         })
@@ -228,7 +254,7 @@ export default function AssessmentQuestions() {
     }
 
     function resetForm() {
-        setFormData({ question_text: '', options: ['', '', '', ''], correct_answer: [] })
+        setFormData({ question_text: '', image_url: '', image_file: null, options: ['', '', '', ''], correct_answer: [] })
         setEditingId(null)
         setError('')
     }
@@ -304,10 +330,15 @@ export default function AssessmentQuestions() {
                         <div key={q.id} className="glass-card" style={{ padding: '1.5rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem' }}>
                                 <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <div style={{ width: 28, height: 28, background: '#f1f5f9', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                    <div style={{ width: 28, height: 28, background: '#f1f5f9', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
                                         {idx + 1}
                                     </div>
-                                    <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{q.question_text}</h4>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{q.question_text}</h4>
+                                        {q.image_url && (
+                                            <img src={q.image_url} alt="Question reference" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid var(--card-border)', alignSelf: 'flex-start' }} />
+                                        )}
+                                    </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.25rem', alignSelf: 'flex-start' }}>
                                     <button onClick={() => openEdit(q)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>
@@ -401,6 +432,64 @@ export default function AssessmentQuestions() {
                                     style={{ resize: 'none' }}
                                     autoFocus
                                 />
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                    <label className="form-label" style={{ marginBottom: 0 }}>Image (optional)</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setFormData(p => ({ ...p, image_file: null }))}
+                                            style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: !formData.image_file ? '#6366f1' : 'var(--text-muted)', fontWeight: !formData.image_file ? 700 : 500, cursor: 'pointer' }}
+                                        >URL</button>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>|</span>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => document.getElementById('question-image-upload').click()}
+                                            style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: formData.image_file ? '#6366f1' : 'var(--text-muted)', fontWeight: formData.image_file ? 700 : 500, cursor: 'pointer' }}
+                                        >Desktop Upload</button>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.75rem', flexDirection: 'column' }}>
+                                    {formData.image_file ? (
+                                        <div style={{ padding: '0.75rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                                                <span style={{ fontWeight: 600 }}>{formData.image_file.name}</span>
+                                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({(formData.image_file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                            </div>
+                                            <button type="button" onClick={() => setFormData(p => ({ ...p, image_file: null }))} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><X size={14} /></button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                            <input
+                                                id="image-url"
+                                                name="image_url"
+                                                type="url"
+                                                className="form-input"
+                                                placeholder="https://example.com/image.png"
+                                                value={formData.image_url}
+                                                onChange={e => setFormData(p => ({ ...p, image_url: e.target.value }))}
+                                            />
+                                            {formData.image_url && (
+                                                <img src={formData.image_url} alt="Preview" style={{ height: '42px', width: '42px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--card-border)', flexShrink: 0 }} onError={(e) => e.target.style.display = 'none'} />
+                                            )}
+                                        </div>
+                                    )}
+                                    <input 
+                                        id="question-image-upload"
+                                        type="file" 
+                                        style={{ display: 'none' }} 
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0]
+                                            if (file) {
+                                                setFormData(p => ({ ...p, image_file: file, image_url: '' }))
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             <div style={{ marginBottom: '1rem' }}>

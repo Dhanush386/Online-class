@@ -121,9 +121,16 @@ export default function AssessmentReview() {
                                 <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
                                     {idx + 1}
                                 </div>
-                                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-                                    {q.question_text}
-                                </h3>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                                        {q.question_text}
+                                    </h3>
+                                    {q.image_url && (
+                                        <div style={{ marginTop: '1rem' }}>
+                                            <img src={q.image_url} alt="Question Reference" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', border: '1px solid var(--card-border)', objectFit: 'contain' }} />
+                                        </div>
+                                    )}
+                                </div>
                                 <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
                                     {!wasAnswered
                                         ? <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Unanswered</span>
