@@ -194,12 +194,14 @@ export default function OrganizerAssessments() {
         }
     }
 
-    async function handleDeleteSubmission(submissionId) {
-        if (!confirm('Are you sure you want to delete this submission? This will allow the student to retake the assessment.')) return
+    async function handleDeleteSubmission(studentId, assessmentId) {
+        if (!confirm('Are you sure you want to reset this student\'s attempts? This will delete all their submissions and allow them to retake the assessment.')) return
         try {
-            const { error } = await supabase.from('assessment_submissions').delete().eq('id', submissionId)
+            const { error } = await supabase.from('assessment_submissions').delete()
+                .eq('student_id', studentId)
+                .eq('assessment_id', assessmentId)
             if (error) throw error
-            setMarksData(prev => prev.filter(m => m.id !== submissionId))
+            setMarksData(prev => prev.filter(m => m.student_id !== studentId))
         } catch (err) {
             alert('Failed to delete submission: ' + err.message)
         }
@@ -597,7 +599,7 @@ export default function OrganizerAssessments() {
                                                     </div>
                                                     <div style={{ textAlign: 'right' }}>
                                                         <button 
-                                                            onClick={() => handleDeleteSubmission(sub.id)} 
+                                                            onClick={() => handleDeleteSubmission(sub.student_id, sub.assessment_id)} 
                                                             title="Delete submission and allow retake" 
                                                             style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem', opacity: 0.7, transition: 'opacity 0.2s' }}
                                                             onMouseEnter={e => e.currentTarget.style.opacity = 1}
