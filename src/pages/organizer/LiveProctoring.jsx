@@ -15,27 +15,25 @@ const StreamVideo = ({ stream }) => {
         const video = videoRef.current;
         if (video && stream) {
             video.srcObject = stream;
-            // Explicitly set muted and playsInline in JS to bypass strict iOS Safari autoplay rules
-            video.muted = true;
             video.playsInline = true;
+            // NOT forcing muted=true here because organizer wants to hear audio.
+            // But this means mobile browser WILL block autoplay until user taps.
             video.onloadedmetadata = () => {
-                video.play().catch(e => console.error('Autoplay blocked:', e));
+                video.play().catch(e => console.error('Autoplay blocked (tap video to play):', e));
             };
         }
     }, [stream]);
 
-    // Recover video play state when switching tabs back to the dashboard
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (!document.hidden && videoRef.current) {
-                videoRef.current.play().catch(e => console.log('Play on focus failed:', e));
-            }
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
-
-    return <video ref={videoRef} autoPlay playsInline muted style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+    return (
+        <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            webkit-playsinline="true"
+            onClick={(e) => e.target.play()}
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+        />
+    )
 };
 
 const PUBLIC_VAPID_KEY = 'BNjRJsIQS8GspSp6F0wLITvpxMtEYMbkwqETiGDVuBiW065JF75laB-jdKyGN09gDSrvbBrlbKsTxka6-Wk9ftc';
@@ -47,6 +45,7 @@ export default function LiveProctoring() {
     const [activeStudents, setActiveStudents] = useState({})
     const [search, setSearch] = useState('')
     const [liveStreams, setLiveStreams] = useState({})
+    const [iceStates, setIceStates] = useState({})
     const channelRef = useRef(null)
     const peerConnections = useRef({})
     const iceCandidateBuffer = useRef({})
@@ -189,6 +188,9 @@ export default function LiveProctoring() {
 
         // Auto-cleanup on WebRTC disconnect/failure
         pc.oniceconnectionstatechange = () => {
+            console.log(`ICE State for ${studentId}:`, pc.iceConnectionState);
+            setIceStates(prev => ({ ...prev, [studentId]: pc.iceConnectionState }));
+            
             if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') {
                 console.log(`WebRTC connection lost for ${studentId}. Cleaning up stream.`);
                 setLiveStreams(prev => {
@@ -387,11 +389,18 @@ export default function LiveProctoring() {
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '1.5rem' }}>
-                    {studentsList.map(student => (
-                        <div key={student.studentId} style={{ background: 'white', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                    {studentsList.map(student => {
+                        const id = student.studentId;
+                        return (
+                        <div key={id} style={{ background: 'white', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                             <div style={{ position: 'relative', width: '100%', paddingBottom: '75%', background: '#000' }}>
-                                {liveStreams[student.studentId] ? (
-                                    <StreamVideo stream={liveStreams[student.studentId]} />
+                                {liveStreams[id] ? (
+                                    <>
+                                        <StreamVideo stream={liveStreams[id]} />
+                                        <div style={{ position: 'absolute', bottom: 10, right: 10, zIndex: 10, backgroundColor: 'rgba(0,0,0,0.6)', padding: '0.25rem 0.5rem', borderRadius: 4, color: '#fff', fontSize: '0.7rem' }}>
+                                            {iceStates[id] || 'connecting...'}
+                                        </div>
+                                    </>
                                 ) : student.image ? (
                                     <img 
                                         src={student.image} 
