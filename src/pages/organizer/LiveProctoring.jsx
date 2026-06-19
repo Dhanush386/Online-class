@@ -73,10 +73,14 @@ export default function LiveProctoring() {
                     if (isNew) {
                         toast.info(`${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`);
                         if ('Notification' in window && Notification.permission === 'granted') {
-                            new Notification('New Student Online', {
-                                body: `${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`,
-                                icon: '/vite.svg'
-                            });
+                            try {
+                                new Notification('New Student Online', {
+                                    body: `${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`,
+                                    icon: '/vite.svg'
+                                });
+                            } catch (err) {
+                                console.warn('Failed to show notification (Android Chrome requires Service Worker):', err);
+                            }
                         }
                     }
                     return {
