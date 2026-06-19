@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { ICE_SERVERS } from '../../utils/iceServers'
+import { getIceServers } from '../../utils/iceServers'
 import { useAuth } from '../../contexts/AuthContext'
 import { ShieldAlert, VideoOff, ChevronLeft, Search, AlertTriangle, CheckCircle2, PlayCircle, Bell } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
@@ -178,7 +178,8 @@ export default function LiveProctoring() {
     const startLiveStream = async (studentId) => {
         if (peerConnections.current[studentId]) return;
 
-        const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+        const iceServers = await getIceServers();
+        const pc = new RTCPeerConnection({ iceServers });
         
         peerConnections.current[studentId] = pc;
 

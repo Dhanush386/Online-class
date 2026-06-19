@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock, ShieldAlert, Camera } from 'lucide-react'
 import * as tf from '@tensorflow/tfjs'
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
-import { ICE_SERVERS } from '../../utils/iceServers'
+import { getIceServers } from '../../utils/iceServers'
 
 const MAX_ATTEMPTS = 1
 
@@ -146,7 +146,8 @@ export default function TakeAssessment() {
                 if (studentId !== profile.id) return;
 
                 try {
-                    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+                    const iceServers = await getIceServers();
+                    const pc = new RTCPeerConnection({ iceServers });
                     
                     peerConnections.current[organizerId] = pc;
 
