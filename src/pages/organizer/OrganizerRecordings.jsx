@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Video, Search, Calendar, Clock, Database, PlayCircle, Copy, CheckCircle, AlertCircle, RefreshCw, FolderOpen, Loader, Trash2, RefreshCcw } from 'lucide-react'
+import { Video, Search, Calendar, Clock, Database, PlayCircle, Copy, CheckCircle, AlertCircle, RefreshCw, FolderOpen, Loader, Trash2, RefreshCcw, FileText, Upload, Link, X } from 'lucide-react'
 import { useMeeting } from '../../contexts/MeetingContext'
 
 export default function OrganizerRecordings() {
@@ -10,6 +10,10 @@ export default function OrganizerRecordings() {
     const [recordings, setRecordings] = useState([])
     const [courses, setCourses] = useState([])
     const [loading, setLoading] = useState(true)
+    const [editingSlide, setEditingSlide] = useState(null)
+    const [slideUrl, setSlideUrl] = useState('')
+    const [slideFile, setSlideFile] = useState(null)
+    const [savingSlide, setSavingSlide] = useState(false)
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('')
@@ -43,7 +47,7 @@ export default function OrganizerRecordings() {
                     .from('videos')
                     .select('*, courses(title)')
                     .in('course_id', courseIds)
-                    .or('recording_status.not.is.null,drive_file_id.not.is.null')
+                    .or('recording_status.not.is.null,drive_file_id.not.is.null,video_url.not.is.null')
                     .order('created_at', { ascending: false })
                 
                 setRecordings(vids || [])
@@ -250,6 +254,18 @@ export default function OrganizerRecordings() {
                                                         </button>
                                                     </>
                                                 )}
+                                                <button 
+                                                    onClick={() => {
+                                                        setEditingSlide(rec)
+                                                        setSlideUrl(rec.slide_url || '')
+                                                        setSlideFile(null)
+                                                    }}
+                                                    style={{ padding: '0.4rem', borderRadius: 6, border: 'none', background: rec.slide_url ? '#dcfce7' : '#f3e8ff', color: rec.slide_url ? '#16a34a' : '#9333ea', cursor: 'pointer', transition: 'all 0.2s' }}
+                                                    title={rec.slide_url ? "Edit PPT" : "Attach PPT"}
+                                                    className="hover-scale"
+                                                >
+                                                    <FileText size={16} />
+                                                </button>
                                                 {rec.video_url && (
                                                     <>
                                                         <button 
@@ -297,6 +313,98 @@ export default function OrganizerRecordings() {
                     </table>
                 </div>
             </div>
+
+            {/* Attach PPT Modal */}
+            {editingSlide && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className="glass-card animate-scale-in" style={{ padding: '2rem', width: '100%', maxWidth: 500, background: 'white' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1rem' }}>Attach Slides</h3>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                            Add presentation slides for <strong>{editingSlide.title}</strong>. Students will see these alongside the video.
+                        </p>
+                        
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <Link size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input
+                                    type="url"
+                                    className="form-input"
+                                    placeholder="Paste URL or upload a file..."
+                                    value={slideUrl}
+                                    onChange={e => setSlideUrl(e.target.value)}
+                                    style={{ paddingLeft: '2.5rem' }}
+                                    disabled={!!slideFile}
+                                />
+                            </div>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>OR</span>
+                            <button
+                                type="button"
+                                onClick={() => document.getElementById('slide-upload-modal').click()}
+                                style={{ padding: '0 1rem', height: 42, background: slideFile ? '#ecfdf5' : 'white', border: `1px solid ${slideFile ? '#10b981' : 'var(--card-border)'}`, borderRadius: 12, color: slideFile ? '#059669' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', flexShrink: 0 }}
+                            >
+                                <Upload size={16} /> {slideFile ? 'File Selected' : 'Upload PPT'}
+                            </button>
+                            <input
+                                id="slide-upload-modal"
+                                type="file"
+                                accept=".ppt,.pptx,.pdf"
+                                onChange={e => {
+                                    if(e.target.files[0]) {
+                                        setSlideFile(e.target.files[0])
+                                        setSlideUrl('')
+                                    }
+                                }}
+                                style={{ display: 'none' }}
+                            />
+                            {slideFile && (
+                                <button type="button" onClick={() => setSlideFile(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4, display: 'flex' }}>
+                                    <X size={16} />
+                                </button>
+                            )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button className="btn-secondary" onClick={() => setEditingSlide(null)}>Cancel</button>
+                            <button 
+                                className="btn-primary" 
+                                disabled={savingSlide}
+                                onClick={async () => {
+                                    setSavingSlide(true)
+                                    try {
+                                        let finalUrl = slideUrl
+                                        if (slideFile) {
+                                            const fileExt = slideFile.name.split('.').pop()
+                                            const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
+                                            const filePath = `${profile.id}/slides/${fileName}`
+                            
+                                            const { error: uploadError } = await supabase.storage
+                                                .from('study-materials')
+                                                .upload(filePath, slideFile, { cacheControl: '3600', upsert: false })
+                            
+                                            if (uploadError) throw uploadError
+                            
+                                            const { data: { publicUrl } } = supabase.storage.from('study-materials').getPublicUrl(filePath)
+                                            finalUrl = publicUrl
+                                        }
+
+                                        const { error } = await supabase.from('videos').update({ slide_url: finalUrl || null }).eq('id', editingSlide.id)
+                                        if (error) throw error
+                                        
+                                        setEditingSlide(null)
+                                        loadData()
+                                    } catch (err) {
+                                        alert('Failed to save slides: ' + err.message)
+                                    } finally {
+                                        setSavingSlide(false)
+                                    }
+                                }}
+                            >
+                                {savingSlide ? <Loader className="animate-spin" size={16} /> : <CheckCircle size={16} />} Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

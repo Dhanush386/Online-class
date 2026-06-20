@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Video, Link, Calendar, Clock, FolderOpen, CheckCircle, AlertCircle, Plus, Upload, PlayCircle, Radio, ArrowLeft } from 'lucide-react'
+import { Video, Link, Calendar, Clock, FolderOpen, CheckCircle, AlertCircle, Plus, Upload, PlayCircle, Radio, ArrowLeft, X } from 'lucide-react'
 import { toISOWithOffset } from '../../lib/dateUtils'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -14,9 +14,10 @@ export default function ScheduleLiveClass() {
     const [form, setForm] = useState({
         course_id: '', title: '', description: '',
         meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '',
-        day_number: 1
+        day_number: 1, slide_url: ''
     })
     const [selectedFile, setSelectedFile] = useState(null)
+    const [selectedSlideFile, setSelectedSlideFile] = useState(null)
     const [saving, setSaving] = useState(false)
     const [success, setSuccess] = useState(false)
     const [error, setError] = useState('')
@@ -98,6 +99,29 @@ export default function ScheduleLiveClass() {
                 if (diff > 0) durationMins = diff
             }
 
+            // If uploading a slide
+            let finalSlideUrl = form.slide_url
+            if (selectedSlideFile) {
+                const fileExt = selectedSlideFile.name.split('.').pop()
+                const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
+                const filePath = `${profile.id}/slides/${fileName}`
+
+                const { error: slideUploadError } = await supabase.storage
+                    .from('study-materials')
+                    .upload(filePath, selectedSlideFile, {
+                        cacheControl: '3600',
+                        upsert: false
+                    })
+
+                if (slideUploadError) throw new Error(`Slide upload failed: ${slideUploadError.message}`)
+
+                const { data: { publicUrl: slidePublicUrl } } = supabase.storage
+                    .from('study-materials')
+                    .getPublicUrl(filePath)
+
+                finalSlideUrl = slidePublicUrl
+            }
+
             const { error: dbErr } = await supabase.from('videos').insert({
                 course_id: form.course_id,
                 title: form.title,
@@ -105,14 +129,16 @@ export default function ScheduleLiveClass() {
                 video_url: finalUrl,
                 scheduled_time: mode === 'live' ? toISOWithOffset(form.scheduled_time) : null,
                 duration_minutes: durationMins,
-                day_number: parseInt(form.day_number) || 1
+                day_number: parseInt(form.day_number) || 1,
+                slide_url: finalSlideUrl || null
             })
 
             if (dbErr) throw dbErr
 
             setSuccess(true)
-            setForm({ course_id: '', title: '', description: '', meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '', day_number: 1 })
+            setForm({ course_id: '', title: '', description: '', meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '', day_number: 1, slide_url: '' })
             setSelectedFile(null)
+            setSelectedSlideFile(null)
             setTimeout(() => setSuccess(false), 4000)
         } catch (err) {
             setError(err.message || 'Failed to save content')
@@ -297,32 +323,93 @@ export default function ScheduleLiveClass() {
                         <textarea id="description" name="description" className="form-input" rows={3} placeholder="Topics covered in this content..." value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={{ resize: 'vertical', minHeight: 80 }} />
                     </div>
 
+                    {/* Slide URL */}
+                    <div>
+                        <label htmlFor="slide-url" className="form-label">Slide URL (PPT/PDF) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <Link size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input
+                                    id="slide-url"
+                                    name="slide_url"
+                                    type="url"
+                                    className="form-input"
+                                    placeholder="Paste URL or upload a file..."
+                                    value={form.slide_url}
+                                    onChange={e => setForm(p => ({ ...p, slide_url: e.target.value }))}
+                                    style={{ paddingLeft: '2.5rem' }}
+                                    disabled={!!selectedSlideFile}
+                                />
+                            </div>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>OR</span>
+                            <button
+                                type="button"
+                                onClick={() => document.getElementById('slide-upload').click()}
+                                style={{ padding: '0 1rem', height: 42, background: selectedSlideFile ? '#ecfdf5' : 'white', border: `1px solid ${selectedSlideFile ? '#10b981' : 'var(--card-border)'}`, borderRadius: 12, color: selectedSlideFile ? '#059669' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', flexShrink: 0, transition: 'all 0.2s' }}
+                            >
+                                <Upload size={16} /> {selectedSlideFile ? 'File Selected' : 'Upload PPT/PDF'}
+                            </button>
+                            <input
+                                id="slide-upload"
+                                type="file"
+                                accept=".ppt,.pptx,.pdf"
+                                onChange={e => {
+                                    if(e.target.files[0]) {
+                                        setSelectedSlideFile(e.target.files[0]);
+                                        setForm(p => ({ ...p, slide_url: '' })); // clear URL if file selected
+                                    }
+                                }}
+                                style={{ display: 'none' }}
+                            />
+                            {selectedSlideFile && (
+                                <button type="button" onClick={() => setSelectedSlideFile(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4, display: 'flex' }}>
+                                    <X size={16} />
+                                </button>
+                            )}
+                        </div>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                            💡 {selectedSlideFile ? `Selected file: ${selectedSlideFile.name}` : 'If provided, slides will be displayed alongside the video.'}
+                        </p>
+                    </div>
+
                     {/* Schedule fields */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: mode === 'live' ? '1fr 1fr 1fr' : '1fr 1fr', gap: '1rem' }}>
                         <div>
                             <label htmlFor="day-number" className="form-label">Day Number</label>
                             <input id="day-number" name="day_number" type="number" className="form-input" min="1" value={form.day_number} onChange={e => setForm(p => ({ ...p, day_number: e.target.value }))} required />
                         </div>
-                        <div>
-                            <label htmlFor="start-time" className="form-label">Start Time</label>
-                            <div style={{ position: 'relative' }}>
-                                <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input id="start-time" name="scheduled_time" type="datetime-local" className="form-input" value={form.scheduled_time} onChange={e => setForm(p => ({ ...p, scheduled_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
+                        {mode === 'live' ? (
+                            <>
+                                <div>
+                                    <label htmlFor="start-time" className="form-label">Start Time</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                        <input id="start-time" name="scheduled_time" type="datetime-local" className="form-input" value={form.scheduled_time} onChange={e => setForm(p => ({ ...p, scheduled_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="end-time" className="form-label">End Time</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                        <input id="end-time" name="end_time" type="datetime-local" className="form-input" value={form.end_time} onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required
+                                            min={form.scheduled_time || undefined}
+                                        />
+                                    </div>
+                                    {form.scheduled_time && form.end_time && (() => {
+                                        const mins = Math.round((new Date(form.end_time) - new Date(form.scheduled_time)) / 60000)
+                                        return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.35rem' }}>⏱ {mins} min duration</div> : null
+                                    })()}
+                                </div>
+                            </>
+                        ) : (
+                            <div>
+                                <label htmlFor="duration" className="form-label">Duration (minutes) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                <div style={{ position: 'relative' }}>
+                                    <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                    <input id="duration" name="duration_minutes" type="number" min="1" className="form-input" value={form.duration_minutes} onChange={e => setForm(p => ({ ...p, duration_minutes: e.target.value }))} style={{ paddingLeft: '2.5rem' }} />
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label htmlFor="end-time" className="form-label">End Time</label>
-                            <div style={{ position: 'relative' }}>
-                                <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input id="end-time" name="end_time" type="datetime-local" className="form-input" value={form.end_time} onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required
-                                    min={form.scheduled_time || undefined}
-                                />
-                            </div>
-                            {form.scheduled_time && form.end_time && (() => {
-                                const mins = Math.round((new Date(form.end_time) - new Date(form.scheduled_time)) / 60000)
-                                return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.35rem' }}>⏱ {mins} min duration</div> : null
-                            })()}
-                        </div>
+                        )}
                     </div>
 
                     <button type="submit" className="btn-primary" disabled={saving} style={{ alignSelf: 'flex-end', minWidth: 180, justifyContent: 'center' }}>

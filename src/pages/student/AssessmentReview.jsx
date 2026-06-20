@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { ChevronLeft, CheckCircle2, XCircle, Clock } from 'lucide-react'
-
+import { ChevronLeft, CheckCircle2, XCircle, Clock, Code as CodeIcon } from 'lucide-react'
+import CodeEditor from '../../components/CodeEditor'
 export default function AssessmentReview() {
     const { assessmentId } = useParams()
     const { profile } = useAuth()
@@ -128,6 +128,32 @@ export default function AssessmentReview() {
                                     {q.image_url && (
                                         <div style={{ marginTop: '1rem' }}>
                                             <img src={q.image_url} alt="Question Reference" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', border: '1px solid var(--card-border)', objectFit: 'contain' }} />
+                                        </div>
+                                    )}
+                                    {q.question_type === 'code_mcq' && q.code_snippet && (
+                                        <div style={{ marginTop: '1.25rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                                            <div style={{ background: '#1e293b', padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <CodeIcon size={14} color="#94a3b8" />
+                                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0' }}>
+                                                        {q.snippet_title || 'Code Snippet'}
+                                                    </span>
+                                                </div>
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    {q.code_language}
+                                                </span>
+                                            </div>
+                                            <div style={{ background: '#0f172a', overflowX: 'auto' }}>
+                                                <div style={{ minWidth: 'min-content' }}>
+                                                    <CodeEditor
+                                                        value={q.code_snippet}
+                                                        language={q.code_language}
+                                                        readOnly={true}
+                                                        theme="dark"
+                                                        style={{ height: 'auto', minHeight: 120, padding: 0 }}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

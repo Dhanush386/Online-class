@@ -2,9 +2,10 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock, ShieldAlert, Camera } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock, ShieldAlert, Camera, Code as CodeIcon } from 'lucide-react'
 import * as tf from '@tensorflow/tfjs'
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
+import CodeEditor from '../../components/CodeEditor'
 import { useLiveKitProctoring } from '../../hooks/useLiveKitProctoring'
 
 const MAX_ATTEMPTS = 1
@@ -861,6 +862,33 @@ export default function TakeAssessment() {
                     {currentQ?.image_url && (
                         <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
                             <img src={currentQ.image_url} alt="Question Reference" style={{ maxWidth: '100%', maxHeight: '350px', borderRadius: '12px', border: '1px solid var(--card-border)', objectFit: 'contain' }} />
+                        </div>
+                    )}
+
+                    {currentQ?.question_type === 'code_mcq' && currentQ?.code_snippet && (
+                        <div style={{ marginBottom: '2rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                            <div style={{ background: '#1e293b', padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <CodeIcon size={16} color="#94a3b8" />
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0' }}>
+                                        {currentQ.snippet_title || 'Code Snippet'}
+                                    </span>
+                                </div>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    {currentQ.code_language}
+                                </span>
+                            </div>
+                            <div style={{ background: '#0f172a', overflowX: 'auto' }}>
+                                <div style={{ minWidth: 'min-content' }}>
+                                    <CodeEditor
+                                        value={currentQ.code_snippet}
+                                        language={currentQ.code_language}
+                                        readOnly={true}
+                                        theme="dark"
+                                        style={{ height: 'auto', minHeight: 150, padding: 0 }}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     )}
 

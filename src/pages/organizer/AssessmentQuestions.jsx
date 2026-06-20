@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Plus, Trash2, Edit2, X, Save, AlertCircle, ChevronLeft, HelpCircle, CheckCircle2, Clock, Sparkles, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Edit2, X, Save, AlertCircle, ChevronLeft, HelpCircle, CheckCircle2, Clock, Sparkles, Loader2, Code as CodeIcon } from 'lucide-react'
+import CodeEditor from '../../components/CodeEditor'
 
 export default function AssessmentQuestions() {
     const { assessmentId } = useParams()
@@ -17,7 +18,11 @@ export default function AssessmentQuestions() {
         image_url: '',
         image_file: null,
         options: ['', '', '', ''],
-        correct_answer: [] // Changed to array for multi-select support
+        correct_answer: [], // Changed to array for multi-select support
+        question_type: 'mcq',
+        code_snippet: '',
+        code_language: 'javascript',
+        snippet_title: ''
     })
     const [editingId, setEditingId] = useState(null)
     const [groups, setGroups] = useState([])
@@ -126,7 +131,11 @@ export default function AssessmentQuestions() {
                 image_url: finalImageUrl || null,
                 options: formData.options,
                 // Store as JSON string if it's an array to support multi-choice cleanly
-                correct_answer: JSON.stringify(formData.correct_answer)
+                correct_answer: JSON.stringify(formData.correct_answer),
+                question_type: formData.question_type,
+                code_snippet: formData.question_type === 'code_mcq' ? formData.code_snippet : null,
+                code_language: formData.question_type === 'code_mcq' ? formData.code_language : 'javascript',
+                snippet_title: formData.question_type === 'code_mcq' ? formData.snippet_title : null
             }
 
             if (editingId) {
@@ -248,13 +257,17 @@ export default function AssessmentQuestions() {
             image_url: q.image_url || '',
             image_file: null,
             options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
-            correct_answer: correctAnswers
+            correct_answer: correctAnswers,
+            question_type: q.question_type || 'mcq',
+            code_snippet: q.code_snippet || '',
+            code_language: q.code_language || 'javascript',
+            snippet_title: q.snippet_title || ''
         })
         setShowModal(true)
     }
 
     function resetForm() {
-        setFormData({ question_text: '', image_url: '', image_file: null, options: ['', '', '', ''], correct_answer: [] })
+        setFormData({ question_text: '', image_url: '', image_file: null, options: ['', '', '', ''], correct_answer: [], question_type: 'mcq', code_snippet: '', code_language: 'javascript', snippet_title: '' })
         setEditingId(null)
         setError('')
     }
@@ -338,6 +351,32 @@ export default function AssessmentQuestions() {
                                         {q.image_url && (
                                             <img src={q.image_url} alt="Question reference" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid var(--card-border)', alignSelf: 'flex-start' }} />
                                         )}
+                                        {q.question_type === 'code_mcq' && q.code_snippet && (
+                                            <div style={{ marginTop: '0.75rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)', maxWidth: 600 }}>
+                                                <div style={{ background: '#1e293b', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <CodeIcon size={14} color="#94a3b8" />
+                                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#e2e8f0' }}>
+                                                            {q.snippet_title || 'Code Snippet'}
+                                                        </span>
+                                                    </div>
+                                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                        {q.code_language}
+                                                    </span>
+                                                </div>
+                                                <div style={{ background: '#0f172a', overflowX: 'auto' }}>
+                                                    <div style={{ minWidth: 'min-content' }}>
+                                                        <CodeEditor
+                                                            value={q.code_snippet}
+                                                            language={q.code_language}
+                                                            readOnly={true}
+                                                            theme="dark"
+                                                            style={{ height: 'auto', minHeight: 120, padding: 0 }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.25rem', alignSelf: 'flex-start' }}>
@@ -366,13 +405,13 @@ export default function AssessmentQuestions() {
                                         <div key={i} style={{
                                             padding: '0.75rem 1rem',
                                             borderRadius: 10,
-                                            background: isCorrect ? '#ecfdf5' : '#f8fafc',
-                                            border: `1px solid ${isCorrect ? '#10b98140' : '#e2e8f0'}`,
+                                            background: isCorrect ? 'rgba(16,185,129,0.1)' : 'var(--bg-elevated)',
+                                            border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : 'var(--card-border)'}`,
                                             fontSize: '0.85rem',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '0.75rem',
-                                            color: isCorrect ? '#065f46' : 'var(--text-primary)'
+                                            color: isCorrect ? '#10b981' : 'var(--text-primary)'
                                         }}>
                                             <div style={{ width: 18, height: 18, background: isCorrect ? '#10b981' : '#cbd5e1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
                                                 {isCorrect ? <CheckCircle2 size={12} /> : String.fromCharCode(65 + i)}
@@ -411,7 +450,7 @@ export default function AssessmentQuestions() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
+                        <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', maxHeight: 'calc(100vh - 140px)' }}>
                             {error && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
                                     <AlertCircle size={18} /> {error}
@@ -433,6 +472,70 @@ export default function AssessmentQuestions() {
                                     autoFocus
                                 />
                             </div>
+
+                            <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: 200 }}>
+                                    <label className="form-label">Question Type</label>
+                                    <select
+                                        className="form-input"
+                                        value={formData.question_type}
+                                        onChange={e => setFormData(p => ({ ...p, question_type: e.target.value }))}
+                                    >
+                                        <option value="mcq">Normal MCQ</option>
+                                        <option value="code_mcq">Code Based MCQ</option>
+                                    </select>
+                                </div>
+                                {formData.question_type === 'code_mcq' && (
+                                    <div style={{ flex: 1, minWidth: 200 }}>
+                                        <label className="form-label">Language</label>
+                                        <select
+                                            className="form-input"
+                                            value={formData.code_language}
+                                            onChange={e => setFormData(p => ({ ...p, code_language: e.target.value }))}
+                                        >
+                                            <option value="javascript">JavaScript</option>
+                                            <option value="python">Python</option>
+                                            <option value="java">Java</option>
+                                            <option value="c">C</option>
+                                            <option value="cpp">C++</option>
+                                            <option value="csharp">C#</option>
+                                            <option value="sql">SQL</option>
+                                            <option value="html">HTML</option>
+                                            <option value="css">CSS</option>
+                                            <option value="php">PHP</option>
+                                            <option value="go">Go</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            {formData.question_type === 'code_mcq' && (
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label className="form-label">Snippet Title (Optional)</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="e.g. Python Loop Example"
+                                        value={formData.snippet_title}
+                                        onChange={e => setFormData(p => ({ ...p, snippet_title: e.target.value }))}
+                                    />
+                                    <div style={{ marginTop: '1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                                        <div style={{ background: '#1e293b', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid #334155' }}>
+                                            <CodeIcon size={14} color="#94a3b8" />
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8' }}>Code Snippet</span>
+                                        </div>
+                                        <div style={{ height: 250, background: '#0f172a' }}>
+                                            <CodeEditor
+                                                value={formData.code_snippet}
+                                                onChange={(e) => setFormData(p => ({ ...p, code_snippet: e.target.value }))}
+                                                language={formData.code_language}
+                                                placeholder="Paste your code here..."
+                                                theme="dark"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -624,13 +727,13 @@ export default function AssessmentQuestions() {
                                     <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Review Generated Questions</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {generatedQuestions.map((q, idx) => (
-                                            <div key={idx} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                            <div key={idx} style={{ padding: '1rem', background: 'var(--bg-elevated)', borderRadius: 12, border: '1px solid var(--card-border)' }}>
                                                 <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>{idx + 1}. {q.question_text}</div>
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem' }}>
                                                     {q.options.map((opt, oIdx) => {
                                                         const isCorrect = Array.isArray(q.correct_answer) ? q.correct_answer.includes(opt) : opt === q.correct_answer;
                                                         return (
-                                                            <div key={oIdx} style={{ padding: '0.4rem 0.6rem', background: isCorrect ? '#ecfdf5' : 'white', border: `1px solid ${isCorrect ? '#10b981' : '#cbd5e1'}`, borderRadius: 6, color: isCorrect ? '#065f46' : 'var(--text-secondary)' }}>
+                                                            <div key={oIdx} style={{ padding: '0.4rem 0.6rem', background: isCorrect ? 'rgba(16,185,129,0.1)' : 'var(--bg-base)', border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : 'var(--card-border)'}`, borderRadius: 6, color: isCorrect ? '#10b981' : 'var(--text-secondary)' }}>
                                                                 {opt}
                                                             </div>
                                                         )

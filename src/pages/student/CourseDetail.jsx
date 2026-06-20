@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List, Trash2, Save, FileEdit } from 'lucide-react'
 import ReactPlayer from 'react-player'
 import ProtectedViewer from '../../components/shared/ProtectedViewer'
+import SplitViewer from '../../components/shared/SplitViewer'
 
 const MAX_ATTEMPTS = 1
 const ASSESS_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
@@ -356,85 +357,97 @@ export default function CourseDetail() {
         <div className="animate-fade-in">
             {/* Cinematic Video Modal */}
             {activeVideo && (
-                <div style={{ 
-                    position: 'fixed', 
-                    inset: 0, 
-                    zIndex: 10000, 
-                    background: 'rgba(0,0,0,0.95)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    padding: '2rem',
-                    backdropFilter: 'blur(10px)',
-                    animation: 'fadeIn 0.3s ease-out'
-                }}>
-                    <div style={{ width: '100%', maxWidth: '1100px', position: 'relative' }}>
-                        {/* Modal Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderTopLeftRadius: 16, borderTopRightRadius: 16, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
-                                <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{activeVideo.title}</h2>
-                            </div>
-                            <button 
-                                onClick={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }} 
-                                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '0.6rem', cursor: 'pointer', color: 'white', display: 'flex' }}
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        {/* Player Container */}
-                        <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
-                            {loadingVideo ? (
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
-                                    <div className="animate-spin" style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%' }} />
-                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Securing your connection...</span>
+                activeVideo.slide_url ? (
+                    <SplitViewer 
+                        videoUrl={signedUrl || (videoType === 'drive-iframe' ? activeVideo.video_url : null)}
+                        slideUrl={activeVideo.slide_url}
+                        videoType={videoType}
+                        title={activeVideo.title}
+                        onClose={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }}
+                        onEnded={() => markComplete(activeVideo.id)}
+                        loadingVideo={loadingVideo}
+                    />
+                ) : (
+                    <div style={{ 
+                        position: 'fixed', 
+                        inset: 0, 
+                        zIndex: 10000, 
+                        background: 'rgba(0,0,0,0.95)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        padding: '2rem',
+                        backdropFilter: 'blur(10px)',
+                        animation: 'fadeIn 0.3s ease-out'
+                    }}>
+                        <div style={{ width: '100%', maxWidth: '1100px', position: 'relative' }}>
+                            {/* Modal Header */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderTopLeftRadius: 16, borderTopRightRadius: 16, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
+                                    <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{activeVideo.title}</h2>
                                 </div>
-                            ) : signedUrl ? (
-                                videoType === 'drive-iframe' ? (
-                                    // Google Drive Preview iframe
-                                    <iframe
-                                        src={signedUrl}
-                                        width="100%"
-                                        height="100%"
-                                        style={{ position: 'absolute', top: 0, left: 0, border: 'none' }}
-                                        allow="autoplay; fullscreen"
-                                        allowFullScreen
-                                        title={activeVideo.title}
-                                    />
-                                ) : (
-                                    // ReactPlayer for Supabase/YouTube/other URLs
-                                    <ReactPlayer
-                                        url={signedUrl}
-                                        controls
-                                        playing={true}
-                                        width="100%"
-                                        height="100%"
-                                        style={{ position: 'absolute', top: 0, left: 0 }}
-                                        onEnded={() => markComplete(activeVideo.id)}
-                                        config={{
-                                            file: {
-                                                attributes: {
-                                                    controlsList: 'nodownload',
-                                                    disablePictureInPicture: true,
-                                                    onContextMenu: e => e.preventDefault()
-                                                }
-                                            }
-                                        }}
-                                    />
-                                )
-                            ) : null}
-                        </div>
+                                <button 
+                                    onClick={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }} 
+                                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '0.6rem', cursor: 'pointer', color: 'white', display: 'flex' }}
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
 
-                        {/* Modal Footer */}
-                        <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.05)', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                                <Lock size={14} />
-                                <span>Secured by Learnova Protection System</span>
+                            {/* Player Container */}
+                            <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+                                {loadingVideo ? (
+                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
+                                        <div className="animate-spin" style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%' }} />
+                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Securing your connection...</span>
+                                    </div>
+                                ) : signedUrl ? (
+                                    videoType === 'drive-iframe' ? (
+                                        // Google Drive Preview iframe
+                                        <iframe
+                                            src={signedUrl}
+                                            width="100%"
+                                            height="100%"
+                                            style={{ position: 'absolute', top: 0, left: 0, border: 'none' }}
+                                            allow="autoplay; fullscreen"
+                                            allowFullScreen
+                                            title={activeVideo.title}
+                                        />
+                                    ) : (
+                                        // ReactPlayer for Supabase/YouTube/other URLs
+                                        <ReactPlayer
+                                            url={signedUrl}
+                                            controls
+                                            playing={true}
+                                            width="100%"
+                                            height="100%"
+                                            style={{ position: 'absolute', top: 0, left: 0 }}
+                                            onEnded={() => markComplete(activeVideo.id)}
+                                            config={{
+                                                file: {
+                                                    attributes: {
+                                                        controlsList: 'nodownload',
+                                                        disablePictureInPicture: true,
+                                                        onContextMenu: e => e.preventDefault()
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    )
+                                ) : null}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.05)', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                    <Lock size={14} />
+                                    <span>Secured by Learnova Protection System</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )
             )}
 
             {/* Header */}
