@@ -362,7 +362,14 @@ export default function OrganizerAnalytics() {
         <KPIAnalyticsCard icon="🎯" title="Attendance %" value={`${stats.avgAttendance}%`} color="#10b981" />
         <KPIAnalyticsCard icon="🏆" title="Course Completion %" value={`${stats.avgCompletion}%`} color="#6366f1" />
         <KPIAnalyticsCard icon="⏱️" title="Live Class Hours" value={`${stats.totalLiveHours}h`} color="#f59e0b" />
-        <GlassCard tilt3d={true} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', cursor: 'pointer', background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.2)' }} onClick={downloadAnalyticsPDF}>
+        <GlassCard 
+          tilt3d={true} 
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') downloadAnalyticsPDF() }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', cursor: 'pointer', background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.2)' }} 
+          onClick={downloadAnalyticsPDF}
+        >
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <FileDown size={32} color="#06b6d4" />
                 <div>
