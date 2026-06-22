@@ -16,7 +16,7 @@ begin
     url := 'https://pdkkznkwybvilkpmxqmx.functions.supabase.co/push-notifier',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer sb_publishable_NiZLRkJZBepyKee0WpTf-A_fj2OTIBj'
+      'Authorization', 'Bearer ' || current_setting('app.settings.push_notification_token', true)
     ),
     body := jsonb_build_object(
       'id', new.id,
