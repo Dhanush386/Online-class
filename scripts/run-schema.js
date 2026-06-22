@@ -7,7 +7,16 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const connectionString = "postgresql://postgres.pdkkznkwybvilkpmxqmx:Dhanush@2404@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres";
+import dotenv from 'dotenv';
+dotenv.config();
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+    console.error("Error: DATABASE_URL environment variable is not set. Please set it in your .env file or environment.");
+    process.exit(1);
+}
+
 const schemaPath = path.join(__dirname, '..', 'supabase', 'schema.sql');
 
 async function run() {
