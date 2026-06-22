@@ -483,10 +483,15 @@ export default function OrganizerAnalytics() {
                 return (
                   <div 
                     key={v.session_id || i} 
+                    role="button"
+                    tabIndex={0}
                     onClick={() => navigate(`/organizer/proctoring`)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/organizer/proctoring`) }}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.2s' }}
                     onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                     onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                    onFocus={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    onBlur={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                       <div style={{ width: 36, height: 36, borderRadius: '50%', background: isCritical ? 'rgba(239,68,68,0.2)' : 'rgba(249,115,22,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isCritical ? '#ef4444' : '#f97316', fontWeight: 800, fontSize: '0.9rem' }}>
