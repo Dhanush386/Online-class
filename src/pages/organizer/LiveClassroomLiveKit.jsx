@@ -10,6 +10,7 @@ import LiveNotes from '../../components/live-classroom/LiveNotes'
 import LivePolls from '../../components/live-classroom/LivePolls'
 import LiveAttendance from '../../components/live-classroom/LiveAttendance'
 import LiveHandRaise from '../../components/live-classroom/LiveHandRaise'
+import LiveChat from '../../components/live-classroom/LiveChat'
 
 import {
     LiveKitRoom,
@@ -765,7 +766,7 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
 }
 
 // ─── Host Controls Tab ───────────────────────────────────────────────────────
-function HostControlsTab({ room, participants, micLocked, setMicLocked, videoLocked, setVideoLocked, screenShareLocked, setScreenShareLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant }) {
+function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLocked, setMicLocked, videoLocked, setVideoLocked, screenShareLocked, setScreenShareLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant }) {
     const sendHostCommand = (command, extra = {}) => {
         const msg = JSON.stringify({ type: 'host_command', command, ...extra })
         const encoder = new TextEncoder()
@@ -793,6 +794,19 @@ function HostControlsTab({ room, participants, micLocked, setMicLocked, videoLoc
         const newVal = !handsLocked
         setHandsLocked(newVal)
         sendHostCommand('hands_lock', { enabled: newVal })
+    }
+    const handleToggleChatLock = async () => {
+        const newVal = !chatLocked
+        setChatLocked(newVal)
+        sendHostCommand('chat_lock', { enabled: newVal })
+        try {
+            await supabase.from('live_chat_messages').insert({
+                video_id: room.name,
+                user_id: participants.find(p => p.isLocal)?.identity, // organizer identity
+                message: newVal ? '📢 Chat has been locked by the instructor.' : '📢 Chat has been unlocked.',
+                message_type: 'system'
+            });
+        } catch (e) {}
     }
     const handleToggleReactions = () => {
         const newVal = !reactionsDisabled
@@ -834,8 +848,35 @@ function HostControlsTab({ room, participants, micLocked, setMicLocked, videoLoc
                 <ArrowDown size={16} color="#f59e0b" /> Lower All Hands
             </button>
 
-            {/* Toggles */}
+            {/* Announcements */}
             <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructor Announcement</p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input 
+                        type="text" 
+                        value={announcementText} 
+                        onChange={e => setAnnouncementText(e.target.value)} 
+                        placeholder="Enter announcement..." 
+                        style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '0.5rem', borderRadius: 8, fontSize: '0.8rem' }}
+                    />
+                    <button onClick={async () => {
+                        if (!announcementText.trim()) return;
+                        try {
+                            await supabase.from('live_chat_messages').insert({
+                                video_id: room.name,
+                                user_id: participants.find(p => p.isLocal)?.identity,
+                                message: `📣 ${announcementText}`,
+                                message_type: 'announcement',
+                                is_pinned: true
+                            });
+                            setAnnouncementText('');
+                        } catch (e) {}
+                    }} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Send</button>
+                </div>
+            </div>
+
+            {/* Toggles */}
+            <div style={{ marginTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Locks</p>
                 <button onClick={handleToggleMicLock} style={{
                     ...controlBtnStyle(), background: micLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
@@ -843,6 +884,14 @@ function HostControlsTab({ room, participants, micLocked, setMicLocked, videoLoc
                 }}>
                     {micLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
                     {micLocked ? 'Mic Locked — Students Cannot Unmute' : 'Mic Unlocked — Students Can Unmute'}
+                </button>
+                <button onClick={handleToggleChatLock} style={{
+                    ...controlBtnStyle(), marginTop: '0.5rem',
+                    background: chatLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
+                    border: chatLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                }}>
+                    {chatLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
+                    {chatLocked ? 'Chat Locked — Students Cannot Send Messages' : 'Chat Unlocked — Students Can Send Messages'}
                 </button>
                 <button onClick={handleToggleVideoLock} style={{
                     ...controlBtnStyle(), marginTop: '0.5rem',
@@ -1313,6 +1362,15 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     const containerRef = useRef(null)
     const [isFullScreen, setIsFullScreen] = useState(false)
     const [admittedStudents, setAdmittedStudents] = useState([])
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+    const [unreadChatCount, setUnreadChatCount] = useState(0)
+
+    useEffect(() => {
+        if (sidebarTab === 'chat' && sidebarOpen) {
+            setUnreadChatCount(0)
+        }
+    }, [sidebarTab, sidebarOpen])
+
 
     // ── New Feature State ──
     const [reactions, setReactions] = useState([])
@@ -1322,6 +1380,56 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     const [screenShareLocked, setScreenShareLocked] = useState(false)
     const [handsLocked, setHandsLocked] = useState(false)
     const [reactionsDisabled, setReactionsDisabled] = useState(false)
+    const [chatLocked, setChatLocked] = useState(false)
+    const [announcementText, setAnnouncementText] = useState('')
+
+    // System Messages for Join/Leave (Organizer only)
+    useEffect(() => {
+        if (!room || !isOrganizer) return;
+        const timers = {};
+        const joinedSet = new Set();
+        
+        const onParticipantConnected = (p) => {
+            timers[p.identity] = setTimeout(async () => {
+                joinedSet.add(p.identity);
+                try {
+                    await supabase.from('live_chat_messages').insert({
+                        video_id: videoData.id,
+                        user_id: profile.id,
+                        message: `📢 ${p.name || 'A student'} joined the class.`,
+                        message_type: 'system'
+                    });
+                } catch (e) {}
+            }, 10000);
+        };
+        
+        const onParticipantDisconnected = async (p) => {
+            if (timers[p.identity]) {
+                clearTimeout(timers[p.identity]);
+                delete timers[p.identity];
+            }
+            if (joinedSet.has(p.identity)) {
+                joinedSet.delete(p.identity);
+                try {
+                    await supabase.from('live_chat_messages').insert({
+                        video_id: videoData.id,
+                        user_id: profile.id,
+                        message: `📢 ${p.name || 'A student'} left the class.`,
+                        message_type: 'system'
+                    });
+                } catch (e) {}
+            }
+        };
+        
+        room.on(RoomEvent.ParticipantConnected, onParticipantConnected);
+        room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
+        
+        return () => {
+            room.off(RoomEvent.ParticipantConnected, onParticipantConnected);
+            room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
+            Object.values(timers).forEach(clearTimeout);
+        };
+    }, [room, isOrganizer, videoData?.id, profile?.id]);
     const [raisedHands, setRaisedHands] = useState({}) // { identity: { name, raisedAt } } — data channel fallback
     const lastReactionTime = useRef(0)
     const reactionIdCounter = useRef(0)
@@ -1388,6 +1496,11 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                 if (msg.type === 'host_command' && !isOrganizer) {
                     const lp = room.localParticipant
                     switch (msg.command) {
+                        case 'end_class':
+                            toast.info('The instructor has ended the class.')
+                            room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
+                            onLeave()
+                            break
                         case 'mute_all':
                             lp.setMicrophoneEnabled(false)
                             toast.info('🔇 Instructor muted all participants')
@@ -1435,6 +1548,14 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                 toast.warning('🔒 Instructor locked screen sharing')
                             } else {
                                 toast.success('🔓 Screen sharing unlocked')
+                            }
+                            break
+                        case 'chat_lock':
+                            setChatLocked(msg.enabled)
+                            if (msg.enabled) {
+                                toast.warning('🔒 Instructor locked the chat')
+                            } else {
+                                toast.success('🔓 Chat unlocked')
                             }
                             break
                         case 'hands_lock':
@@ -1623,7 +1744,12 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     }, [videoData, profile?.id, isOrganizer])
 
     const handleLeave = useCallback(() => {
-        if (!isOrganizer && !attendanceMarkedRef.current && joinTimeRef.current) {
+        if (isOrganizer) {
+            setShowLeaveConfirm(true)
+            return
+        }
+
+        if (!attendanceMarkedRef.current && joinTimeRef.current) {
             const durationSec = Math.floor((Date.now() - joinTimeRef.current) / 1000)
             if (durationSec < 300) {
                 toast.warning(`⚠️ You attended only ${Math.floor(durationSec / 60)} minutes. Stay at least 5 mins for credit.`)
@@ -1632,7 +1758,35 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
 
         room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
         onLeave()
-    }, [room, isOrganizer, profile, videoData])
+    }, [room, isOrganizer, profile, videoData, onLeave])
+
+    const confirmEndClass = async () => {
+        try {
+            await supabase.from('live_chat_messages').insert({
+                video_id: videoData.id,
+                user_id: profile.id,
+                message: '📢 This class has ended.',
+                message_type: 'system'
+            });
+            const cleanupAt = new Date();
+            cleanupAt.setHours(cleanupAt.getHours() + 24);
+            await supabase.from('live_class_sessions').upsert({ video_id: videoData.id, status: 'ended', ended_at: new Date().toISOString(), chat_cleanup_at: cleanupAt.toISOString() })
+            
+            
+            const msg = JSON.stringify({ type: 'host_command', command: 'end_class' })
+            const encoder = new TextEncoder()
+            await room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
+        } catch (e) {
+            console.error('Error ending class:', e)
+        }
+        room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
+        onLeave()
+    }
+
+    const confirmJustLeave = () => {
+        room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
+        onLeave()
+    }
 
     return (
         <div ref={containerRef} style={{ 
@@ -1739,6 +1893,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto'
                         }}>
                             {[
+                                { id: 'chat', icon: MessageSquare, label: unreadChatCount > 0 ? `Chat (${unreadChatCount})` : 'Chat' },
                                 { id: 'notes', icon: Edit3, label: 'Notes' },
                                 { id: 'polls', icon: BarChart2, label: 'Polls' },
                                 ...(isOrganizer ? [
@@ -1761,7 +1916,12 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             ))}
                         </div>
 
-                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: sidebarTab === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'column', height: '100%' }}>
+                                <LiveChat videoId={videoId} isOrganizer={isOrganizer} chatLocked={chatLocked} channel={channelInstance} onNewMessage={() => {
+                                    if (sidebarTab !== 'chat' || !sidebarOpen) setUnreadChatCount(c => c + 1)
+                                }} />
+                            </div>
                             {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
                             {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
@@ -1771,6 +1931,8 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                 <HostControlsTab
                                     room={room}
                                     participants={allParticipants}
+                                    chatLocked={chatLocked}
+                                    setChatLocked={setChatLocked}
                                     micLocked={micLocked}
                                     setMicLocked={setMicLocked}
                                     videoLocked={videoLocked}
@@ -1823,6 +1985,26 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             + {waitingStudents.length - 3} more waiting
                         </div>
                     )}
+                </div>
+            )}
+
+            {showLeaveConfirm && isOrganizer && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ background: '#1e293b', padding: '2rem', borderRadius: 16, width: 400, maxWidth: '90%', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <h3 style={{ margin: '0 0 1rem', color: 'white', fontSize: '1.25rem' }}>Leave Meeting</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Do you want to just leave the meeting, or end it for everyone?</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <button onClick={confirmEndClass} style={{ padding: '0.75rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                                End Class for All & Clear Chat
+                            </button>
+                            <button onClick={confirmJustLeave} style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                                Just Leave
+                            </button>
+                            <button onClick={() => setShowLeaveConfirm(false)} style={{ padding: '0.75rem', background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 

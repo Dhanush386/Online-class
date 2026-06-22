@@ -9,7 +9,7 @@ import {
   GraduationCap, Menu, X, Bell, Award, Code, Globe,
   User, Zap, HelpCircle, MessageCircle, Mountain, ChevronRight,
   Flame, Star, Info, AlertTriangle, CheckCircle, Clock, Trophy, CreditCard,
-  ChevronDown
+  ChevronDown, Sparkles
 } from 'lucide-react'
 import AIChatbot from '../components/shared/AIChatbot'
 import CommandPalette from '../components/CommandPalette'
@@ -31,6 +31,12 @@ const NAV_GROUPS = [
     items: [
       { to: '/student/leaderboard',  icon: Trophy,  label: 'Leaderboard' },
       { to: '/student/achievements', icon: Award,   label: 'Achievements' },
+    ],
+  },
+  {
+    label: 'Intelligence',
+    items: [
+      { to: '/student/ai-coach', icon: Sparkles, label: 'AI Coach' },
     ],
   },
   {

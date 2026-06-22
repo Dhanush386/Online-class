@@ -77,6 +77,7 @@ const Achievements      = lazy(() => import('./pages/student/Achievements'))
 const Profile           = lazy(() => import('./pages/student/Profile'))
 const Leaderboard       = lazy(() => import('./pages/student/Leaderboard'))
 const RenewAccess       = lazy(() => import('./pages/student/RenewAccess'))
+const AIStudyAssistant  = lazy(() => import('./pages/student/AIStudyAssistant'))
 
 // ── Home redirect based on role ───────────────────────────────────────────────
 function HomeRedirect() {
@@ -161,6 +162,7 @@ function AppInner() {
             <Route path="support"                           element={<Support />} />
             <Route path="profile"                           element={<Profile />} />
             <Route path="leaderboard"                       element={<Leaderboard />} />
+            <Route path="ai-coach"                          element={<AIStudyAssistant />} />
             <Route path="renew"                             element={<RenewAccess />} />
             <Route path="classroom/:videoId"               element={<LiveClassroom />} />
           </Route>

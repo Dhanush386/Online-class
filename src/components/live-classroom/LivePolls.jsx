@@ -124,6 +124,14 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
             setPolls([data, ...polls]);
             channel.send({ type: 'broadcast', event: 'poll_new', payload: data });
             
+            // Insert system message for the chat
+            supabase.from('live_chat_messages').insert({
+                video_id: videoId,
+                user_id: profile.id,
+                message: `📊 Instructor created a poll: ${newQuestion}`,
+                message_type: 'system'
+            }).then(() => {});
+
             // Set timeout to broadcast end
             setTimeout(() => {
                 channel.send({ type: 'broadcast', event: 'poll_end', payload: { poll_id: data.id, ended_at: endedAt } });
