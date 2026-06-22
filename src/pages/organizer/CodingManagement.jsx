@@ -176,7 +176,7 @@ export default function CodingManagement() {
         if (!file) return
 
         const fileExt = file.name.split('.').pop()
-        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+        const fileName = `${crypto.randomUUID().split("-")[0]}-${Date.now()}.${fileExt}`
         const filePath = `challenges/test-cases/${fileName}`
 
         try {

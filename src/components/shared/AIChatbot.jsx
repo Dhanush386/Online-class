@@ -101,7 +101,7 @@ export default function AIChatbot() {
 
             if (screenshot) {
                 const fileExt = screenshot.name.split('.').pop()
-                const fileName = `${Math.random()}.${fileExt}`
+                const fileName = `${crypto.randomUUID()}.${fileExt}`
                 const filePath = `${profile.id}/${fileName}`
 
                 const { error: uploadError } = await supabase.storage
@@ -162,7 +162,7 @@ export default function AIChatbot() {
     }
 
     const handleStartNewChat = () => {
-        const newId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`
+        const newId = `session_${Date.now()}_${crypto.randomUUID().split("-")[0]}`
         const initialMsg = { 
             role: 'assistant', 
             content: "Hello! welcome to Learnova. I'm your learning assistant. You can ask me questions about your course, coding challenges, or any support issues. How can I help you today?" 

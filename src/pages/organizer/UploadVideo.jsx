@@ -70,7 +70,7 @@ export default function ScheduleLiveClass() {
                 if (!selectedFile) throw new Error('Please select a video file')
 
                 const fileExt = selectedFile.name.split('.').pop()
-                const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
+                const fileName = `${crypto.randomUUID().split("-")[0]}.${fileExt}`
                 const filePath = `${profile.id}/${fileName}`
 
                 const { error: uploadError } = await supabase.storage
@@ -103,7 +103,7 @@ export default function ScheduleLiveClass() {
             let finalSlideUrl = form.slide_url
             if (selectedSlideFile) {
                 const fileExt = selectedSlideFile.name.split('.').pop()
-                const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
+                const fileName = `${crypto.randomUUID().split("-")[0]}.${fileExt}`
                 const filePath = `${profile.id}/slides/${fileName}`
 
                 const { error: slideUploadError } = await supabase.storage

@@ -145,7 +145,7 @@ export default function CourseManagement() {
             if (resourceForm.file) {
                 const file = resourceForm.file
                 const fileExt = file.name.split('.').pop()
-                const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+                const fileName = `${crypto.randomUUID().split("-")[0]}-${Date.now()}.${fileExt}`
                 const filePath = `${currentCourse.id}/${fileName}`
 
                 const { error: uploadError } = await supabase.storage

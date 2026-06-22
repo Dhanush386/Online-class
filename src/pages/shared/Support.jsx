@@ -135,7 +135,7 @@ export default function Support() {
             if (attachment) {
                 setUploading(true)
                 const fileExt = attachment.name.split('.').pop()
-                const fileName = `${Math.random()}.${fileExt}`
+                const fileName = `${crypto.randomUUID()}.${fileExt}`
                 const filePath = `${profile.id}/${fileName}`
 
                 const { error: uploadError } = await supabase.storage

@@ -1475,7 +1475,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
 
                 if (msg.type === 'reaction') {
                     const id = `reaction-${Date.now()}-${reactionIdCounter.current++}`
-                    const x = 10 + Math.random() * 80 // random horizontal position
+                    const x = 10 + (window.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80 // random horizontal position
                     setReactions(prev => [...prev, { id, emoji: msg.emoji, senderName: msg.senderName, x }])
                     // Auto-remove after animation
                     setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
@@ -1635,7 +1635,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
 
         // Also show locally
         const id = `reaction-${now}-${reactionIdCounter.current++}`
-        const x = 10 + Math.random() * 80
+        const x = 10 + (window.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80
         setReactions(prev => [...prev, { id, emoji, senderName, x }])
         setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
     }, [room, reactionsDisabled])

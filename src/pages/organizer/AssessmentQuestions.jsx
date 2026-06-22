@@ -109,7 +109,7 @@ export default function AssessmentQuestions() {
             if (formData.image_file) {
                 const file = formData.image_file;
                 const fileExt = file.name.split('.').pop();
-                const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+                const fileName = `${crypto.randomUUID().split("-")[0]}-${Date.now()}.${fileExt}`;
                 const filePath = `questions/${fileName}`;
 
                 const { error: uploadError } = await supabase.storage

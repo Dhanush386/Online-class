@@ -48,11 +48,18 @@ export default function AIStudyAssistant() {
 
       // 2. Fetch raw telemetry (mocking actual aggregation for now)
       // In a real scenario, this would query enrollments, submissions, etc.
+      // Use Web Crypto API to satisfy security linters, even though this is just mock data
+      const getSecureRandom = () => {
+        const array = new Uint32Array(1);
+        window.crypto.getRandomValues(array);
+        return array[0] / (0xffffffff + 1);
+      };
+
       const metrics = {
-        attendance: Math.floor(Math.random() * 40) + 60, // 60-100
-        assessments: Math.floor(Math.random() * 40) + 60,
-        coding: Math.floor(Math.random() * 40) + 60,
-        progress: Math.floor(Math.random() * 40) + 60,
+        attendance: Math.floor(getSecureRandom() * 40) + 60, // 60-100
+        assessments: Math.floor(getSecureRandom() * 40) + 60,
+        coding: Math.floor(getSecureRandom() * 40) + 60,
+        progress: Math.floor(getSecureRandom() * 40) + 60,
       };
 
       const rawSubmissions = `Recent topic: SQL Joins (Score: 45%). Recent coding: Arrays (Score: 90%).`;

@@ -374,7 +374,7 @@ export default function OrganizerRecordings() {
                                         let finalUrl = slideUrl
                                         if (slideFile) {
                                             const fileExt = slideFile.name.split('.').pop()
-                                            const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
+                                            const fileName = `${crypto.randomUUID().split("-")[0]}.${fileExt}`
                                             const filePath = `${profile.id}/slides/${fileName}`
                             
                                             const { error: uploadError } = await supabase.storage
