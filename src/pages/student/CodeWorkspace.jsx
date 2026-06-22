@@ -809,6 +809,8 @@ export default function CodeWorkspace() {
                 const script = document.createElement('script')
                 script.id = 'pyodide-script'
                 script.src = 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js'
+                script.crossOrigin = 'anonymous'
+                script.integrity = 'sha384-b4IZetZNE8bVncsQqlcH4ZZFC58BslGU2LVj47xUtIMOw72axMESbPe8spBylXnd'
                 document.body.appendChild(script)
                 await new Promise((resolve) => script.onload = resolve)
             }
