@@ -172,7 +172,7 @@ export default function AIStudyAssistant() {
                     <span style={{ color: 'var(--text-primary)' }}>{metric.val}%</span>
                   </div>
                   <div style={{ height: 6, background: 'var(--bg-elevated)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: \`\${metric.val}%\`, background: getHealthColor(metric.val), borderRadius: 3 }} />
+                    <div style={{ height: '100%', width: `${metric.val}%`, background: getHealthColor(metric.val), borderRadius: 3 }} />
                   </div>
                 </div>
               ))}
