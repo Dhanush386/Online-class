@@ -272,7 +272,7 @@ export default function AIStudyAssistant() {
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
           {action_items?.map((action, i) => (
-            <div key={i} style={{ 
+            <div key={i} tabIndex={0} style={{ 
               padding: '1rem', 
               background: 'var(--bg-primary)', 
               borderRadius: '12px', 
@@ -288,6 +288,14 @@ export default function AIStudyAssistant() {
               e.currentTarget.style.transform = 'translateY(-2px)';
             }}
             onMouseOut={(e) => {
+              e.currentTarget.style.borderColor = 'var(--sidebar-border)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'var(--primary-400)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onBlur={(e) => {
               e.currentTarget.style.borderColor = 'var(--sidebar-border)';
               e.currentTarget.style.transform = 'translateY(0)';
             }}>
