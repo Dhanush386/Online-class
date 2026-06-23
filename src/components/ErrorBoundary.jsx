@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import PropTypes from 'prop-types'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -50,14 +51,14 @@ export default class ErrorBoundary extends Component {
             )}
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => globalThis.location.reload()}
                 className="btn-primary"
                 style={{ flex: 1 }}
               >
                 Refresh Page
               </button>
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => globalThis.location.href = '/'}
                 className="btn-secondary"
                 style={{ flex: 1 }}
               >
@@ -70,4 +71,8 @@ export default class ErrorBoundary extends Component {
     }
     return this.props.children
   }
+}
+
+ErrorBoundary.propTypes = {
+  children: PropTypes.node
 }
