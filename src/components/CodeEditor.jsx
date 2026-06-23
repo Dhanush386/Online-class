@@ -124,7 +124,7 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
             
             if (lastOpenIdx !== -1 && lastOpenIdx > lastCloseIdx) {
                 const tagText = before.slice(lastOpenIdx)
-                const tagMatch = tagText.match(/^<([a-z1-6]+)[^>]*$/i)
+                const tagMatch = tagText.match(/^<([a-z1-6]+)(?:[\s/][^>]*)?$/i)
                 
                 if (tagMatch) {
                     e.preventDefault()
