@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 let code = fs.readFileSync('src/pages/student/CodeWorkspace.jsx', 'utf8');
 
 // Replace backgrounds
