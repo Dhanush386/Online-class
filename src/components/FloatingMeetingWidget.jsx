@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { Mic, MicOff, Maximize2, PhoneOff, Users, MonitorUp } from 'lucide-react'
 import { Track, RoomEvent } from 'livekit-client'
 import { useMeeting } from '../contexts/MeetingContext'
+import PropTypes from 'prop-types'
 
 // ─── Custom Video Preview (attaches track to <video>) ────────────────────────
 function MiniVideoPreview({ track, fallbackName }) {
@@ -51,6 +52,11 @@ function MiniVideoPreview({ track, fallbackName }) {
     )
 }
 
+MiniVideoPreview.propTypes = {
+    track: PropTypes.instanceOf(Track),
+    fallbackName: PropTypes.string
+}
+
 // ─── Custom Audio Track ──────────────────────────────────────────────────────
 function CustomAudioTrack({ track }) {
     const audioRef = useRef(null)
@@ -62,6 +68,10 @@ function CustomAudioTrack({ track }) {
         }
     }, [track])
     return <audio ref={audioRef} autoPlay />
+}
+
+CustomAudioTrack.propTypes = {
+    track: PropTypes.instanceOf(Track)
 }
 
 // ─── Remote Audio Renderer (Global for Widget) ───────────────────────────────
@@ -557,4 +567,20 @@ export default function FloatingMeetingWidget() {
             {renderWidgetContent()}
         </>
     )
+}
+
+WidgetContent.propTypes = {
+    isPip: PropTypes.bool
+}
+
+MobileWidget.propTypes = {
+    isUploading: PropTypes.bool,
+    isRecording: PropTypes.bool,
+    truncatedTitle: PropTypes.string,
+    restoreMeeting: PropTypes.func
+}
+
+PipWidget.propTypes = {
+    pipWindow: PropTypes.object,
+    restoreMeeting: PropTypes.func
 }
