@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import PropTypes from 'prop-types'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Search, LayoutDashboard, BookOpen, ClipboardList, Code,
-  Trophy, Award, Calendar, Radio, Users, Bell, LogOut,
+  Trophy, Award, Calendar, Radio, Users, Bell,
   Settings, HelpCircle, Zap, Globe, ChevronRight, Command,
   BarChart2, GraduationCap
 } from 'lucide-react'
@@ -48,7 +49,6 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
   const [index, setIndex] = useState(0)
   const inputRef  = useRef(null)
   const navigate  = useNavigate()
-  const location  = useLocation()
 
   const commands = role === 'student' ? STUDENT_COMMANDS : ORGANIZER_COMMANDS
 
@@ -97,8 +97,8 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
       }
       if (e.key === 'Escape' && open) closePalette()
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    globalThis.addEventListener('keydown', handler)
+    return () => globalThis.removeEventListener('keydown', handler)
   }, [open, openPalette, closePalette])
 
   // Arrow key navigation
@@ -271,7 +271,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
-                    {flatFiltered.length} result{flatFiltered.length !== 1 ? 's' : ''}
+                    {flatFiltered.length} result{flatFiltered.length === 1 ? '' : 's'}
                   </span>
                   <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                     {[
@@ -293,4 +293,9 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
       </AnimatePresence>
     </>
   )
+}
+
+CommandPalette.propTypes = {
+  role: PropTypes.string,
+  onSignOut: PropTypes.func
 }
