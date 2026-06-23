@@ -78,7 +78,7 @@ async function runMigration() {
         console.log('   • reference_iframe_url TEXT')
         console.log('   • required_keywords     JSONB\n')
     } else {
-        const body = await res.text()
+        await res.text()
         console.error('❌ Migration failed via REST API.')
         console.error('\n📋 Please run the following SQL manually in your Supabase SQL Editor:')
         console.error('   https://supabase.com/dashboard/project/_/sql\n')
