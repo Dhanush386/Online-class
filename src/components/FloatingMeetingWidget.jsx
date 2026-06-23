@@ -344,33 +344,116 @@ function WidgetContent({ isPip }) {
 // ─── Floating Meeting Widget ─────────────────────────────────────────────────
 import { createPortal } from 'react-dom'
 
-export default function FloatingMeetingWidget() {
-    const {
-        videoData, participantCount, isMicOn, pipWindow, restoreMeeting,
-        isRecording, isUploading, uploadProgress, endMeeting, toggleMicFromWidget
-    } = useMeeting()
+function MobileWidget({ isUploading, isRecording, truncatedTitle, restoreMeeting }) {
+    return (
+        <div style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 16,
+            zIndex: 99999,
+            background: 'rgba(15,23,42,0.95)',
+            border: '1px solid rgba(99,102,241,0.3)',
+            borderRadius: 28,
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15)',
+            backdropFilter: 'blur(16px)',
+            animation: 'widgetSlideUp 300ms ease-out',
+            cursor: 'pointer',
+        }}>
+            <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: isUploading ? '#6366f1' : isRecording ? '#ef4444' : '#22c55e',
+                boxShadow: isUploading ? '0 0 6px #6366f1' : isRecording ? '0 0 6px #ef4444' : '0 0 6px #22c55e',
+                animation: 'widgetPulse 2s infinite',
+                flexShrink: 0,
+            }} />
 
-    const [isMobile] = useState(() => window.innerWidth <= 768)
+            <span style={{
+                color: 'white', fontSize: '0.78rem', fontWeight: 600,
+                maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+                {truncatedTitle}
+            </span>
 
-    // ── Drag state (desktop only) ──
-    const WIDGET_W = isMobile ? 200 : 280
-    const WIDGET_H = isMobile ? 56 : 180
+            <button onClick={(e) => { e.stopPropagation(); restoreMeeting() }} style={{
+                background: '#6366f1', border: 'none', borderRadius: '50%',
+                width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: 'white', flexShrink: 0,
+            }}>
+                <Maximize2 size={13} />
+            </button>
+        </div>
+    )
+}
+
+function PipWidget({ pipWindow, restoreMeeting }) {
+    return (
+        <>
+            {createPortal(<WidgetContent isPip={true} />, pipWindow.document.body)}
+            {/* Banner inside Main Window */}
+            <div style={{
+                position: 'fixed',
+                bottom: 24,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 99999,
+                background: 'rgba(15,23,42,0.95)',
+                border: '1px solid rgba(99,102,241,0.3)',
+                borderRadius: 28,
+                padding: '10px 24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15)',
+                backdropFilter: 'blur(16px)',
+                animation: 'widgetSlideUp 300ms ease-out',
+            }}>
+                <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 500 }}>
+                    🖼 Meeting running in Picture-in-Picture
+                </span>
+                <button
+                    onClick={() => restoreMeeting()}
+                    style={{
+                        background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.5)',
+                        borderRadius: 20, padding: '6px 16px', color: '#818cf8', fontWeight: 600,
+                        cursor: 'pointer', fontSize: '0.8rem', transition: 'all 0.2s',
+                    }}
+                    onMouseOver={e => e.target.style.background = 'rgba(99,102,241,0.3)'}
+                    onMouseOut={e => e.target.style.background = 'rgba(99,102,241,0.2)'}
+                >
+                    Restore
+                </button>
+                <style>{`
+                    @keyframes widgetSlideUp {
+                        from { opacity: 0; transform: translate(-50%, 20px) scale(0.95); }
+                        to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+                    }
+                `}</style>
+            </div>
+        </>
+    )
+}
+
+function DraggableWidget() {
+    const WIDGET_W = 280
+    const WIDGET_H = 180
     const [pos, setPos] = useState({ x: window.innerWidth - WIDGET_W - 16, y: window.innerHeight - WIDGET_H - 100 })
     const [isDragging, setIsDragging] = useState(false)
     const dragOffset = useRef({ x: 0, y: 0 })
     const widgetRef = useRef(null)
     const hasDragged = useRef(false)
 
-    // ── Pointer drag handlers ──
     const handlePointerDown = useCallback((e) => {
-        if (isMobile) return
         const rect = widgetRef.current?.getBoundingClientRect()
         if (!rect) return
         dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
         setIsDragging(true)
         hasDragged.current = false
         e.target.setPointerCapture?.(e.pointerId)
-    }, [isMobile])
+    }, [])
 
     const handlePointerMove = useCallback((e) => {
         if (!isDragging) return
@@ -379,7 +462,7 @@ export default function FloatingMeetingWidget() {
             x: Math.max(0, Math.min(window.innerWidth - WIDGET_W, e.clientX - dragOffset.current.x)),
             y: Math.max(0, Math.min(window.innerHeight - WIDGET_H, e.clientY - dragOffset.current.y)),
         })
-    }, [isDragging, WIDGET_W, WIDGET_H])
+    }, [isDragging])
 
     const handlePointerUp = useCallback((e) => {
         if (!isDragging) return
@@ -392,7 +475,7 @@ export default function FloatingMeetingWidget() {
             WIDGET_W, WIDGET_H
         )
         setPos(snapped)
-    }, [isDragging, WIDGET_W, WIDGET_H])
+    }, [isDragging])
 
     useEffect(() => {
         const handleResize = () => {
@@ -404,145 +487,74 @@ export default function FloatingMeetingWidget() {
         }
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
-    }, [WIDGET_W, WIDGET_H])
+    }, [])
+
+    return (
+        <div
+            ref={widgetRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            style={{
+                position: 'fixed',
+                left: pos.x,
+                top: pos.y,
+                width: WIDGET_W,
+                height: WIDGET_H,
+                zIndex: 99999,
+                borderRadius: 16,
+                overflow: 'hidden',
+                background: 'rgba(15,23,42,0.98)',
+                border: '1px solid rgba(99,102,241,0.25)',
+                boxShadow: '0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.1)',
+                backdropFilter: 'blur(16px)',
+                cursor: isDragging ? 'grabbing' : 'grab',
+                userSelect: 'none',
+                transition: isDragging ? 'none' : 'left 300ms ease, top 300ms ease',
+                animation: 'widgetSlideUp 300ms ease-out',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
+            <WidgetContent isPip={false} />
+        </div>
+    )
+}
+
+export default function FloatingMeetingWidget() {
+    const {
+        videoData, pipWindow, restoreMeeting,
+        isRecording, isUploading
+    } = useMeeting()
+
+    const [isMobile] = useState(() => window.innerWidth <= 768)
 
     const title = videoData?.title || 'Live Meeting'
     const truncatedTitle = title.length > 20 ? title.slice(0, 18) + '…' : title
 
-    let widgetContentUI;
-
-    // ─── Mobile: Compact Pill ────────────────────────────────────────────────
-    if (isMobile) {
-        widgetContentUI = (
-            <div style={{
-                position: 'fixed',
-                bottom: 24,
-                right: 16,
-                zIndex: 99999,
-                background: 'rgba(15,23,42,0.95)',
-                border: '1px solid rgba(99,102,241,0.3)',
-                borderRadius: 28,
-                padding: '10px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15)',
-                backdropFilter: 'blur(16px)',
-                animation: 'widgetSlideUp 300ms ease-out',
-                cursor: 'pointer',
-            }}>
-                <div style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: isUploading ? '#6366f1' : isRecording ? '#ef4444' : '#22c55e',
-                    boxShadow: isUploading ? '0 0 6px #6366f1' : isRecording ? '0 0 6px #ef4444' : '0 0 6px #22c55e',
-                    animation: 'widgetPulse 2s infinite',
-                    flexShrink: 0,
-                }} />
-
-                <span style={{
-                    color: 'white', fontSize: '0.78rem', fontWeight: 600,
-                    maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                    {truncatedTitle}
-                </span>
-
-                <button onClick={(e) => { e.stopPropagation(); restoreMeeting() }} style={{
-                    background: '#6366f1', border: 'none', borderRadius: '50%',
-                    width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', color: 'white', flexShrink: 0,
-                }}>
-                    <Maximize2 size={13} />
-                </button>
-            </div>
-        )
-    }
-    // ─── Desktop: Picture-in-Picture Mode ────────────────────────────────────
-    else if (pipWindow) {
-        widgetContentUI = (
-            <>
-                {createPortal(<WidgetContent isPip={true} />, pipWindow.document.body)}
-                {/* Banner inside Main Window */}
-                <div style={{
-                    position: 'fixed',
-                    bottom: 24,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 99999,
-                    background: 'rgba(15,23,42,0.95)',
-                    border: '1px solid rgba(99,102,241,0.3)',
-                    borderRadius: 28,
-                    padding: '10px 24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 16,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15)',
-                    backdropFilter: 'blur(16px)',
-                    animation: 'widgetSlideUp 300ms ease-out',
-                }}>
-                    <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 500 }}>
-                        🖼 Meeting running in Picture-in-Picture
-                    </span>
-                    <button
-                        onClick={() => restoreMeeting()}
-                        style={{
-                            background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.5)',
-                            borderRadius: 20, padding: '6px 16px', color: '#818cf8', fontWeight: 600,
-                            cursor: 'pointer', fontSize: '0.8rem', transition: 'all 0.2s',
-                        }}
-                        onMouseOver={e => e.target.style.background = 'rgba(99,102,241,0.3)'}
-                        onMouseOut={e => e.target.style.background = 'rgba(99,102,241,0.2)'}
-                    >
-                        Restore
-                    </button>
-                    <style>{`
-                        @keyframes widgetSlideUp {
-                            from { opacity: 0; transform: translate(-50%, 20px) scale(0.95); }
-                            to { opacity: 1; transform: translate(-50%, 0) scale(1); }
-                        }
-                    `}</style>
-                </div>
-            </>
-        )
-    }
-    // ─── Desktop: Fallback Floating Widget ───────────────────────────────────
-    else {
-        widgetContentUI = (
-            <div
-                ref={widgetRef}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                style={{
-                    position: 'fixed',
-                    left: pos.x,
-                    top: pos.y,
-                    width: WIDGET_W,
-                    height: WIDGET_H,
-                    zIndex: 99999,
-                    borderRadius: 16,
-                    overflow: 'hidden',
-                    background: 'rgba(15,23,42,0.98)',
-                    border: '1px solid rgba(99,102,241,0.25)',
-                    boxShadow: '0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.1)',
-                    backdropFilter: 'blur(16px)',
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    userSelect: 'none',
-                    transition: isDragging ? 'none' : 'left 300ms ease, top 300ms ease',
-                    animation: 'widgetSlideUp 300ms ease-out',
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
-            >
-                <WidgetContent isPip={false} />
-            </div>
-        )
+    const renderWidgetContent = () => {
+        if (isMobile) {
+            return <MobileWidget 
+                isUploading={isUploading} 
+                isRecording={isRecording} 
+                truncatedTitle={truncatedTitle} 
+                restoreMeeting={restoreMeeting} 
+            />
+        }
+        if (pipWindow) {
+            return <PipWidget 
+                pipWindow={pipWindow} 
+                restoreMeeting={restoreMeeting} 
+            />
+        }
+        return <DraggableWidget />
     }
 
     return (
         <>
             <RemoteAudioRenderer />
-            {widgetContentUI}
+            {renderWidgetContent()}
         </>
     )
 }
