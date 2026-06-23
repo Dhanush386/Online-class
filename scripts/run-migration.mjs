@@ -59,7 +59,7 @@ COMMENT ON COLUMN public.coding_challenges.required_keywords IS
 async function runMigration() {
     console.log('\n🚀 Running migration: add reference_iframe_url + required_keywords...\n')
     
-    const { error } = await supabase.rpc('exec_sql', { query: SQL }).catch(() => ({ error: null }))
+    await supabase.rpc('exec_sql', { query: SQL }).catch(() => ({ error: null }))
     
     // Try raw SQL via postgres endpoint if RPC doesn't exist
     const res = await fetch(`${url}/pg/query`, {
