@@ -119,18 +119,25 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
         // Handle HTML tag auto-closing
         if (e.key === '>' && (language === 'html' || language === 'web')) {
             const before = val.substring(0, start)
-            const tagMatch = before.match(/<([a-z1-6]+)[^>]*$/i)
-            if (tagMatch) {
-                e.preventDefault()
-                const tagName = tagMatch[1]
-                const closingTag = `></${tagName}>`
-                const newVal = val.substring(0, start) + closingTag + val.substring(end)
-                onChange({ target: { value: newVal } })
+            const lastOpenIdx = before.lastIndexOf('<')
+            const lastCloseIdx = before.lastIndexOf('>')
+            
+            if (lastOpenIdx !== -1 && lastOpenIdx > lastCloseIdx) {
+                const tagText = before.slice(lastOpenIdx)
+                const tagMatch = tagText.match(/^<([a-z1-6]+)[^>]*$/i)
                 
-                setTimeout(() => {
-                    e.target.selectionStart = e.target.selectionEnd = start + 1
-                }, 0)
-                return
+                if (tagMatch) {
+                    e.preventDefault()
+                    const tagName = tagMatch[1]
+                    const closingTag = `></${tagName}>`
+                    const newVal = val.substring(0, start) + closingTag + val.substring(end)
+                    onChange({ target: { value: newVal } })
+                    
+                    setTimeout(() => {
+                        e.target.selectionStart = e.target.selectionEnd = start + 1
+                    }, 0)
+                    return
+                }
             }
         }
 
