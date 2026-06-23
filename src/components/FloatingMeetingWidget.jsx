@@ -67,7 +67,11 @@ function CustomAudioTrack({ track }) {
             return () => track.detach(el)
         }
     }, [track])
-    return <audio ref={audioRef} autoPlay />
+    return (
+        <audio ref={audioRef} autoPlay>
+            <track kind="captions" />
+        </audio>
+    )
 }
 
 CustomAudioTrack.propTypes = {
@@ -85,7 +89,7 @@ function RemoteAudioRenderer() {
             const newTracks = []
             room.remoteParticipants.forEach(p => {
                 const pub = p.getTrackPublication(Track.Source.Microphone)
-                if (pub && pub.track) {
+                if (pub?.track) {
                     newTracks.push(pub.track)
                 }
             })
@@ -135,7 +139,7 @@ function snapToCorner(x, y, widgetW, widgetH) {
     let minDist = Infinity
 
     for (const c of corners) {
-        const dist = Math.sqrt((x - c.x) ** 2 + (y - c.y) ** 2)
+        const dist = Math.hypot(x - c.x, y - c.y)
         if (dist < minDist) {
             minDist = dist
             nearest = c
@@ -355,6 +359,13 @@ function WidgetContent({ isPip }) {
 import { createPortal } from 'react-dom'
 
 function MobileWidget({ isUploading, isRecording, truncatedTitle, restoreMeeting }) {
+    let indicatorColor = '#22c55e'
+    if (isUploading) {
+        indicatorColor = '#6366f1'
+    } else if (isRecording) {
+        indicatorColor = '#ef4444'
+    }
+
     return (
         <div style={{
             position: 'fixed',
@@ -375,8 +386,8 @@ function MobileWidget({ isUploading, isRecording, truncatedTitle, restoreMeeting
         }}>
             <div style={{
                 width: 8, height: 8, borderRadius: '50%',
-                background: isUploading ? '#6366f1' : isRecording ? '#ef4444' : '#22c55e',
-                boxShadow: isUploading ? '0 0 6px #6366f1' : isRecording ? '0 0 6px #ef4444' : '0 0 6px #22c55e',
+                background: indicatorColor,
+                boxShadow: `0 0 6px ${indicatorColor}`,
                 animation: 'widgetPulse 2s infinite',
                 flexShrink: 0,
             }} />
@@ -433,6 +444,8 @@ function PipWidget({ pipWindow, restoreMeeting }) {
                     }}
                     onMouseOver={e => e.target.style.background = 'rgba(99,102,241,0.3)'}
                     onMouseOut={e => e.target.style.background = 'rgba(99,102,241,0.2)'}
+                    onFocus={e => e.target.style.background = 'rgba(99,102,241,0.3)'}
+                    onBlur={e => e.target.style.background = 'rgba(99,102,241,0.2)'}
                 >
                     Restore
                 </button>
