@@ -8,6 +8,13 @@ export default function MobileBlocker() {
     const { profile } = useAuth()
     const { isMobile, isTablet } = useDeviceType()
     const returnPath = profile?.role === 'organizer' ? '/organizer' : '/student'
+    
+    let deviceName = 'Unsupported Screen'
+    if (isMobile) {
+        deviceName = 'Mobile Phone'
+    } else if (isTablet) {
+        deviceName = 'Tablet'
+    }
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', color: '#f8fafc', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -36,7 +43,7 @@ export default function MobileBlocker() {
                         <AlertTriangle size={18} />
                         <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Current Device:</span>
                     </div>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f87171' }}>{isMobile ? 'Mobile Phone' : isTablet ? 'Tablet' : 'Unsupported Screen'}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f87171' }}>{deviceName}</span>
                 </div>
 
                 <button onClick={() => navigate(returnPath)} style={{ width: '100%', background: '#3b82f6', color: '#ffffff', border: 'none', padding: '0.875rem', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'background 0.2s' }}>
