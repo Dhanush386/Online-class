@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { MessageSquare, Plus, ChevronLeft, Send, Code as CodeIcon, Clock, ThumbsUp, CheckCircle2 } from 'lucide-react'
@@ -120,16 +121,16 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#fff' }}>Start a New Thread</h3>
                 <form onSubmit={handleCreateThread} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Title</label>
-                        <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="E.g. Getting an EOFError on Test Case 2" required style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem' }} />
+                        <label htmlFor="thread-title" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Title</label>
+                        <input id="thread-title" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="E.g. Getting an EOFError on Test Case 2" required style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem' }} />
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Description</label>
-                        <textarea value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Describe what you need help with..." required rows={5} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem', resize: 'vertical' }} />
+                        <label htmlFor="thread-desc" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Description</label>
+                        <textarea id="thread-desc" value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Describe what you need help with..." required rows={5} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem', resize: 'vertical' }} />
                     </div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#cbd5e1' }}>
                         <input type="checkbox" checked={attachCode} onChange={e => setAttachCode(e.target.checked)} />
-                        Attach my current code workspace snapshot
+                        <span>Attach my current code workspace snapshot</span>
                     </label>
                     <button type="submit" style={{ padding: '0.75rem', borderRadius: 8, background: '#3b82f6', border: 'none', color: '#fff', fontWeight: 700, marginTop: '1rem', cursor: 'pointer' }}>Post Thread</button>
                 </form>
@@ -211,7 +212,20 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                     </div>
                 ) : (
                     discussions.map(d => (
-                        <div key={d.id} onClick={() => { setActiveThread(d); setView('thread') }} style={{ padding: '1rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', cursor: 'pointer', transition: 'all 0.2s ease', ':hover': { borderColor: 'var(--text-secondary)' } }}>
+                        <div 
+                            key={d.id} 
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => { setActiveThread(d); setView('thread') }} 
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    setActiveThread(d)
+                                    setView('thread')
+                                }
+                            }}
+                            style={{ padding: '1rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', cursor: 'pointer', transition: 'all 0.2s ease', ':hover': { borderColor: 'var(--text-secondary)' } }}
+                        >
                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem' }}>
                                 <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#e2e8f0', margin: 0, lineHeight: 1.4 }}>{d.title}</h4>
                                 {d.status === 'resolved' && <span style={{ padding: '2px 6px', background: '#10b98120', color: '#10b981', border: '1px solid #10b98150', fontSize: '0.65rem', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}><CheckCircle2 size={10} /> Resolved</span>}
@@ -229,4 +243,9 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
             </div>
         </div>
     )
+}
+
+CodingDiscussions.propTypes = {
+    challengeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    currentCode: PropTypes.oneOfType([PropTypes.string, PropTypes.object])
 }
