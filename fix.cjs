@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 let code = fs.readFileSync('src/components/CodeEditor.jsx', 'utf8');
 
 // The issue: pushToken(m, '${theme === 'light' ? '#059669' : '#34d399'}')

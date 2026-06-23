@@ -1,4 +1,4 @@
-self.addEventListener('push', function(event) {
+globalThis.addEventListener('push', function(event) {
     if (event.data) {
         try {
             const data = event.data.json();
@@ -12,7 +12,7 @@ self.addEventListener('push', function(event) {
             };
             
             event.waitUntil(
-                self.registration.showNotification(data.title || 'Online Class Proctoring', options)
+                globalThis.registration.showNotification(data.title || 'Online Class Proctoring', options)
             );
         } catch (e) {
             console.error('Error parsing push data', e);
@@ -20,7 +20,7 @@ self.addEventListener('push', function(event) {
     }
 });
 
-self.addEventListener('notificationclick', function(event) {
+globalThis.addEventListener('notificationclick', function(event) {
     event.notification.close();
     if (event.notification.data) {
         event.waitUntil(
