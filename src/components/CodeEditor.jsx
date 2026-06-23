@@ -19,9 +19,9 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
 
         // Escaping HTML
         let html = code
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
 
         const tokens = []
         const pushToken = (match, color) => {
@@ -40,14 +40,21 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
             // 1. Values (often contains strings/urls)
             html = html.replace(/: ([^;]+);/g, (m, v) => ': ' + pushToken(v, theme === 'light' ? '#d97706' : '#fbbf24') + ';')
             // 2. Properties
-            html = html.replace(/([a-z-]+):/gi, m => pushToken(m, theme === 'light' ? '#2563eb' : '#60a5fa'))
+            html = html.replace(/\b([a-z-]+):/gi, m => pushToken(m, theme === 'light' ? '#2563eb' : '#60a5fa'))
             // 3. Selectors
             html = html.replace(/^([.#a-z][^{]+) {/gim, (m, s) => pushToken(s, theme === 'light' ? '#dc2626' : '#f87171') + ' {')
         } else {
             // JS / Python / SQL Common
             // 1. Comments (lowest priority to overlap, but highest to ignore)
-            const commentRegex = lang === 'python' ? /(#.*)/g : lang === 'sql' ? /(--.*)/g : /(\/\/.*)/g
-            html = html.replace(commentRegex, m => pushToken(m, theme === 'light' ? 'var(--text-muted)' : 'var(--text-muted)'))
+            let commentRegex
+            if (lang === 'python') {
+                commentRegex = /(#.*)/g
+            } else if (lang === 'sql') {
+                commentRegex = /(--.*)/g
+            } else {
+                commentRegex = /(\/\/.*)/g
+            }
+            html = html.replace(commentRegex, m => pushToken(m, 'var(--text-muted)'))
 
             // 2. Strings
             html = html.replace(/"([^"]*)"/g, m => pushToken(m, theme === 'light' ? '#059669' : '#34d399'))
@@ -55,9 +62,9 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
 
             // 3. Keywords
             const keywords = {
-                js: /\b(const|let|var|function|return|if|else|for|while|import|export|class|from|await|async|try|catch|new|this)\b/g,
-                python: /\b(def|class|return|if|else|elif|for|while|import|from|as|try|except|with|async|await|in|is|not|and|or|lambda|print)\b/g,
-                sql: /\b(SELECT|FROM|WHERE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|DROP|JOIN|LEFT|RIGHT|INNER|ON|GROUP|BY|ORDER|LIMIT|ASC|DESC)\b/gi
+                js: new RegExp(`\\b(${'const let var function return if else for while import export class from await async try catch new this'.split(' ').join('|')})\\b`, 'g'),
+                python: new RegExp(`\\b(${'def class return if else elif for while import from as try except with async await in is not and or lambda print'.split(' ').join('|')})\\b`, 'g'),
+                sql: new RegExp(`\\b(${'SELECT FROM WHERE INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE DROP JOIN LEFT RIGHT INNER ON GROUP BY ORDER LIMIT ASC DESC'.split(' ').join('|')})\\b`, 'gi')
             }
             const activeKeywords = keywords[lang] || keywords.js
             html = html.replace(activeKeywords, m => pushToken(m, theme === 'light' ? '#9333ea' : '#c084fc'))
@@ -112,7 +119,7 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
         // Handle HTML tag auto-closing
         if (e.key === '>' && (language === 'html' || language === 'web')) {
             const before = val.substring(0, start)
-            const tagMatch = before.match(/<([a-z1-6]+)(?:\s+[^>]*?)?$/i)
+            const tagMatch = before.match(/<([a-z1-6]+)[^>]*$/i)
             if (tagMatch) {
                 e.preventDefault()
                 const tagName = tagMatch[1]
