@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react'
+import PropTypes from 'prop-types'
 
 const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, theme = 'dark' }) => {
     const textareaRef = useRef(null)
@@ -217,6 +218,16 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
             />
         </div>
     )
+}
+
+CodeEditor.propTypes = {
+    value: PropTypes.string.isRequired,
+    onChange: PropTypes.func.isRequired,
+    language: PropTypes.string,
+    placeholder: PropTypes.string,
+    style: PropTypes.object,
+    readOnly: PropTypes.bool,
+    theme: PropTypes.string
 }
 
 export default CodeEditor
