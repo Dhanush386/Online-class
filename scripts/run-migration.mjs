@@ -56,36 +56,32 @@ COMMENT ON COLUMN public.coding_challenges.required_keywords IS
     'JSON object: { "html": ["table","ul"], "css": ["display:flex"], "js": ["addEventListener"] }';
 `
 
-async function runMigration() {
-    console.log('\n🚀 Running migration: add reference_iframe_url + required_keywords...\n')
-    
-    await supabase.rpc('exec_sql', { query: SQL }).catch(() => ({ error: null }))
-    
-    // Try raw SQL via postgres endpoint if RPC doesn't exist
-    const res = await fetch(`${url}/pg/query`, {
-        method: 'POST',
-        headers: {
-            'apikey': serviceKey,
-            'Authorization': `Bearer ${serviceKey}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query: SQL })
-    })
-    
-    if (res.ok) {
-        console.log('✅ Migration applied successfully!\n')
-        console.log('   New columns added to coding_challenges:')
-        console.log('   • reference_iframe_url TEXT')
-        console.log('   • required_keywords     JSONB\n')
-    } else {
-        await res.text()
-        console.error('❌ Migration failed via REST API.')
-        console.error('\n📋 Please run the following SQL manually in your Supabase SQL Editor:')
-        console.error('   https://supabase.com/dashboard/project/_/sql\n')
-        console.error('─'.repeat(60))
-        console.error(SQL)
-        console.error('─'.repeat(60))
-    }
-}
+console.log('\n🚀 Running migration: add reference_iframe_url + required_keywords...\n')
 
-runMigration()
+await supabase.rpc('exec_sql', { query: SQL }).catch(() => ({ error: null }))
+
+// Try raw SQL via postgres endpoint if RPC doesn't exist
+const res = await fetch(`${url}/pg/query`, {
+    method: 'POST',
+    headers: {
+        'apikey': serviceKey,
+        'Authorization': `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ query: SQL })
+})
+
+if (res.ok) {
+    console.log('✅ Migration applied successfully!\n')
+    console.log('   New columns added to coding_challenges:')
+    console.log('   • reference_iframe_url TEXT')
+    console.log('   • required_keywords     JSONB\n')
+} else {
+    await res.text()
+    console.error('❌ Migration failed via REST API.')
+    console.error('\n📋 Please run the following SQL manually in your Supabase SQL Editor:')
+    console.error('   https://supabase.com/dashboard/project/_/sql\n')
+    console.error('─'.repeat(60))
+    console.error(SQL)
+    console.error('─'.repeat(60))
+}
