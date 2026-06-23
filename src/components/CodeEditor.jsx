@@ -62,9 +62,9 @@ const CodeEditor = ({ value, onChange, language, placeholder, style, readOnly, t
 
             // 3. Keywords
             const keywords = {
-                js: new RegExp(`\\b(${'const let var function return if else for while import export class from await async try catch new this'.split(' ').join('|')})\\b`, 'g'),
-                python: new RegExp(`\\b(${'def class return if else elif for while import from as try except with async await in is not and or lambda print'.split(' ').join('|')})\\b`, 'g'),
-                sql: new RegExp(`\\b(${'SELECT FROM WHERE INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE DROP JOIN LEFT RIGHT INNER ON GROUP BY ORDER LIMIT ASC DESC'.split(' ').join('|')})\\b`, 'gi')
+                js: new RegExp(String.raw`\b(${'const let var function return if else for while import export class from await async try catch new this'.replaceAll(' ', '|')})\b`, 'g'),
+                python: new RegExp(String.raw`\b(${'def class return if else elif for while import from as try except with async await in is not and or lambda print'.replaceAll(' ', '|')})\b`, 'g'),
+                sql: new RegExp(String.raw`\b(${'SELECT FROM WHERE INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE DROP JOIN LEFT RIGHT INNER ON GROUP BY ORDER LIMIT ASC DESC'.replaceAll(' ', '|')})\b`, 'gi')
             }
             const activeKeywords = keywords[lang] || keywords.js
             html = html.replace(activeKeywords, m => pushToken(m, theme === 'light' ? '#9333ea' : '#c084fc'))
