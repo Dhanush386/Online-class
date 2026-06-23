@@ -69,7 +69,10 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
         if (!newTitle.trim() || !newContent.trim()) return
 
         try {
-            const codeSnapshot = attachCode ? (typeof currentCode === 'string' ? currentCode : JSON.stringify(currentCode)) : null
+            let codeSnapshot = null;
+            if (attachCode) {
+                codeSnapshot = typeof currentCode === 'string' ? currentCode : JSON.stringify(currentCode);
+            }
             const { error } = await supabase.from('coding_discussions').insert({
                 challenge_id: challengeId,
                 student_id: profile.id,
@@ -212,19 +215,10 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                     </div>
                 ) : (
                     discussions.map(d => (
-                        <div 
+                        <button 
                             key={d.id} 
-                            role="button"
-                            tabIndex={0}
                             onClick={() => { setActiveThread(d); setView('thread') }} 
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault()
-                                    setActiveThread(d)
-                                    setView('thread')
-                                }
-                            }}
-                            style={{ padding: '1rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', cursor: 'pointer', transition: 'all 0.2s ease', ':hover': { borderColor: 'var(--text-secondary)' } }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', padding: '1rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', cursor: 'pointer', transition: 'all 0.2s ease', ':hover': { borderColor: 'var(--text-secondary)' } }}
                         >
                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem' }}>
                                 <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#e2e8f0', margin: 0, lineHeight: 1.4 }}>{d.title}</h4>
@@ -237,7 +231,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                                 {d.code_snapshot && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CodeIcon size={12} /> Code attached</span>}
                                 <span style={{ marginLeft: 'auto' }}>{new Date(d.created_at).toLocaleDateString()}</span>
                             </div>
-                        </div>
+                        </button>
                     ))
                 )}
             </div>
