@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../Toast';
 import { Hand, Check, X } from 'lucide-react';
@@ -159,3 +160,8 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
         </div>
     );
 }
+
+LiveHandRaise.propTypes = {
+    isOrganizer: PropTypes.bool.isRequired,
+    channel: PropTypes.any
+};
