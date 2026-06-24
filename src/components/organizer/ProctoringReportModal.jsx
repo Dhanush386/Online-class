@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { supabase } from '../../lib/supabase'
 import { 
-  ShieldAlert, User, Clock, Activity, FileText, CheckCircle, 
-  AlertTriangle, X, ChevronRight, Image as ImageIcon, RefreshCw, 
+  ShieldAlert, Activity, FileText, CheckCircle, 
+  X, Image as ImageIcon, RefreshCw, 
   FileDown, ShieldCheck, HelpCircle, Network, BarChart3, AlertOctagon 
 } from 'lucide-react'
 import { jsPDF } from 'jspdf'
@@ -203,6 +204,18 @@ export default function ProctoringReportModal({
     return 'Good'
   }
 
+  const getQualityGrade = (quality) => {
+    if (quality === 'Excellent') return '98%'
+    if (quality === 'Good') return '85%'
+    return '60%'
+  }
+
+  const getViolationColor = (increment) => {
+    if (increment >= 40) return '#ef4444'
+    if (increment >= 20) return '#f97316'
+    return '#eab308'
+  }
+
   const getBase64Image = async (url) => {
     return new Promise((resolve, reject) => {
       const img = new Image()
@@ -217,7 +230,7 @@ export default function ProctoringReportModal({
       }
       img.onerror = (err) => {
         console.error("Failed to load image for PDF embedding:", err)
-        reject(err)
+        reject(new Error("Failed to load image for PDF embedding"))
       }
       img.src = url
     })
@@ -383,6 +396,7 @@ export default function ProctoringReportModal({
           doc.addImage(base64Img, 'JPEG', 14, yPos + 7, 100, 56)
           yPos += 72
         } catch (e) {
+          console.error("Failed to embed image in PDF:", e)
           doc.setTextColor(156, 163, 175)
           doc.setFont("helvetica", "oblique")
           doc.text("[Image could not be embedded - Network CORS restriction or invalid URL]", 14, yPos + 10)
@@ -609,7 +623,7 @@ export default function ProctoringReportModal({
                   <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#64748b' }}>
                       <span>Quality Grade:</span>
-                      <strong style={{ color: '#0f172a' }}>{netQuality === 'Excellent' ? '98%' : netQuality === 'Good' ? '85%' : '60%'}</strong>
+                      <strong style={{ color: '#0f172a' }}>{getQualityGrade(netQuality)}</strong>
                     </div>
                   </div>
                 </div>
@@ -629,7 +643,7 @@ export default function ProctoringReportModal({
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {violations.map((v, i) => (
-                    <div key={v.id || i} style={{ display: 'flex', justifyItems: 'center', justifySelf: 'stretch', gap: '1rem', padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', borderLeft: `4px solid ${v.risk_score_increment >= 40 ? '#ef4444' : v.risk_score_increment >= 20 ? '#f97316' : '#eab308'}` }}>
+                    <div key={v.id || i} style={{ display: 'flex', justifyItems: 'center', justifySelf: 'stretch', gap: '1rem', padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', borderLeft: `4px solid ${getViolationColor(v.risk_score_increment)}` }}>
                       <div style={{ width: 64, flexShrink: 0, fontSize: '0.75rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                         {new Date(v.timestamp).toLocaleTimeString()}
                       </div>
@@ -670,7 +684,15 @@ export default function ProctoringReportModal({
                   {violations.filter(v => v.evidence_url).map((v, i) => (
                     <div 
                       key={v.id || i}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedImage(v.evidence_url)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedImage(v.evidence_url)
+                        }
+                      }}
                       style={{ cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1', borderRadius: 8, background: '#000', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', position: 'relative' }}
                     >
                       <div style={{ position: 'relative', width: '100%', paddingBottom: '75%' }}>
@@ -753,7 +775,15 @@ export default function ProctoringReportModal({
       {/* Fullscreen Image Preview */}
       {selectedImage && (
         <div 
+          role="button"
+          tabIndex={0}
           onClick={() => setSelectedImage(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
+              e.preventDefault()
+              setSelectedImage(null)
+            }
+          }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '2rem' }}
         >
           <div style={{ relative: 'true', maxWidth: '90%', maxHeight: '90%', background: '#000', borderRadius: 8, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
@@ -770,4 +800,12 @@ export default function ProctoringReportModal({
       )}
     </div>
   )
+}
+
+ProctoringReportModal.propTypes = {
+  sessionId: PropTypes.string,
+  studentId: PropTypes.string,
+  assessmentId: PropTypes.string,
+  challengeId: PropTypes.string,
+  onClose: PropTypes.func.isRequired
 }
