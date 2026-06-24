@@ -193,7 +193,7 @@ MessageItem.propTypes = {
     toggleReaction: PropTypes.func.isRequired,
 };
 
-export default function LiveChat({ videoId, isOrganizer, chatLocked, channel, onNewMessage }) {
+export default function LiveChat({ videoId, isOrganizer, chatLocked, onNewMessage }) {
     const { profile } = useAuth();
     const toast = useToast();
     const [messages, setMessages] = useState([]);
@@ -442,6 +442,5 @@ LiveChat.propTypes = {
     videoId: PropTypes.string.isRequired,
     isOrganizer: PropTypes.bool.isRequired,
     chatLocked: PropTypes.bool.isRequired,
-    channel: PropTypes.any,
     onNewMessage: PropTypes.func
 };
