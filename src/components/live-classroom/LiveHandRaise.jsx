@@ -163,5 +163,8 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
 
 LiveHandRaise.propTypes = {
     isOrganizer: PropTypes.bool.isRequired,
-    channel: PropTypes.any
+    channel: PropTypes.shape({
+        on: PropTypes.func,
+        send: PropTypes.func
+    })
 };
