@@ -1,8 +1,21 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { supabase } from '../../lib/supabase';
-import { Loader2, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Loader2, FileText, FileSpreadsheet } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+
+const getStatusBackground = (status) => {
+    if (status === 'present') return 'rgba(16, 185, 129, 0.2)';
+    if (status === 'absent') return 'rgba(239, 68, 68, 0.2)';
+    return 'rgba(245, 158, 11, 0.2)';
+};
+
+const getStatusColor = (status) => {
+    if (status === 'present') return '#10b981';
+    if (status === 'absent') return '#ef4444';
+    return '#f59e0b';
+};
 
 export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
     const [attendance, setAttendance] = useState([]);
@@ -58,7 +71,7 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
         link.setAttribute("download", `Attendance_${videoTitle}.csv`);
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        link.remove();
     };
 
     const downloadPDF = () => {
@@ -153,10 +166,8 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
                                 onChange={(e) => handleStatusUpdate(record.id, e.target.value)}
                                 style={{
                                     padding: '0.2rem 0.5rem', 
-                                    background: record.attendance_status === 'present' ? 'rgba(16, 185, 129, 0.2)' : 
-                                                record.attendance_status === 'absent' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)', 
-                                    color: record.attendance_status === 'present' ? '#10b981' : 
-                                           record.attendance_status === 'absent' ? '#ef4444' : '#f59e0b', 
+                                    background: getStatusBackground(record.attendance_status), 
+                                    color: getStatusColor(record.attendance_status), 
                                     border: 'none',
                                     borderRadius: '12px', 
                                     fontSize: '0.75rem',
@@ -180,3 +191,9 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
         </div>
     );
 }
+
+LiveAttendance.propTypes = {
+    videoId: PropTypes.string.isRequired,
+    isOrganizer: PropTypes.bool.isRequired,
+    videoTitle: PropTypes.string.isRequired
+};
