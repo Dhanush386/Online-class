@@ -65,6 +65,20 @@ function AccessDeclined({ signOut }) {
     )
 }
 
+function getRoleRedirectPath(requiredRole, isAdmin, isStudent) {
+    if (requiredRole === 'organizer' && !isAdmin) return "/student"
+    if (requiredRole === 'student' && !isStudent && !isAdmin) return "/organizer"
+    return null
+}
+
+function handleStudentState(profile, isProfileComplete, isExpired, pathname, signOut) {
+    if (profile.status === 'pending') return <PendingApproval signOut={signOut} />
+    if (profile.status === 'rejected') return <AccessDeclined signOut={signOut} />
+    if (!isProfileComplete && pathname !== '/student/profile') return <Navigate to="/student/profile" replace />
+    if (isExpired && pathname !== '/student/renew') return <Navigate to="/student/renew" replace />
+    return null
+}
+
 export function ProtectedRoute({ children, requiredRole }) {
     const { user, profile, loading, signOut, isProfileComplete, isExpired } = useAuth()
     const location = useLocation()
@@ -79,25 +93,12 @@ export function ProtectedRoute({ children, requiredRole }) {
         return <ProfileSyncIssue signOut={signOut} />
     }
 
-    if (requiredRole === 'organizer' && !isAdmin) {
-        return <Navigate to="/student" replace />
-    }
-
-    if (requiredRole === 'student' && !isStudent && !isAdmin) {
-        return <Navigate to="/organizer" replace />
-    }
+    const roleRedirect = getRoleRedirectPath(requiredRole, isAdmin, isStudent)
+    if (roleRedirect) return <Navigate to={roleRedirect} replace />
 
     if (isStudent) {
-        if (profile.status === 'pending') return <PendingApproval signOut={signOut} />
-        if (profile.status === 'rejected') return <AccessDeclined signOut={signOut} />
-
-        if (!isProfileComplete && location.pathname !== '/student/profile') {
-            return <Navigate to="/student/profile" replace />
-        }
-
-        if (isExpired && location.pathname !== '/student/renew') {
-            return <Navigate to="/student/renew" replace />
-        }
+        const studentRedirect = handleStudentState(profile, isProfileComplete, isExpired, location.pathname, signOut)
+        if (studentRedirect) return studentRedirect
     }
 
     return children

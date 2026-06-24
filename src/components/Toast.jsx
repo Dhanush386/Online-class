@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo } from 'react'
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react'
+import PropTypes from 'prop-types'
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 const ToastContext = createContext(null)
@@ -33,12 +34,12 @@ export function ToastProvider({ children }) {
     return id
   }, [dismiss])
 
-  const toast = {
+  const toast = useMemo(() => ({
     success: (msg, dur) => addToast(msg, 'success', dur),
     error:   (msg, dur) => addToast(msg, 'error',   dur),
     warning: (msg, dur) => addToast(msg, 'warning', dur),
     info:    (msg, dur) => addToast(msg, 'info',    dur),
-  }
+  }), [addToast])
 
   return (
     <ToastContext.Provider value={toast}>
@@ -89,6 +90,10 @@ export function ToastProvider({ children }) {
       `}</style>
     </ToastContext.Provider>
   )
+}
+
+ToastProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
