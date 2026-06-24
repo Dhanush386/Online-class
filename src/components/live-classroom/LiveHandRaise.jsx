@@ -19,7 +19,7 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
     useEffect(() => {
         if (!channel) return;
 
-        const sub1 = channel.on('broadcast', { event: 'hand_raise' }, (payload) => {
+        channel.on('broadcast', { event: 'hand_raise' }, (payload) => {
             const { student_id, student_name, raised_at } = payload.payload;
             if (isOrganizer) {
                 setRaisedHands(prev => {
@@ -29,7 +29,7 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
             }
         });
 
-        const sub2 = channel.on('broadcast', { event: 'hand_handled' }, (payload) => {
+        channel.on('broadcast', { event: 'hand_handled' }, (payload) => {
             const { student_id, action } = payload.payload;
             if (isOrganizer) {
                 setRaisedHands(prev => prev.filter(h => h.student_id !== student_id));
@@ -43,13 +43,13 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
             }
         });
 
-        const sub3 = channel.on('broadcast', { event: 'hand_sync_request' }, () => {
+        channel.on('broadcast', { event: 'hand_sync_request' }, () => {
             if (isOrganizer) {
                 channel.send({ type: 'broadcast', event: 'hand_sync_response', payload: handsRef.current });
             }
         });
 
-        const sub4 = channel.on('broadcast', { event: 'hand_sync_response' }, (payload) => {
+        channel.on('broadcast', { event: 'hand_sync_response' }, (payload) => {
             if (!isOrganizer) {
                 const myHand = payload.payload.find(h => h.student_id === profile.id);
                 setMyHandRaised(!!myHand);
