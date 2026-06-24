@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../Toast';
@@ -402,3 +403,10 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, channel, on
     );
 }
 
+LiveChat.propTypes = {
+    videoId: PropTypes.string.isRequired,
+    isOrganizer: PropTypes.bool.isRequired,
+    chatLocked: PropTypes.bool.isRequired,
+    channel: PropTypes.any,
+    onNewMessage: PropTypes.func
+};
