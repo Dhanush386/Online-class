@@ -25,9 +25,9 @@ export default function CustomCursor() {
 
   useEffect(() => {
     // Disable on touch devices
-    if (window.matchMedia('(pointer: coarse)').matches) return
+    if (globalThis.matchMedia('(pointer: coarse)').matches) return
     // Disable on reduced motion
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const hideCursor = () => {
       if (orbRef.current)  orbRef.current.style.opacity  = '0'
@@ -44,7 +44,7 @@ export default function CustomCursor() {
       my.set(e.clientY)
 
       // Show the trail if not yet visible
-      if (orbRef.current && orbRef.current.style.opacity === '0') {
+      if (orbRef.current?.style.opacity === '0') {
         showCursor()
       }
     }
@@ -61,8 +61,8 @@ export default function CustomCursor() {
   }, [mx, my])
 
   // Don't render on touch devices at all
-  if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) return null
-  if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return null
+  if (typeof globalThis !== 'undefined' && globalThis.matchMedia('(pointer: coarse)').matches) return null
+  if (typeof globalThis !== 'undefined' && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) return null
 
   return (
     <>
