@@ -1,8 +1,23 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../Toast';
 import { Send, Pin, ShieldAlert, Loader2, Info, Smile } from 'lucide-react';
+
+const appendMessageToList = (messages, newMsg) => [...messages, newMsg];
+const updateMessageInList = (messages, updatedMsg) => messages.map(m => m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m);
+const removeMessageFromList = (messages, oldId) => messages.filter(m => m.id !== oldId);
+
+const addReactionToMessage = (messages, newReaction) => messages.map(m => {
+    if (m.id === newReaction.message_id) {
+        return { ...m, reactions: [...(m.reactions || []), newReaction] };
+    }
+    return m;
+});
+
+const removeReactionFromMessage = (messages, oldReaction) => messages.map(m => {
+    return { ...m, reactions: (m.reactions || []).filter(r => r.id !== oldReaction.id) };
+});
 
 export default function LiveChat({ videoId, isOrganizer, chatLocked, channel, onNewMessage }) {
     const { profile } = useAuth();
@@ -16,6 +31,42 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, channel, on
 
     const pinnedMessages = messages.filter(m => m.is_pinned);
     const regularMessages = messages.filter(m => !m.is_pinned);
+
+    const scrollToBottom = useCallback(() => {
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    }, []);
+
+    const handleMessageChange = useCallback(async (payload) => {
+        if (payload.eventType === 'INSERT') {
+            // Fetch user details for the new message
+            const { data: userData } = await supabase
+                .from('users')
+                .select('name, role, avatar_url')
+                .eq('id', payload.new.user_id)
+                .single();
+                
+            const newMsg = { ...payload.new, users: userData, reactions: [] };
+            setMessages(prev => appendMessageToList(prev, newMsg));
+            scrollToBottom();
+            if (onNewMessage && payload.new.user_id !== profile?.id) {
+                onNewMessage();
+            }
+        } else if (payload.eventType === 'UPDATE') {
+            setMessages(prev => updateMessageInList(prev, payload.new));
+        } else if (payload.eventType === 'DELETE') {
+            setMessages(prev => removeMessageFromList(prev, payload.old.id));
+        }
+    }, [onNewMessage, profile?.id, scrollToBottom]);
+
+    const handleReactionChange = useCallback((payload) => {
+        if (payload.eventType === 'INSERT') {
+            setMessages(prev => addReactionToMessage(prev, payload.new));
+        } else if (payload.eventType === 'DELETE') {
+            setMessages(prev => removeReactionFromMessage(prev, payload.old));
+        }
+    }, []);
 
     useEffect(() => {
         // Fetch existing messages and their reactions
@@ -42,54 +93,18 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, channel, on
                 schema: 'public',
                 table: 'live_chat_messages',
                 filter: `video_id=eq.${videoId}`
-            }, async (payload) => {
-                if (payload.eventType === 'INSERT') {
-                    // Fetch user details for the new message
-                    const { data: userData } = await supabase
-                        .from('users')
-                        .select('name, role, avatar_url')
-                        .eq('id', payload.new.user_id)
-                        .single();
-                        
-                    const newMsg = { ...payload.new, users: userData, reactions: [] };
-                    setMessages(prev => [...prev, newMsg]);
-                    scrollToBottom();
-                    if (onNewMessage && payload.new.user_id !== profile?.id) {
-                        onNewMessage();
-                    }
-                } else if (payload.eventType === 'UPDATE') {
-                    setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m));
-                } else if (payload.eventType === 'DELETE') {
-                    setMessages(prev => prev.filter(m => m.id !== payload.old.id));
-                }
-            })
+            }, handleMessageChange)
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
                 table: 'live_chat_reactions'
-            }, (payload) => {
-                setMessages(prev => prev.map(m => {
-                    if (payload.eventType === 'INSERT' && m.id === payload.new.message_id) {
-                        return { ...m, reactions: [...(m.reactions || []), payload.new] };
-                    }
-                    if (payload.eventType === 'DELETE') {
-                        return { ...m, reactions: (m.reactions || []).filter(r => r.id !== payload.old.id) };
-                    }
-                    return m;
-                }));
-            })
+            }, handleReactionChange)
             .subscribe();
 
         return () => {
             supabase.removeChannel(subscription);
         };
-    }, [videoId]);
-
-    const scrollToBottom = () => {
-        setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-    };
+    }, [videoId, handleMessageChange, handleReactionChange, scrollToBottom]);
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
