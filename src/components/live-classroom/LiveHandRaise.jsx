@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../Toast';
@@ -16,54 +16,60 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
     const handsRef = useRef([]);
     useEffect(() => { handsRef.current = raisedHands; }, [raisedHands]);
 
+    const handleHandRaiseEvent = useCallback((payload) => {
+        const { student_id, student_name, raised_at } = payload.payload;
+        if (isOrganizer) {
+            setRaisedHands(prev => {
+                if (prev.some(h => h.student_id === student_id)) return prev;
+                return [...prev, { student_id, student_name, raised_at }];
+            });
+        }
+    }, [isOrganizer]);
+
+    const handleHandHandledEvent = useCallback((payload) => {
+        const { student_id, action } = payload.payload;
+        if (isOrganizer) {
+            setRaisedHands(prev => prev.filter(h => h.student_id !== student_id));
+        } else if (profile.id === student_id) {
+            setMyHandRaised(false);
+            if (action === 'accept') {
+                toast.success("The instructor accepted your hand raise. You can speak now.");
+            } else {
+                toast.info("The instructor dismissed your hand raise.");
+            }
+        }
+    }, [isOrganizer, profile.id, toast]);
+
+    const handleHandSyncRequest = useCallback(() => {
+        if (isOrganizer && channel) {
+            channel.send({ type: 'broadcast', event: 'hand_sync_response', payload: handsRef.current });
+        }
+    }, [isOrganizer, channel]);
+
+    const handleHandSyncResponse = useCallback((payload) => {
+        if (!isOrganizer) {
+            const myHandRaised = payload.payload.some(h => h.student_id === profile.id);
+            setMyHandRaised(myHandRaised);
+        }
+    }, [isOrganizer, profile.id]);
+
     useEffect(() => {
         if (!channel) return;
 
-        channel.on('broadcast', { event: 'hand_raise' }, (payload) => {
-            const { student_id, student_name, raised_at } = payload.payload;
-            if (isOrganizer) {
-                setRaisedHands(prev => {
-                    if (prev.find(h => h.student_id === student_id)) return prev;
-                    return [...prev, { student_id, student_name, raised_at }];
-                });
-            }
-        });
-
-        channel.on('broadcast', { event: 'hand_handled' }, (payload) => {
-            const { student_id, action } = payload.payload;
-            if (isOrganizer) {
-                setRaisedHands(prev => prev.filter(h => h.student_id !== student_id));
-            } else if (profile.id === student_id) {
-                setMyHandRaised(false);
-                if (action === 'accept') {
-                    toast.success("The instructor accepted your hand raise. You can speak now.");
-                } else {
-                    toast.info("The instructor dismissed your hand raise.");
-                }
-            }
-        });
-
-        channel.on('broadcast', { event: 'hand_sync_request' }, () => {
-            if (isOrganizer) {
-                channel.send({ type: 'broadcast', event: 'hand_sync_response', payload: handsRef.current });
-            }
-        });
-
-        channel.on('broadcast', { event: 'hand_sync_response' }, (payload) => {
-            if (!isOrganizer) {
-                const myHand = payload.payload.find(h => h.student_id === profile.id);
-                setMyHandRaised(!!myHand);
-            }
-        });
+        channel.on('broadcast', { event: 'hand_raise' }, handleHandRaiseEvent);
+        channel.on('broadcast', { event: 'hand_handled' }, handleHandHandledEvent);
+        channel.on('broadcast', { event: 'hand_sync_request' }, handleHandSyncRequest);
+        channel.on('broadcast', { event: 'hand_sync_response' }, handleHandSyncResponse);
 
         if (!isOrganizer) {
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
                 channel.send({ type: 'broadcast', event: 'hand_sync_request', payload: {} });
             }, 1000);
+            return () => clearTimeout(timeoutId);
         }
 
         return () => {};
-    }, [channel, isOrganizer, profile]);
+    }, [channel, handleHandRaiseEvent, handleHandHandledEvent, handleHandSyncRequest, handleHandSyncResponse, isOrganizer]);
 
     const handleRaiseHand = () => {
         setMyHandRaised(true);
@@ -106,13 +112,13 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
                         {myHandRaised ? 'Wait for the instructor to call on you.' : 'Click below to notify the instructor that you want to speak.'}
                     </p>
                     
-                    {!myHandRaised ? (
-                        <button onClick={handleRaiseHand} style={{ width: '100%', background: '#6366f1', color: 'white', border: 'none', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
-                            Raise Hand
-                        </button>
-                    ) : (
+                    {myHandRaised ? (
                         <button onClick={handleLowerHand} style={{ width: '100%', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--card-border)', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
                             Lower Hand
+                        </button>
+                    ) : (
+                        <button onClick={handleRaiseHand} style={{ width: '100%', background: '#6366f1', color: 'white', border: 'none', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
+                            Raise Hand
                         </button>
                     )}
                 </div>
