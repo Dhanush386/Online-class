@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../Toast';
@@ -26,34 +27,38 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
         fetchPolls();
     }, [videoId]);
 
+    const handlePollNew = useCallback((payload) => {
+        setPolls(prev => {
+            if (prev.some(p => p.id === payload.payload.id)) return prev;
+            return [payload.payload, ...prev];
+        });
+    }, []);
+
+    const handlePollVote = useCallback((payload) => {
+        const { poll_id, selected_option } = payload.payload;
+        setVoteCounts(prev => ({
+            ...prev,
+            [poll_id]: {
+                ...prev[poll_id],
+                [selected_option]: (prev[poll_id]?.[selected_option] || 0) + 1
+            }
+        }));
+    }, []);
+
+    const handlePollEnd = useCallback((payload) => {
+        const { poll_id, ended_at } = payload.payload;
+        setPolls(prev => prev.map(p => p.id === poll_id ? { ...p, ended_at } : p));
+    }, []);
+
     useEffect(() => {
         if (!channel) return;
 
-        const sub1 = channel.on('broadcast', { event: 'poll_new' }, (payload) => {
-            setPolls(prev => {
-                if (prev.find(p => p.id === payload.payload.id)) return prev;
-                return [payload.payload, ...prev];
-            });
-        });
-
-        const sub2 = channel.on('broadcast', { event: 'poll_vote' }, (payload) => {
-            const { poll_id, selected_option } = payload.payload;
-            setVoteCounts(prev => ({
-                ...prev,
-                [poll_id]: {
-                    ...prev[poll_id],
-                    [selected_option]: (prev[poll_id]?.[selected_option] || 0) + 1
-                }
-            }));
-        });
-
-        const sub3 = channel.on('broadcast', { event: 'poll_end' }, (payload) => {
-            const { poll_id, ended_at } = payload.payload;
-            setPolls(prev => prev.map(p => p.id === poll_id ? { ...p, ended_at } : p));
-        });
+        channel.on('broadcast', { event: 'poll_new' }, handlePollNew);
+        channel.on('broadcast', { event: 'poll_vote' }, handlePollVote);
+        channel.on('broadcast', { event: 'poll_end' }, handlePollEnd);
 
         return () => {};
-    }, [channel]);
+    }, [channel, handlePollNew, handlePollVote, handlePollEnd]);
 
     async function fetchPolls() {
         // Fetch polls
@@ -324,3 +329,12 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
         </div>
     );
 }
+
+LivePolls.propTypes = {
+    videoId: PropTypes.string.isRequired,
+    isOrganizer: PropTypes.bool.isRequired,
+    channel: PropTypes.shape({
+        on: PropTypes.func,
+        send: PropTypes.func
+    })
+};
