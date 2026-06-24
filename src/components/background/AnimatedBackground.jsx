@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types'
+
 /**
  * AnimatedBackground — vivid layered mesh gradient + floating orbs
  * variant: 'auth' | 'dashboard' | 'minimal'
@@ -5,8 +7,8 @@
  * Respects prefers-reduced-motion.
  */
 export default function AnimatedBackground({ variant = 'minimal' }) {
-  const prefersReduced = typeof window !== 'undefined'
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const prefersReduced = globalThis.matchMedia
+    ? globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false
 
   const configs = {
@@ -60,26 +62,29 @@ export default function AnimatedBackground({ variant = 'minimal' }) {
       }} />
 
       {/* Floating orbs */}
-      {Object.values(cfg).map((orb, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            top: orb.top,
-            left: orb.left,
-            width: orb.size,
-            height: orb.size,
-            borderRadius: '50%',
-            background: `radial-gradient(circle at 40% 40%, ${orb.color}, ${orb.color.replace(/[\d.]+\)$/, '0)')})`,
-            filter: `blur(${Math.round(orb.size * 0.12)}px)`,
-            animation: prefersReduced
-              ? 'none'
-              : `${orb.reverse ? 'orbitReverse' : 'orbit'} ${orb.dur} ease-in-out infinite`,
-            animationDelay: `${i * -3}s`,
-            willChange: 'transform',
-          }}
-        />
-      ))}
+      {Object.entries(cfg).map(([orbKey, orb], i) => {
+        const animationName = orb.reverse ? 'orbitReverse' : 'orbit'
+        const animation = prefersReduced ? 'none' : `${animationName} ${orb.dur} ease-in-out infinite`
+
+        return (
+          <div
+            key={orbKey}
+            style={{
+              position: 'absolute',
+              top: orb.top,
+              left: orb.left,
+              width: orb.size,
+              height: orb.size,
+              borderRadius: '50%',
+              background: `radial-gradient(circle at 40% 40%, ${orb.color}, ${orb.color.replace(/,[^,]+$/, ',0)')})`,
+              filter: `blur(${Math.round(orb.size * 0.12)}px)`,
+              animation,
+              animationDelay: `${i * -3}s`,
+              willChange: 'transform',
+            }}
+          />
+        )
+      })}
 
       {/* Subtle noise overlay for texture/depth */}
       <div style={{
@@ -90,4 +95,8 @@ export default function AnimatedBackground({ variant = 'minimal' }) {
       }} />
     </div>
   )
+}
+
+AnimatedBackground.propTypes = {
+  variant: PropTypes.oneOf(['auth', 'dashboard', 'minimal']),
 }
