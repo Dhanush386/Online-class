@@ -189,7 +189,7 @@ export default function OrganizerCodingDiscussions() {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {filtered.map(d => (
-                    <div key={d.id} role="button" tabIndex={0} onClick={() => setActiveThread(d)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveThread(d); } }} style={{ padding: '1.25rem', borderRadius: 12, background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s', ':hover': { borderColor: 'var(--text-muted)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' } }}>
+                    <button key={d.id} onClick={() => setActiveThread(d)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '1.25rem', borderRadius: 12, background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s', ':hover': { borderColor: 'var(--text-muted)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' } }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem' }}>
                             <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{d.title}</h4>
                             {d.status === 'resolved' ? (
@@ -208,7 +208,7 @@ export default function OrganizerCodingDiscussions() {
                             <span>{new Date(d.created_at).toLocaleString()}</span>
                             {d.code_snapshot && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CodeIcon size={14} /> Code attached</span>}
                         </div>
-                    </div>
+                    </button>
                 ))}
             </div>
         )
