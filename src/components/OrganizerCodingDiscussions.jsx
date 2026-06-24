@@ -15,10 +15,10 @@ export default function OrganizerCodingDiscussions() {
     const [replyContent, setReplyContent] = useState('')
 
     useEffect(() => {
-        if (!activeThread) {
-            fetchDiscussions()
-        } else {
+        if (activeThread) {
             fetchReplies(activeThread.id)
+        } else {
+            fetchDiscussions()
         }
     }, [activeThread])
 
@@ -166,6 +166,54 @@ export default function OrganizerCodingDiscussions() {
         d.users?.name?.toLowerCase().includes(search.toLowerCase())
     )
 
+    const renderDiscussionsList = () => {
+        if (loading) {
+            return (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ color: 'var(--text-muted)' }}>Loading discussions...</p>
+                </div>
+            )
+        }
+
+        if (filtered.length === 0) {
+            return (
+                <div style={{ textAlign: 'center', padding: '4rem', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
+                    <MessageSquare size={32} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>No discussions found</h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Students haven't asked any questions yet.</p>
+                </div>
+            )
+        }
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {filtered.map(d => (
+                    <div key={d.id} role="button" tabIndex={0} onClick={() => setActiveThread(d)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveThread(d); } }} style={{ padding: '1.25rem', borderRadius: 12, background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s', ':hover': { borderColor: 'var(--text-muted)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' } }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem' }}>
+                            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{d.title}</h4>
+                            {d.status === 'resolved' ? (
+                                <span style={{ padding: '4px 8px', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', fontSize: '0.7rem', borderRadius: 6, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}><CheckCircle2 size={12} /> Resolved</span>
+                            ) : (
+                                <span style={{ padding: '4px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', fontSize: '0.7rem', borderRadius: 6, fontWeight: 700, whiteSpace: 'nowrap' }}>Open</span>
+                            )}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{d.coding_challenges?.title}</span>
+                            <span>•</span>
+                            <span>{d.users?.name}</span>
+                        </div>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>{d.content}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            <span>{new Date(d.created_at).toLocaleString()}</span>
+                            {d.code_snapshot && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CodeIcon size={14} /> Code attached</span>}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
     return (
         <div className="glass-card animate-fade-in" style={{ padding: '1.5rem', minHeight: 400 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -181,43 +229,7 @@ export default function OrganizerCodingDiscussions() {
                 </div>
             </div>
 
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                    <p style={{ color: 'var(--text-muted)' }}>Loading discussions...</p>
-                </div>
-            ) : filtered.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '4rem', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
-                    <MessageSquare size={32} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>No discussions found</h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Students haven't asked any questions yet.</p>
-                </div>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {filtered.map(d => (
-                        <div key={d.id} onClick={() => setActiveThread(d)} style={{ padding: '1.25rem', borderRadius: 12, background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s', ':hover': { borderColor: 'var(--text-muted)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' } }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem' }}>
-                                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{d.title}</h4>
-                                {d.status === 'resolved' ? (
-                                    <span style={{ padding: '4px 8px', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', fontSize: '0.7rem', borderRadius: 6, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}><CheckCircle2 size={12} /> Resolved</span>
-                                ) : (
-                                    <span style={{ padding: '4px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', fontSize: '0.7rem', borderRadius: 6, fontWeight: 700, whiteSpace: 'nowrap' }}>Open</span>
-                                )}
-                            </div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{d.coding_challenges?.title}</span>
-                                <span>•</span>
-                                <span>{d.users?.name}</span>
-                            </div>
-                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>{d.content}</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                <span>{new Date(d.created_at).toLocaleString()}</span>
-                                {d.code_snapshot && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CodeIcon size={14} /> Code attached</span>}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            {renderDiscussionsList()}
         </div>
     )
 }
