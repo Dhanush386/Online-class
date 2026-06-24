@@ -14,7 +14,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
     // Create Poll State
     const [isCreating, setIsCreating] = useState(false);
     const [newQuestion, setNewQuestion] = useState('');
-    const [newOptions, setNewOptions] = useState(['', '']);
+    const [newOptions, setNewOptions] = useState([{ id: crypto.randomUUID(), text: '' }, { id: crypto.randomUUID(), text: '' }]);
     const [correctOption, setCorrectOption] = useState(null);
     const [timerSeconds, setTimerSeconds] = useState(60);
     const [creating, setCreating] = useState(false);
@@ -49,6 +49,11 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
         const { poll_id, ended_at } = payload.payload;
         setPolls(prev => prev.map(p => p.id === poll_id ? { ...p, ended_at } : p));
     }, []);
+
+    const broadcastPollEnd = useCallback((pollId, endedAt) => {
+        channel.send({ type: 'broadcast', event: 'poll_end', payload: { poll_id: pollId, ended_at: endedAt } });
+        setPolls(prev => prev.map(p => p.id === pollId ? { ...p, ended_at: endedAt } : p));
+    }, [channel]);
 
     useEffect(() => {
         if (!channel) return;
@@ -98,7 +103,8 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
     }
 
     const handleCreatePoll = async () => {
-        if (!newQuestion.trim() || newOptions.some(o => !o.trim())) {
+        const optionsList = newOptions.map(o => o.text);
+        if (!newQuestion.trim() || optionsList.some(o => !o.trim())) {
             return toast.error("Please fill all fields");
         }
         setCreating(true);
@@ -110,7 +116,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
             .insert({
                 video_id: videoId,
                 question: newQuestion,
-                options: newOptions,
+                options: optionsList,
                 correct_option: correctOption,
                 created_by: profile.id,
                 ended_at: endedAt
@@ -124,7 +130,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
             toast.success("Poll created!");
             setIsCreating(false);
             setNewQuestion('');
-            setNewOptions(['', '']);
+            setNewOptions([{ id: crypto.randomUUID(), text: '' }, { id: crypto.randomUUID(), text: '' }]);
             setCorrectOption(null);
             setPolls([data, ...polls]);
             channel.send({ type: 'broadcast', event: 'poll_new', payload: data });
@@ -139,8 +145,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
 
             // Set timeout to broadcast end
             setTimeout(() => {
-                channel.send({ type: 'broadcast', event: 'poll_end', payload: { poll_id: data.id, ended_at: endedAt } });
-                setPolls(prev => prev.map(p => p.id === data.id ? { ...p, ended_at: endedAt } : p));
+                broadcastPollEnd(data.id, endedAt);
             }, timerSeconds * 1000);
         }
         setCreating(false);
@@ -167,10 +172,10 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                 selected_option: option
             });
 
-        if (!error) {
-            channel.send({ type: 'broadcast', event: 'poll_vote', payload: { poll_id: pollId, selected_option: option } });
-        } else {
+        if (error) {
              toast.error("Failed to vote");
+        } else {
+            channel.send({ type: 'broadcast', event: 'poll_vote', payload: { poll_id: pollId, selected_option: option } });
         }
     };
 
@@ -196,23 +201,23 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                         type="text" placeholder="Poll Question" value={newQuestion} onChange={e => setNewQuestion(e.target.value)}
                         style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: 'white', borderRadius: '4px', outline: 'none' }}
                     />
-                    {newOptions.map((opt, i) => (
-                        <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                    {newOptions.map((optObj, i) => (
+                        <div key={optObj.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
                             <input 
                                 type="radio" 
                                 name="correctOption" 
-                                checked={correctOption === opt && opt !== ''} 
-                                onChange={() => setCorrectOption(opt)} 
+                                checked={correctOption === optObj.text && optObj.text !== ''} 
+                                onChange={() => setCorrectOption(optObj.text)} 
                                 title="Mark as correct answer"
                                 style={{ cursor: 'pointer' }}
                             />
                             <input 
-                                type="text" placeholder={`Option ${i+1}`} value={opt} onChange={e => {
+                                type="text" placeholder={`Option ${i+1}`} value={optObj.text} onChange={e => {
                                     const opts = [...newOptions]; 
-                                    if (correctOption === newOptions[i]) {
+                                    if (correctOption === opts[i].text) {
                                         setCorrectOption(e.target.value);
                                     }
-                                    opts[i] = e.target.value; 
+                                    opts[i] = { ...opts[i], text: e.target.value }; 
                                     setNewOptions(opts);
                                 }}
                                 style={{ flex: 1, padding: '0.5rem', background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: 'white', borderRadius: '4px', outline: 'none' }}
@@ -222,7 +227,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                             )}
                         </div>
                     ))}
-                    <button onClick={() => setNewOptions([...newOptions, ''])} style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', marginBottom: '1rem' }}>+ Add Option</button>
+                    <button onClick={() => setNewOptions([...newOptions, { id: crypto.randomUUID(), text: '' }])} style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', marginBottom: '1rem' }}>+ Add Option</button>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                         <Clock size={14} /> Timer:
@@ -256,13 +261,11 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                                     {isEnded ? 'Closed' : 'Active'}
                                 </span>
                             </div>
-                            
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
-                                {poll.options.map((opt, i) => {
+                                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+                                {poll.options.map((opt) => {
                                     const votes = voteCounts[poll.id]?.[opt] || 0;
                                     const percentage = totalVotes === 0 ? 0 : Math.round((votes / totalVotes) * 100);
                                     const isMyVote = myVotes[poll.id] === opt;
-
                                     if (isEnded || hasVoted || isOrganizer) {
                                         // Show Results View
                                         const isCorrectAnswer = poll.correct_option === opt;
@@ -271,10 +274,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                                         let barColor = 'rgba(255,255,255,0.1)';
                                         let checkColor = 'var(--text-muted)';
                                         
-                                        if (isMyVote && !poll.correct_option) {
-                                            barColor = 'rgba(99, 102, 241, 0.3)';
-                                            checkColor = '#6366f1';
-                                        } else if (isCorrectAnswer) {
+                                        if (isCorrectAnswer) {
                                             barColor = 'rgba(16, 185, 129, 0.3)';
                                             checkColor = '#10b981';
                                         } else if (isWrongVote) {
@@ -284,9 +284,8 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                                             barColor = 'rgba(99, 102, 241, 0.3)';
                                             checkColor = '#6366f1';
                                         }
-
                                         return (
-                                            <div key={i} style={{ position: 'relative', background: 'rgba(0,0,0,0.3)', borderRadius: '4px', overflow: 'hidden' }}>
+                                            <div key={opt} style={{ position: 'relative', background: 'rgba(0,0,0,0.3)', borderRadius: '4px', overflow: 'hidden' }}>
                                                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${percentage}%`, background: barColor, transition: 'width 0.5s' }} />
                                                 <div style={{ position: 'relative', padding: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'white' }}>
                                                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -302,11 +301,13 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                                     // Show Voting View
                                     return (
                                         <button 
-                                            key={i} 
+                                            key={opt} 
                                             onClick={() => handleVote(poll.id, opt)}
                                             style={{ padding: '0.6rem', background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: 'white', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem', transition: 'background 0.2s' }}
                                             onMouseOver={(e) => e.target.style.background = 'var(--card-border)'}
+                                            onFocus={(e) => e.target.style.background = 'var(--card-border)'}
                                             onMouseOut={(e) => e.target.style.background = 'var(--text-primary)'}
+                                            onBlur={(e) => e.target.style.background = 'var(--text-primary)'}
                                         >
                                             {opt}
                                         </button>
