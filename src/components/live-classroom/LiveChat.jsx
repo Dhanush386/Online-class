@@ -26,6 +26,12 @@ const getMessageBackground = (isMine, isInstructor) => {
     return 'rgba(255,255,255,0.08)';
 };
 
+const getMessageBorder = (isMine, isInstructor) => {
+    if (isMine) return 'none';
+    if (isInstructor) return '1px solid rgba(99,102,241,0.3)';
+    return 'none';
+};
+
 function MessageItem({ msg, profile, isOrganizer, reactionPickerMsgId, setReactionPickerMsgId, togglePin, toggleReaction }) {
     const isMine = msg.user_id === profile?.id;
     const isSystem = msg.message_type === 'system';
@@ -76,8 +82,8 @@ function MessageItem({ msg, profile, isOrganizer, reactionPickerMsgId, setReacti
                         padding: '0.5rem 0.75rem',
                         borderRadius: 12,
                         borderTopRightRadius: isMine ? 2 : 12,
-                        borderTopLeftRadius: !isMine ? 2 : 12,
-                        border: isInstructor && !isMine ? '1px solid rgba(99,102,241,0.3)' : 'none',
+                        borderTopLeftRadius: isMine ? 12 : 2,
+                        border: getMessageBorder(isMine, isInstructor),
                         fontSize: '0.9rem',
                         maxWidth: '220px',
                         wordBreak: 'break-word',
