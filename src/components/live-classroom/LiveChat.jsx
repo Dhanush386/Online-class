@@ -32,6 +32,99 @@ const getMessageBorder = (isMine, isInstructor) => {
     return 'none';
 };
 
+function SystemMessage({ isAnnouncement, message }) {
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '0.5rem 0' }}>
+            <div style={{ background: isAnnouncement ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '0.4rem 0.8rem', borderRadius: 16, fontSize: '0.75rem', color: isAnnouncement ? '#f59e0b' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, fontWeight: isAnnouncement ? 600 : 400 }}>
+                <Info size={12} /> {message}
+            </div>
+        </div>
+    );
+}
+SystemMessage.propTypes = {
+    isAnnouncement: PropTypes.bool.isRequired,
+    message: PropTypes.string.isRequired
+};
+
+function ReactionPicker({ msgId, isMine, isVisible, toggleReaction }) {
+    if (!isVisible) return null;
+    return (
+        <div style={{
+            position: 'absolute',
+            [isMine ? 'right' : 'left']: 0,
+            bottom: '100%',
+            marginBottom: 4,
+            background: '#1e293b',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12,
+            padding: '4px 8px',
+            display: 'flex',
+            gap: 4,
+            zIndex: 10,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+        }}>
+            {['👍', '❤️', '😂', '👏', '🎉'].map(emoji => (
+                <button 
+                    key={emoji}
+                    onClick={() => toggleReaction(msgId, emoji)}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: 4, transition: 'transform 0.1s' }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    {emoji}
+                </button>
+            ))}
+        </div>
+    );
+}
+ReactionPicker.propTypes = {
+    msgId: PropTypes.any.isRequired,
+    isMine: PropTypes.bool.isRequired,
+    isVisible: PropTypes.bool.isRequired,
+    toggleReaction: PropTypes.func.isRequired
+};
+
+function ActiveReactions({ reactions, msgId, isMine, profileId, toggleReaction }) {
+    const reactionCounts = (reactions || []).reduce((acc, curr) => {
+        acc[curr.emoji] = (acc[curr.emoji] || 0) + 1;
+        return acc;
+    }, {});
+
+    if (Object.keys(reactionCounts).length === 0) return null;
+
+    return (
+        <div style={{ display: 'flex', gap: 4, marginTop: 4, paddingLeft: isMine ? 0 : 8, paddingRight: isMine ? 8 : 0 }}>
+            {Object.entries(reactionCounts).map(([emoji, count]) => {
+                const iReacted = (reactions || []).some(r => r.emoji === emoji && r.user_id === profileId);
+                return (
+                    <button 
+                        key={emoji}
+                        onClick={() => toggleReaction(msgId, emoji)}
+                        style={{ 
+                            background: iReacted ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', 
+                            border: iReacted ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.1)', 
+                            borderRadius: 10, 
+                            padding: '2px 6px', 
+                            fontSize: '0.7rem', 
+                            color: iReacted ? '#818cf8' : 'var(--text-muted)',
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            cursor: 'pointer'
+                        }}>
+                        <span>{emoji}</span> {count}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+ActiveReactions.propTypes = {
+    reactions: PropTypes.array,
+    msgId: PropTypes.any.isRequired,
+    isMine: PropTypes.bool.isRequired,
+    profileId: PropTypes.any,
+    toggleReaction: PropTypes.func.isRequired
+};
+
 function MessageItem({ msg, profile, isOrganizer, reactionPickerMsgId, setReactionPickerMsgId, togglePin, toggleReaction }) {
     const isMine = msg.user_id === profile?.id;
     const isSystem = msg.message_type === 'system';
@@ -39,20 +132,8 @@ function MessageItem({ msg, profile, isOrganizer, reactionPickerMsgId, setReacti
     const isInstructor = msg.message_type === 'instructor';
     
     if (isSystem || isAnnouncement) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', margin: '0.5rem 0' }}>
-                <div style={{ background: isAnnouncement ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '0.4rem 0.8rem', borderRadius: 16, fontSize: '0.75rem', color: isAnnouncement ? '#f59e0b' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, fontWeight: isAnnouncement ? 600 : 400 }}>
-                    <Info size={12} /> {msg.message}
-                </div>
-            </div>
-        );
+        return <SystemMessage isAnnouncement={isAnnouncement} message={msg.message} />;
     }
-
-    // Group reactions by emoji
-    const reactionCounts = (msg.reactions || []).reduce((acc, curr) => {
-        acc[curr.emoji] = (acc[curr.emoji] || 0) + 1;
-        return acc;
-    }, {});
 
     return (
         <div style={{ 
@@ -123,62 +204,23 @@ function MessageItem({ msg, profile, isOrganizer, reactionPickerMsgId, setReacti
                     </button>
 
                     {/* Reaction Picker Popup */}
-                    {reactionPickerMsgId === msg.id && (
-                        <div style={{
-                            position: 'absolute',
-                            [isMine ? 'right' : 'left']: 0,
-                            bottom: '100%',
-                            marginBottom: 4,
-                            background: '#1e293b',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: 12,
-                            padding: '4px 8px',
-                            display: 'flex',
-                            gap: 4,
-                            zIndex: 10,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-                        }}>
-                            {['👍', '❤️', '😂', '👏', '🎉'].map(emoji => (
-                                <button 
-                                    key={emoji}
-                                    onClick={() => toggleReaction(msg.id, emoji)}
-                                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: 4, transition: 'transform 0.1s' }}
-                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
-                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                >
-                                    {emoji}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <ReactionPicker 
+                        msgId={msg.id} 
+                        isMine={isMine} 
+                        isVisible={reactionPickerMsgId === msg.id} 
+                        toggleReaction={toggleReaction} 
+                    />
                 </div>
             </div>
             
             {/* Active Reactions Row */}
-            {Object.keys(reactionCounts).length > 0 && (
-                <div style={{ display: 'flex', gap: 4, marginTop: 4, paddingLeft: isMine ? 0 : 8, paddingRight: isMine ? 8 : 0 }}>
-                    {Object.entries(reactionCounts).map(([emoji, count]) => {
-                        const iReacted = (msg.reactions || []).some(r => r.emoji === emoji && r.user_id === profile?.id);
-                        return (
-                            <button 
-                                key={emoji}
-                                onClick={() => toggleReaction(msg.id, emoji)}
-                                style={{ 
-                                    background: iReacted ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', 
-                                    border: iReacted ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.1)', 
-                                    borderRadius: 10, 
-                                    padding: '2px 6px', 
-                                    fontSize: '0.7rem', 
-                                    color: iReacted ? '#818cf8' : 'var(--text-muted)',
-                                    display: 'flex', alignItems: 'center', gap: 4,
-                                    cursor: 'pointer'
-                                }}>
-                                <span>{emoji}</span> {count}
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
+            <ActiveReactions 
+                reactions={msg.reactions} 
+                msgId={msg.id} 
+                isMine={isMine} 
+                profileId={profile?.id} 
+                toggleReaction={toggleReaction} 
+            />
         </div>
     );
 }
