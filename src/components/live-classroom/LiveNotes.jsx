@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../Toast';
@@ -28,7 +29,7 @@ export default function LiveNotes({ videoId, isOrganizer, channel }) {
                 .eq('video_id', videoId)
                 .maybeSingle();
             
-            if (data && data.content) {
+            if (data?.content) {
                 setNotes(data.content);
                 lastSavedNotesRef.current = data.content;
             } else if (error && error.code !== 'PGRST116') {
@@ -43,7 +44,7 @@ export default function LiveNotes({ videoId, isOrganizer, channel }) {
     useEffect(() => {
         if (!channel) return;
         
-        const sub = channel.on('broadcast', { event: 'notes_sync' }, (payload) => {
+        channel.on('broadcast', { event: 'notes_sync' }, (payload) => {
             if (!isOrganizer) { // Students receive updates
                 setNotes(payload.payload.content);
             }
@@ -187,3 +188,12 @@ export default function LiveNotes({ videoId, isOrganizer, channel }) {
         </div>
     );
 }
+
+LiveNotes.propTypes = {
+    videoId: PropTypes.string.isRequired,
+    isOrganizer: PropTypes.bool.isRequired,
+    channel: PropTypes.shape({
+        on: PropTypes.func,
+        send: PropTypes.func
+    })
+};
