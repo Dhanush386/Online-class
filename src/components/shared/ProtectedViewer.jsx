@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import PropTypes from 'prop-types'
 import { X, Lock, ShieldAlert, Download, Printer } from 'lucide-react'
 
 export default function ProtectedViewer({ url, type, title, onClose }) {
@@ -29,7 +30,7 @@ export default function ProtectedViewer({ url, type, title, onClose }) {
         return () => {
             document.removeEventListener('contextmenu', handleContextMenu)
             document.removeEventListener('keydown', handleKeyDown)
-            document.head.removeChild(style)
+            style.remove()
         }
     }, [])
 
@@ -162,4 +163,11 @@ export default function ProtectedViewer({ url, type, title, onClose }) {
             `}</style>
         </div>
     )
+}
+
+ProtectedViewer.propTypes = {
+    url: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    onClose: PropTypes.func.isRequired,
 }
