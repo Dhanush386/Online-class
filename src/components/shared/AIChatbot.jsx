@@ -425,33 +425,26 @@ export default function AIChatbot() {
                         const lastMsg = s.messages[s.messages.length - 1]?.content || 'Empty Chat'
                         const date = new Date(s.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })
                         return (
-                            <div 
-                                key={s.id}
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => handleResumeChat(s.id)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault()
-                                        handleResumeChat(s.id)
-                                    }
-                                }}
-                                style={{ padding: '1rem', borderRadius: '16px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'left', width: '100%', fontFamily: 'inherit' }}
-                                onMouseOver={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                                onFocus={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                                onMouseOut={(e) => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.transform = 'translateY(0)' }}
-                                onBlur={(e) => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.transform = 'translateY(0)' }}
-                            >
-                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
-                                    <div style={{ padding: '8px', background: '#f8fafc', borderRadius: '10px', color: '#6366f1' }}><MessageSquare size={18} /></div>
-                                    <div style={{ overflow: 'hidden', flex: 1 }}>
-                                        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}><Clock size={12} /> {date}</div>
+                            <div key={s.id} style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #f1f5f9', borderRadius: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+                                <button 
+                                    onClick={() => handleResumeChat(s.id)}
+                                    style={{ flex: 1, padding: '1rem', background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', textAlign: 'left', fontFamily: 'inherit' }}
+                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc' }}
+                                    onFocus={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc' }}
+                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                                    onBlur={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                                >
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
+                                        <div style={{ padding: '8px', background: '#f8fafc', borderRadius: '10px', color: '#6366f1' }}><MessageSquare size={18} /></div>
+                                        <div style={{ overflow: 'hidden', flex: 1 }}>
+                                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}><Clock size={12} /> {date}</div>
+                                        </div>
                                     </div>
-                                </div>
+                                </button>
                                 <button 
                                     onClick={(e) => handleDeleteSession(e, s.id)}
-                                    style={{ padding: '8px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                    style={{ padding: '1rem', color: 'var(--text-muted)', background: 'none', border: 'none', borderLeft: '1px solid #f1f5f9', cursor: 'pointer', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
                                     onFocus={(e) => e.currentTarget.style.color = '#ef4444'}
                                     onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
@@ -466,6 +459,63 @@ export default function AIChatbot() {
             )}
         </div>
     )
+
+    const renderTicketListContent = () => {
+        if (isTicketLoading && tickets.length === 0) {
+            return (
+                <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Loader2 className="animate-spin" size={24} color="#6366f1" />
+                </div>
+            )
+        }
+        
+        if (tickets.length === 0) {
+            return (
+                <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                    <Ticket size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                    <p style={{ margin: 0, fontSize: '0.85rem' }}>No tickets found yet.</p>
+                </div>
+            )
+        }
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {tickets.map(t => (
+                    <button 
+                        key={t.id}
+                        onClick={() => {
+                            setIsOpen(false)
+                            const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
+                            navigate(supportPath)
+                        }}
+                        style={{ display: 'block', width: '100%', padding: '1rem', borderRadius: '14px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'left', fontFamily: 'inherit', color: 'inherit' }}
+                        onMouseOver={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                        onFocus={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                        onMouseOut={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
+                        onBlur={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
+                            <span style={{ 
+                                padding: '4px 8px', 
+                                borderRadius: '6px', 
+                                fontSize: '0.6rem', 
+                                fontWeight: 700, 
+                                textTransform: 'uppercase',
+                                background: t.status === 'open' ? '#ecfdf5' : '#fef2f2',
+                                color: t.status === 'open' ? '#10b981' : '#ef4444'
+                            }}>
+                                {t.status}
+                            </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            <Clock size={12} /> {new Date(t.created_at).toLocaleDateString()}
+                        </div>
+                    </button>
+                ))}
+            </div>
+        )
+    }
 
     const renderTicketHistory = () => {
         if (isCreatingTicket) {
@@ -560,72 +610,7 @@ export default function AIChatbot() {
             )
         }
 
-        const renderTicketListContent = () => {
-            if (isTicketLoading && tickets.length === 0) {
-                return (
-                    <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Loader2 className="animate-spin" size={24} color="#6366f1" />
-                    </div>
-                )
-            }
-            
-            if (tickets.length === 0) {
-                return (
-                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                        <Ticket size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
-                        <p style={{ margin: 0, fontSize: '0.85rem' }}>No tickets found yet.</p>
-                    </div>
-                )
-            }
 
-            return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {tickets.map(t => (
-                        <div 
-                            key={t.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => {
-                                setIsOpen(false)
-                                const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
-                                navigate(supportPath)
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault()
-                                    setIsOpen(false)
-                                    const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
-                                    navigate(supportPath)
-                                }
-                            }}
-                            style={{ padding: '1rem', borderRadius: '14px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'left', fontFamily: 'inherit' }}
-                            onMouseOver={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
-                            onFocus={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
-                            onMouseOut={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
-                            onBlur={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                                <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
-                                <span style={{ 
-                                    padding: '4px 8px', 
-                                    borderRadius: '6px', 
-                                    fontSize: '0.6rem', 
-                                    fontWeight: 700, 
-                                    textTransform: 'uppercase',
-                                    background: t.status === 'open' ? '#ecfdf5' : '#fef2f2',
-                                    color: t.status === 'open' ? '#10b981' : '#ef4444'
-                                }}>
-                                    {t.status}
-                                </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                <Clock size={12} /> {new Date(t.created_at).toLocaleDateString()}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )
-        }
 
         return (
             <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>

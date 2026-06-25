@@ -7,7 +7,7 @@ export default function PWAInstallBanner() {
 
     useEffect(() => {
         // Check if already in standalone mode
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+        const isStandalone = globalThis.matchMedia('(display-mode: standalone)').matches || globalThis.navigator.standalone
         
         // Listen for the beforeinstallprompt event
         const handler = (e) => {
@@ -22,7 +22,7 @@ export default function PWAInstallBanner() {
             }
         }
 
-        window.addEventListener('beforeinstallprompt', handler)
+        globalThis.addEventListener('beforeinstallprompt', handler)
 
         // For iOS or cases where beforeinstallprompt doesn't fire but we want to show it
         // We can check if it's mobile and not standalone
@@ -33,7 +33,7 @@ export default function PWAInstallBanner() {
             return () => clearTimeout(timer)
         }
 
-        return () => window.removeEventListener('beforeinstallprompt', handler)
+        return () => globalThis.removeEventListener('beforeinstallprompt', handler)
     }, [])
 
     const handleInstallClick = async () => {
