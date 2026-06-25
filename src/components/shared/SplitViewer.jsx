@@ -1,6 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import ReactPlayer from 'react-player';
-import { X, Lock, ShieldAlert, Maximize } from 'lucide-react';
+import { X, Lock, ShieldAlert } from 'lucide-react';
+
+const formatSlideUrl = (url) => {
+    if (!url) return url;
+    
+    const lowerUrl = url.toLowerCase();
+    
+    if (lowerUrl.endsWith('.pdf')) {
+        return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
+    }
+    
+    if (lowerUrl.includes('.ppt') || lowerUrl.includes('.pptx')) {
+        return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;
+    }
+    
+    if (url.includes('drive.google.com/file/d/')) {
+        const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (fileIdMatch) {
+            return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+        }
+    }
+    
+    return url;
+};
 
 export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onClose, onEnded, loadingVideo }) {
     const [splitRatio, setSplitRatio] = useState(35); // 35% slides, 65% video
@@ -45,7 +69,7 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
         return () => {
             document.removeEventListener('contextmenu', handleContextMenu);
             document.removeEventListener('keydown', handleKeyDown);
-            document.head.removeChild(style);
+            style.remove();
         };
     }, []);
 
@@ -83,17 +107,7 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
     }, [isDragging, splitRatio]); // Re-bind with updated ratio
 
     // Format slide URL
-    let formattedSlideUrl = slideUrl;
-    if (slideUrl && slideUrl.toLowerCase().endsWith('.pdf')) {
-        formattedSlideUrl = `${slideUrl}#toolbar=0&navpanes=0&scrollbar=0`;
-    } else if (slideUrl && (slideUrl.toLowerCase().includes('.ppt') || slideUrl.toLowerCase().includes('.pptx'))) {
-        formattedSlideUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(slideUrl)}`;
-    } else if (slideUrl && slideUrl.includes('drive.google.com/file/d/')) {
-        const fileIdMatch = slideUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        if (fileIdMatch) {
-            formattedSlideUrl = `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
-        }
-    }
+    const formattedSlideUrl = formatSlideUrl(slideUrl);
 
     return (
         <div style={{ 
@@ -230,6 +244,16 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
         </div>
     );
 }
+
+SplitViewer.propTypes = {
+    videoUrl: PropTypes.string,
+    slideUrl: PropTypes.string,
+    videoType: PropTypes.string,
+    title: PropTypes.string.isRequired,
+    onClose: PropTypes.func.isRequired,
+    onEnded: PropTypes.func,
+    loadingVideo: PropTypes.bool
+};
 
 function VideoPlayer({ videoUrl, videoType, onEnded, title }) {
     if (!videoUrl) return null;
