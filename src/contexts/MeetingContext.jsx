@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Room, RoomEvent, Track } from 'livekit-client'
@@ -141,27 +141,35 @@ export function MeetingProvider({ children }) {
     const mediaRecorderRef = useRef(null)
     const recordedChunksRef = useRef([])
 
+    const handleGoogleAuthCallback = useCallback((res) => {
+        if (res.access_token) {
+            setMeeting(prev => ({ ...prev, gToken: res.access_token }))
+        }
+    }, [])
+
+    const handleGoogleScriptLoad = useCallback(() => {
+        if (!globalThis.google || !GOOGLE_CLIENT_ID) return
+        tokenClientRef.current = globalThis.google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/drive.file',
+            callback: handleGoogleAuthCallback
+        })
+    }, [handleGoogleAuthCallback])
+
     // ── Init Google Auth for Drive ──
     useEffect(() => {
         const gScript = document.createElement('script')
         gScript.src = 'https://accounts.google.com/gsi/client'
         gScript.async = true
         gScript.defer = true
-        gScript.onload = () => {
-            if (!window.google || !GOOGLE_CLIENT_ID) return
-            tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_CLIENT_ID,
-                scope: 'https://www.googleapis.com/auth/drive.file',
-                callback: (res) => { if (res.access_token) setMeeting(prev => ({ ...prev, gToken: res.access_token })) }
-            })
-        }
+        gScript.onload = handleGoogleScriptLoad
         document.body.appendChild(gScript)
         return () => {
             if (document.body.contains(gScript)) {
                 document.body.removeChild(gScript)
             }
         }
-    }, [])
+    }, [handleGoogleScriptLoad])
 
     // ── Update widget state from room events ──
     const updateWidgetState = useCallback(() => {
@@ -335,9 +343,9 @@ export function MeetingProvider({ children }) {
         setMeeting(prev => ({ ...prev, isMinimized: true }))
 
         // Attempt to open Document PiP if supported
-        if (window.documentPictureInPicture) {
+        if (globalThis.documentPictureInPicture) {
             try {
-                const pip = await window.documentPictureInPicture.requestWindow({
+                const pip = await globalThis.documentPictureInPicture.requestWindow({
                     width: 320,
                     height: 480,
                     disallowReturnToOpener: true
@@ -412,7 +420,7 @@ export function MeetingProvider({ children }) {
                 console.warn('Microphone access denied or not available.')
             }
 
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+            const audioContext = new (globalThis.AudioContext || globalThis.webkitAudioContext)()
             const mixedOutput = audioContext.createMediaStreamDestination()
 
             // 1. Screen Audio
@@ -564,57 +572,58 @@ export function MeetingProvider({ children }) {
                         await supabase.from('videos').update({ recording_status: 'uploading' }).eq('id', vidId)
                     }
 
+                    const onProgress = (e) => {
+                        if (e.lengthComputable) {
+                            const pct = Math.round((e.loaded / e.total) * 100)
+                            setMeeting(prev => ({ ...prev, uploadProgress: pct }))
+                        }
+                    }
+
+                    const onLoad = async (xhr, resolveUpload) => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            const data = JSON.parse(xhr.responseText)
+                            const fileId = data.id
+
+                            if (fileId) {
+                                try {
+                                    await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                                        method: 'POST',
+                                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ role: 'reader', type: 'anyone' })
+                                    })
+                                } catch (permErr) {
+                                    console.error('Failed to set permissions on Drive file', permErr)
+                                }
+
+                                const driveLink = `https://drive.google.com/file/d/${fileId}/preview`
+                                if (vidId) {
+                                    await supabase
+                                        .from('videos')
+                                        .update({ 
+                                            video_url: driveLink,
+                                            drive_file_id: fileId,
+                                            duration_seconds: durationSeconds,
+                                            file_size_mb: fileSizeMb,
+                                            recording_status: 'completed',
+                                            recorded_at: new Date().toISOString()
+                                        })
+                                        .eq('id', vidId)
+                                }
+                                resolveUpload(true)
+                            } else {
+                                resolveUpload(false)
+                            }
+                        } else {
+                            console.error('Upload to Drive failed:', xhr.responseText)
+                            resolveUpload(false)
+                        }
+                    }
+
                     const uploadPromise = new Promise((resolveUpload, rejectUpload) => {
                         const xhr = new XMLHttpRequest()
                         xhr.open('PUT', uploadUrl)
-                        
-                        xhr.upload.onprogress = (e) => {
-                            if (e.lengthComputable) {
-                                const pct = Math.round((e.loaded / e.total) * 100)
-                                setMeeting(prev => ({ ...prev, uploadProgress: pct }))
-                            }
-                        }
-
-                        xhr.onload = async () => {
-                            if (xhr.status >= 200 && xhr.status < 300) {
-                                const data = JSON.parse(xhr.responseText)
-                                const fileId = data.id
-
-                                if (fileId) {
-                                    try {
-                                        await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-                                            method: 'POST',
-                                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ role: 'reader', type: 'anyone' })
-                                        })
-                                    } catch (permErr) {
-                                        console.error('Failed to set permissions on Drive file', permErr)
-                                    }
-
-                                    const driveLink = `https://drive.google.com/file/d/${fileId}/preview`
-                                    if (vidId) {
-                                        await supabase
-                                            .from('videos')
-                                            .update({ 
-                                                video_url: driveLink,
-                                                drive_file_id: fileId,
-                                                duration_seconds: durationSeconds,
-                                                file_size_mb: fileSizeMb,
-                                                recording_status: 'completed',
-                                                recorded_at: new Date().toISOString()
-                                            })
-                                            .eq('id', vidId)
-                                    }
-                                    resolveUpload(true)
-                                } else {
-                                    resolveUpload(false)
-                                }
-                            } else {
-                                console.error('Upload to Drive failed:', xhr.responseText)
-                                resolveUpload(false)
-                            }
-                        }
-
+                        xhr.upload.onprogress = onProgress
+                        xhr.onload = () => onLoad(xhr, resolveUpload)
                         xhr.onerror = () => rejectUpload(new Error('Network error during upload'))
                         xhr.send(finalBlob)
                     })
@@ -664,14 +673,14 @@ export function MeetingProvider({ children }) {
     }, [meeting.videoId, meeting.gToken, meeting.recordingSession])
 
     const pauseRecording = useCallback(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        if (mediaRecorderRef.current?.state === 'recording') {
             mediaRecorderRef.current.pause()
             setMeeting(prev => ({ ...prev, isRecordingPaused: true }))
         }
     }, [])
 
     const resumeRecording = useCallback(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+        if (mediaRecorderRef.current?.state === 'paused') {
             mediaRecorderRef.current.resume()
             setMeeting(prev => ({ ...prev, isRecordingPaused: false }))
         }
@@ -703,45 +712,49 @@ export function MeetingProvider({ children }) {
             const uploadUrl = res.headers.get('Location')
             if (!uploadUrl) throw new Error('Failed to get Drive upload session URL.')
 
-            const uploadPromise = new Promise((resolveUpload) => {
-                const xhr = new XMLHttpRequest()
-                xhr.open('PUT', uploadUrl)
-                
-                xhr.upload.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                        setMeeting(p => ({ ...p, uploadProgress: Math.round((e.loaded / e.total) * 100) }))
-                    }
+            const onProgress = (e) => {
+                if (e.lengthComputable) {
+                    setMeeting(p => ({ ...p, uploadProgress: Math.round((e.loaded / e.total) * 100) }))
                 }
+            }
 
-                xhr.onload = async () => {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const data = JSON.parse(xhr.responseText)
-                        const fileId = data.id
-                        if (fileId) {
-                            try {
-                                await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ role: 'reader', type: 'anyone' })
-                                })
-                            } catch (e) {}
-
-                            await supabase.from('videos').update({ 
-                                video_url: `https://drive.google.com/file/d/${fileId}/preview`,
-                                drive_file_id: fileId,
-                                duration_seconds: durationSeconds,
-                                file_size_mb: fileSizeMb,
-                                recording_status: 'completed',
-                                recorded_at: new Date().toISOString()
-                            }).eq('id', vidId)
-                            resolveUpload(true)
-                        } else {
-                            resolveUpload(false)
+            const onLoad = async (xhr, resolveUpload) => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const data = JSON.parse(xhr.responseText)
+                    const fileId = data.id
+                    if (fileId) {
+                        try {
+                            await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ role: 'reader', type: 'anyone' })
+                            })
+                        } catch (e) {
+                            console.error('Failed to set permissions on Drive file', e)
                         }
+
+                        await supabase.from('videos').update({ 
+                            video_url: `https://drive.google.com/file/d/${fileId}/preview`,
+                            drive_file_id: fileId,
+                            duration_seconds: durationSeconds,
+                            file_size_mb: fileSizeMb,
+                            recording_status: 'completed',
+                            recorded_at: new Date().toISOString()
+                        }).eq('id', vidId)
+                        resolveUpload(true)
                     } else {
                         resolveUpload(false)
                     }
+                } else {
+                    resolveUpload(false)
                 }
+            }
+
+            const uploadPromise = new Promise((resolveUpload) => {
+                const xhr = new XMLHttpRequest()
+                xhr.open('PUT', uploadUrl)
+                xhr.upload.onprogress = onProgress
+                xhr.onload = () => onLoad(xhr, resolveUpload)
                 xhr.onerror = () => resolveUpload(false)
                 xhr.send(finalBlob)
             })
@@ -924,11 +937,13 @@ export function MeetingProvider({ children }) {
                 return e.returnValue
             }
         }
-        window.addEventListener('beforeunload', handleBeforeUnload)
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+        globalThis.addEventListener('beforeunload', handleBeforeUnload)
+        return () => globalThis.removeEventListener('beforeunload', handleBeforeUnload)
     }, [meeting.isActive, meeting.isUploading])
 
-    const value = {
+    const closeAnalyticsModal = useCallback(() => setMeeting(prev => ({ ...prev, analyticsModalData: null })), []);
+
+    const value = useMemo(() => ({
         ...meeting,
         startMeeting,
         minimizeMeeting,
@@ -945,8 +960,26 @@ export function MeetingProvider({ children }) {
         retryUpload,
         deleteFailedUpload,
         deleteRecordingFromDrive,
-        closeAnalyticsModal: () => setMeeting(prev => ({ ...prev, analyticsModalData: null })),
-    }
+        closeAnalyticsModal,
+    }), [
+        meeting,
+        startMeeting,
+        minimizeMeeting,
+        restoreMeeting,
+        endMeeting,
+        toggleMicFromWidget,
+        requestNavigation,
+        isInClassroom,
+        loginToDrive,
+        startRecording,
+        pauseRecording,
+        resumeRecording,
+        stopAndUploadRecording,
+        retryUpload,
+        deleteFailedUpload,
+        deleteRecordingFromDrive,
+        closeAnalyticsModal
+    ])
 
     return (
         <MeetingContext.Provider value={value}>
@@ -992,4 +1025,8 @@ export function MeetingProvider({ children }) {
             )}
         </MeetingContext.Provider>
     )
+}
+
+MeetingProvider.propTypes = {
+    children: PropTypes.node.isRequired
 }
