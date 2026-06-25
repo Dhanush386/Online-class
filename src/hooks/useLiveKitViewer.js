@@ -23,6 +23,68 @@ export function useLiveKitViewer(assessmentId) {
         let isMounted = true;
         const roomName = `assessment-${assessmentId}`;
 
+        const handleConnectionQualityChanged = (participant, quality) => {
+            const studentId = participant.identity;
+            const qualityStr = typeof quality === 'string' ? quality : String(quality);
+            setConnectionQualities(prev => ({
+                ...prev,
+                [studentId]: qualityStr.toLowerCase()
+            }));
+        };
+
+        const handleTrackSubscribed = (track, publication, participant) => {
+            const studentId = participant.identity;
+            
+            if (track.kind === 'audio') {
+                track.attach();
+                console.log('[LiveKit Viewer] Audio track attached and playing for:', studentId);
+            }
+            
+            setLiveStreams(prev => {
+                const currentStream = prev[studentId] || new MediaStream();
+                if (!currentStream.getTracks().includes(track.mediaStreamTrack)) {
+                    currentStream.addTrack(track.mediaStreamTrack);
+                }
+                return { ...prev, [studentId]: currentStream };
+            });
+        };
+
+        const handleTrackUnsubscribed = (track, publication, participant) => {
+            const studentId = participant.identity;
+            
+            if (track.kind === 'audio') {
+                track.detach();
+                console.log('[LiveKit Viewer] Audio track detached for:', studentId);
+            }
+            
+            setLiveStreams(prev => {
+                const currentStream = prev[studentId];
+                if (currentStream) {
+                    const newStream = new MediaStream(currentStream.getTracks().filter(t => t.id !== track.mediaStreamTrack.id));
+                    if (newStream.getTracks().length === 0) {
+                        const next = { ...prev };
+                        delete next[studentId];
+                        return next;
+                    }
+                    return { ...prev, [studentId]: newStream };
+                }
+                return prev;
+            });
+        };
+
+        const handleParticipantDisconnected = (participant) => {
+            setLiveStreams(prev => {
+                const next = { ...prev };
+                delete next[participant.identity];
+                return next;
+            });
+            setConnectionQualities(prev => {
+                const next = { ...prev };
+                delete next[participant.identity];
+                return next;
+            });
+        };
+
         const connectAndSubscribe = async () => {
             try {
                 // 1. Fetch Token (Proctoring Mode: Organizer gets subscribe-only permissions)
@@ -33,7 +95,7 @@ export function useLiveKitViewer(assessmentId) {
                     body: { roomName, proctoringMode: true }
                 });
 
-                if (!response.data || !response.data.token) {
+                if (!response.data?.token) {
                     console.error('[LiveKit Viewer] Failed to get token. Response:', response);
                     return;
                 }
@@ -48,68 +110,12 @@ export function useLiveKitViewer(assessmentId) {
                 roomRef.current = room;
 
                 // Handle participant connection quality changes
-                room.on(RoomEvent.ConnectionQualityChanged, (participant, quality) => {
-                    const studentId = participant.identity;
-                    const qualityStr = typeof quality === 'string' ? quality : String(quality);
-                    setConnectionQualities(prev => ({
-                        ...prev,
-                        [studentId]: qualityStr.toLowerCase()
-                    }));
-                });
+                room.on(RoomEvent.ConnectionQualityChanged, handleConnectionQualityChanged);
 
                 // Handle incoming tracks
-                room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-                    const studentId = participant.identity;
-                    
-                    if (track.kind === 'audio') {
-                        track.attach();
-                        console.log('[LiveKit Viewer] Audio track attached and playing for:', studentId);
-                    }
-                    
-                    setLiveStreams(prev => {
-                        const currentStream = prev[studentId] || new MediaStream();
-                        if (!currentStream.getTracks().includes(track.mediaStreamTrack)) {
-                            currentStream.addTrack(track.mediaStreamTrack);
-                        }
-                        return { ...prev, [studentId]: currentStream };
-                    });
-                });
-
-                room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
-                    const studentId = participant.identity;
-                    
-                    if (track.kind === 'audio') {
-                        track.detach();
-                        console.log('[LiveKit Viewer] Audio track detached for:', studentId);
-                    }
-                    
-                    setLiveStreams(prev => {
-                        const currentStream = prev[studentId];
-                        if (currentStream) {
-                            const newStream = new MediaStream(currentStream.getTracks().filter(t => t.id !== track.mediaStreamTrack.id));
-                            if (newStream.getTracks().length === 0) {
-                                const next = { ...prev };
-                                delete next[studentId];
-                                return next;
-                            }
-                            return { ...prev, [studentId]: newStream };
-                        }
-                        return prev;
-                    });
-                });
-
-                room.on(RoomEvent.ParticipantDisconnected, (participant) => {
-                    setLiveStreams(prev => {
-                        const next = { ...prev };
-                        delete next[participant.identity];
-                        return next;
-                    });
-                    setConnectionQualities(prev => {
-                        const next = { ...prev };
-                        delete next[participant.identity];
-                        return next;
-                    });
-                });
+                room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+                room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
+                room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
 
                 // 3. Connect to Room
                 await room.connect(LIVEKIT_URL, response.data.token);

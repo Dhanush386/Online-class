@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types'
+
 /**
  * Avatar — User avatar with initials fallback, gradient bg, and online indicator.
  */
@@ -10,7 +12,7 @@ const GRADIENT_PALETTES = [
 ]
 
 function getGradient(name = '') {
-  const code = name.charCodeAt(0) || 0
+  const code = name.codePointAt(0) || 0
   return GRADIENT_PALETTES[code % GRADIENT_PALETTES.length]
 }
 
@@ -56,4 +58,13 @@ export default function Avatar({
       )}
     </div>
   )
+}
+
+Avatar.propTypes = {
+  name: PropTypes.string,
+  src: PropTypes.string,
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl', '2xl']),
+  online: PropTypes.bool,
+  style: PropTypes.object,
+  className: PropTypes.string,
 }

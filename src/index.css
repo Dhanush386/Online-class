@@ -480,11 +480,11 @@ h1, h2, h3, h4, h5, h6 {
   white-space: nowrap;
 }
 
-.badge-success { background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.2); }
-.badge-warning { background: rgba(245, 158, 11, 0.12); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.2); }
-.badge-danger  { background: rgba(239, 68, 68, 0.12);  color: #b91c1c; border: 1px solid rgba(239, 68, 68, 0.2); }
-.badge-info    { background: rgba(59, 130, 246, 0.12); color: #1d4ed8; border: 1px solid rgba(59, 130, 246, 0.2); }
-.badge-primary { background: rgba(99, 102, 241, 0.12); color: var(--primary-700); border: 1px solid rgba(99, 102, 241, 0.2); }
+.badge-success { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+.badge-warning { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+.badge-danger  { background: rgba(239, 68, 68, 0.12);  color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+.badge-info    { background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+.badge-primary { background: rgba(99, 102, 241, 0.12); color: var(--primary-300); border: 1px solid rgba(99, 102, 241, 0.2); }
 .badge-neutral { background: rgba(100, 116, 139, 0.1); color: var(--text-secondary); border: 1px solid rgba(100, 116, 139, 0.15); }
 
 /* XP / Gamification chips */
@@ -500,10 +500,10 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(8px);
 }
 
-.xp-chip-streak { background: rgba(249, 115, 22, 0.12); color: #ea580c; border: 1px solid rgba(249, 115, 22, 0.2); }
-.xp-chip-xp     { background: rgba(99, 102, 241, 0.1);  color: var(--primary-600); border: 1px solid rgba(99, 102, 241, 0.2); }
-.xp-chip-rank   { background: rgba(139, 92, 246, 0.1);  color: var(--violet-600); border: 1px solid rgba(139, 92, 246, 0.2); }
-.xp-chip-level  { background: rgba(16, 185, 129, 0.1);  color: #059669; border: 1px solid rgba(16, 185, 129, 0.2); }
+.xp-chip-streak { background: rgba(249, 115, 22, 0.12); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.2); }
+.xp-chip-xp     { background: rgba(99, 102, 241, 0.1);  color: var(--primary-300); border: 1px solid rgba(99, 102, 241, 0.2); }
+.xp-chip-rank   { background: rgba(139, 92, 246, 0.1);  color: var(--violet-300); border: 1px solid rgba(139, 92, 246, 0.2); }
+.xp-chip-level  { background: rgba(16, 185, 129, 0.1);  color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
 
 /* ═══════════════════════════════════════════════════════════════
    PROGRESS
@@ -734,10 +734,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .dropdown-item:hover {
   background: rgba(99, 102, 241, 0.08);
-  color: var(--primary-600);
+  color: var(--primary-400);
 }
 
-.dropdown-item.danger:hover { background: rgba(239, 68, 68, 0.08); color: #dc2626; }
+.dropdown-item.danger:hover { background: rgba(239, 68, 68, 0.08); color: #f87171; }
 
 .dropdown-divider {
   height: 1px;
@@ -870,7 +870,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-full);
   font-size: 0.7rem;
   font-weight: 700;
-  color: #dc2626;
+  color: #f87171;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -878,45 +878,11 @@ h1, h2, h3, h4, h5, h6 {
 .live-dot {
   width: 6px;
   height: 6px;
-  background: #dc2626;
+  background: #f87171;
   border-radius: 50%;
   animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   GAMIFICATION CHIPS
-   ═══════════════════════════════════════════════════════════════ */
-
-.xp-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.65rem;
-  border-radius: 99px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  font-family: var(--font-body);
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-
-.xp-chip-xp {
-  background: rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.2);
-  color: #6366f1;
-}
-
-.xp-chip-streak {
-  background: rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.2);
-  color: #f97316;
-}
-
-.xp-chip-rank {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.2);
-  color: #f59e0b;
-}
 
 /* ═══════════════════════════════════════════════════════════════
    DROPDOWN MENU
@@ -955,12 +921,12 @@ h1, h2, h3, h4, h5, h6 {
 
 .dropdown-item:hover {
   background: rgba(99, 102, 241, 0.07);
-  color: var(--primary-600);
+  color: var(--primary-400);
 }
 
 .dropdown-item.danger:hover {
   background: rgba(239, 68, 68, 0.07);
-  color: #dc2626;
+  color: #f87171;
 }
 
 .dropdown-divider {

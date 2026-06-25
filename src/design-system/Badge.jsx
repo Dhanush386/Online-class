@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types'
+
 /**
  * Badge — Status badge with dot variant.
  */
@@ -13,4 +15,11 @@ export default function Badge({ variant = 'neutral', dot = false, children, styl
       {children}
     </span>
   )
+}
+
+Badge.propTypes = {
+  variant: PropTypes.string,
+  dot: PropTypes.bool,
+  children: PropTypes.node,
+  style: PropTypes.object,
 }

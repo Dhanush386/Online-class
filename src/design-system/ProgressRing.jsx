@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types'
+
 /**
  * ProgressRing — SVG circular progress with gradient stroke.
  * Animates on mount.
@@ -56,4 +58,14 @@ export default function ProgressRing({
       </div>
     </div>
   )
+}
+
+ProgressRing.propTypes = {
+  value: PropTypes.number,
+  size: PropTypes.number,
+  stroke: PropTypes.number,
+  color: PropTypes.string,
+  trackColor: PropTypes.string,
+  children: PropTypes.node,
+  label: PropTypes.string,
 }

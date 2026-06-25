@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
+import PropTypes from 'prop-types'
 
 /**
  * GlassCard — Frosted glass card with optional 3D tilt.
@@ -59,4 +60,14 @@ export default function GlassCard({
       {children}
     </motion.div>
   )
+}
+
+GlassCard.propTypes = {
+  children: PropTypes.node,
+  tilt3d: PropTypes.bool,
+  className: PropTypes.string,
+  style: PropTypes.object,
+  onClick: PropTypes.func,
+  padding: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  hover: PropTypes.bool,
 }

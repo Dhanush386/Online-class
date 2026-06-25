@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
+import PropTypes from 'prop-types'
 import GlassCard from './GlassCard'
 import AnimatedCounter from './AnimatedCounter'
 
@@ -31,6 +31,14 @@ export default function StatCard({
   const isPositive = delta > 0
   const isNegative = delta < 0
 
+  let deltaColor = 'var(--text-muted)'
+  if (isPositive) deltaColor = 'var(--success)'
+  else if (isNegative) deltaColor = 'var(--danger)'
+
+  let deltaSign = '—'
+  if (isPositive) deltaSign = '↑'
+  else if (isNegative) deltaSign = '↓'
+
   if (isLoading) {
     return (
       <div className="glass-card skeleton-card" style={{ padding: '1.5rem', ...style }}>
@@ -55,9 +63,9 @@ export default function StatCard({
             <div style={{
               marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem',
               fontSize: '0.75rem', fontWeight: 600,
-              color: isPositive ? 'var(--success)' : isNegative ? 'var(--danger)' : 'var(--text-muted)',
+              color: deltaColor,
             }}>
-              <span>{isPositive ? '↑' : isNegative ? '↓' : '—'} {Math.abs(delta)}%</span>
+              <span>{deltaSign} {Math.abs(delta)}%</span>
               {deltaLabel && <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>{deltaLabel}</span>}
             </div>
           )}
@@ -77,4 +85,18 @@ export default function StatCard({
       </div>
     </GlassCard>
   )
+}
+
+StatCard.propTypes = {
+  icon: PropTypes.elementType,
+  label: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  delta: PropTypes.number,
+  deltaLabel: PropTypes.string,
+  color: PropTypes.oneOf(['primary', 'success', 'warning', 'danger', 'violet']),
+  suffix: PropTypes.string,
+  prefix: PropTypes.string,
+  isLoading: PropTypes.bool,
+  tilt3d: PropTypes.bool,
+  style: PropTypes.object,
 }

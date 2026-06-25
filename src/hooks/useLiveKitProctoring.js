@@ -33,7 +33,7 @@ export function useLiveKitProctoring(assessmentId, studentId, isScreenSharing = 
                     body: { roomName, proctoringMode: true }
                 });
 
-                if (!response.data || !response.data.token) {
+                if (!response.data?.token) {
                     console.error('[LiveKit Proctoring] Failed to get token. Response:', response);
                     return;
                 }

@@ -93,6 +93,58 @@ NavigationGuardDialog.propTypes = {
     })
 }
 
+function getBestPreviewTrack(room, participants) {
+    for (const p of participants) {
+        const screenPub = p.getTrackPublication(Track.Source.ScreenShare)
+        if (screenPub?.track) return { track: screenPub.track, hasScreenShare: true }
+    }
+    const localScreen = room.localParticipant.getTrackPublication(Track.Source.ScreenShare)
+    if (localScreen?.track) return { track: localScreen.track, hasScreenShare: true }
+
+    const speaker = room.activeSpeakers?.find(s => s.identity !== room.localParticipant.identity)
+    const speakerCam = speaker?.getTrackPublication(Track.Source.Camera)?.track
+    if (speakerCam) return { track: speakerCam, hasScreenShare: false }
+
+    for (const p of participants) {
+        const cam = p.getTrackPublication(Track.Source.Camera)?.track
+        if (cam) return { track: cam, hasScreenShare: false }
+    }
+    return { track: null, hasScreenShare: false }
+}
+
+function getFallbackName(room, participants) {
+    const speaker = room.activeSpeakers?.find(s => s.identity !== room.localParticipant.identity)
+    if (speaker) return speaker.name || speaker.identity
+    if (participants.length > 0) return participants[0].name || participants[0].identity
+    
+    let meta = {}
+    try { meta = JSON.parse(room.localParticipant.metadata || '{}') } catch {}
+    return room.localParticipant.name || meta.name || room.localParticipant.identity
+}
+
+function cleanupRecordingStreams(streams) {
+    if (!streams) return;
+    
+    streams.screenStream.getTracks().forEach(t => t.stop())
+    if (streams.micStream) streams.micStream.getTracks().forEach(t => t.stop())
+    
+    // Clean up LiveKit listeners to prevent duplicate recordings/echoes
+    if (streams.room) {
+        streams.room.off(RoomEvent.TrackSubscribed, streams.addRemoteTrack)
+        streams.room.off(RoomEvent.TrackUnsubscribed, streams.removeRemoteTrack)
+    }
+    
+    if (streams.remoteAudioNodes) {
+        streams.remoteAudioNodes.forEach(({ source, gainNode }) => {
+            source.disconnect();
+            gainNode.disconnect();
+        });
+        streams.remoteAudioNodes.clear();
+    }
+    
+    streams.audioContext.close()
+}
+
 // ─── Meeting Provider ────────────────────────────────────────────────────────
 export function MeetingProvider({ children }) {
     const navigate = useNavigate()
@@ -166,7 +218,7 @@ export function MeetingProvider({ children }) {
         document.body.appendChild(gScript)
         return () => {
             if (document.body.contains(gScript)) {
-                document.body.removeChild(gScript)
+                gScript.remove()
             }
         }
     }, [handleGoogleScriptLoad])
@@ -177,57 +229,8 @@ export function MeetingProvider({ children }) {
         if (!room) return
 
         const participants = Array.from(room.remoteParticipants.values())
-
-        // Find best preview track: screen share > active speaker > first camera
-        let previewTrack = null
-        let hasScreenShare = false
-
-        // Screen share priority
-        for (const p of participants) {
-            const screenPub = p.getTrackPublication(Track.Source.ScreenShare)
-            if (screenPub?.track) {
-                previewTrack = screenPub.track
-                hasScreenShare = true
-                break
-            }
-        }
-        // Also check local screen share
-        if (!previewTrack) {
-            const localScreen = room.localParticipant.getTrackPublication(Track.Source.ScreenShare)
-            if (localScreen?.track) {
-                previewTrack = localScreen.track
-                hasScreenShare = true
-            }
-        }
-
-        // Fallback: active speaker camera
-        if (!previewTrack) {
-            const speaker = room.activeSpeakers?.find(s => s.identity !== room.localParticipant.identity)
-            const speakerCam = speaker?.getTrackPublication(Track.Source.Camera)?.track
-            if (speakerCam) previewTrack = speakerCam
-        }
-
-        // Fallback: first remote camera
-        if (!previewTrack) {
-            for (const p of participants) {
-                const cam = p.getTrackPublication(Track.Source.Camera)?.track
-                if (cam) { previewTrack = cam; break }
-            }
-        }
-
-        let fallbackName = null
-        if (!previewTrack) {
-            const speaker = room.activeSpeakers?.find(s => s.identity !== room.localParticipant.identity)
-            if (speaker) {
-                fallbackName = speaker.name || speaker.identity
-            } else if (participants.length > 0) {
-                fallbackName = participants[0].name || participants[0].identity
-            } else {
-                let meta = {}
-                try { meta = JSON.parse(room.localParticipant.metadata || '{}') } catch {}
-                fallbackName = room.localParticipant.name || meta.name || room.localParticipant.identity
-            }
-        }
+        const { track: previewTrack, hasScreenShare } = getBestPreviewTrack(room, participants)
+        const fallbackName = previewTrack ? null : getFallbackName(room, participants)
 
         setMeeting(prev => ({
             ...prev,
@@ -262,7 +265,6 @@ export function MeetingProvider({ children }) {
             // Prevent third-party components (like LiveKitRoom) from disconnecting 
             // the room automatically when they unmount during navigation/minimization.
             console.log('Intercepted room.disconnect call. Connection kept alive.');
-            return;
         }
 
         try {
@@ -337,6 +339,29 @@ export function MeetingProvider({ children }) {
         return room
     }, [meeting.isActive, meeting.videoId, updateWidgetState])
 
+    // ── Restore Meeting (expand from widget) ──
+    const restoreMeeting = useCallback(() => {
+        setMeeting(prev => {
+            if (prev.pipWindow) {
+                prev.pipWindow.close();
+            }
+            return { ...prev, isMinimized: false, pipWindow: null }
+        })
+        if (meeting.classroomPath) {
+            navigate(meeting.classroomPath)
+        }
+    }, [meeting.classroomPath, navigate])
+
+    const handlePipClose = useCallback(() => {
+        setMeeting(prev => {
+            // If it's still minimized, it means user clicked OS X button, so restore
+            if (prev.isMinimized) {
+                setTimeout(restoreMeeting, 0)
+            }
+            return { ...prev, pipWindow: null }
+        })
+    }, [restoreMeeting])
+
     // ── Minimize Meeting ──
     const minimizeMeeting = useCallback(async () => {
         isMinimizingRef.current = true
@@ -358,36 +383,14 @@ export function MeetingProvider({ children }) {
                 });
                 
                 // Listen to PiP close
-                pip.addEventListener('pagehide', () => {
-                    // Close the PiP window state
-                    setMeeting(prev => {
-                        // If it's still minimized, it means user clicked OS X button, so restore
-                        if (prev.isMinimized) {
-                            setTimeout(() => restoreMeeting(), 0)
-                        }
-                        return { ...prev, pipWindow: null }
-                    });
-                });
+                pip.addEventListener('pagehide', handlePipClose);
 
                 setMeeting(prev => ({ ...prev, pipWindow: pip }))
             } catch (error) {
                 console.warn('PiP failed or was blocked by browser', error);
             }
         }
-    }, [])
-
-    // ── Restore Meeting (expand from widget) ──
-    const restoreMeeting = useCallback(() => {
-        setMeeting(prev => {
-            if (prev.pipWindow) {
-                prev.pipWindow.close();
-            }
-            return { ...prev, isMinimized: false, pipWindow: null }
-        })
-        if (meeting.classroomPath) {
-            navigate(meeting.classroomPath)
-        }
-    }, [meeting.classroomPath, navigate])
+    }, [handlePipClose])
 
 
     // ── Recording Handlers ──
@@ -417,7 +420,7 @@ export function MeetingProvider({ children }) {
                     audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
                 })
             } catch (e) {
-                console.warn('Microphone access denied or not available.')
+                console.warn('Microphone access denied or not available.', e)
             }
 
             const audioContext = new (globalThis.AudioContext || globalThis.webkitAudioContext)()
@@ -436,7 +439,7 @@ export function MeetingProvider({ children }) {
             if (micStream && micStream.getAudioTracks().length > 0) {
                 const micSource = audioContext.createMediaStreamSource(micStream)
                 const gainNode = audioContext.createGain()
-                gainNode.gain.value = 1.0 // Normal mic volume
+                gainNode.gain.value = 1 // Normal mic volume
                 micSource.connect(gainNode)
                 gainNode.connect(mixedOutput)
             }
@@ -450,7 +453,7 @@ export function MeetingProvider({ children }) {
                     const stream = new MediaStream([track.mediaStreamTrack]);
                     const source = audioContext.createMediaStreamSource(stream);
                     const gainNode = audioContext.createGain();
-                    gainNode.gain.value = 1.0; // Normal student volume
+                    gainNode.gain.value = 1; // Normal student volume
                     source.connect(gainNode);
                     gainNode.connect(mixedOutput);
                     remoteAudioNodes.set(track.sid, { source, gainNode });
@@ -525,25 +528,7 @@ export function MeetingProvider({ children }) {
                 let success = false;
                 
                 const streams = mediaRecorderRef.current.__streamsToStop;
-                if (streams) {
-                    streams.screenStream.getTracks().forEach(t => t.stop())
-                    if (streams.micStream) streams.micStream.getTracks().forEach(t => t.stop())
-                    
-                    // Clean up LiveKit listeners to prevent duplicate recordings/echoes
-                    if (streams.room) {
-                        streams.room.off(RoomEvent.TrackSubscribed, streams.addRemoteTrack)
-                        streams.room.off(RoomEvent.TrackUnsubscribed, streams.removeRemoteTrack)
-                    }
-                    if (streams.remoteAudioNodes) {
-                        streams.remoteAudioNodes.forEach(({ source, gainNode }) => {
-                            source.disconnect();
-                            gainNode.disconnect();
-                        });
-                        streams.remoteAudioNodes.clear();
-                    }
-                    
-                    streams.audioContext.close()
-                }
+                cleanupRecordingStreams(streams);
 
                 try {
                     const finalBlob = new Blob(recordedChunksRef.current, { type: 'video/webm' })
