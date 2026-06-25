@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
 import { supabase } from '../../lib/supabase'
 import { BarChart2, Users, Clock, AlertTriangle, UserMinus, Download, X, Loader, Trash2 } from 'lucide-react'
 import { useMeeting } from '../../contexts/MeetingContext'
@@ -242,4 +243,9 @@ export default function SessionAnalyticsModal({ modalData, onClose }) {
             `}</style>
         </div>
     )
+}
+
+SessionAnalyticsModal.propTypes = {
+    modalData: PropTypes.object,
+    onClose: PropTypes.func.isRequired
 }

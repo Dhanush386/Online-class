@@ -362,12 +362,9 @@ export default function OrganizerAnalytics() {
         <KPIAnalyticsCard icon="🎯" title="Attendance %" value={`${stats.avgAttendance}%`} color="#10b981" />
         <KPIAnalyticsCard icon="🏆" title="Course Completion %" value={`${stats.avgCompletion}%`} color="#6366f1" />
         <KPIAnalyticsCard icon="⏱️" title="Live Class Hours" value={`${stats.totalLiveHours}h`} color="#f59e0b" />
-        <GlassCard 
-          tilt3d={true} 
-          role="button"
-          tabIndex={0}
+        <button 
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') downloadAnalyticsPDF() }}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', cursor: 'pointer', background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.2)' }} 
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', cursor: 'pointer', background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '16px', width: '100%', textAlign: 'left' }} 
           onClick={downloadAnalyticsPDF}
         >
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -378,7 +375,7 @@ export default function OrganizerAnalytics() {
                 </div>
             </div>
             <ArrowUpRight size={20} color="#06b6d4" />
-        </GlassCard>
+        </button>
       </div>
 
       {/* Row 2: Charts (Course Analytics + Risk Donut) */}
@@ -488,13 +485,10 @@ export default function OrganizerAnalytics() {
                 const studentName = v.student_name || 'Student';
                 
                 return (
-                  <div 
+                  <button 
                     key={v.session_id || i} 
-                    role="button"
-                    tabIndex={0}
                     onClick={() => navigate(`/organizer/proctoring`)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/organizer/proctoring`) }}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.2s' }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.2s', width: '100%' }}
                     onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                     onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                     onFocus={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
@@ -516,7 +510,7 @@ export default function OrganizerAnalytics() {
                     <span style={{ fontSize: '0.85rem', fontWeight: 800, padding: '4px 10px', borderRadius: 6, background: isCritical ? 'rgba(239,68,68,0.1)' : 'rgba(249,115,22,0.1)', color: isCritical ? '#ef4444' : '#f97316' }}>
                       Risk {v.final_risk_score}
                     </span>
-                  </div>
+                  </button>
                 )
               })
             )}

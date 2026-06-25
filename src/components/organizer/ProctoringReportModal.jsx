@@ -682,18 +682,10 @@ export default function ProctoringReportModal({
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
                   {violations.filter(v => v.evidence_url).map((v, i) => (
-                    <div 
+                    <button 
                       key={v.id || i}
-                      role="button"
-                      tabIndex={0}
                       onClick={() => setSelectedImage(v.evidence_url)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          setSelectedImage(v.evidence_url)
-                        }
-                      }}
-                      style={{ cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1', borderRadius: 8, background: '#000', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', position: 'relative' }}
+                      style={{ cursor: 'pointer', padding: 0, textAlign: 'left', overflow: 'hidden', border: '1px solid #cbd5e1', borderRadius: 8, background: '#000', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', position: 'relative' }}
                     >
                       <div style={{ position: 'relative', width: '100%', paddingBottom: '75%' }}>
                         <img 
@@ -702,7 +694,7 @@ export default function ProctoringReportModal({
                           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       </div>
-                      <div style={{ background: '#f8fafc', padding: '0.5rem', borderTop: '1px solid #cbd5e1' }}>
+                      <div style={{ background: '#f8fafc', padding: '0.5rem', borderTop: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box' }}>
                         <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           {v.violation_type === 'phone_detected' ? '📱' : '👥'} {v.violation_type?.replace('_', ' ')?.toUpperCase()}
                         </div>
@@ -711,7 +703,7 @@ export default function ProctoringReportModal({
                           <span style={{ color: '#ef4444', fontWeight: 700 }}>+{v.risk_score_increment} Risk</span>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -774,19 +766,17 @@ export default function ProctoringReportModal({
 
       {/* Fullscreen Image Preview */}
       {selectedImage && (
-        <div 
-          role="button"
-          tabIndex={0}
+        <button 
           onClick={() => setSelectedImage(null)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
+            if (e.key === 'Escape') {
               e.preventDefault()
               setSelectedImage(null)
             }
           }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '2rem' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '2rem', border: 'none', width: '100%', height: '100%', cursor: 'pointer' }}
         >
-          <div style={{ relative: 'true', maxWidth: '90%', maxHeight: '90%', background: '#000', borderRadius: 8, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+          <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%', background: '#000', borderRadius: 8, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
             <img 
               src={selectedImage} 
               alt="Fullscreen Evidence" 
@@ -796,7 +786,7 @@ export default function ProctoringReportModal({
               <X size={16} />
             </div>
           </div>
-        </div>
+        </button>
       )}
     </div>
   )
