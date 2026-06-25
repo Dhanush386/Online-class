@@ -884,56 +884,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 
-/* ═══════════════════════════════════════════════════════════════
-   DROPDOWN MENU
-   ═══════════════════════════════════════════════════════════════ */
-
-.dropdown-menu {
-  position: absolute;
-  background: rgba(20, 23, 32, 0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-2xl);
-  padding: 0.5rem;
-  z-index: 200;
-  min-width: 180px;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.845rem;
-  font-weight: 500;
-  font-family: var(--font-body);
-  color: var(--text-primary);
-  text-align: left;
-  transition: background 0.12s ease, color 0.12s ease;
-}
-
-.dropdown-item:hover {
-  background: rgba(99, 102, 241, 0.07);
-  color: var(--primary-400);
-}
-
-.dropdown-item.danger:hover {
-  background: rgba(239, 68, 68, 0.07);
-  color: #f87171;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background: var(--card-border);
-  margin: 0.35rem 0.5rem;
-}
 
 /* ═══════════════════════════════════════════════════════════════
    STAT GRID
