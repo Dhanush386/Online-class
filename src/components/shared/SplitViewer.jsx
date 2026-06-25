@@ -186,8 +186,9 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
 
                         {/* Resize Handle */}
                         <div 
-                            role="separator"
-                            tabIndex={0}
+                            role="slider"
+                            aria-valuemin={20}
+                            aria-valuemax={80}
                             aria-valuenow={splitRatio}
                             aria-label="Resize panels"
                             onMouseDown={() => setIsDragging(true)}

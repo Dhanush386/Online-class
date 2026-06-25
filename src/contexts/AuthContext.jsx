@@ -1,8 +1,68 @@
-import { createContext, useContext, useEffect, useState, useRef } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
+import PropTypes from 'prop-types'
 import { supabase } from '../lib/supabase'
 import { getTierForXP, getRankName } from '../constants/ranks'
 
 const AuthContext = createContext({})
+
+function calculateCodingXp(codingSubs) {
+    let xp = 0;
+    if (!codingSubs) return xp;
+    
+    const uniqueChallenges = {};
+    for (const sub of codingSubs) {
+        if (sub.status === 'accepted') {
+            if (!uniqueChallenges[sub.challenge_id] || sub.score > uniqueChallenges[sub.challenge_id]) {
+                uniqueChallenges[sub.challenge_id] = sub.score;
+            }
+        }
+    }
+    for (const score of Object.values(uniqueChallenges)) xp += score;
+    return xp;
+}
+
+function calculateStreak(sortedDates) {
+    if (sortedDates.length === 0) return 0;
+    let streakCount = 0;
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    let current = (sortedDates[0] === today || sortedDates[0] === yesterday) ? sortedDates[0] : null;
+    
+    if (current) {
+        streakCount = 1;
+        for (let i = 1; i < sortedDates.length; i++) {
+            const prevDate = new Date(current);
+            prevDate.setDate(prevDate.getDate() - 1);
+            const expected = prevDate.toISOString().split('T')[0];
+            if (sortedDates[i] === expected) { 
+                streakCount++; 
+                current = sortedDates[i]; 
+            } else {
+                break;
+            }
+        }
+    }
+    return streakCount;
+}
+
+async function signUp({ email, password, name, role }) {
+    if (['organizer', 'main_admin', 'sub_admin'].includes(role)) {
+        const { data: invite } = await supabase.from('organizer_invites').select('*').eq('email', email.toLowerCase()).single()
+        if (!invite) throw new Error('Not authorized as organizer.')
+    }
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name, role } } })
+    if (error) throw error
+    if (data.user && ['organizer', 'main_admin', 'sub_admin'].includes(role)) {
+        await supabase.from('organizer_invites').delete().eq('email', email.toLowerCase())
+    }
+    return data
+}
+
+async function signIn({ email, password }) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email: (email || '').trim().toLowerCase(), password })
+    if (error) throw error
+    return data
+}
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
@@ -67,7 +127,7 @@ export function AuthProvider({ children }) {
     }, [])
 
     const checkExpiry = (prof) => {
-        if (!prof || prof.role !== 'student' || !prof.access_expires_at) {
+        if (prof?.role !== 'student' || !prof?.access_expires_at) {
             setIsExpired(false)
             return false
         }
@@ -80,7 +140,7 @@ export function AuthProvider({ children }) {
     async function fetchProfile(userId) {
         if (!userId) return
         try {
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', userId)
@@ -119,18 +179,7 @@ export function AuthProvider({ children }) {
             const { data: codingSubs } = await supabase.from('coding_submissions').select('challenge_id, score, status, created_at').eq('student_id', userId)
             
             // Calculate dynamic XP from coding submissions as a fallback for RLS issues
-            let calculatedCodingXp = 0;
-            if (codingSubs) {
-                const uniqueChallenges = {};
-                codingSubs.forEach(sub => {
-                    if (sub.status === 'accepted') {
-                        if (!uniqueChallenges[sub.challenge_id] || sub.score > uniqueChallenges[sub.challenge_id]) {
-                            uniqueChallenges[sub.challenge_id] = sub.score;
-                        }
-                    }
-                });
-                Object.values(uniqueChallenges).forEach(score => calculatedCodingXp += score);
-            }
+            const calculatedCodingXp = calculateCodingXp(codingSubs);
 
             const { data: assessSubs } = await supabase.from('assessment_submissions').select('created_at').eq('student_id', userId)
 
@@ -154,22 +203,8 @@ export function AuthProvider({ children }) {
                 ...(liveAtt?.map(s => s.joined_at.split('T')[0]) || [])
             ])
 
-            const sortedDates = Array.from(activityDates).sort().reverse()
-            let streakCount = 0
-            if (sortedDates.length > 0) {
-                const today = new Date().toISOString().split('T')[0]
-                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-                let current = (sortedDates[0] === today || sortedDates[0] === yesterday) ? sortedDates[0] : null
-                if (current) {
-                    streakCount = 1
-                    for (let i = 1; i < sortedDates.length; i++) {
-                        const prevDate = new Date(current)
-                        prevDate.setDate(prevDate.getDate() - 1)
-                        const expected = prevDate.toISOString().split('T')[0]
-                        if (sortedDates[i] === expected) { streakCount++; current = sortedDates[i] } else break
-                    }
-                }
-            }
+            const sortedDates = Array.from(activityDates).sort((a, b) => a.localeCompare(b)).reverse()
+            const streakCount = calculateStreak(sortedDates)
 
             // Use shared rank constants — single source of truth
             const currentTier = getTierForXP(totalXp)
@@ -181,40 +216,25 @@ export function AuthProvider({ children }) {
         } catch (err) { console.error(err) }
     }
 
-    async function signUp({ email, password, name, role }) {
-        if (['organizer', 'main_admin', 'sub_admin'].includes(role)) {
-            const { data: invite } = await supabase.from('organizer_invites').select('*').eq('email', email.toLowerCase()).single()
-            if (!invite) throw new Error('Not authorized as organizer.')
-        }
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name, role } } })
-        if (error) throw error
-        if (data.user && ['organizer', 'main_admin', 'sub_admin'].includes(role)) {
-            await supabase.from('organizer_invites').delete().eq('email', email.toLowerCase())
-        }
-        return data
-    }
-
-    async function signIn({ email, password }) {
-        const { data, error } = await supabase.auth.signInWithPassword({ email: (email || '').trim().toLowerCase(), password })
-        if (error) throw error
-        return data
-    }
-
-    async function signOut() {
+    const signOut = useCallback(async () => {
         await supabase.auth.signOut()
         setUser(null)
         setProfile(null)
         setStats({ xp: 0, solved: 0, streak: 0, completedCourses: [] })
-    }
+    }, [])
 
-    const value = {
+    const value = useMemo(() => ({
         user, profile, role: profile?.role, loading, signUp, signIn, signOut,
         fetchProfile, isProfileComplete, stats, isExpired,
         refreshStats: () => profile?.id && loadAchievementStats(profile.id),
         refreshProfileStatus: () => user?.id && fetchProfile(user.id)
-    }
+    }), [user, profile, loading, isProfileComplete, stats, isExpired, signOut]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+AuthProvider.propTypes = {
+    children: PropTypes.node.isRequired,
 }
 
 export function useAuth() { return useContext(AuthContext) }
