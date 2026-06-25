@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
+import PropTypes from 'prop-types'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Room, RoomEvent, Track } from 'livekit-client'
 import FloatingMeetingWidget from '../components/FloatingMeetingWidget'
@@ -12,7 +13,7 @@ const MeetingContext = createContext(null)
 export const useMeeting = () => useContext(MeetingContext)
 
 // ─── Navigation Guard Dialog ─────────────────────────────────────────────────
-function NavigationGuardDialog({ onMinimize, onStay, onLeave }) {
+function NavigationGuardDialog({ onMinimize, onStay, onLeave, meeting }) {
     return (
         <div style={{
             position: 'fixed', inset: 0, zIndex: 100000,
@@ -81,6 +82,15 @@ function NavigationGuardDialog({ onMinimize, onStay, onLeave }) {
             `}</style>
         </div>
     )
+}
+
+NavigationGuardDialog.propTypes = {
+    onMinimize: PropTypes.func.isRequired,
+    onStay: PropTypes.func.isRequired,
+    onLeave: PropTypes.func.isRequired,
+    meeting: PropTypes.shape({
+        fallbackName: PropTypes.string
+    })
 }
 
 // ─── Meeting Provider ────────────────────────────────────────────────────────
@@ -960,6 +970,7 @@ export function MeetingProvider({ children }) {
                     onMinimize={handleNavGuardMinimize}
                     onStay={handleNavGuardStay}
                     onLeave={handleNavGuardLeave}
+                    meeting={meeting}
                 />
             )}
 

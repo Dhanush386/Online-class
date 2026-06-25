@@ -187,6 +187,7 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                         {/* Resize Handle */}
                         <div 
                             role="slider"
+                            tabIndex={0}
                             aria-valuemin={20}
                             aria-valuemax={80}
                             aria-valuenow={splitRatio}
