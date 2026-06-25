@@ -734,10 +734,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .dropdown-item:hover {
   background: rgba(99, 102, 241, 0.08);
-  color: var(--primary-400);
+  color: var(--primary-700);
 }
 
-.dropdown-item.danger:hover { background: rgba(239, 68, 68, 0.08); color: #f87171; }
+.dropdown-item.danger:hover { background: rgba(239, 68, 68, 0.08); color: #991b1b; }
 
 .dropdown-divider {
   height: 1px;
@@ -870,7 +870,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-full);
   font-size: 0.7rem;
   font-weight: 700;
-  color: #f87171;
+  color: #991b1b;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
