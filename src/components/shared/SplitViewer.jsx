@@ -29,12 +29,12 @@ const formatSlideUrl = (url) => {
 export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onClose, onEnded, loadingVideo }) {
     const [splitRatio, setSplitRatio] = useState(35); // 35% slides, 65% video
     const [isDragging, setIsDragging] = useState(false);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [isMobile, setIsMobile] = useState(globalThis.innerWidth < 768);
     const containerRef = useRef(null);
 
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
-        window.addEventListener('resize', handleResize);
+        const handleResize = () => setIsMobile(globalThis.innerWidth < 768);
+        globalThis.addEventListener('resize', handleResize);
         
         // Load preference
         const savedRatio = localStorage.getItem('learnova_split_ratio');
@@ -42,7 +42,7 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
             setSplitRatio(Number(savedRatio));
         }
 
-        return () => window.removeEventListener('resize', handleResize);
+        return () => globalThis.removeEventListener('resize', handleResize);
     }, []);
 
     // Protected Viewer Logic for Slides
@@ -94,15 +94,15 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
 
     useEffect(() => {
         if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
+            globalThis.addEventListener('mousemove', handleMouseMove);
+            globalThis.addEventListener('mouseup', handleMouseUp);
         } else {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
+            globalThis.removeEventListener('mousemove', handleMouseMove);
+            globalThis.removeEventListener('mouseup', handleMouseUp);
         }
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
+            globalThis.removeEventListener('mousemove', handleMouseMove);
+            globalThis.removeEventListener('mouseup', handleMouseUp);
         };
     }, [isDragging, splitRatio]); // Re-bind with updated ratio
 
@@ -186,6 +186,10 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
 
                         {/* Resize Handle */}
                         <div 
+                            role="separator"
+                            tabIndex={0}
+                            aria-valuenow={splitRatio}
+                            aria-label="Resize panels"
                             onMouseDown={() => setIsDragging(true)}
                             style={{ 
                                 width: '8px', 
@@ -322,3 +326,15 @@ function SlideViewer({ url, title }) {
         </div>
     );
 }
+
+VideoPlayer.propTypes = {
+    videoUrl: PropTypes.string,
+    videoType: PropTypes.string,
+    onEnded: PropTypes.func,
+    title: PropTypes.string.isRequired
+};
+
+SlideViewer.propTypes = {
+    url: PropTypes.string,
+    title: PropTypes.string.isRequired
+};
