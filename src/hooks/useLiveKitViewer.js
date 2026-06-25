@@ -17,73 +17,73 @@ export function useLiveKitViewer(assessmentId) {
     // Maps studentId (identity) to their ConnectionQuality
     const [connectionQualities, setConnectionQualities] = useState({});
 
+    const handleConnectionQualityChanged = useCallback((participant, quality) => {
+        const studentId = participant.identity;
+        const qualityStr = typeof quality === 'string' ? quality : String(quality);
+        setConnectionQualities(prev => ({
+            ...prev,
+            [studentId]: qualityStr.toLowerCase()
+        }));
+    }, []);
+
+    const handleTrackSubscribed = useCallback((track, publication, participant) => {
+        const studentId = participant.identity;
+        
+        if (track.kind === 'audio') {
+            track.attach();
+            console.log('[LiveKit Viewer] Audio track attached and playing for:', studentId);
+        }
+        
+        setLiveStreams(prev => {
+            const currentStream = prev[studentId] || new MediaStream();
+            if (!currentStream.getTracks().includes(track.mediaStreamTrack)) {
+                currentStream.addTrack(track.mediaStreamTrack);
+            }
+            return { ...prev, [studentId]: currentStream };
+        });
+    }, []);
+
+    const handleTrackUnsubscribed = useCallback((track, publication, participant) => {
+        const studentId = participant.identity;
+        
+        if (track.kind === 'audio') {
+            track.detach();
+            console.log('[LiveKit Viewer] Audio track detached for:', studentId);
+        }
+        
+        setLiveStreams(prev => {
+            const currentStream = prev[studentId];
+            if (currentStream) {
+                const newStream = new MediaStream(currentStream.getTracks().filter(t => t.id !== track.mediaStreamTrack.id));
+                if (newStream.getTracks().length === 0) {
+                    const next = { ...prev };
+                    delete next[studentId];
+                    return next;
+                }
+                return { ...prev, [studentId]: newStream };
+            }
+            return prev;
+        });
+    }, []);
+
+    const handleParticipantDisconnected = useCallback((participant) => {
+        setLiveStreams(prev => {
+            const next = { ...prev };
+            delete next[participant.identity];
+            return next;
+        });
+        setConnectionQualities(prev => {
+            const next = { ...prev };
+            delete next[participant.identity];
+            return next;
+        });
+    }, []);
+
     useEffect(() => {
         if (!assessmentId) return;
 
         let isMounted = true;
         const roomName = `assessment-${assessmentId}`;
-
-        const handleConnectionQualityChanged = (participant, quality) => {
-            const studentId = participant.identity;
-            const qualityStr = typeof quality === 'string' ? quality : String(quality);
-            setConnectionQualities(prev => ({
-                ...prev,
-                [studentId]: qualityStr.toLowerCase()
-            }));
-        };
-
-        const handleTrackSubscribed = (track, publication, participant) => {
-            const studentId = participant.identity;
-            
-            if (track.kind === 'audio') {
-                track.attach();
-                console.log('[LiveKit Viewer] Audio track attached and playing for:', studentId);
-            }
-            
-            setLiveStreams(prev => {
-                const currentStream = prev[studentId] || new MediaStream();
-                if (!currentStream.getTracks().includes(track.mediaStreamTrack)) {
-                    currentStream.addTrack(track.mediaStreamTrack);
-                }
-                return { ...prev, [studentId]: currentStream };
-            });
-        };
-
-        const handleTrackUnsubscribed = (track, publication, participant) => {
-            const studentId = participant.identity;
-            
-            if (track.kind === 'audio') {
-                track.detach();
-                console.log('[LiveKit Viewer] Audio track detached for:', studentId);
-            }
-            
-            setLiveStreams(prev => {
-                const currentStream = prev[studentId];
-                if (currentStream) {
-                    const newStream = new MediaStream(currentStream.getTracks().filter(t => t.id !== track.mediaStreamTrack.id));
-                    if (newStream.getTracks().length === 0) {
-                        const next = { ...prev };
-                        delete next[studentId];
-                        return next;
-                    }
-                    return { ...prev, [studentId]: newStream };
-                }
-                return prev;
-            });
-        };
-
-        const handleParticipantDisconnected = (participant) => {
-            setLiveStreams(prev => {
-                const next = { ...prev };
-                delete next[participant.identity];
-                return next;
-            });
-            setConnectionQualities(prev => {
-                const next = { ...prev };
-                delete next[participant.identity];
-                return next;
-            });
-        };
 
         const connectAndSubscribe = async () => {
             try {
@@ -138,7 +138,7 @@ export function useLiveKitViewer(assessmentId) {
                 roomRef.current = null;
             }
         };
-    }, [assessmentId]);
+    }, [assessmentId, handleConnectionQualityChanged, handleTrackSubscribed, handleTrackUnsubscribed, handleParticipantDisconnected]);
 
     return { isConnected, liveStreams, connectionQualities };
 }

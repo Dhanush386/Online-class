@@ -519,143 +519,144 @@ export function MeetingProvider({ children }) {
         }
     }, [meeting.gToken, meeting.videoData])
 
+    const handleUploadProgress = useCallback((e) => {
+        if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100)
+            setMeeting(prev => ({ ...prev, uploadProgress: pct }))
+        }
+    }, [])
+
+    const handleUploadComplete = useCallback(async (xhr, token, vidId, durationSeconds, fileSizeMb) => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            const data = JSON.parse(xhr.responseText)
+            const fileId = data.id
+
+            if (fileId) {
+                try {
+                    await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ role: 'reader', type: 'anyone' })
+                    })
+                } catch (permErr) {
+                    console.error('Failed to set permissions on Drive file', permErr)
+                }
+
+                const driveLink = `https://drive.google.com/file/d/${fileId}/preview`
+                if (vidId) {
+                    await supabase
+                        .from('videos')
+                        .update({ 
+                            video_url: driveLink,
+                            drive_file_id: fileId,
+                            duration_seconds: durationSeconds,
+                            file_size_mb: fileSizeMb,
+                            recording_status: 'completed',
+                            recorded_at: new Date().toISOString()
+                        })
+                        .eq('id', vidId)
+                }
+                return true
+            }
+        } else {
+            console.error('Upload to Drive failed:', xhr.responseText)
+        }
+        return false
+    }, [])
+
+    const handleRecordingStop = useCallback(async (resolve) => {
+        setMeeting(prev => ({ ...prev, isRecording: false, isRecordingPaused: false, isUploading: true, uploadProgress: 0 }));
+        let success = false;
+        
+        const streams = mediaRecorderRef.current.__streamsToStop;
+        cleanupRecordingStreams(streams);
+
+        try {
+            const finalBlob = new Blob(recordedChunksRef.current, { type: 'video/webm' })
+            const fileSizeMb = (finalBlob.size / (1024 * 1024)).toFixed(2)
+            const vidId = meeting.videoId
+            const token = meeting.gToken
+            const session = meeting.recordingSession
+            const durationSeconds = session?.startedAt ? Math.floor((Date.now() - session.startedAt) / 1000) : 0
+            const meetingTitle = meeting.videoData?.title || 'Class_Recording'
+
+            const metadata = { name: session?.fileName || `${meetingTitle}.webm`, mimeType: 'video/webm' }
+            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`, 
+                    'Content-Type': 'application/json; charset=UTF-8', 
+                    'X-Upload-Content-Type': 'video/webm' 
+                },
+                body: JSON.stringify(metadata)
+            })
+
+            const uploadUrl = res.headers.get('Location')
+            if (!uploadUrl) throw new Error('Failed to get Google Drive upload session URL.')
+
+            if (vidId) {
+                await supabase.from('videos').update({ recording_status: 'uploading' }).eq('id', vidId)
+            }
+
+            const uploadPromise = new Promise((resolveUpload, rejectUpload) => {
+                const xhr = new XMLHttpRequest()
+                xhr.open('PUT', uploadUrl)
+                xhr.upload.onprogress = handleUploadProgress
+                xhr.onload = async () => {
+                    const ok = await handleUploadComplete(xhr, token, vidId, durationSeconds, fileSizeMb)
+                    resolveUpload(ok)
+                }
+                xhr.onerror = () => rejectUpload(new Error('Network error during upload'))
+                xhr.send(finalBlob)
+            })
+
+            success = await uploadPromise
+            if (!success && vidId) {
+                await supabase.from('videos').update({ recording_status: 'failed' }).eq('id', vidId)
+                setMeeting(prev => ({
+                    ...prev,
+                    failedUploads: {
+                        ...prev.failedUploads,
+                        [vidId]: { finalBlob, token, durationSeconds, fileSizeMb, title: meetingTitle }
+                    }
+                }))
+            }
+        } catch (err) {
+            console.error('Recording upload error:', err)
+            if (meeting.videoId) {
+                await supabase.from('videos').update({ recording_status: 'failed' }).eq('id', meeting.videoId)
+                setMeeting(prev => ({
+                    ...prev,
+                    failedUploads: {
+                        ...prev.failedUploads,
+                        [meeting.videoId]: { 
+                            finalBlob: new Blob(recordedChunksRef.current, { type: 'video/webm' }), 
+                            token: meeting.gToken, 
+                            durationSeconds: 0, 
+                            fileSizeMb: '0.00', 
+                            title: meeting.videoData?.title || 'Class_Recording' 
+                        }
+                    }
+                }))
+            }
+        } finally {
+            setMeeting(prev => ({ ...prev, isUploading: false, uploadProgress: 0, recordingSession: null }))
+            if (success) {
+                alert('Success! Recording saved and linked to the course.'); 
+            } else {
+                alert('Failed to save the recording to Google Drive. Please check the console.');
+            }
+            resolve(success)
+        }
+    }, [meeting.videoId, meeting.gToken, meeting.recordingSession, meeting.videoData?.title, handleUploadProgress, handleUploadComplete])
+
     const stopAndUploadRecording = useCallback(async () => {
         if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') return;
-        
         return new Promise((resolve) => {
-            mediaRecorderRef.current.onstop = async () => {
-                setMeeting(prev => ({ ...prev, isRecording: false, isRecordingPaused: false, isUploading: true, uploadProgress: 0 }));
-                let success = false;
-                
-                const streams = mediaRecorderRef.current.__streamsToStop;
-                cleanupRecordingStreams(streams);
-
-                try {
-                    const finalBlob = new Blob(recordedChunksRef.current, { type: 'video/webm' })
-                    const fileSizeMb = (finalBlob.size / (1024 * 1024)).toFixed(2)
-                    const vidId = meeting.videoId
-                    const token = meeting.gToken
-                    const session = meeting.recordingSession
-                    const durationSeconds = session?.startedAt ? Math.floor((Date.now() - session.startedAt) / 1000) : 0
-                    const meetingTitle = meeting.videoData?.title || 'Class_Recording'
-
-                    const metadata = { name: session?.fileName || `${meetingTitle}.webm`, mimeType: 'video/webm' }
-                    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
-                        method: 'POST',
-                        headers: { 
-                            'Authorization': `Bearer ${token}`, 
-                            'Content-Type': 'application/json; charset=UTF-8', 
-                            'X-Upload-Content-Type': 'video/webm' 
-                        },
-                        body: JSON.stringify(metadata)
-                    })
-
-                    const uploadUrl = res.headers.get('Location')
-                    if (!uploadUrl) throw new Error('Failed to get Google Drive upload session URL.')
-
-                    if (vidId) {
-                        await supabase.from('videos').update({ recording_status: 'uploading' }).eq('id', vidId)
-                    }
-
-                    const onProgress = (e) => {
-                        if (e.lengthComputable) {
-                            const pct = Math.round((e.loaded / e.total) * 100)
-                            setMeeting(prev => ({ ...prev, uploadProgress: pct }))
-                        }
-                    }
-
-                    const onLoad = async (xhr, resolveUpload) => {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            const data = JSON.parse(xhr.responseText)
-                            const fileId = data.id
-
-                            if (fileId) {
-                                try {
-                                    await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-                                        method: 'POST',
-                                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ role: 'reader', type: 'anyone' })
-                                    })
-                                } catch (permErr) {
-                                    console.error('Failed to set permissions on Drive file', permErr)
-                                }
-
-                                const driveLink = `https://drive.google.com/file/d/${fileId}/preview`
-                                if (vidId) {
-                                    await supabase
-                                        .from('videos')
-                                        .update({ 
-                                            video_url: driveLink,
-                                            drive_file_id: fileId,
-                                            duration_seconds: durationSeconds,
-                                            file_size_mb: fileSizeMb,
-                                            recording_status: 'completed',
-                                            recorded_at: new Date().toISOString()
-                                        })
-                                        .eq('id', vidId)
-                                }
-                                resolveUpload(true)
-                            } else {
-                                resolveUpload(false)
-                            }
-                        } else {
-                            console.error('Upload to Drive failed:', xhr.responseText)
-                            resolveUpload(false)
-                        }
-                    }
-
-                    const uploadPromise = new Promise((resolveUpload, rejectUpload) => {
-                        const xhr = new XMLHttpRequest()
-                        xhr.open('PUT', uploadUrl)
-                        xhr.upload.onprogress = onProgress
-                        xhr.onload = () => onLoad(xhr, resolveUpload)
-                        xhr.onerror = () => rejectUpload(new Error('Network error during upload'))
-                        xhr.send(finalBlob)
-                    })
-
-                    success = await uploadPromise
-                    if (!success && vidId) {
-                        await supabase.from('videos').update({ recording_status: 'failed' }).eq('id', vidId)
-                        setMeeting(prev => ({
-                            ...prev,
-                            failedUploads: {
-                                ...prev.failedUploads,
-                                [vidId]: { finalBlob, token, durationSeconds, fileSizeMb, title: meetingTitle }
-                            }
-                        }))
-                    }
-                } catch (err) {
-                    console.error('Recording upload error:', err)
-                    if (meeting.videoId) {
-                        await supabase.from('videos').update({ recording_status: 'failed' }).eq('id', meeting.videoId)
-                        setMeeting(prev => ({
-                            ...prev,
-                            failedUploads: {
-                                ...prev.failedUploads,
-                                [meeting.videoId]: { 
-                                    finalBlob: new Blob(recordedChunksRef.current, { type: 'video/webm' }), 
-                                    token: meeting.gToken, 
-                                    durationSeconds: 0, 
-                                    fileSizeMb: '0.00', 
-                                    title: meeting.videoData?.title || 'Class_Recording' 
-                                }
-                            }
-                        }))
-                    }
-                } finally {
-                    setMeeting(prev => ({ ...prev, isUploading: false, uploadProgress: 0, recordingSession: null }))
-                    if (success) {
-                        alert('Success! Recording saved and linked to the course.'); 
-                    } else {
-                        alert('Failed to save the recording to Google Drive. Please check the console.');
-                    }
-                    resolve(success)
-                }
-            };
-            
+            mediaRecorderRef.current.onstop = () => handleRecordingStop(resolve);
             mediaRecorderRef.current.stop();
         })
-    }, [meeting.videoId, meeting.gToken, meeting.recordingSession])
+    }, [handleRecordingStop])
 
     const pauseRecording = useCallback(() => {
         if (mediaRecorderRef.current?.state === 'recording') {
