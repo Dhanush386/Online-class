@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import PropTypes from 'prop-types'
 
 /**
  * AnimatedCounter — Counts up from 0 to target value on mount.
@@ -10,7 +11,7 @@ export default function AnimatedCounter({ value = 0, duration = 1200, decimals =
   const startRef = useRef(null)
 
   useEffect(() => {
-    if (typeof value !== 'number' || isNaN(value)) return
+    if (typeof value !== 'number' || Number.isNaN(value)) return
     const start = 0
     const end   = value
 
@@ -20,7 +21,7 @@ export default function AnimatedCounter({ value = 0, duration = 1200, decimals =
       const progress = Math.min(elapsed / duration, 1)
       // Ease out expo
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
-      setDisplay(parseFloat((start + (end - start) * eased).toFixed(decimals)))
+      setDisplay(Number.parseFloat((start + (end - start) * eased).toFixed(decimals)))
       if (progress < 1) frameRef.current = requestAnimationFrame(animate)
     }
 
@@ -30,4 +31,10 @@ export default function AnimatedCounter({ value = 0, duration = 1200, decimals =
   }, [value, duration, decimals])
 
   return <>{decimals > 0 ? display.toFixed(decimals) : Math.round(display).toLocaleString()}</>
+}
+
+AnimatedCounter.propTypes = {
+  value: PropTypes.number,
+  duration: PropTypes.number,
+  decimals: PropTypes.number,
 }
