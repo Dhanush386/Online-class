@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { 
-    MessageSquare, X, Send, Bot, User, Loader2, Sparkles, 
-    PlusCircle, History, Ticket, Home, ExternalLink, ChevronRight,
-    MessageCircle, Trash2, Clock, Paperclip, File, Image as ImageIcon
+    MessageSquare, X, Send, Loader2,
+    PlusCircle, History, Ticket, ExternalLink, ChevronRight,
+    MessageCircle, Trash2, Clock, Paperclip, Image as ImageIcon
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -164,6 +164,7 @@ export default function AIChatbot() {
     const handleStartNewChat = () => {
         const newId = `session_${Date.now()}_${crypto.randomUUID().split("-")[0]}`
         const initialMsg = { 
+            id: crypto.randomUUID(),
             role: 'assistant', 
             content: "Hello! welcome to Learnova. I'm your learning assistant. You can ask me questions about your course, coding challenges, or any support issues. How can I help you today?" 
         }
@@ -186,7 +187,7 @@ export default function AIChatbot() {
 
     const handleDeleteSession = (e, sessionId) => {
         e.stopPropagation()
-        if (window.confirm('Delete this chat history?')) {
+        if (globalThis.confirm('Delete this chat history?')) {
             const updatedSessions = sessions.filter(s => s.id !== sessionId)
             setSessions(updatedSessions)
             if (activeSessionId === sessionId) {
@@ -198,7 +199,7 @@ export default function AIChatbot() {
     }
 
     const handleClearChat = () => {
-        if (window.confirm('Clear all messages in this session?')) {
+        if (globalThis.confirm('Clear all messages in this session?')) {
             setMessages([])
         }
     }
@@ -218,7 +219,7 @@ export default function AIChatbot() {
         e.preventDefault()
         if (!input.trim() || isLoading || !activeSessionId) return
 
-        const userMessage = { role: 'user', content: input.trim() }
+        const userMessage = { id: crypto.randomUUID(), role: 'user', content: input.trim() }
         setMessages(prev => [...prev, userMessage])
         setInput('')
         setIsLoading(true)
@@ -252,7 +253,7 @@ export default function AIChatbot() {
                         if (response.ok) {
                             const data = await response.json()
                             const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that response."
-                            setMessages(prev => [...prev, { role: 'assistant', content: aiText }])
+                            setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: aiText }])
                             success = true
                             break 
                         } else {
@@ -267,12 +268,13 @@ export default function AIChatbot() {
                 if (!success) throw new Error(lastError || "All models busy.")
             } else {
                 setTimeout(() => {
-                    setMessages(prev => [...prev, { role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
+                    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
                 }, 1000)
             }
         } catch (error) {
+            console.error('Chat API Error:', error)
             setTimeout(() => {
-                setMessages(prev => [...prev, { role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
+                setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
             }, 500)
         } finally {
             setIsLoading(false)
@@ -298,6 +300,12 @@ export default function AIChatbot() {
         </div>
     )
 
+    const tabLabels = {
+        home: 'Home',
+        past: 'Past chats',
+        tickets: 'Ticket history'
+    }
+
     const renderTabs = () => (
         <div style={{ display: 'flex', background: 'white', borderBottom: '1px solid #f1f5f9', padding: '0 0.5rem' }}>
             {['home', 'past', 'tickets'].map((tab) => (
@@ -306,7 +314,7 @@ export default function AIChatbot() {
                     onClick={() => { setActiveTab(tab); setIsChatting(false); }}
                     style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366f1' : 'var(--text-muted)', position: 'relative', cursor: 'pointer', flex: 1, textTransform: 'capitalize' }}
                 >
-                    {tab === 'home' ? 'Home' : tab === 'past' ? 'Past chats' : 'Ticket history'}
+                    {tabLabels[tab]}
                     {activeTab === tab && <div style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: '3px', background: 'var(--text-primary)', borderRadius: '3px 3px 0 0' }} />}
                 </button>
             ))}
@@ -347,7 +355,9 @@ export default function AIChatbot() {
                 onClick={handleStartNewChat}
                 style={{ width: '100%', padding: '1rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '14px', fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 10px 20px rgba(124, 58, 237, 0.2)', cursor: 'pointer', transition: 'transform 0.2s', marginTop: '2rem' }}
                 onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onFocus={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                onBlur={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
                 <PlusCircle size={20} fill="white" color="#7c3aed" /> Start New Chat
             </button>
@@ -373,7 +383,7 @@ export default function AIChatbot() {
                 style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'white' }}
             >
                 {getActiveMessages().map((msg, i) => (
-                    <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                    <div key={msg.id || i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
                         <div style={{ padding: '0.75rem 1rem', borderRadius: '16px', background: msg.role === 'user' ? '#7c3aed' : '#f1f5f9', color: msg.role === 'user' ? 'white' : 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
                             {msg.content}
                         </div>
@@ -417,10 +427,20 @@ export default function AIChatbot() {
                         return (
                             <div 
                                 key={s.id}
+                                role="button"
+                                tabIndex={0}
                                 onClick={() => handleResumeChat(s.id)}
-                                style={{ padding: '1rem', borderRadius: '16px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault()
+                                        handleResumeChat(s.id)
+                                    }
+                                }}
+                                style={{ padding: '1rem', borderRadius: '16px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'left', width: '100%', fontFamily: 'inherit' }}
                                 onMouseOver={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                                onFocus={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(-1px)' }}
                                 onMouseOut={(e) => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.transform = 'translateY(0)' }}
+                                onBlur={(e) => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.transform = 'translateY(0)' }}
                             >
                                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
                                     <div style={{ padding: '8px', background: '#f8fafc', borderRadius: '10px', color: '#6366f1' }}><MessageSquare size={18} /></div>
@@ -433,7 +453,9 @@ export default function AIChatbot() {
                                     onClick={(e) => handleDeleteSession(e, s.id)}
                                     style={{ padding: '8px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
                                     onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                                    onFocus={(e) => e.currentTarget.style.color = '#ef4444'}
                                     onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                                    onBlur={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                                 >
                                     <Trash2 size={16} />
                                 </button>
@@ -460,8 +482,9 @@ export default function AIChatbot() {
                     </div>
                     <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Subject</label>
+                            <label htmlFor="ticket-subject" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Subject</label>
                             <input 
+                                id="ticket-subject"
                                 type="text"
                                 placeholder="What's the issue about?"
                                 value={newTicketSubject}
@@ -471,8 +494,9 @@ export default function AIChatbot() {
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Description</label>
+                            <label htmlFor="ticket-description" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Description</label>
                             <textarea 
+                                id="ticket-description"
                                 placeholder="Provide more details..."
                                 value={newTicketMessage}
                                 onChange={(e) => setNewTicketMessage(e.target.value)}
@@ -536,6 +560,73 @@ export default function AIChatbot() {
             )
         }
 
+        const renderTicketListContent = () => {
+            if (isTicketLoading && tickets.length === 0) {
+                return (
+                    <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Loader2 className="animate-spin" size={24} color="#6366f1" />
+                    </div>
+                )
+            }
+            
+            if (tickets.length === 0) {
+                return (
+                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <Ticket size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                        <p style={{ margin: 0, fontSize: '0.85rem' }}>No tickets found yet.</p>
+                    </div>
+                )
+            }
+
+            return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {tickets.map(t => (
+                        <div 
+                            key={t.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                                setIsOpen(false)
+                                const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
+                                navigate(supportPath)
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    setIsOpen(false)
+                                    const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
+                                    navigate(supportPath)
+                                }
+                            }}
+                            style={{ padding: '1rem', borderRadius: '14px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'left', fontFamily: 'inherit' }}
+                            onMouseOver={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                            onFocus={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                            onMouseOut={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
+                            onBlur={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+                                <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
+                                <span style={{ 
+                                    padding: '4px 8px', 
+                                    borderRadius: '6px', 
+                                    fontSize: '0.6rem', 
+                                    fontWeight: 700, 
+                                    textTransform: 'uppercase',
+                                    background: t.status === 'open' ? '#ecfdf5' : '#fef2f2',
+                                    color: t.status === 'open' ? '#10b981' : '#ef4444'
+                                }}>
+                                    {t.status}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                <Clock size={12} /> {new Date(t.created_at).toLocaleDateString()}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )
+        }
+
         return (
             <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
@@ -548,50 +639,7 @@ export default function AIChatbot() {
                     </button>
                 </div>
 
-                {isTicketLoading && tickets.length === 0 ? (
-                    <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Loader2 className="animate-spin" size={24} color="#6366f1" />
-                    </div>
-                ) : tickets.length === 0 ? (
-                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                        <Ticket size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
-                        <p style={{ margin: 0, fontSize: '0.85rem' }}>No tickets found yet.</p>
-                    </div>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {tickets.map(t => (
-                            <div 
-                                key={t.id}
-                                onClick={() => {
-                                    setIsOpen(false)
-                                    const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
-                                    navigate(supportPath)
-                                }}
-                                style={{ padding: '1rem', borderRadius: '14px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
-                                onMouseOver={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
-                                onMouseOut={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                                    <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
-                                    <span style={{ 
-                                        padding: '4px 8px', 
-                                        borderRadius: '6px', 
-                                        fontSize: '0.6rem', 
-                                        fontWeight: 700, 
-                                        textTransform: 'uppercase',
-                                        background: t.status === 'open' ? '#ecfdf5' : '#fef2f2',
-                                        color: t.status === 'open' ? '#10b981' : '#ef4444'
-                                    }}>
-                                        {t.status}
-                                    </span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                    <Clock size={12} /> {new Date(t.created_at).toLocaleDateString()}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                {renderTicketListContent()}
             </div>
         )
     }
