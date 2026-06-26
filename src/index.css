@@ -867,12 +867,12 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 0.4rem;
   padding: 0.2rem 0.6rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: #450a0a; /* solid dark red — contrast with #fca5a5 ~8.1:1 ✅ WCAG AA */
+  border: 1px solid #991b1b;
   border-radius: var(--radius-full);
   font-size: 0.7rem;
   font-weight: 700;
-  color: #991b1b;
+  color: #fca5a5;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
