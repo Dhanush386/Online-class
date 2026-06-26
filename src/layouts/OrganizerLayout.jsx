@@ -6,9 +6,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { useMeeting } from '../contexts/MeetingContext'
 import {
   LayoutDashboard, Radio, Calendar, Users, LogOut,
-  GraduationCap, Menu, Bell, BookOpen, ClipboardList, Code, Globe,
+  GraduationCap, Menu, Bell, BookOpen, ClipboardList, Code,
   MessageSquare, Info, AlertTriangle, CheckCircle, Clock, Trophy,
-  CreditCard, ChevronDown, Search, Settings, BarChart2, Shield, FolderOpen
+  CreditCard, ChevronDown, Settings, BarChart2, Shield, FolderOpen
 } from 'lucide-react'
 import AIChatbot from '../components/shared/AIChatbot'
 import CommandPalette from '../components/CommandPalette'
