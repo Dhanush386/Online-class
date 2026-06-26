@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types'
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -149,7 +150,7 @@ export default function OrganizerLayout() {
   const inClassroomOnMobile = isMobile && location.pathname.includes('/classroom/')
 
   function getMainPadding() {
-    if (location.pathname.includes('/classroom/')) return 0;
+    if (location.pathname.includes('/classroom/')) return '0px';
     return isMobile ? '1rem' : '1.75rem 2rem';
   }
 
@@ -158,12 +159,11 @@ export default function OrganizerLayout() {
       {/* Mobile overlay */}
       <AnimatePresence>
         {!inClassroomOnMobile && isMobile && mobileMenuOpen && (
-          <motion.div
+          <motion.button
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setMobileMenuOpen(false)}
-            role="button" tabIndex={0} aria-label="Close mobile menu"
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setMobileMenuOpen(false); } }}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)', zIndex: 40 }}
+            aria-label="Close mobile menu"
+            style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)', zIndex: 40, border: 'none', padding: 0, cursor: 'pointer' }}
           />
         )}
       </AnimatePresence>
@@ -321,6 +321,22 @@ function OrganizerSidebar({
   )
 }
 
+OrganizerSidebar.propTypes = {
+  isMobile: PropTypes.bool.isRequired,
+  mobileMenuOpen: PropTypes.bool.isRequired,
+  collapsed: PropTypes.bool.isRequired,
+  roleColor: PropTypes.string.isRequired,
+  roleLabel: PropTypes.string.isRequired,
+  profile: PropTypes.shape({
+    role: PropTypes.string,
+    name: PropTypes.string
+  }),
+  setMobileMenuOpen: PropTypes.func.isRequired,
+  requestNavigation: PropTypes.func.isRequired,
+  navigate: PropTypes.func.isRequired,
+  handleSignOut: PropTypes.func.isRequired
+}
+
 function OrganizerHeader({
   isMobile, mobileMenuOpen, setMobileMenuOpen, collapsed, setCollapsed,
   profile, roleLabel, handleSignOut, showNotifications, setShowNotifications,
@@ -357,11 +373,10 @@ function OrganizerHeader({
           <AnimatePresence>
             {showNotifications && (
               <>
-                <div 
+                <button 
                   onClick={() => setShowNotifications(false)} 
-                  role="button" tabIndex={0} aria-label="Close notifications menu"
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowNotifications(false); } }}
-                  style={{ position: 'fixed', inset: 0, zIndex: 45 }} 
+                  aria-label="Close notifications menu"
+                  style={{ position: 'fixed', inset: 0, zIndex: 45, background: 'transparent', border: 'none', padding: 0, cursor: 'default' }} 
                 />
                 <motion.div
                   initial={{ opacity: 0, y: -8, scale: 0.96 }}
@@ -431,11 +446,10 @@ function OrganizerHeader({
           <AnimatePresence>
             {showProfileMenu && (
               <>
-                <div 
+                <button 
                   onClick={() => setShowProfileMenu(false)} 
-                  role="button" tabIndex={0} aria-label="Close profile menu"
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowProfileMenu(false); } }}
-                  style={{ position: 'fixed', inset: 0, zIndex: 145 }} 
+                  aria-label="Close profile menu"
+                  style={{ position: 'fixed', inset: 0, zIndex: 145, background: 'transparent', border: 'none', padding: 0, cursor: 'default' }} 
                 />
                 <motion.div
                   initial={{ opacity: 0, y: -8, scale: 0.96 }}
@@ -467,4 +481,34 @@ function OrganizerHeader({
       </div>
     </header>
   )
+}
+
+OrganizerHeader.propTypes = {
+  isMobile: PropTypes.bool.isRequired,
+  mobileMenuOpen: PropTypes.bool.isRequired,
+  setMobileMenuOpen: PropTypes.func.isRequired,
+  collapsed: PropTypes.bool.isRequired,
+  setCollapsed: PropTypes.func.isRequired,
+  profile: PropTypes.shape({
+    name: PropTypes.string,
+    role: PropTypes.string
+  }),
+  roleLabel: PropTypes.string.isRequired,
+  handleSignOut: PropTypes.func.isRequired,
+  showNotifications: PropTypes.bool.isRequired,
+  setShowNotifications: PropTypes.func.isRequired,
+  unreadCount: PropTypes.number.isRequired,
+  handleMarkAllAsRead: PropTypes.func.isRequired,
+  notifications: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    isRead: PropTypes.bool,
+    type: PropTypes.string,
+    title: PropTypes.string,
+    message: PropTypes.string,
+    created_at: PropTypes.string
+  })).isRequired,
+  showProfileMenu: PropTypes.bool.isRequired,
+  setShowProfileMenu: PropTypes.func.isRequired,
+  requestNavigation: PropTypes.func.isRequired,
+  navigate: PropTypes.func.isRequired
 }
