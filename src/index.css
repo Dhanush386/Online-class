@@ -735,11 +735,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .dropdown-item:hover {
-  background: rgba(99, 102, 241, 0.08);
-  color: var(--primary-700);
+  background: #1e1b4b; /* solid dark indigo — contrast with #a5b4fc ~6.8:1 */
+  color: #a5b4fc;
 }
 
-.dropdown-item.danger:hover { background: rgba(239, 68, 68, 0.08); color: #991b1b; }
+.dropdown-item.danger:hover { background: #450a0a; color: #fca5a5; } /* contrast ~8.1:1 */
 
 .dropdown-divider {
   height: 1px;
