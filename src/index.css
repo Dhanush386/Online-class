@@ -480,12 +480,13 @@ h1, h2, h3, h4, h5, h6 {
   white-space: nowrap;
 }
 
-.badge-success { background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.2); }
-.badge-warning { background: rgba(245, 158, 11, 0.12); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.2); }
-.badge-danger  { background: rgba(239, 68, 68, 0.12);  color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
-.badge-info    { background: rgba(59, 130, 246, 0.12); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.2); }
-.badge-primary { background: rgba(99, 102, 241, 0.12); color: var(--primary-300); border: 1px solid rgba(99, 102, 241, 0.2); }
-.badge-neutral { background: rgba(100, 116, 139, 0.1); color: var(--text-primary); border: 1px solid rgba(100, 116, 139, 0.15); }
+/* Solid dark tinted backgrounds ensure WCAG AA contrast (≥4.5:1) for all badge text */
+.badge-success { background: #052e16; color: #4ade80; border: 1px solid #166534; } /* contrast ~7.8:1 */
+.badge-warning { background: #422006; color: #fde047; border: 1px solid #854d0e; } /* contrast ~9.5:1 */
+.badge-danger  { background: #450a0a; color: #f87171; border: 1px solid #991b1b; } /* contrast ~5.2:1 */
+.badge-info    { background: #0c1a4b; color: #60a5fa; border: 1px solid #1e3a8a; } /* contrast ~6.1:1 */
+.badge-primary { background: #1e1b4b; color: #a5b4fc; border: 1px solid #3730a3; } /* contrast ~6.8:1 */
+.badge-neutral { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; } /* contrast ~7.4:1 */
 
 /* XP / Gamification chips */
 .xp-chip {
@@ -500,10 +501,11 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(8px);
 }
 
-.xp-chip-streak { background: rgba(249, 115, 22, 0.12); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.2); }
-.xp-chip-xp     { background: rgba(99, 102, 241, 0.1);  color: var(--primary-300); border: 1px solid rgba(99, 102, 241, 0.2); }
-.xp-chip-rank   { background: rgba(139, 92, 246, 0.1);  color: #d8b4fe; border: 1px solid rgba(139, 92, 246, 0.2); }
-.xp-chip-level  { background: rgba(16, 185, 129, 0.1);  color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.2); }
+/* Solid dark tinted backgrounds ensure WCAG AA contrast (≥4.5:1) for all chip text */
+.xp-chip-streak { background: #431407; color: #fb923c; border: 1px solid #9a3412; } /* contrast ~5.5:1 */
+.xp-chip-xp     { background: #1e1b4b; color: #a5b4fc; border: 1px solid #3730a3; } /* contrast ~6.8:1 */
+.xp-chip-rank   { background: #2e1065; color: #d8b4fe; border: 1px solid #6d28d9; } /* contrast ~7.2:1 */
+.xp-chip-level  { background: #052e16; color: #4ade80; border: 1px solid #166534; } /* contrast ~7.8:1 */
 
 /* ═══════════════════════════════════════════════════════════════
    PROGRESS
