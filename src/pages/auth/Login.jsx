@@ -23,7 +23,7 @@ export default function Login() {
   const [remember,    setRemember]    = useState(false)
 
   // Rotate feature card
-  useState(() => {
+  useEffect(() => {
     const id = setInterval(() => setFeatureIdx(i => (i + 1) % FEATURES.length), 3500)
     return () => clearInterval(id)
   })
@@ -43,8 +43,7 @@ export default function Login() {
     }
   }
 
-  const Feature = FEATURES[featureIdx]
-
+  const { icon: FeatureIcon, title, desc } = FEATURES[featureIdx]
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', position: 'relative', overflow: 'hidden' }}>
       <AnimatedBackground variant="auth" />
@@ -127,11 +126,11 @@ export default function Login() {
                   border: '1px solid rgba(99,102,241,0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Feature.icon size={22} color="#6366f1" />
+                  <FeatureIcon size={22} color="#6366f1" />
                 </div>
                 <div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: 4 }}>{Feature.title}</div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{Feature.desc}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: 4 }}>{title}</div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{desc}</div>
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -139,9 +138,9 @@ export default function Login() {
 
           {/* Feature dots */}
           <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.875rem' }}>
-            {FEATURES.map((_, i) => (
+            {FEATURES.map((feature, i) => (
               <button
-                key={i}
+                key={feature.title}
                 onClick={() => setFeatureIdx(i)}
                 style={{
                   width: i === featureIdx ? 20 : 6, height: 6, borderRadius: 3,

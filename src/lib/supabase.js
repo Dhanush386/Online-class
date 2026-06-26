@@ -13,6 +13,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storageKey: 'learnova-auth-token', // Explicitly named key for maximum stability
-        storage: window.localStorage
+        storage: globalThis.localStorage
     }
 })

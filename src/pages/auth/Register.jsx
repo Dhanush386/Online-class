@@ -197,7 +197,7 @@ export default function Register() {
 
                     {/* Role Selector */}
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <label className="form-label">I am a...</label>
+                        <div className="form-label">I am a...</div>
                         <div style={{ display: 'grid', gridTemplateColumns: isInvited ? '1fr 1fr' : '1fr', gap: '0.75rem' }}>
                             {[
                                 { value: 'student', label: 'Student', icon: BookOpen, color: '#10b981', show: true },

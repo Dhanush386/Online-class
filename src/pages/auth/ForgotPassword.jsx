@@ -69,7 +69,7 @@ export default function ForgotPassword() {
 
         try {
             // Verify the OTP
-            const { data, error: verifyError } = await supabase.auth.verifyOtp({
+            const { error: verifyError } = await supabase.auth.verifyOtp({
                 email: email.trim().toLowerCase(),
                 token: resetCode.trim(),
                 type: 'recovery'
@@ -96,6 +96,11 @@ export default function ForgotPassword() {
         }
     }
 
+    function getButtonText() {
+        if (loading) return 'Processing...'
+        return otpSent ? 'Reset Password' : <><Send size={18} /> Send OTP</>
+    }
+
     return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', padding: '1.5rem' }}>
             <div className="glass-card animate-scale-up" style={{ width: '100%', maxWidth: 420, padding: '2.5rem' }}>
@@ -108,7 +113,6 @@ export default function ForgotPassword() {
                         {otpSent ? "Enter the OTP sent to your email and your new password." : "Enter your email to receive a password reset OTP."}
                     </p>
                 </div>
-
                 {success ? (
                     <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
                         <CheckCircle size={48} color="#10b981" style={{ margin: '0 auto 1rem' }} />
@@ -122,7 +126,6 @@ export default function ForgotPassword() {
                                 {error}
                             </div>
                         )}
-
                         <div className="form-group">
                             <label htmlFor="email" className="form-label">Email Address</label>
                             <div style={{ position: 'relative' }}>
@@ -141,7 +144,6 @@ export default function ForgotPassword() {
                                 />
                             </div>
                         </div>
-
                         {otpSent && (
                             <>
                                 <div className="form-group">
@@ -176,7 +178,6 @@ export default function ForgotPassword() {
                                         </button>
                                     </div>
                                 </div>
-
                                 <div className="form-group">
                                     <label htmlFor="newPassword" className="form-label">New Password</label>
                                     <div style={{ position: 'relative' }}>
@@ -197,14 +198,13 @@ export default function ForgotPassword() {
                                 </div>
                             </>
                         )}
-
                         <button
                             type="submit"
                             disabled={loading}
                             className="btn-primary"
                             style={{ padding: '0.875rem', marginTop: '0.5rem', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                         >
-                            {loading ? 'Processing...' : (otpSent ? 'Reset Password' : <><Send size={18} /> Send OTP</>)}
+                            {getButtonText()}
                         </button>
 
                         <div style={{ textAlign: 'center', marginTop: '1rem' }}>

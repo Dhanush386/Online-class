@@ -17,6 +17,6 @@ export function toLocalInput(utcString) {
 export function toISOWithOffset(localStr) {
     if (!localStr) return null
     const d = new Date(localStr) // browser treats this string as local time
-    if (isNaN(d.getTime())) return null
+    if (Number.isNaN(d.getTime())) return null
     return d.toISOString()       // store as UTC ISO
 }
