@@ -912,6 +912,7 @@ export default function CodingManagement() {
                                             )}
                                         </div>
                                     ))}
+                                </div>
         </>
     );
 
@@ -972,6 +973,7 @@ export default function CodingManagement() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
         </>
     );
 
@@ -1213,11 +1215,9 @@ export default function CodingManagement() {
                                 </div>
 
                                 {renderStandardTestCases()}
-                                </div>
                                 </>
                                 ) : (
-                                    {renderSubQuestions()}
-                                    </div>
+                                    renderSubQuestions()
                                 )}
 
                                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
