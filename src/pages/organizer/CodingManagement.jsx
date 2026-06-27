@@ -591,7 +591,7 @@ export default function CodingManagement() {
                                     gap: '1rem',
                                     marginBottom: '1.25rem'
                                 }}>
-                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                    <div style={{ gridColumn: 'span 1' }}>
                                         <label htmlFor="course-id" className="form-label">Course</label>
                                         <select
                                             id="course-id"
@@ -605,13 +605,13 @@ export default function CodingManagement() {
                                             {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                                         </select>
                                     </div>
-                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                    <div style={{ gridColumn: 'span 1' }}>
                                         <label htmlFor="language" className="form-label">Language</label>
                                         <select id="language" name="language" className="form-input" value={formData.language} onChange={e => setFormData(p => ({ ...p, language: e.target.value }))} required>
                                             {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.icon} {l.name}</option>)}
                                         </select>
                                     </div>
-                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                    <div style={{ gridColumn: 'span 1' }}>
                                         <label htmlFor="difficulty" className="form-label">Difficulty</label>
                                         <select
                                             id="difficulty"
@@ -625,7 +625,7 @@ export default function CodingManagement() {
                                             ))}
                                         </select>
                                     </div>
-                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                    <div style={{ gridColumn: 'span 1' }}>
                                         <label htmlFor="xp_reward" className="form-label">XP Reward</label>
                                         <input
                                             id="xp_reward"
@@ -636,7 +636,7 @@ export default function CodingManagement() {
                                             onChange={e => setFormData({ ...formData, xp_reward: parseInt(e.target.value) || 15 })}
                                         />
                                     </div>
-                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1' }}>
+                                    <div style={{ gridColumn: 'span 1' }}>
                                         <label htmlFor="day_number" className="form-label">Day Number</label>
                                         <input
                                             id="day_number"
@@ -649,7 +649,7 @@ export default function CodingManagement() {
                                             required
                                         />
                                     </div>
-                                    <div style={{ gridColumn: window.innerWidth <= 600 ? 'span 1' : 'span 1', display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
+                                    <div style={{ gridColumn: 'span 1', display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                                             <input 
                                                 type="checkbox" 
