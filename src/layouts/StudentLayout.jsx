@@ -22,8 +22,6 @@ const NAV_GROUPS = [
     items: [
       { to: '/student',             icon: LayoutDashboard, label: 'Dashboard', end: true },
       { to: '/student/courses',     icon: BookOpen,        label: 'My Courses' },
-      { to: '/student/assessments', icon: ClipboardList,   label: 'Assessments' },
-      { to: '/student/coding',      icon: Code,            label: 'Coding Practice' },
     ],
   },
   {

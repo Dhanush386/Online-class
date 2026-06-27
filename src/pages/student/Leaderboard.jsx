@@ -64,7 +64,14 @@ export default function Leaderboard() {
             
             if (error) throw error
 
-            const leaderboardData = (students || []).map((s, index) => ({
+            const sortedStudents = (students || []).sort((a, b) => {
+                const xpA = a.xp || 0;
+                const xpB = b.xp || 0;
+                if (xpB !== xpA) return xpB - xpA;
+                return (a.name || '').localeCompare(b.name || '');
+            });
+
+            const leaderboardData = sortedStudents.map((s, index) => ({
                 ...s,
                 xp: s.xp || 0,
                 rank: index + 1,

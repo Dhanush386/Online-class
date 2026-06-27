@@ -43,7 +43,8 @@ export default function ScheduleManager() {
             description: editVideo.description,
             scheduled_time: toISOWithOffset(editVideo.scheduled_time),
             duration_minutes: Number.parseInt(editVideo.duration_minutes) || null,
-            day_number: Number.parseInt(editVideo.day_number) || 1,
+            week_number: Number.parseInt(editVideo.week_number) || 1,
+            day_of_week: Number.parseInt(editVideo.day_of_week) || 1,
             course_id: editVideo.course_id,
             video_url: editVideo.video_url,
         }).eq('id', editVideo.id)
@@ -169,7 +170,7 @@ export default function ScheduleManager() {
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
-                                            Day {v.day_number || 1}
+                                            W{v.week_number || 1} D{v.day_of_week || 1}
                                         </div>
                                     </td>
                                     <td>
@@ -247,9 +248,23 @@ export default function ScheduleManager() {
                                 <label htmlFor="edit-url" className="form-label">Meeting URL (Google Meet / Zoom)</label>
                                 <input id="edit-url" name="video_url" type="url" className="form-input" placeholder="https://meet.google.com/..." value={editVideo.video_url || ''} onChange={e => setEditVideo(p => ({ ...p, video_url: e.target.value }))} />
                             </div>
-                            <div>
-                                <label htmlFor="edit-day" className="form-label">Day Number</label>
-                                <input id="edit-day" name="day_number" type="number" className="form-input" min="1" value={editVideo.day_number || 1} onChange={e => setEditVideo(p => ({ ...p, day_number: e.target.value }))} required />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label htmlFor="edit-week" className="form-label">Week Number</label>
+                                    <input id="edit-week" name="week_number" type="number" className="form-input" min="1" value={editVideo.week_number || 1} onChange={e => setEditVideo(p => ({ ...p, week_number: e.target.value }))} required />
+                                </div>
+                                <div>
+                                    <label htmlFor="edit-day-of-week" className="form-label">Day of Week</label>
+                                    <select id="edit-day-of-week" name="day_of_week" className="form-input" value={editVideo.day_of_week || 1} onChange={e => setEditVideo(p => ({ ...p, day_of_week: e.target.value }))} required>
+                                        <option value="1">Monday</option>
+                                        <option value="2">Tuesday</option>
+                                        <option value="3">Wednesday</option>
+                                        <option value="4">Thursday</option>
+                                        <option value="5">Friday</option>
+                                        <option value="6">Saturday</option>
+                                        <option value="7">Sunday</option>
+                                    </select>
+                                </div>
                             </div>
                             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                                 <button onClick={() => setEditVideo(null)} className="btn-secondary">Cancel</button>

@@ -14,7 +14,7 @@ export default function ScheduleLiveClass() {
     const [form, setForm] = useState({
         course_id: '', title: '', description: '',
         meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '',
-        day_number: 1, slide_url: ''
+        week_number: 1, day_of_week: 1, slide_url: ''
     })
     const [selectedFile, setSelectedFile] = useState(null)
     const [selectedSlideFile, setSelectedSlideFile] = useState(null)
@@ -50,7 +50,8 @@ export default function ScheduleLiveClass() {
             setForm(prev => ({ 
                 ...prev, 
                 course_id: location.state.courseId,
-                day_number: location.state.day || 1
+                week_number: location.state.week || 1,
+                day_of_week: location.state.day || 1
             }))
         }
     }, [location.state])
@@ -129,14 +130,15 @@ export default function ScheduleLiveClass() {
                 video_url: finalUrl,
                 scheduled_time: mode === 'live' ? toISOWithOffset(form.scheduled_time) : null,
                 duration_minutes: durationMins,
-                day_number: Number.parseInt(form.day_number) || 1,
+                week_number: Number.parseInt(form.week_number) || 1,
+                day_of_week: Number.parseInt(form.day_of_week) || 1,
                 slide_url: finalSlideUrl || null
             })
 
             if (dbErr) throw dbErr
 
             setSuccess(true)
-            setForm({ course_id: '', title: '', description: '', meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '', day_number: 1, slide_url: '' })
+            setForm({ course_id: '', title: '', description: '', meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '', week_number: 1, day_of_week: 1, slide_url: '' })
             setSelectedFile(null)
             setSelectedSlideFile(null)
             setTimeout(() => setSuccess(false), 4000)
@@ -373,11 +375,26 @@ export default function ScheduleLiveClass() {
                     </div>
 
                     {/* Schedule fields */}
-                    <div style={{ display: 'grid', gridTemplateColumns: mode === 'live' ? '1fr 1fr 1fr' : '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: mode === 'live' ? '1fr 1fr' : '1fr 1fr', gap: '1rem' }}>
                         <div>
-                            <label htmlFor="day-number" className="form-label">Day Number</label>
-                            <input id="day-number" name="day_number" type="number" className="form-input" min="1" value={form.day_number} onChange={e => setForm(p => ({ ...p, day_number: e.target.value }))} required />
+                            <label htmlFor="week-number" className="form-label">Week</label>
+                            <input id="week-number" name="week_number" type="number" className="form-input" min="1" value={form.week_number} onChange={e => setForm(p => ({ ...p, week_number: e.target.value }))} required />
                         </div>
+                        <div>
+                            <label htmlFor="day-of-week" className="form-label">Day of Week</label>
+                            <select id="day-of-week" name="day_of_week" className="form-input" value={form.day_of_week} onChange={e => setForm(p => ({ ...p, day_of_week: e.target.value }))} required>
+                                <option value="1">Monday</option>
+                                <option value="2">Tuesday</option>
+                                <option value="3">Wednesday</option>
+                                <option value="4">Thursday</option>
+                                <option value="5">Friday</option>
+                                <option value="6">Saturday</option>
+                                <option value="7">Sunday</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: mode === 'live' ? '1fr 1fr' : '1fr', gap: '1rem' }}>
                         {mode === 'live' ? (
                             <>
                                 <div>

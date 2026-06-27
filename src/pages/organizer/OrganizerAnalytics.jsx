@@ -44,6 +44,11 @@ export default function OrganizerAnalytics() {
   const [recentAlerts, setRecentAlerts] = useState([])
   const [atRiskStudents, setAtRiskStudents] = useState([])
   const [attendanceData, setAttendanceData] = useState([])
+  
+  // V3 Analytics States
+  const [weeklyCompletionData, setWeeklyCompletionData] = useState([])
+  const [healthScoreData, setHealthScoreData] = useState([])
+  const [xpBreakdownData, setXpBreakdownData] = useState([])
 
   useEffect(() => {
     const handleResize = () => {
@@ -108,10 +113,7 @@ export default function OrganizerAnalytics() {
       let riskDistribution = []
       if (totalSessions === 0) {
         riskDistribution = [
-          { name: 'Safe', value: 78, percentage: 78, color: RISK_COLORS.safe },
-          { name: 'Warning', value: 12, percentage: 12, color: RISK_COLORS.warning },
-          { name: 'High Risk', value: 7, percentage: 7, color: RISK_COLORS.highRisk },
-          { name: 'Critical', value: 3, percentage: 3, color: RISK_COLORS.critical }
+          { name: 'NO DATA', value: 1, percentage: 0, color: '#334155' }
         ]
       } else {
         riskDistribution = [
@@ -213,14 +215,67 @@ export default function OrganizerAnalytics() {
       } else {
           // Fallback if no records
           weeklyData = [
-              { date: 'Week 1', 'Attendance %': Math.max(0, avgAtt - 5) },
-              { date: 'Week 2', 'Attendance %': Math.max(0, avgAtt - 2) },
-              { date: 'Week 3', 'Attendance %': Math.min(100, avgAtt + 3) },
-              { date: 'Week 4', 'Attendance %': avgAtt || 80 }
+              { date: 'Week 1', 'Attendance %': 0 },
+              { date: 'Week 2', 'Attendance %': 0 },
+              { date: 'Week 3', 'Attendance %': 0 },
+              { date: 'Week 4', 'Attendance %': 0 }
           ]
       }
 
       setAttendanceData(weeklyData)
+
+      // V3: Weekly Completion Data (Mocked for now since table might be empty)
+      const { data: weekProg } = await supabase.from('student_week_progress').select('week_number, completion_percentage')
+      let compByWeek = { 1: [], 2: [], 3: [], 4: [] }
+      if (weekProg && weekProg.length > 0) {
+        weekProg.forEach(wp => {
+            if (compByWeek[wp.week_number]) {
+                compByWeek[wp.week_number].push(wp.completion_percentage || 0)
+            }
+        })
+      }
+      setWeeklyCompletionData([
+        { week: 'Week 1', completion: compByWeek[1].length ? Math.round(compByWeek[1].reduce((a,b)=>a+b,0)/compByWeek[1].length) : 0 },
+        { week: 'Week 2', completion: compByWeek[2].length ? Math.round(compByWeek[2].reduce((a,b)=>a+b,0)/compByWeek[2].length) : 0 },
+        { week: 'Week 3', completion: compByWeek[3].length ? Math.round(compByWeek[3].reduce((a,b)=>a+b,0)/compByWeek[3].length) : 0 },
+        { week: 'Week 4', completion: compByWeek[4].length ? Math.round(compByWeek[4].reduce((a,b)=>a+b,0)/compByWeek[4].length) : 0 }
+      ])
+
+      // V3: Health Score Distribution
+      const { data: healthHist } = await supabase.from('learning_health_history').select('health_score').order('recorded_date', { ascending: false }).limit(100)
+      let healthDist = { '90-100': 0, '70-89': 0, '50-69': 0, '<50': 0 }
+      if (healthHist && healthHist.length > 0) {
+          healthHist.forEach(h => {
+              const s = h.health_score || 0
+              if (s >= 90) healthDist['90-100']++
+              else if (s >= 70) healthDist['70-89']++
+              else if (s >= 50) healthDist['50-69']++
+              else healthDist['<50']++
+          })
+      } else {
+          healthDist = { '90-100': 0, '70-89': 0, '50-69': 0, '<50': 0 }
+      }
+      setHealthScoreData([
+          { range: '90-100 (Excellent)', count: healthDist['90-100'], color: '#22c55e' },
+          { range: '70-89 (Good)', count: healthDist['70-89'], color: '#3b82f6' },
+          { range: '50-69 (Average)', count: healthDist['50-69'], color: '#f59e0b' },
+          { range: '<50 (At Risk)', count: healthDist['<50'], color: '#ef4444' }
+      ])
+
+      // V3: XP Source Breakdown
+      const { data: xpEvts } = await supabase.from('xp_events').select('event_type, xp_amount')
+      const xpSums = {}
+      if (xpEvts && xpEvts.length > 0) {
+          xpEvts.forEach(e => {
+              xpSums[e.event_type] = (xpSums[e.event_type] || 0) + (e.xp_amount || 0)
+          })
+      }
+      const xpChartData = Object.entries(xpSums).length > 0 
+        ? Object.entries(xpSums).map(([k, v]) => ({ name: k.replace(/_/g, ' ').toUpperCase(), value: v }))
+        : [
+            { name: 'NO DATA', value: 1, color: '#334155' }
+        ]
+      setXpBreakdownData(xpChartData)
 
     } catch (err) {
       console.error('Error loading analytics:', err)
@@ -387,7 +442,7 @@ export default function OrganizerAnalytics() {
             📊 Course Analytics & Completion Performance
           </h3>
           <div style={{ width: '100%', height: 280 }}>
-            <ResponsiveContainer>
+            <ResponsiveContainer width="99%" height={280}>
               <BarChart data={courseData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
@@ -408,7 +463,7 @@ export default function OrganizerAnalytics() {
             🛡️ Proctoring Risk Profile
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160 }}>
-            <ResponsiveContainer>
+            <ResponsiveContainer width="99%" height={160}>
               <PieChart>
                 <Pie data={riskData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">
                   {riskData.map((entry, index) => (
@@ -514,6 +569,71 @@ export default function OrganizerAnalytics() {
                 )
               })
             )}
+          </div>
+        </GlassCard>
+
+      </div>
+
+      {/* Row 4: V3 Advanced Analytics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
+        
+        {/* Weekly Completion Trend */}
+        <GlassCard tilt3d={true}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>
+            📅 Weekly Completion Trend
+          </h3>
+          <div style={{ width: '100%', height: 220, minWidth: 0, minHeight: 0 }}>
+            <ResponsiveContainer width="99%" height={220}>
+              <LineChart data={weeklyCompletionData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="week" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 100]} />
+                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
+                <Line type="monotone" dataKey="completion" stroke="#06b6d4" strokeWidth={3} dot={{ r: 4, fill: '#06b6d4' }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        {/* Health Score Distribution */}
+        <GlassCard tilt3d={true}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>
+            ❤️ Student Health Score
+          </h3>
+          <div style={{ width: '100%', height: 220, minWidth: 0, minHeight: 0 }}>
+            <ResponsiveContainer width="99%" height={220}>
+              <BarChart data={healthScoreData} layout="vertical" margin={{ top: 5, right: 5, left: 10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                <YAxis dataKey="range" type="category" stroke="#94a3b8" fontSize={10} tickLine={false} width={80} />
+                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {healthScoreData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        {/* XP Source Breakdown */}
+        <GlassCard tilt3d={true}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>
+            ✨ XP Generation Sources
+          </h3>
+          <div style={{ width: '100%', height: 220, minWidth: 0, minHeight: 0 }}>
+            <ResponsiveContainer width="99%" height={220}>
+              <PieChart>
+                <Pie data={xpBreakdownData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value">
+                  {xpBreakdownData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color || ['#ec4899', '#8b5cf6', '#06b6d4', '#f59e0b', '#22c55e'][index % 5]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
+                <Legend wrapperStyle={{ fontSize: 11, color: '#cbd5e1' }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </GlassCard>
 

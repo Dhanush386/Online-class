@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useMemo, useCallback } 
 import PropTypes from 'prop-types'
 import { supabase } from '../lib/supabase'
 import { getTierForXP, getRankName } from '../constants/ranks'
+import { loadXpConfig } from '../constants/xpRewards'
 
 const AuthContext = createContext({})
 
@@ -68,7 +69,7 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
     const [profile, setProfile] = useState(null)
     const [isProfileComplete, setIsProfileComplete] = useState(true)
-    const [stats, setStats] = useState({ xp: 0, solved: 0, streak: 0, completedCourses: [] })
+    const [stats, setStats] = useState({ xp: 0, coins: 0, solved: 0, streak: 0, completedCourses: [] })
     const [loading, setLoading] = useState(true)
     const [isExpired, setIsExpired] = useState(false)
 
@@ -173,8 +174,12 @@ export function AuthProvider({ children }) {
     async function loadAchievementStats(userId) {
         if (!userId) return
         try {
-            const { data: userProfile } = await supabase.from('users').select('xp').eq('id', userId).single()
+            const { data: userProfile } = await supabase.from('users').select('xp, coins').eq('id', userId).single()
             let totalXp = userProfile?.xp || 0
+            const coins = userProfile?.coins || 0
+
+            // Pre-load XP config for hooks
+            loadXpConfig().catch(() => {})
 
             const { data: codingSubs } = await supabase.from('coding_submissions').select('challenge_id, score, status, created_at').eq('student_id', userId)
             
@@ -212,7 +217,7 @@ export function AuthProvider({ children }) {
 
             const solvedCount = codingSubs?.filter(s => s.status === 'accepted').length || 0
 
-            setStats({ xp: totalXp, solved: solvedCount, streak: streakCount, completedCourses: completedCourseTitles, rankName, rankColor: currentTier.color })
+            setStats({ xp: totalXp, coins, solved: solvedCount, streak: streakCount, completedCourses: completedCourseTitles, rankName, rankColor: currentTier.color })
         } catch (err) { console.error(err) }
     }
 
@@ -220,7 +225,7 @@ export function AuthProvider({ children }) {
         await supabase.auth.signOut()
         setUser(null)
         setProfile(null)
-        setStats({ xp: 0, solved: 0, streak: 0, completedCourses: [] })
+        setStats({ xp: 0, coins: 0, solved: 0, streak: 0, completedCourses: [] })
     }, [])
 
     const value = useMemo(() => ({

@@ -13,13 +13,13 @@ export default function CourseManagement() {
     const [showModal, setShowModal] = useState(false)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
-    const [formData, setFormData] = useState({ title: '', description: '', start_date: '', end_date: '', organizer_id: '' })
+    const [formData, setFormData] = useState({ title: '', description: '', start_date: '', end_date: '', organizer_id: '', sequential_unlock: true })
     const [editingId, setEditingId] = useState(null)
     const [showResourceModal, setShowResourceModal] = useState(false)
     const [currentCourse, setCurrentCourse] = useState(null)
     const [resources, setResources] = useState([])
     const [loadingResources, setLoadingResources] = useState(false)
-    const [resourceForm, setResourceForm] = useState({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: 1, file: null })
+    const [resourceForm, setResourceForm] = useState({ title: '', description: '', file_url: '', resource_type: 'pdf', week_number: 1, day_of_week: 1, file: null })
     const [organizers, setOrganizers] = useState([])
 
     useEffect(() => {
@@ -73,7 +73,8 @@ export default function CourseManagement() {
             description: formData.description,
             start_date: toISOWithOffset(formData.start_date),
             end_date: toISOWithOffset(formData.end_date),
-            organizer_id: formData.organizer_id || profile.id
+            organizer_id: formData.organizer_id || profile.id,
+            sequential_unlock: formData.sequential_unlock
         }
 
         try {
@@ -86,7 +87,7 @@ export default function CourseManagement() {
             }
 
             setShowModal(false)
-            setFormData({ title: '', description: '', start_date: '', end_date: '', organizer_id: '' })
+            setFormData({ title: '', description: '', start_date: '', end_date: '', organizer_id: '', sequential_unlock: true })
             setEditingId(null)
             loadCourses()
         } catch (err) {
@@ -114,7 +115,8 @@ export default function CourseManagement() {
             description: course.description || '',
             start_date: toLocalInput(course.start_date),
             end_date: toLocalInput(course.end_date),
-            organizer_id: course.organizer_id || ''
+            organizer_id: course.organizer_id || '',
+            sequential_unlock: course.sequential_unlock ?? true
         })
         setShowModal(true)
     }
@@ -167,14 +169,14 @@ export default function CourseManagement() {
                 title: resourceForm.title,
                 description: resourceForm.description,
                 file_url: finalUrl,
-                resource_type: resourceForm.resource_type,
-                day_number: resourceForm.day_number,
+                week_number: resourceForm.week_number,
+                day_of_week: resourceForm.day_of_week,
                 course_id: currentCourse.id
             })
 
             if (error) throw error
 
-            setResourceForm({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: (Number.parseInt(resourceForm.day_number) || 1) + 1, file: null })
+            setResourceForm({ title: '', description: '', file_url: '', resource_type: 'pdf', week_number: resourceForm.week_number, day_of_week: (Number.parseInt(resourceForm.day_of_week) % 7) + 1, file: null })
             openResources(currentCourse)
         } catch (err) {
             alert('Failed to add resource: ' + err.message)
@@ -200,7 +202,7 @@ export default function CourseManagement() {
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Create and manage your educational programs</p>
                 </div>
                 <button
-                    onClick={() => { setEditingId(null); setFormData({ title: '', description: '', start_date: '', end_date: '', organizer_id: profile.id }); setShowModal(true) }}
+                    onClick={() => { setEditingId(null); setFormData({ title: '', description: '', start_date: '', end_date: '', organizer_id: profile.id, sequential_unlock: true }); setShowModal(true) }}
                     className="btn-primary"
                     style={{ gap: '0.5rem', display: profile?.role === 'sub_admin' ? 'none' : 'flex' }}
                 >
@@ -378,19 +380,40 @@ export default function CourseManagement() {
                                         />
                                     </div>
                                 </div>
-                                <div style={{ gridColumn: '1 / -1' }}>
-                                    <label htmlFor="resource-day" className="form-label">Day / Session Number</label>
-                                    <input
-                                        id="resource-day"
-                                        name="day_number"
-                                        type="number"
-                                        className="form-input"
-                                        placeholder="e.g. 1"
-                                        min="1"
-                                        value={resourceForm.day_number}
-                                        onChange={e => setResourceForm(p => ({ ...p, day_number: e.target.value }))}
-                                        required
-                                    />
+                                <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <label htmlFor="resource-week" className="form-label">Week Number</label>
+                                        <input
+                                            id="resource-week"
+                                            name="week_number"
+                                            type="number"
+                                            className="form-input"
+                                            placeholder="e.g. 1"
+                                            min="1"
+                                            value={resourceForm.week_number}
+                                            onChange={e => setResourceForm(p => ({ ...p, week_number: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="resource-day-of-week" className="form-label">Day of Week</label>
+                                        <select
+                                            id="resource-day-of-week"
+                                            name="day_of_week"
+                                            className="form-input"
+                                            value={resourceForm.day_of_week}
+                                            onChange={e => setResourceForm(p => ({ ...p, day_of_week: e.target.value }))}
+                                            required
+                                        >
+                                            <option value="1">Monday</option>
+                                            <option value="2">Tuesday</option>
+                                            <option value="3">Wednesday</option>
+                                            <option value="4">Thursday</option>
+                                            <option value="5">Friday</option>
+                                            <option value="6">Saturday</option>
+                                            <option value="7">Sunday</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', gridColumn: '1 / -1' }}>
                                     <button type="submit" className="btn-primary" disabled={saving} style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}>
@@ -407,20 +430,22 @@ export default function CourseManagement() {
                                 </div>
                             </form>
 
-                            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Existing Materials (Grouped by Day)</h4>
+                            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Existing Materials (Grouped by Week and Day)</h4>
                             {loadingResources ? (
                                 <p style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>Loading...</p>
                             ) : resources.length === 0 ? (
                                 <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No materials uploaded yet.</p>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                    {Array.from(new Set(resources.map(r => r.day_number || 1))).sort((a, b) => a - b).map(day => (
-                                        <div key={day}>
+                                    {Array.from(new Set(resources.map(r => `W${r.week_number || 1}-D${r.day_of_week || 1}`))).sort().map(weekDay => {
+                                        const [w, d] = weekDay.replace('W','').split('-D');
+                                        return (
+                                        <div key={weekDay}>
                                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Calendar size={12} /> Day {day}
+                                                <Calendar size={12} /> Week {w} Day {d}
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                {resources.filter(r => (r.day_number || 1) === day).map(r => (
+                                                {resources.filter(r => (r.week_number || 1) == w && (r.day_of_week || 1) == d).map(r => (
                                                     <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10 }}>
                                                         <div style={{ width: 36, height: 36, background: r.resource_type === 'ppt' ? '#fff7ed' : '#f0fdf4', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                             {r.resource_type === 'ppt' ? <FileText size={18} color="#f97316" /> : <FileText size={18} color="#22c55e" />}
@@ -438,7 +463,8 @@ export default function CourseManagement() {
                                                 ))}
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
 
@@ -541,6 +567,24 @@ export default function CourseManagement() {
                                         value={formData.end_date}
                                         onChange={e => setFormData(p => ({ ...p, end_date: e.target.value }))}
                                     />
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <input
+                                    id="sequential-unlock"
+                                    type="checkbox"
+                                    checked={formData.sequential_unlock}
+                                    onChange={e => setFormData(p => ({ ...p, sequential_unlock: e.target.checked }))}
+                                    style={{ width: 18, height: 18, cursor: 'pointer', accentColor: '#6366f1' }}
+                                />
+                                <div>
+                                    <label htmlFor="sequential-unlock" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', display: 'block' }}>
+                                        Sequential Week Unlocking
+                                    </label>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                        Requires students to complete one week before accessing the next.
+                                    </span>
                                 </div>
                             </div>
 

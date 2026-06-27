@@ -75,14 +75,39 @@ const CATEGORIES = [
             { id: 'streak_100', title: 'Century Streaker', subtitle: '100 Days', threshold: 100, color1: '#f97316', color2: '#7c2d12', shape: 'diamond', icon: <Flame size={24} /> },
             { id: 'streak_365', title: 'Year of Code', subtitle: '365 Days', threshold: 365, color1: '#ffedd5', color2: '#ff5500', shape: 'diamond', icon: <Heart size={24} /> },
         ]
+    },
+    {
+        id: 'weekly',
+        name: 'Weekly Warrior',
+        description: 'Complete full weeks of learning',
+        badges: [
+            { id: 'week_1', title: 'First Week Done', subtitle: '1 Week', threshold: 1, color1: '#bfdbfe', color2: '#1d4ed8', shape: 'hexagon', icon: <BookOpen size={24} /> },
+            { id: 'week_4', title: 'Month Strong', subtitle: '4 Weeks', threshold: 4, color1: '#93c5fd', color2: '#1e40af', shape: 'hexagon', icon: <BookOpen size={24} /> },
+            { id: 'week_8', title: 'Two Month Hero', subtitle: '8 Weeks', threshold: 8, color1: '#60a5fa', color2: '#1e3a8a', shape: 'hexagon', icon: <Trophy size={24} /> },
+            { id: 'week_12', title: 'Quarter Master', subtitle: '12 Weeks', threshold: 12, color1: '#3b82f6', color2: '#172554', shape: 'hexagon', icon: <Trophy size={24} /> },
+            { id: 'week_24', title: 'Semester Champion', subtitle: '24 Weeks', threshold: 24, color1: '#2563eb', color2: '#1e1b4b', shape: 'hexagon', icon: <Award size={24} /> },
+        ]
+    },
+    {
+        id: 'coins',
+        name: 'Coin Collector',
+        description: 'Earn coins through activities and bonuses',
+        badges: [
+            { id: 'coin_50', title: 'Penny Saver', subtitle: '50 Coins', threshold: 50, color1: '#fef3c7', color2: '#d97706', shape: 'circle', icon: <Star size={24} /> },
+            { id: 'coin_200', title: 'Coin Hunter', subtitle: '200 Coins', threshold: 200, color1: '#fde68a', color2: '#b45309', shape: 'circle', icon: <Star size={24} /> },
+            { id: 'coin_500', title: 'Treasure Seeker', subtitle: '500 Coins', threshold: 500, color1: '#fbbf24', color2: '#92400e', shape: 'circle', icon: <Trophy size={24} /> },
+            { id: 'coin_1000', title: 'Gold Hoarder', subtitle: '1K Coins', threshold: 1000, color1: '#f59e0b', color2: '#78350f', shape: 'circle', icon: <Trophy size={24} /> },
+            { id: 'coin_5000', title: 'Coin Legend', subtitle: '5K Coins', threshold: 5000, color1: '#d97706', color2: '#451a03', shape: 'circle', icon: <Award size={24} /> },
+        ]
     }
 ]
 
 export default function Achievements() {
-    const { stats, loading: authLoading } = useAuth()
+    const { stats, profile, loading: authLoading } = useAuth()
     const [filter, setFilter] = useState('all')
 
     const isUnlocked = (badge, categoryId) => {
+        if (profile?.role === 'organizer' || profile?.role === 'main_admin') return true
         if (categoryId === 'xp') return stats.xp >= (badge.threshold || 0)
         if (categoryId === 'problems') return stats.solved >= (badge.threshold || 0)
         if (categoryId === 'streak') return stats.streak >= (badge.threshold || 0)

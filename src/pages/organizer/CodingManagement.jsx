@@ -75,7 +75,7 @@ export default function CodingManagement() {
         starter_code: '', solution_code: '', constraints: '', input_format: '', output_format: '',
         xp_reward: 15, open_time: '', close_time: '',
         target_visual_url: '', allowed_assets: '',
-        day_number: 1,
+        week_number: 1, day_of_week: 1,
         is_combined: false,
         reference_iframe_url: '',
         web_testcases: { html: [], css: [], js: [] },
@@ -98,7 +98,8 @@ export default function CodingManagement() {
             setFormData(prev => ({ 
                 ...prev, 
                 course_id: location.state.courseId,
-                day_number: location.state.day || 1
+                week_number: location.state.week || 1,
+                day_of_week: location.state.day || 1
             }))
             if (location.state.openModal) setShowModal(true)
         }
@@ -331,7 +332,7 @@ export default function CodingManagement() {
                 constraints: c.constraints || '',
                 test_cases: Array.isArray(c.test_cases) ? c.test_cases : [],
                 xp_reward: c.difficulty === 'hard' ? 30 : c.difficulty === 'medium' ? 20 : 15,
-                day_number: 1 // Default
+                week_number: 1, day_of_week: 1 // Default
             }));
 
             const { error } = await supabase.from('coding_challenges').insert(payloads);
@@ -386,7 +387,8 @@ export default function CodingManagement() {
                 input_format: formData.input_format,
                 output_format: formData.output_format,
                 xp_reward: formData.xp_reward,
-                day_number: formData.day_number,
+                week_number: formData.week_number,
+                day_of_week: formData.day_of_week,
                 target_visual_url: formData.target_visual_url,
                 starter_code: finalStarterCode,
                 test_cases: formData.is_combined ? { is_combined: true, sub_questions: formData.sub_questions } : formData.test_cases.filter(tc => 
@@ -483,7 +485,8 @@ export default function CodingManagement() {
             test_cases: parsedTestCases,
             is_combined,
             sub_questions,
-            day_number: c.day_number || 1,
+            week_number: c.week_number || 1,
+            day_of_week: c.day_of_week || 1,
             reference_iframe_url: c.reference_iframe_url || '',
             web_testcases: loadedWebTc
         })
@@ -497,7 +500,7 @@ export default function CodingManagement() {
             starter_code: '', solution_code: '', constraints: '', input_format: '', output_format: '',
             xp_reward: 15, open_time: '', close_time: '',
             target_visual_url: '', allowed_assets: '',
-            day_number: 1,
+            week_number: 1, day_of_week: 1,
             is_combined: false,
             reference_iframe_url: '',
             web_testcases: { html: [], css: [], js: [] },
@@ -1068,17 +1071,36 @@ export default function CodingManagement() {
                                         />
                                     </div>
                                     <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="day_number" className="form-label">Day Number</label>
+                                        <label htmlFor="week_number" className="form-label">Week</label>
                                         <input
-                                            id="day_number"
-                                            name="day_number"
+                                            id="week_number"
+                                            name="week_number"
                                             type="number"
                                             className="form-input"
                                             min="1"
-                                            value={formData.day_number}
-                                            onChange={e => setFormData({ ...formData, day_number: Number.parseInt(e.target.value) || 1 })}
+                                            value={formData.week_number}
+                                            onChange={e => setFormData({ ...formData, week_number: Number.parseInt(e.target.value) || 1 })}
                                             required
                                         />
+                                    </div>
+                                    <div style={{ gridColumn: 'span 1' }}>
+                                        <label htmlFor="day_of_week" className="form-label">Day of Week</label>
+                                        <select
+                                            id="day_of_week"
+                                            name="day_of_week"
+                                            className="form-input"
+                                            value={formData.day_of_week}
+                                            onChange={e => setFormData({ ...formData, day_of_week: Number.parseInt(e.target.value) || 1 })}
+                                            required
+                                        >
+                                            <option value="1">Monday</option>
+                                            <option value="2">Tuesday</option>
+                                            <option value="3">Wednesday</option>
+                                            <option value="4">Thursday</option>
+                                            <option value="5">Friday</option>
+                                            <option value="6">Saturday</option>
+                                            <option value="7">Sunday</option>
+                                        </select>
                                     </div>
                                     <div style={{ gridColumn: 'span 1', display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>

@@ -54,7 +54,6 @@ export default function MyCourses() {
                             enrolledAt: e.enrolled_at,
                         }
                     })
-                    .filter(c => !c.startDate || new Date(c.startDate) <= new Date())
                 setCourses(mapped)
             } catch (err) {
                 console.error('Error loading courses:', err)
@@ -133,6 +132,15 @@ export default function MyCourses() {
                                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                 <TrendingUp size={12} /> {course.completion}%
                                             </span>
+                                            {/* Day dots: M T W T F S S */}
+                                            <div style={{ display: 'flex', gap: '0.15rem', alignItems: 'center' }}>
+                                                {['M','T','W','T','F','S','S'].map((d, di) => (
+                                                    <div key={di} style={{
+                                                        width: 6, height: 6, borderRadius: '50%',
+                                                        background: di < 5 ? (course.completion > di * 14 ? '#10b981' : '#e2e8f0') : (di === 6 ? '#8b5cf6' : '#e2e8f0'),
+                                                    }} title={d} />
+                                                ))}
+                                            </div>
                                         </div>
                                         <ChevronRight size={16} color="var(--text-muted)" />
                                     </div>

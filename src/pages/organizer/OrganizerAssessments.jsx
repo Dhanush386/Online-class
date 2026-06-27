@@ -15,8 +15,8 @@ export default function OrganizerAssessments() {
     const [showModal, setShowModal] = useState(false)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
-    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '', day_number: 1, duration: 30 })
     const [editingId, setEditingId] = useState(null)
+    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '', week_number: 1, day_of_week: 1, duration: 30 })
     const [viewingMarks, setViewingMarks] = useState(null)
     const [marksData, setMarksData] = useState([])
     const [marksLoading, setMarksLoading] = useState(false)
@@ -74,7 +74,8 @@ export default function OrganizerAssessments() {
             setFormData(prev => ({ 
                 ...prev, 
                 course_id: location.state.courseId,
-                day_number: location.state.day || 1
+                week_number: location.state.week || 1,
+                day_of_week: location.state.day || 1
             }))
             if (location.state.openModal) setShowModal(true)
         }
@@ -121,7 +122,8 @@ export default function OrganizerAssessments() {
                 type: formData.type,
                 due_date: formData.due_date || null,
                 description: formData.description,
-                day_number: Number.parseInt(formData.day_number) || 1,
+                week_number: Number.parseInt(formData.week_number) || 1,
+                day_of_week: Number.parseInt(formData.day_of_week) || 1,
                 duration: Number.parseInt(formData.duration) || 30
             }
 
@@ -161,14 +163,15 @@ export default function OrganizerAssessments() {
             type: a.type,
             due_date: a.due_date ? a.due_date.split('T')[0] : '',
             description: a.description || '',
-            day_number: a.day_number || 1,
+            week_number: a.week_number || 1,
+            day_of_week: a.day_of_week || 1,
             duration: a.duration || 30
         })
         setShowModal(true)
     }
 
     function resetForm() {
-        setFormData({ title: '', course_id: '', type: 'daily', due_date: '', description: '', day_number: 1, duration: 30 })
+        setFormData({ title: '', course_id: '', type: 'daily', due_date: '', description: '', week_number: 1, day_of_week: 1, duration: 30 })
         setEditingId(null)
         setError('')
     }
@@ -452,17 +455,36 @@ export default function OrganizerAssessments() {
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
                                 <div>
-                                    <label htmlFor="day-number" className="form-label">Day Number</label>
+                                    <label htmlFor="week-number" className="form-label">Week</label>
                                     <input
-                                        id="day-number"
-                                        name="day_number"
+                                        id="week-number"
+                                        name="week_number"
                                         type="number"
                                         className="form-input"
                                         min="1"
-                                        value={formData.day_number}
-                                        onChange={e => setFormData(p => ({ ...p, day_number: e.target.value }))}
+                                        value={formData.week_number}
+                                        onChange={e => setFormData(p => ({ ...p, week_number: e.target.value }))}
                                         required
                                     />
+                                </div>
+                                <div>
+                                    <label htmlFor="day-of-week" className="form-label">Day of Week</label>
+                                    <select
+                                        id="day-of-week"
+                                        name="day_of_week"
+                                        className="form-input"
+                                        value={formData.day_of_week}
+                                        onChange={e => setFormData(p => ({ ...p, day_of_week: e.target.value }))}
+                                        required
+                                    >
+                                        <option value="1">Monday</option>
+                                        <option value="2">Tuesday</option>
+                                        <option value="3">Wednesday</option>
+                                        <option value="4">Thursday</option>
+                                        <option value="5">Friday</option>
+                                        <option value="6">Saturday</option>
+                                        <option value="7">Sunday</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label htmlFor="assessment-type-select" className="form-label">Type</label>

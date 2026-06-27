@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List, Trash2, Save, FileEdit } from 'lucide-react'
+import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List, Trash2, Save, FileEdit, Map, LayoutList } from 'lucide-react'
 import ReactPlayer from 'react-player'
 import ProtectedViewer from '../../components/shared/ProtectedViewer'
 import SplitViewer from '../../components/shared/SplitViewer'
+import JourneyMap from '../../components/student/JourneyMap'
+import DayDetailPanel from '../../components/student/DayDetailPanel'
+import WeeklyCompletionModal from '../../components/student/WeeklyCompletionModal'
+import SemesterTimeline from '../../components/student/SemesterTimeline'
+import CourseJourneyTimeline from '../../components/student/CourseJourneyTimeline'
+import useWeeklyCourse from '../../hooks/useWeeklyCourse'
+import useXpAward from '../../hooks/useXpAward'
 
 const MAX_ATTEMPTS = 1
 const ASSESS_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
@@ -45,6 +52,19 @@ export default function CourseDetail() {
     const [loadingVideo, setLoadingVideo] = useState(false)
     const [videoType, setVideoType] = useState('native') // 'native' | 'drive'
 
+    // Journey Engine state
+    const [viewMode, setViewMode] = useState('journey') // 'journey' | 'classic'
+    const [selectedJourneyDay, setSelectedJourneyDay] = useState(null)
+    const [showWeeklyModal, setShowWeeklyModal] = useState(false)
+    const [completedWeekInfo, setCompletedWeekInfo] = useState(null)
+
+    // Journey Engine hooks
+    const {
+        weeks, currentWeek, weekProgress, courseSettings, loading: weeklyLoading,
+        isWeekLocked, getDayModules, pendingForWeek, getWeekGrade, getScheduleDate, refreshProgress
+    } = useWeeklyCourse(courseId)
+    const { awardXp, todaysXp, xpTimeline, toastMessage } = useXpAward()
+
     useEffect(() => {
         async function load() {
             if (!profile?.id || !courseId) return
@@ -63,15 +83,15 @@ export default function CourseDetail() {
                 { data: initialNotes }
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
-                supabase.from('videos').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
+                supabase.from('videos').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }),
                 supabase.from('progress').select('*').eq('student_id', profile.id).eq('course_id', courseId).maybeSingle(),
-                supabase.from('coding_challenges').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
-                supabase.from('assessments').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
+                supabase.from('coding_challenges').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }),
+                supabase.from('assessments').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }),
                 supabase.from('assessment_submissions').select('*').eq('student_id', profile.id),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
                 supabase.from('day_access').select('*').eq('course_id', courseId),
                 supabase.from('resource_access').select('*').eq('is_locked', true),
-                supabase.from('course_resources').select('*').eq('course_id', courseId).order('day_number', { ascending: true }),
+                supabase.from('course_resources').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }),
                 supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
                 supabase.from('student_notes').select('*').eq('student_id', profile.id).eq('course_id', courseId).order('created_at', { ascending: false })
             ])
@@ -483,283 +503,84 @@ export default function CourseDetail() {
                     </div>
                 </div>
             )}
-            {/* Day Accordion List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
-                {Array.from({ length: daysCount }, (_, i) => i + 1)
-                .filter(day => {
-                    const status = getDayStatus(day)
-                    // If student, hide days that haven't opened yet
-                    if (isStudent && status.locked && status.reason.includes('Opens at')) {
-                        return false
-                    }
-                    return true
-                })
-                .map(day => {
-                    const status = getDayStatus(day)
-                    const isActive = selectedDay === day
 
-                    // Filter content for this day to calculate topic count
-                    const daySessions = sessions.filter(s => (s.day_number || 1) === day)
-                    const dayChallenges = challenges.filter(c => (c.day_number || 1) === day)
-                    const dayAssessmentsCount = assessments.daily.filter(a => (a.day_number || 1) === day).length +
-                        assessments.weekly.filter(a => (a.day_number || 1) === day).length +
-                        assessments.final.filter(a => (a.day_number || 1) === day).length
-                    const dayResources = courseResources.filter(r => (r.day_number || 1) === day)
 
-                    const topicCount = daySessions.length + dayChallenges.length + dayAssessmentsCount + dayResources.length
 
-                    return (
-                        <div key={day} className="glass-card" style={{ overflow: 'hidden', border: isActive ? '1px solid var(--accent-light)' : '1px solid var(--card-border)', transition: 'all 0.3s ease' }}>
-                            {/* Accordion Header */}
-                            <div
-                                onClick={() => setSelectedDay(isActive ? null : day)}
-                                style={{
-                                    padding: '1.25rem 1.5rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    cursor: 'pointer',
-                                    background: isActive ? 'rgba(99,102,241,0.03)' : 'transparent',
-                                    userSelect: 'none'
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        {isActive ? <ChevronRight size={20} style={{ transform: 'rotate(90deg)', transition: 'transform 0.3s ease', color: 'var(--accent-light)' }} /> : <ChevronRight size={20} style={{ transition: 'transform 0.3s ease', color: 'var(--text-muted)' }} />}
-                                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: isActive ? 'var(--accent-light)' : 'var(--text-primary)' }}>Day {day}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 500 }}>
-                                        <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-muted)' }} />
-                                        {topicCount} Topics
-                                    </div>
-                                </div>
+            {/* Course Journey Timeline */}
+            {weeks.length > 0 && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                    <CourseJourneyTimeline 
+                        course={course}
+                        sessions={sessions}
+                        challenges={challenges}
+                        courseResources={courseResources}
+                        assessments={assessments}
+                        progress={progress}
+                        getScheduleDate={getScheduleDate}
+                        onModuleAction={(type, module) => {
+                            const content = module._content;
+                            if (!content) return;
+                            
+                            if (type === 'video' || type === 'watch') {
+                                handleWatchVideo(content)
+                            } else if (type === 'live') {
+                                navigate(`/student/classroom/${content.id}`)
+                            } else if (type === 'coding') {
+                                navigate(`/student/coding/${content.id}`)
+                            } else if (type === 'assessment') {
+                                navigate(`/student/assessments/${content.id}/take`)
+                            } else if (type === 'resource') {
+                                if (content.url) window.open(content.url, '_blank')
+                            }
+                        }}
+                    />
+                </div>
+            )}
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    {status.locked && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, background: '#fef2f2', padding: '0.25rem 0.6rem', borderRadius: 20 }}>
-                                            <Lock size={12} /> Locked
-                                        </div>
-                                    )}
-                                    {!status.locked && topicCount === 0 && (
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Empty</span>
-                                    )}
-                                </div>
-                            </div>
+            {/* Weekly Completion Modal */}
+            {showWeeklyModal && completedWeekInfo && (
+                <WeeklyCompletionModal
+                    isVisible={showWeeklyModal}
+                    weekNumber={completedWeekInfo.weekNumber}
+                    xpEarned={completedWeekInfo.xpEarned}
+                    coinsEarned={completedWeekInfo.coinsEarned}
+                    grade={completedWeekInfo.grade}
+                    nextWeekNumber={completedWeekInfo.nextWeekNumber}
+                    onClose={() => setShowWeeklyModal(false)}
+                    onContinue={() => {
+                        setShowWeeklyModal(false)
+                        refreshProgress()
+                    }}
+                />
+            )}
 
-                            {/* Accordion Body */}
-                            {isActive && (
-                                <div className="animate-fade-in" style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--card-border)' }}>
-                                    <div style={{ paddingTop: '1.5rem' }}>
-                                        {status.locked ? (
-                                            <div style={{ textAlign: 'center', padding: '2rem 1rem', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
-                                                <Lock size={32} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
-                                                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Content Locked</h4>
-                                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{status.reason || "This day's content is not yet available."}</p>
-                                            </div>
-                                        ) : topicCount === 0 ? (
-                                            <div style={{ textAlign: 'center', padding: '2rem' }}>
-                                                <Calendar size={32} style={{ margin: '0 auto 1rem', opacity: 0.2 }} />
-                                                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No content uploaded for this day yet.</p>
-                                            </div>
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                                {/* Day Sessions */}
-                                                {daySessions.length > 0 && (
-                                                    <section>
-                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <Video size={16} color="#6366f1" />
-                                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Live Class & Videos</h4>
-                                                            </div>
-                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
-                                                                <button onClick={() => navigate('/organizer/upload', { state: { courseId } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
-                                                                    <Plus size={12} /> Add Session
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                            {daySessions.map(s => {
-                                                                const live = isLive(s.scheduled_time)
-                                                                const recorded = isRecorded(s)
-                                                                return (
-                                                                    <div key={s.id} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: live ? 'rgba(239,68,68,0.03)' : 'var(--card-bg)' }}>
-                                                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: live ? 'rgba(239,68,68,0.08)' : 'rgba(99,102,241,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                            {live ? <Zap size={18} color="#f87171" /> : <Play size={18} color="#818cf8" />}
-                                                                        </div>
-                                                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                                                            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{s.title}</div>
-                                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                                                                                {recorded ? 'Recorded Lesson' : s.scheduled_time ? new Date(s.scheduled_time).toLocaleString() : 'TBA'}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
-                                                                                <button onClick={() => navigate('/organizer/upload', { state: { editId: s.id } })} className="btn-secondary" style={{ padding: '0.4rem', border: 'none', background: 'none', color: 'var(--text-secondary)' }} title="Edit">
-                                                                                    <Edit2 size={16} />
-                                                                                </button>
-                                                                            )}
-                                                                            {(() => {
-                                                                                const recorded = isRecorded(s)
-                                                                                if (recorded) {
-                                                                                    return <button onClick={() => handleWatchVideo(s)} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Watch</button>
-                                                                                }
+            {/* XP Toast */}
+            {toastMessage && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: 24,
+                    right: 24,
+                    zIndex: 10001,
+                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    color: '#fff',
+                    padding: '0.85rem 1.5rem',
+                    borderRadius: 14,
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    boxShadow: '0 8px 32px rgba(99,102,241,0.3)',
+                    animation: 'fadeInUp 0.3s ease-out',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.2rem',
+                }}>
+                    <span>{toastMessage.text}</span>
+                    {toastMessage.reason && (
+                        <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>{toastMessage.reason}</span>
+                    )}
+                </div>
+            )}
 
-                                                                                const sTime = s.scheduled_time ? new Date(s.scheduled_time) : null;
-                                                                                let isPast = false, isFuture = false;
-                                                                                
-                                                                                if (sTime) {
-                                                                                    const dMs = (s.duration_minutes || 60) * 60000;
-                                                                                    const now = new Date();
-                                                                                    isPast = now >= new Date(sTime.getTime() + dMs);
-                                                                                    isFuture = now < sTime;
-                                                                                }
 
-                                                                                if (isPast) {
-                                                                                    if (s.video_url) {
-                                                                                        return <button onClick={() => handleWatchVideo(s)} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Watch Recording</button>
-                                                                                    }
-                                                                                    return <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, padding: '0.4rem 1rem', background: 'rgba(16,185,129,0.1)', borderRadius: 8 }}>Ended</span>
-                                                                                }
-
-                                                                                if (isFuture) {
-                                                                                    return <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, padding: '0.4rem 1rem', background: 'rgba(59,130,246,0.1)', borderRadius: 8 }}>Upcoming</span>
-                                                                                }
-
-                                                                                return (
-                                                                                    <button 
-                                                                                        onClick={() => navigate(`/student/classroom/${s.id}`)}
-                                                                                        className="btn-secondary" 
-                                                                                        style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', background: '#ef4444', color: 'white', border: 'none' }}
-                                                                                    >
-                                                                                        Join Live Class
-                                                                                    </button>
-                                                                                )
-                                                                            })()}
-                                                                        </div>
-                                                                    </div>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    </section>
-                                                )}
-
-                                                {/* Day Coding Challenges */}
-                                                {dayChallenges.length > 0 && (
-                                                    <section>
-                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <Code size={16} color="#f59e0b" />
-                                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Coding Practice</h4>
-                                                            </div>
-                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
-                                                                <button onClick={() => navigate('/organizer/coding', { state: { courseId, day: day } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
-                                                                    <Plus size={12} /> Add Exercise
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                                                            {dayChallenges.map(c => (
-                                                                <Link key={c.id} to={`/student/coding/${c.id}`} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', textDecoration: 'none' }}>
-                                                                    <div style={{ fontSize: '1.25rem' }}>{c.language === 'python' ? '🐍' : '💻'}</div>
-                                                                    <div style={{ flex: 1 }}>
-                                                                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{c.title}</div>
-                                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{c.difficulty.toUpperCase()} • {c.xp_reward} XP</div>
-                                                                    </div>
-                                                                    <ChevronRight size={14} color="var(--text-muted)" />
-                                                                </Link>
-                                                            ))}
-                                                        </div>
-                                                    </section>
-                                                )}
-
-                                                {/* Day Assessments */}
-                                                {(assessments.daily.filter(a => (a.day_number || 1) === day).length > 0 ||
-                                                    assessments.weekly.filter(a => (a.day_number || 1) === day).length > 0 ||
-                                                    assessments.final.filter(a => (a.day_number || 1) === day).length > 0) && (
-                                                        <section>
-                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <ClipboardList size={16} color="#10b981" />
-                                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Assessments</h4>
-                                                            </div>
-                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
-                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                    <button onClick={() => navigate('/organizer/assessments', { state: { courseId, day: day } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
-                                                                        <List size={12} /> Manage
-                                                                    </button>
-                                                                    <button onClick={() => navigate('/organizer/assessments/new', { state: { courseId, day: day } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
-                                                                        <Plus size={12} /> Add Quiz
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                                {['daily', 'weekly', 'final'].map(type =>
-                                                                    assessments[type].filter(a => (a.day_number || 1) === day).map(a => {
-                                                                        const attempts = (submissions[a.id] || []).length
-                                                                        return (
-                                                                            <div key={a.id} className="glass-card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `4px solid ${ASSESS_COLORS[type]}` }}>
-                                                                                <div>
-                                                                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: ASSESS_COLORS[type], textTransform: 'uppercase' }}>{type}</div>
-                                                                                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{a.title}</div>
-                                                                                </div>
-                                                                                <button onClick={() => navigate(`/student/assessments/${a.id}/${attempts > 0 ? 'review' : 'take'}`)} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
-                                                                                    {attempts > 0 ? 'Review' : 'Start'}
-                                                                                </button>
-                                                                            </div>
-                                                                        )
-                                                                    })
-                                                                )}
-                                                            </div>
-                                                        </section>
-                                                    )}
-
-                                                {/* Day Resources */}
-                                                {dayResources.length > 0 && (
-                                                    <section>
-                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <FileText size={16} color="var(--text-muted)" />
-                                                                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Study Materials</h4>
-                                                            </div>
-                                                            {(profile?.role === 'main_admin' || profile?.role === 'sub_admin') && (
-                                                                <button onClick={() => navigate('/organizer/courses', { state: { courseId, openMaterials: true } })} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', gap: '0.3rem' }}>
-                                                                    <Plus size={12} /> Add Material
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '0.75rem' }}>
-                                                            {dayResources.map(r => (
-                                                                <div 
-                                                                    key={r.id} 
-                                                                    onClick={() => setActiveResource(r)}
-                                                                    className="glass-card" 
-                                                                    style={{ 
-                                                                        padding: '0.75rem 1rem', 
-                                                                        display: 'flex', 
-                                                                        alignItems: 'center', 
-                                                                        gap: '0.75rem', 
-                                                                        background: '#f8fafc',
-                                                                        cursor: 'pointer'
-                                                                    }}
-                                                                >
-                                                                    <FileText size={16} color={r.resource_type === 'ppt' ? '#f97316' : '#10b981'} />
-                                                                    <div style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
-                                                                    <div style={{ color: 'var(--accent-light)' }}><Eye size={14} /></div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </section>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )
-                })}
-            </div>
             <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '2px dashed var(--card-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>

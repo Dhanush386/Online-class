@@ -7,12 +7,30 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { ProgressRing } from '../../design-system';
+import useLearningHealth from '../../hooks/useLearningHealth';
 
 export default function AIStudyAssistant() {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [aiData, setAiData] = useState(null);
+  const [activeCourseId, setActiveCourseId] = useState(null);
+  const { healthScore, breakdown, weakTopics, mastery, loading: healthLoading } = useLearningHealth(activeCourseId);
+
+  // Load active course
+  useEffect(() => {
+    async function loadActiveCourse() {
+      if (!profile?.id) return;
+      const { data } = await supabase
+        .from('enrollments')
+        .select('course_id')
+        .eq('student_id', profile.id)
+        .limit(1)
+        .maybeSingle();
+      if (data) setActiveCourseId(data.course_id);
+    }
+    loadActiveCourse();
+  }, [profile?.id]);
 
   useEffect(() => {
     if (profile?.id) {
@@ -32,7 +50,7 @@ export default function AIStudyAssistant() {
           .select('*')
           .eq('student_id', profile.id)
           .eq('status', 'active')
-          .single();
+          .maybeSingle();
 
         if (cached) {
           // If cached within last 24h, use it
@@ -55,21 +73,32 @@ export default function AIStudyAssistant() {
         return array[0] / (0xffffffff + 1);
       };
 
+      // Use REAL health data from useLearningHealth (not random values)
       const metrics = {
-        attendance: Math.floor(getSecureRandom() * 40) + 60, // 60-100
-        assessments: Math.floor(getSecureRandom() * 40) + 60,
-        coding: Math.floor(getSecureRandom() * 40) + 60,
-        progress: Math.floor(getSecureRandom() * 40) + 60,
+        attendance: breakdown.attendance || 0,
+        assessments: breakdown.quiz || 0,
+        coding: breakdown.coding || 0,
+        progress: breakdown.progress || 0,
       };
 
-      const rawSubmissions = `Recent topic: SQL Joins (Score: 45%). Recent coding: Arrays (Score: 90%).`;
+      // Build real submission data from mastery
+      const masteryInfo = mastery
+        .map(m => `${m.topic}: ${m.effective_score || m.average_score}% (${m.mastery_level})`)
+        .join('. ');
+      const weakInfo = weakTopics
+        .map(w => `WEAK: ${w.topic} (${w.effective_score}%, ${w.days_since_practiced}d since practice)`)
+        .join('. ');
+      const rawSubmissions = `Health Score: ${healthScore}%. ${masteryInfo}. ${weakInfo}`;
 
       // 3. Call Edge Function
       const { data, error } = await supabase.functions.invoke('ai-study-coach', {
         body: {
           studentName: profile.name,
           metrics,
-          rawSubmissions
+          rawSubmissions,
+          healthScore,
+          weakTopics: weakTopics.map(w => w.topic),
+          mastery: mastery.map(m => ({ topic: m.topic, score: m.effective_score || m.average_score, level: m.mastery_level }))
         }
       });
 
