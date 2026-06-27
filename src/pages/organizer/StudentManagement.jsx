@@ -979,7 +979,7 @@ export default function StudentManagement() {
                                             </div>
                                             {student.enrollments?.length > 0 ? (
                                                 student.enrollments.map((en, i) => (
-                                                    <div key={i} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                                                    <div key={i} style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.75rem' }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                                 <BookOpen size={14} color="#818cf8" />

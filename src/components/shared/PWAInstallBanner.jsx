@@ -147,7 +147,7 @@ export default function PWAInstallBanner() {
 
                 .pwa-install-btn {
                     background: white;
-                    color: var(--text-primary);
+                    color: #0f172a;
                     border: none;
                     padding: 0.5rem 1rem;
                     border-radius: 8px;
