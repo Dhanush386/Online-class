@@ -21,7 +21,37 @@ const LANGUAGES = [
 const DIFFICULTIES = ['easy', 'medium', 'hard']
 
 // Organizer Coding Management Page
-export default function CodingManagement() {
+
+const getTabColor = (t) => {
+    if (t === 'html') return '#ef4444';
+    if (t === 'css') return '#3b82f6';
+    return '#f59e0b';
+};
+
+const getDifficultyColor = (diff) => {
+    if (diff === 'easy') return '#10b981';
+    if (diff === 'medium') return '#f59e0b';
+    return '#ef4444';
+};
+
+const getRiskBg = (score) => {
+    if (score >= 100) return '#fef2f2';
+    if (score >= 60) return '#fff7ed';
+    return '#ecfdf5';
+};
+
+const getRiskColor = (score) => {
+    if (score >= 100) return '#ef4444';
+    if (score >= 60) return '#f97316';
+    return '#10b981';
+};
+
+const getRiskBorder = (score) => {
+    if (score >= 100) return '#fecaca';
+    if (score >= 60) return '#ffedd5';
+    return '#a7f3d0';
+};
+\nexport default function CodingManagement() {
     const { profile } = useAuth()
     const location = useLocation()
     const navigate = useNavigate()
@@ -546,237 +576,17 @@ export default function CodingManagement() {
         );
     };
 
-    const renderChallengeModal = () => {
-        return (
-            <>
-            {/* Modal */}
-            {
-                showModal && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                        <div className="glass-card animate-scale-in" style={{ width: '90%', maxWidth: 800, maxHeight: '90vh', padding: 0, display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                    {editingId ? 'Edit Challenge' : 'Create New Coding Challenge'}
-                                </h2>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    {editingId && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const c = challenges.find(ch => ch.id === editingId)
-                                                if (c) setLockingResource(c)
-                                            }}
-                                            className="btn-secondary"
-                                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                        >
-                                            <Clock size={14} /> Access Control
-                                        </button>
-                                    )}
-                                    <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                        <X size={20} />
-                                    </button>
-                                </div>
-                            </div>
 
-                            <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
-                                {error && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
-                                        <AlertCircle size={18} /> {error}
-                                    </div>
-                                )}
+    const renderHtmlSpecificOptions = () => (
+        <>
 
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: window.innerWidth <= 600 ? '1fr' : '1.5fr 1fr 1fr',
-                                    gap: '1rem',
-                                    marginBottom: '1.25rem'
-                                }}>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="course-id" className="form-label">Course</label>
-                                        <select
-                                            id="course-id"
-                                            name="course_id"
-                                            className="form-input"
-                                            value={formData.course_id}
-                                            onChange={e => setFormData(p => ({ ...p, course_id: e.target.value }))}
-                                            required
-                                        >
-                                            <option value="">Select Course</option>
-                                            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                                        </select>
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="language" className="form-label">Language</label>
-                                        <select id="language" name="language" className="form-input" value={formData.language} onChange={e => setFormData(p => ({ ...p, language: e.target.value }))} required>
-                                            {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.icon} {l.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="difficulty" className="form-label">Difficulty</label>
-                                        <select
-                                            id="difficulty"
-                                            name="difficulty"
-                                            className="form-input"
-                                            value={formData.difficulty}
-                                            onChange={e => setFormData({ ...formData, difficulty: e.target.value })}
-                                        >
-                                            {DIFFICULTIES.map(d => (
-                                                <option key={d} value={d}>{d.toUpperCase()}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="xp_reward" className="form-label">XP Reward</label>
-                                        <input
-                                            id="xp_reward"
-                                            name="xp_reward"
-                                            type="number"
-                                            className="form-input"
-                                            value={formData.xp_reward}
-                                            onChange={e => setFormData({ ...formData, xp_reward: parseInt(e.target.value) || 15 })}
-                                        />
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="day_number" className="form-label">Day Number</label>
-                                        <input
-                                            id="day_number"
-                                            name="day_number"
-                                            type="number"
-                                            className="form-input"
-                                            min="1"
-                                            value={formData.day_number}
-                                            onChange={e => setFormData({ ...formData, day_number: parseInt(e.target.value) || 1 })}
-                                            required
-                                        />
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1', display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                            <input 
-                                                type="checkbox" 
-                                                checked={formData.is_combined} 
-                                                onChange={e => setFormData({ ...formData, is_combined: e.target.checked })} 
-                                                style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
-                                            />
-                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>Combined Challenge (Multi-Part)</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div style={{ marginBottom: '1.25rem' }}>
-                                    <label htmlFor="challenge-title-input" className="form-label">Challenge Title</label>
-                                    <input
-                                        id="challenge-title-input"
-                                        name="title"
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="e.g. Reverse a String"
-                                        value={formData.title}
-                                        onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
-                                        required
-                                    />
-                                </div>
-
-                                {!formData.is_combined ? (
-                                    <>
-                                        <div style={{ marginBottom: '1.25rem' }}>
-                                            <label htmlFor="problem-statement" className="form-label">Problem Statement (Markdown supported)</label>
-                                            <textarea id="problem-statement" name="problem_statement" className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
-                                        </div>
-
-                                <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                                    <div>
-                                        <label htmlFor="starter-code" className="form-label">Starter Code</label>
-                                        {formData.language === 'html' ? (
-                                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                                                <div style={{ display: 'flex', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1' }}>
-                                                    <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
-                                                    <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
-                                                    <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
-                                                </div>
-                                                <div style={{ height: '180px', background: 'var(--text-primary)' }}>
-                                                    {webTab === 'html' && (
-                                                        <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="Initial HTML..." />
-                                                    )}
-                                                    {webTab === 'css' && (
-                                                        <CodeEditor value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} language="css" placeholder="Initial CSS..." />
-                                                    )}
-                                                    {webTab === 'js' && (
-                                                        <CodeEditor value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} language="js" placeholder="Initial JS..." />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
-                                                <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} placeholder="Initial code..." />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label htmlFor="constraints" className="form-label">Constraints</label>
-                                        <textarea id="constraints" name="constraints" className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
-                                    </div>
-                                </div>
-
-                                <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Solution Code (Optional)</label>
-                                    <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
-                                        <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} placeholder="Correct answer..." />
-                                    </div>
-                                </div>
-
-                                {/* Open / Close Time */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                                    <div>
-                                        <label htmlFor="open-time" className="form-label">Open Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                        <div style={{ position: 'relative' }}>
-                                            <Calendar size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                            <input id="open-time" name="open_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
-                                                value={formData.open_time}
-                                                onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="close-time" className="form-label">Close Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                        <div style={{ position: 'relative' }}>
-                                            <Clock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                            <input id="close-time" name="close_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
-                                                value={formData.close_time}
-                                                min={formData.open_time || undefined}
-                                                onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
-                                            />
-                                        </div>
-                                        {formData.open_time && formData.close_time && (() => {
-                                            const mins = Math.round((new Date(formData.close_time) - new Date(formData.open_time)) / 60000)
-                                            return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.3rem' }}>⏱ {mins} min window</div> : null
-                                        })()}
-                                    </div>
-                                </div>
-
-                                <div style={{ marginBottom: '1.25rem' }}>
-                                    <label htmlFor="target-visual" className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                    <input
-                                        id="target-visual"
-                                        name="target_visual_url"
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="Link to an image or video for the student to replicate"
-                                        value={formData.target_visual_url}
-                                        onChange={e => setFormData(p => ({ ...p, target_visual_url: e.target.value }))}
-                                    />
-                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Useful for HTML/CSS challenges where students need a visual goal.</p>
-                                </div>
-
-                                {/* ── Reference iFrame & Required Keywords (HTML only) ── */}
-                                {formData.language === 'html' && (
-                                    <>
                                         {/* Reference iFrame URL */}
                                         <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, #eff6ff, #f0fdf4)', border: '1px solid #bfdbfe', borderRadius: 12 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                                                 <div style={{ width: 28, height: 28, background: '#3b82f6', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                     <span style={{ color: 'white', fontSize: '0.7rem', fontWeight: 800 }}>{'<>'}</span>
                                                 </div>
-                                                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e40af', margin: 0 }}>
+                                                <label htmlFor="reference-iframe-url" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e40af', margin: 0 }}>
                                                     Reference iFrame URL <span style={{ color: '#60a5fa', fontWeight: 400 }}>(optional)</span>
                                                 </label>
                                             </div>
@@ -808,7 +618,7 @@ export default function CodingManagement() {
                                                     {['html', 'css', 'js'].map(t => {
                                                         const count = (formData.web_testcases?.[t] || []).filter(x => t === 'js' ? x.keyword?.trim() : x.selector?.trim()).length
                                                         return count > 0 ? (
-                                                            <span key={t} style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.5rem', background: t === 'html' ? '#ef4444' : t === 'css' ? '#3b82f6' : '#f59e0b', color: 'white', borderRadius: 10 }}>
+                                                            <span key={t} style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.5rem', background: getTabColor(t), color: 'white', borderRadius: 10 }}>
                                                                 {t.toUpperCase()} {count}
                                                             </span>
                                                         ) : null
@@ -860,7 +670,7 @@ export default function CodingManagement() {
                                                                 </button>
                                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 100px', gap: '0.6rem' }}>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</label>
+                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Page should have a main heading"
                                                                             value={tc.description || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.html]; arr[idx] = { ...arr[idx], description: e.target.value }
@@ -868,7 +678,7 @@ export default function CodingManagement() {
                                                                             }} />
                                                                     </div>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#ef4444', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</label>
+                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#ef4444', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</div>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="h1, form, .nav"
                                                                             value={tc.selector || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.html]; arr[idx] = { ...arr[idx], selector: e.target.value }
@@ -876,10 +686,10 @@ export default function CodingManagement() {
                                                                             }} />
                                                                     </div>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>MIN COUNT</label>
+                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>MIN COUNT</div>
                                                                         <input type="number" min="1" className="form-input" style={{ fontSize: '0.8rem' }} placeholder="1"
                                                                             value={tc.minCount || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.html]; arr[idx] = { ...arr[idx], minCount: parseInt(e.target.value) || 1 }
+                                                                                const arr = [...formData.web_testcases.html]; arr[idx] = { ...arr[idx], minCount: Number.parseInt(e.target.value) || 1 }
                                                                                 setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, html: arr } }))
                                                                             }} />
                                                                     </div>
@@ -908,7 +718,7 @@ export default function CodingManagement() {
                                                                 </button>
                                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 160px 140px', gap: '0.6rem' }}>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</label>
+                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Container should use flexbox"
                                                                             value={tc.description || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], description: e.target.value }
@@ -916,7 +726,7 @@ export default function CodingManagement() {
                                                                             }} />
                                                                     </div>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</label>
+                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</div>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder=".container"
                                                                             value={tc.selector || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], selector: e.target.value }
@@ -924,7 +734,7 @@ export default function CodingManagement() {
                                                                             }} />
                                                                     </div>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS PROPERTY *</label>
+                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS PROPERTY *</div>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="display"
                                                                             value={tc.property || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], property: e.target.value }
@@ -932,7 +742,7 @@ export default function CodingManagement() {
                                                                             }} />
                                                                     </div>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>EXPECTED VALUE</label>
+                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>EXPECTED VALUE</div>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="flex"
                                                                             value={tc.value || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], value: e.target.value }
@@ -964,7 +774,7 @@ export default function CodingManagement() {
                                                                 </button>
                                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '0.6rem' }}>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</label>
+                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Submit button should use addEventListener"
                                                                             value={tc.description || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.js]; arr[idx] = { ...arr[idx], description: e.target.value }
@@ -972,7 +782,7 @@ export default function CodingManagement() {
                                                                             }} />
                                                                     </div>
                                                                     <div>
-                                                                        <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#d97706', display: 'block', marginBottom: '0.25rem' }}>JS KEYWORD *</label>
+                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#d97706', display: 'block', marginBottom: '0.25rem' }}>JS KEYWORD *</div>
                                                                         <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="addEventListener"
                                                                             value={tc.keyword || ''} onChange={e => {
                                                                                 const arr = [...formData.web_testcases.js]; arr[idx] = { ...arr[idx], keyword: e.target.value }
@@ -991,23 +801,12 @@ export default function CodingManagement() {
                                                 )}
                                             </div>
                                         </div>
-                                    </>
-                                )}
+        </>
+    );
 
-                                <div style={{ marginBottom: '1.5rem' }}>
-                                    <label htmlFor="allowed-assets" className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                    <textarea
-                                        id="allowed-assets"
-                                        name="allowed_assets"
-                                        className="form-input"
-                                        rows={3}
-                                        placeholder="List links (one per line) students can copy-paste (images, fonts, etc.)"
-                                        value={formData.allowed_assets}
-                                        onChange={e => setFormData(p => ({ ...p, allowed_assets: e.target.value }))}
-                                    />
-                                </div>
-
-                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
+    const renderStandardTestCases = () => (
+        <>
+<div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                         <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Test Cases</h4>
                                         <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: [...p.test_cases, { input: '', expected_output: '', is_hidden: false }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
@@ -1112,10 +911,12 @@ export default function CodingManagement() {
                                             )}
                                         </div>
                                     ))}
-                                </div>
-                                </>
-                                ) : (
-                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
+        </>
+    );
+
+    const renderSubQuestions = () => (
+        <>
+<div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                             <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sub-Questions</h4>
                                             <button type="button" onClick={() => setFormData(p => ({ ...p, sub_questions: [...p.sub_questions, { id: 'q' + (p.sub_questions.length + 1), title: '', problem_statement: '', starter_code: '', solution_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false }] }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
@@ -1130,26 +931,23 @@ export default function CodingManagement() {
                                                 </div>
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', gap: '1rem', marginBottom: '1rem' }}>
                                                     <div>
-                                                        <label className="form-label">Title</label>
-                                                        <input className="form-input" value={q.title} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].title = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
+                                                        <label htmlFor={`sq-title-${qIdx}`} className="form-label">Title</label>\n                                                        <input id={`sq-title-${qIdx}`} className="form-input" value={q.title} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].title = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
                                                     </div>
                                                     <div>
-                                                        <label className="form-label">XP Reward</label>
-                                                        <input type="number" className="form-input" value={q.xp_reward} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].xp_reward = parseInt(e.target.value) || 0; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
+                                                        <label htmlFor={`sq-xp-${qIdx}`} className="form-label">XP Reward</label>\n                                                        <input id={`sq-xp-${qIdx}`} type="number" className="form-input" value={q.xp_reward} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].xp_reward = Number.parseInt(e.target.value) || 0; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
                                                     </div>
                                                 </div>
                                                 <div style={{ marginBottom: '1rem' }}>
-                                                    <label className="form-label">Problem Statement</label>
-                                                    <textarea className="form-input" rows={3} value={q.problem_statement} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].problem_statement = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
+                                                    <label htmlFor={`sq-ps-${qIdx}`} className="form-label">Problem Statement</label>\n                                                    <textarea id={`sq-ps-${qIdx}`} className="form-input" rows={3} value={q.problem_statement} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].problem_statement = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
                                                 </div>
                                                 <div style={{ marginBottom: '1rem' }}>
-                                                    <label className="form-label">Starter Code</label>
+                                                    <div className="form-label">Starter Code</div>
                                                     <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
                                                         <CodeEditor value={q.starter_code} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].starter_code = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} language={formData.language} placeholder="Initial code..." />
                                                     </div>
                                                 </div>
                                                 <div style={{ marginBottom: '1rem' }}>
-                                                    <label className="form-label">Solution Code (Optional)</label>
+                                                    <div className="form-label">Solution Code (Optional)</div>
                                                     <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
                                                         <CodeEditor value={q.solution_code || ''} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].solution_code = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} language={formData.language} placeholder="Correct answer..." />
                                                     </div>
@@ -1173,6 +971,251 @@ export default function CodingManagement() {
                                                 </div>
                                             </div>
                                         ))}
+        </>
+    );
+
+    const renderChallengeModal = () => {
+        return (
+            <>
+            {/* Modal */}
+            {
+                showModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                        <div className="glass-card animate-scale-in" style={{ width: '90%', maxWidth: 800, maxHeight: '90vh', padding: 0, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                    {editingId ? 'Edit Challenge' : 'Create New Coding Challenge'}
+                                </h2>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    {editingId && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const c = challenges.find(ch => ch.id === editingId)
+                                                if (c) setLockingResource(c)
+                                            }}
+                                            className="btn-secondary"
+                                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                        >
+                                            <Clock size={14} /> Access Control
+                                        </button>
+                                    )}
+                                    <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
+                                {error && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                        <AlertCircle size={18} /> {error}
+                                    </div>
+                                )}
+
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: window.innerWidth <= 600 ? '1fr' : '1.5fr 1fr 1fr',
+                                    gap: '1rem',
+                                    marginBottom: '1.25rem'
+                                }}>
+                                    <div style={{ gridColumn: 'span 1' }}>
+                                        <label htmlFor="course-id" className="form-label">Course</label>
+                                        <select
+                                            id="course-id"
+                                            name="course_id"
+                                            className="form-input"
+                                            value={formData.course_id}
+                                            onChange={e => setFormData(p => ({ ...p, course_id: e.target.value }))}
+                                            required
+                                        >
+                                            <option value="">Select Course</option>
+                                            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                                        </select>
+                                    </div>
+                                    <div style={{ gridColumn: 'span 1' }}>
+                                        <label htmlFor="language" className="form-label">Language</label>
+                                        <select id="language" name="language" className="form-input" value={formData.language} onChange={e => setFormData(p => ({ ...p, language: e.target.value }))} required>
+                                            {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.icon} {l.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div style={{ gridColumn: 'span 1' }}>
+                                        <label htmlFor="difficulty" className="form-label">Difficulty</label>
+                                        <select
+                                            id="difficulty"
+                                            name="difficulty"
+                                            className="form-input"
+                                            value={formData.difficulty}
+                                            onChange={e => setFormData({ ...formData, difficulty: e.target.value })}
+                                        >
+                                            {DIFFICULTIES.map(d => (
+                                                <option key={d} value={d}>{d.toUpperCase()}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ gridColumn: 'span 1' }}>
+                                        <label htmlFor="xp_reward" className="form-label">XP Reward</label>
+                                        <input
+                                            id="xp_reward"
+                                            name="xp_reward"
+                                            type="number"
+                                            className="form-input"
+                                            value={formData.xp_reward}
+                                            onChange={e => setFormData({ ...formData, xp_reward: Number.parseInt(e.target.value) || 15 })}
+                                        />
+                                    </div>
+                                    <div style={{ gridColumn: 'span 1' }}>
+                                        <label htmlFor="day_number" className="form-label">Day Number</label>
+                                        <input
+                                            id="day_number"
+                                            name="day_number"
+                                            type="number"
+                                            className="form-input"
+                                            min="1"
+                                            value={formData.day_number}
+                                            onChange={e => setFormData({ ...formData, day_number: Number.parseInt(e.target.value) || 1 })}
+                                            required
+                                        />
+                                    </div>
+                                    <div style={{ gridColumn: 'span 1', display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={formData.is_combined} 
+                                                onChange={e => setFormData({ ...formData, is_combined: e.target.checked })} 
+                                                style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                                            />
+                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>Combined Challenge (Multi-Part)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '1.25rem' }}>
+                                    <label htmlFor="challenge-title-input" className="form-label">Challenge Title</label>
+                                    <input
+                                        id="challenge-title-input"
+                                        name="title"
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="e.g. Reverse a String"
+                                        value={formData.title}
+                                        onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+
+                                {!formData.is_combined ? (
+                                    <>
+                                        <div style={{ marginBottom: '1.25rem' }}>
+                                            <label htmlFor="problem-statement" className="form-label">Problem Statement (Markdown supported)</label>
+                                            <textarea id="problem-statement" name="problem_statement" className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
+                                        </div>
+
+                                <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                    <div>
+                                        <div htmlFor="starter-code" className="form-label">Starter Code</div>
+                                        {formData.language === 'html' ? (
+                                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                                                <div style={{ display: 'flex', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1' }}>
+                                                    <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
+                                                    <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
+                                                    <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
+                                                </div>
+                                                <div style={{ height: '180px', background: 'var(--text-primary)' }}>
+                                                    {webTab === 'html' && (
+                                                        <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="Initial HTML..." />
+                                                    )}
+                                                    {webTab === 'css' && (
+                                                        <CodeEditor value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} language="css" placeholder="Initial CSS..." />
+                                                    )}
+                                                    {webTab === 'js' && (
+                                                        <CodeEditor value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} language="js" placeholder="Initial JS..." />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                                                <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} placeholder="Initial code..." />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label htmlFor="constraints" className="form-label">Constraints</label>
+                                        <textarea id="constraints" name="constraints" className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                                    <div style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Solution Code (Optional)</div>
+                                    <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                                        <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} placeholder="Correct answer..." />
+                                    </div>
+                                </div>
+
+                                {/* Open / Close Time */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                    <div>
+                                        <label htmlFor="open-time" className="form-label">Open Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                        <div style={{ position: 'relative' }}>
+                                            <Calendar size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                            <input id="open-time" name="open_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
+                                                value={formData.open_time}
+                                                onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="close-time" className="form-label">Close Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                        <div style={{ position: 'relative' }}>
+                                            <Clock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                            <input id="close-time" name="close_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
+                                                value={formData.close_time}
+                                                min={formData.open_time || undefined}
+                                                onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
+                                            />
+                                        </div>
+                                        {formData.open_time && formData.close_time && (() => {
+                                            const mins = Math.round((new Date(formData.close_time) - new Date(formData.open_time)) / 60000)
+                                            return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.3rem' }}>⏱ {mins} min window</div> : null
+                                        })()}
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '1.25rem' }}>
+                                    <label htmlFor="target-visual" className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                    <input
+                                        id="target-visual"
+                                        name="target_visual_url"
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="Link to an image or video for the student to replicate"
+                                        value={formData.target_visual_url}
+                                        onChange={e => setFormData(p => ({ ...p, target_visual_url: e.target.value }))}
+                                    />
+                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Useful for HTML/CSS challenges where students need a visual goal.</p>
+                                </div>
+
+                                {/* ── Reference iFrame & Required Keywords (HTML only) ── */}
+                                {formData.language === 'html' && renderHtmlSpecificOptions()}
+
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label htmlFor="allowed-assets" className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                    <textarea
+                                        id="allowed-assets"
+                                        name="allowed_assets"
+                                        className="form-input"
+                                        rows={3}
+                                        placeholder="List links (one per line) students can copy-paste (images, fonts, etc.)"
+                                        value={formData.allowed_assets}
+                                        onChange={e => setFormData(p => ({ ...p, allowed_assets: e.target.value }))}
+                                    />
+                                </div>
+
+                                {renderStandardTestCases()}
+                                </div>
+                                </>
+                                ) : (
+                                    {renderSubQuestions()}
                                     </div>
                                 )}
 
@@ -1216,8 +1259,7 @@ export default function CodingManagement() {
                             )}
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label className="form-label">Select Course</label>
-                                <select
+                                <label htmlFor="ai-course-id" className="form-label">Select Course</label>\n                                <select id="ai-course-id"
                                     className="form-input"
                                     value={aiCourseId}
                                     onChange={e => setAiCourseId(e.target.value)}
@@ -1227,8 +1269,7 @@ export default function CodingManagement() {
                                     {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                                 </select>
 
-                                <label className="form-label">Topic or Content</label>
-                                <textarea
+                                <label htmlFor="ai-prompt" className="form-label">Topic or Content</label>\n                                <textarea id="ai-prompt"
                                     className="form-input"
                                     rows={4}
                                     placeholder="e.g. Generate 3 Python challenges about array manipulation..."
@@ -1398,9 +1439,9 @@ export default function CodingManagement() {
                                                                     gap: '4px',
                                                                     padding: '0.25rem 0.5rem',
                                                                     borderRadius: 6,
-                                                                    background: proctorSessionsMap[sub.student_id].final_risk_score >= 100 ? '#fef2f2' : proctorSessionsMap[sub.student_id].final_risk_score >= 60 ? '#fff7ed' : '#ecfdf5',
-                                                                    color: proctorSessionsMap[sub.student_id].final_risk_score >= 100 ? '#ef4444' : proctorSessionsMap[sub.student_id].final_risk_score >= 60 ? '#f97316' : '#10b981',
-                                                                    border: `1px solid ${proctorSessionsMap[sub.student_id].final_risk_score >= 100 ? '#fecaca' : proctorSessionsMap[sub.student_id].final_risk_score >= 60 ? '#ffedd5' : '#a7f3d0'}`,
+                                                                    background: getRiskBg(proctorSessionsMap[sub.student_id].final_risk_score),
+                                                                    color: getRiskColor(proctorSessionsMap[sub.student_id].final_risk_score),
+                                                                    border: `1px solid ${getRiskBorder(proctorSessionsMap[sub.student_id].final_risk_score)}`,
                                                                     fontSize: '0.75rem',
                                                                     fontWeight: 700,
                                                                     cursor: 'pointer'
@@ -1526,7 +1567,7 @@ export default function CodingManagement() {
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
                     {filteredChallenges.map(c => (
-                        <div key={c.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444'}` }}>
+                        <div key={c.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${getDifficultyColor(c.difficulty)}` }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                                 <span className="badge" style={{ background: '#f1f5f9', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
                                     {LANGUAGES.find(l => l.id === c.language)?.icon} {c.language.toUpperCase()}

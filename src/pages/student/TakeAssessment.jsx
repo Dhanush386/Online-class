@@ -439,7 +439,7 @@ export default function TakeAssessment() {
                 setTimeLeft(duration * 60);
                 return;
             }
-            const remaining = Math.floor((parseInt(savedEndTime) - Date.now()) / 1000);
+            const remaining = Math.floor((Number.parseInt(savedEndTime) - Date.now()) / 1000);
             if (remaining <= 0) {
                 setTimeLeft(0);
                 alert("Time is up! Your assessment will be automatically submitted.");

@@ -284,13 +284,13 @@ export default function AdminManagement() {
                                 {courses.map(course => {
                                     const isAssigned = selectedAdmin.assignedCourses.some(c => c.id === course.id)
                                     return (
-                                        <div 
-                                            role="button"
-                                            tabIndex={0}
+                                        <button 
+                                            type="button"
                                             key={course.id} 
                                             onClick={() => toggleCourseAssignment(selectedAdmin.id, course.id, isAssigned)}
-                                            onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggleCourseAssignment(selectedAdmin.id, course.id, isAssigned)}
                                             style={{ 
+                                                width: '100%',
+                                                fontFamily: 'inherit',
                                                 padding: '1rem', 
                                                 borderRadius: 12, 
                                                 border: isAssigned ? '1px solid #6366f1' : '1px solid var(--card-border)',
@@ -309,7 +309,7 @@ export default function AdminManagement() {
                                                 <span style={{ fontWeight: 600, fontSize: '0.9rem', color: isAssigned ? '#1e1b4b' : 'var(--text-primary)' }}>{course.title}</span>
                                             </div>
                                             {isAssigned ? <Check size={20} color="#6366f1" /> : <div style={{ width: 20, height: 20, border: '2px solid #e2e8f0', borderRadius: '50%' }} />}
-                                        </div>
+                                        </button>
                                     )
                                 })}
                             </div>

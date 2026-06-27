@@ -91,7 +91,7 @@ export default function ScheduleLiveClass() {
             }
 
             // Compute duration_minutes from start and end time for live classes
-            let durationMins = parseInt(form.duration_minutes) || null
+            let durationMins = Number.parseInt(form.duration_minutes) || null
             if (mode === 'live' && form.scheduled_time && form.end_time) {
                 const start = new Date(form.scheduled_time)
                 const end = new Date(form.end_time)
@@ -129,7 +129,7 @@ export default function ScheduleLiveClass() {
                 video_url: finalUrl,
                 scheduled_time: mode === 'live' ? toISOWithOffset(form.scheduled_time) : null,
                 duration_minutes: durationMins,
-                day_number: parseInt(form.day_number) || 1,
+                day_number: Number.parseInt(form.day_number) || 1,
                 slide_url: finalSlideUrl || null
             })
 

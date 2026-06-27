@@ -801,7 +801,7 @@ export default function CourseDetail() {
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Assign to:</span>
                                 <select 
                                     value={activeNote?.day_number || ''} 
-                                    onChange={(e) => setActiveNote(p => ({ ...p, day_number: e.target.value ? parseInt(e.target.value) : null }))}
+                                    onChange={(e) => setActiveNote(p => ({ ...p, day_number: e.target.value ? Number.parseInt(e.target.value) : null }))}
                                     style={{ padding: '0.2rem 0.5rem', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: '0.8rem' }}
                                 >
                                     <option value="">General (No Day)</option>

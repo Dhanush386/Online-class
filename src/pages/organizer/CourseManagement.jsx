@@ -174,7 +174,7 @@ export default function CourseManagement() {
 
             if (error) throw error
 
-            setResourceForm({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: (parseInt(resourceForm.day_number) || 1) + 1, file: null })
+            setResourceForm({ title: '', description: '', file_url: '', resource_type: 'pdf', day_number: (Number.parseInt(resourceForm.day_number) || 1) + 1, file: null })
             openResources(currentCourse)
         } catch (err) {
             alert('Failed to add resource: ' + err.message)

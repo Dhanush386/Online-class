@@ -42,8 +42,8 @@ export default function ScheduleManager() {
             title: editVideo.title,
             description: editVideo.description,
             scheduled_time: toISOWithOffset(editVideo.scheduled_time),
-            duration_minutes: parseInt(editVideo.duration_minutes) || null,
-            day_number: parseInt(editVideo.day_number) || 1,
+            duration_minutes: Number.parseInt(editVideo.duration_minutes) || null,
+            day_number: Number.parseInt(editVideo.day_number) || 1,
             course_id: editVideo.course_id,
             video_url: editVideo.video_url,
         }).eq('id', editVideo.id)

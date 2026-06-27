@@ -211,7 +211,7 @@ export default function CodeWorkspace() {
         if (!challengeId) return;
         const savedEndTime = localStorage.getItem(`challenge_endTime_${challengeId}`);
         if (savedEndTime) {
-            const remaining = Math.floor((parseInt(savedEndTime) - Date.now()) / 1000);
+            const remaining = Math.floor((Number.parseInt(savedEndTime) - Date.now()) / 1000);
             if (remaining > 0) {
                 setTimeLeft(remaining);
                 if (canBypass) setIsStarted(true);

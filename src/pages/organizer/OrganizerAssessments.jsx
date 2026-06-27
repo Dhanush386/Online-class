@@ -121,8 +121,8 @@ export default function OrganizerAssessments() {
                 type: formData.type,
                 due_date: formData.due_date || null,
                 description: formData.description,
-                day_number: parseInt(formData.day_number) || 1,
-                duration: parseInt(formData.duration) || 30
+                day_number: Number.parseInt(formData.day_number) || 1,
+                duration: Number.parseInt(formData.duration) || 30
             }
 
             if (editingId) {
