@@ -272,6 +272,37 @@ export default function AssessmentQuestions() {
         setError('')
     }
 
+    function handleOptionCheckboxChange(opt, isChecked) {
+        setFormData(p => {
+            const newAnswers = isChecked 
+                ? [...p.correct_answer, opt]
+                : p.correct_answer.filter(val => val !== opt)
+            return { ...p, correct_answer: newAnswers }
+        })
+    }
+
+    function handleOptionTextChange(index, newText) {
+        setFormData(p => {
+            const oldVal = p.options[index]
+            const newOpts = [...p.options]
+            newOpts[index] = newText
+            
+            return {
+                ...p,
+                options: newOpts,
+                correct_answer: p.correct_answer.map(val => val === oldVal ? newText : val)
+            }
+        })
+    }
+
+    function handleRemoveOption(index, optVal) {
+        setFormData(p => ({
+            ...p,
+            options: p.options.filter((_, idx) => idx !== index),
+            correct_answer: p.correct_answer.filter(val => val !== optVal)
+        }))
+    }
+
     if (loading && !assessment) return <div style={{ padding: '2rem' }}>Loading assessment...</div>
 
     return (
@@ -613,15 +644,7 @@ export default function AssessmentQuestions() {
                                                 <input
                                                     type="checkbox"
                                                     checked={formData.correct_answer.includes(opt) && opt !== ''}
-                                                    onChange={(e) => {
-                                                        const isChecked = e.target.checked
-                                                        setFormData(p => {
-                                                            const newAnswers = isChecked 
-                                                                ? [...p.correct_answer, opt]
-                                                                : p.correct_answer.filter(val => val !== opt)
-                                                            return { ...p, correct_answer: newAnswers }
-                                                        })
-                                                    }}
+                                                    onChange={(e) => handleOptionCheckboxChange(opt, e.target.checked)}
                                                     disabled={!opt.trim()}
                                                     style={{ width: 18, height: 18, cursor: opt.trim() ? 'pointer' : 'default' }}
                                                 />
@@ -632,30 +655,13 @@ export default function AssessmentQuestions() {
                                                     className="form-input"
                                                     placeholder={`Option ${String.fromCharCode(65 + i)}`}
                                                     value={opt}
-                                                    onChange={e => {
-                                                        const newOpts = [...formData.options]
-                                                        const oldVal = newOpts[i]
-                                                        newOpts[i] = e.target.value
-                                                        
-                                                        setFormData(p => ({
-                                                            ...p,
-                                                            options: newOpts,
-                                                            correct_answer: p.correct_answer.map(val => val === oldVal ? e.target.value : val)
-                                                        }))
-                                                    }}
+                                                    onChange={(e) => handleOptionTextChange(i, e.target.value)}
                                                     required
                                                 />
                                                 {formData.options.length > 2 && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => {
-                                                            const newOpts = formData.options.filter((_, idx) => idx !== i)
-                                                            setFormData(p => ({
-                                                                ...p,
-                                                                options: newOpts,
-                                                                correct_answer: p.correct_answer.filter(val => val !== opt)
-                                                            }))
-                                                        }}
+                                                        onClick={() => handleRemoveOption(i, opt)}
                                                         style={{ position: 'absolute', right: -30, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
                                                     >
                                                         <Trash2 size={16} />

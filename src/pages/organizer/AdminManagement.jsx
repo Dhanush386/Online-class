@@ -55,12 +55,21 @@ export default function AdminManagement() {
             supabase.from('admin_course_assignments').select('*')
         ])
 
-        const adminsWithCourses = (admins || []).map(admin => ({
-            ...admin,
-            assignedCourses: (crs || []).filter(c => 
-                (assignments || []).some(a => a.admin_id === admin.id && a.course_id === c.id)
-            )
-        }))
+        const adminAssignmentsMap = new Map()
+        for (const a of (assignments || [])) {
+            if (!adminAssignmentsMap.has(a.admin_id)) {
+                adminAssignmentsMap.set(a.admin_id, new Set())
+            }
+            adminAssignmentsMap.get(a.admin_id).add(a.course_id)
+        }
+
+        const adminsWithCourses = (admins || []).map(admin => {
+            const adminCourseIds = adminAssignmentsMap.get(admin.id) || new Set()
+            return {
+                ...admin,
+                assignedCourses: (crs || []).filter(c => adminCourseIds.has(c.id))
+            }
+        })
 
         setSubAdmins(adminsWithCourses)
         setCourses(crs || [])

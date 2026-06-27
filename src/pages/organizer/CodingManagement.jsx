@@ -483,158 +483,10 @@ export default function CodingManagement() {
         c.courses?.title?.toLowerCase().includes(search.toLowerCase())
     )
 
-    return (
-        <div className="animate-fade-in">
-            {/* Header Area */}
-            <div className="stack-mobile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', gap: '1.5rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>Coding Practice</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Create and manage coding challenges for your students</p>
-                </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button
-                        onClick={() => navigate('/organizer/proctoring')}
-                        className="btn-secondary"
-                        style={{ gap: '0.5rem', background: '#fef2f2', color: '#ef4444', borderColor: '#fecaca' }}
-                    >
-                        <ShieldAlert size={18} /> Live Proctoring
-                    </button>
-                    <button
-                        onClick={() => { setAiPrompt(''); setGeneratedChallenges([]); setShowAIModal(true) }}
-                        className="btn-secondary"
-                        style={{ gap: '0.5rem', background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}
-                    >
-                        <Sparkles size={18} /> Generate with AI
-                    </button>
-                    <button
-                        onClick={() => { resetForm(); setShowModal(true) }}
-                        className="btn-primary"
-                        style={{ gap: '0.5rem' }}
-                    >
-                        <Plus size={18} /> Create Challenge
-                    </button>
-                </div>
-            </div>
 
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', marginBottom: '1.5rem' }}>
-                <button onClick={() => setMainTab('challenges')} style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'challenges' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'challenges' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Challenges</button>
-                <button onClick={() => setMainTab('discussions')} style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'discussions' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'discussions' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Discussions</button>
-            </div>
-
-            {mainTab === 'challenges' ? (
-                <>
-                    {/* Filters & Search */}
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ flex: 1, position: 'relative' }}>
-                    <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input
-                        id="challenge-search"
-                        name="challenge-search"
-                        type="text"
-                        placeholder="Search challenges by title or course..."
-                        style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: 12, border: '1px solid var(--card-border)', background: 'white', fontSize: '0.9rem' }}
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                    />
-                </div>
-            </div>
-
-            {/* List */}
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                    <p style={{ color: 'var(--text-muted)' }}>Loading coding challenges...</p>
-                </div>
-            ) : filteredChallenges.length === 0 ? (
-                <div className="glass-card" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
-                    <div style={{ width: 64, height: 64, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                        <Code size={32} color="var(--text-muted)" />
-                    </div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Challenges Found</h3>
-                    <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 1.5rem' }}>Build interactive coding problems for your students to practice.</p>
-                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                        <button onClick={() => setShowModal(true)} className="btn-secondary">
-                            <Plus size={18} /> Add Your First Challenge
-                        </button>
-                        <button onClick={() => { setAiPrompt(''); setGeneratedChallenges([]); setShowAIModal(true) }} className="btn-secondary" style={{ background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}>
-                            <Sparkles size={18} /> Generate with AI
-                        </button>
-                    </div>
-                </div>
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
-                    {filteredChallenges.map(c => (
-                        <div key={c.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444'}` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                                <span className="badge" style={{ background: '#f1f5f9', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
-                                    {LANGUAGES.find(l => l.id === c.language)?.icon} {c.language.toUpperCase()}
-                                </span>
-                                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                    <button
-                                        onClick={() => setLockingResource(c)}
-                                        className="btn-secondary"
-                                        title="Access Control"
-                                        style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                    >
-                                        <Clock size={14} /> Batch
-                                    </button>
-                                    <button onClick={() => openEdit(c)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button onClick={() => handleDelete(c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                {resourceAccess.some(a => a.resource_id === c.id && a.is_locked) && <Lock size={14} color="#ef4444" style={{ flexShrink: 0 }} />}
-                                {c.title}
-                            </h3>
-                            {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.75rem' }}>
-                                    {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).map(a => {
-                                        const g = groups.find(gr => gr.id === a.group_id)
-                                        return g ? <span key={g.id} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: '#fee2e2', color: '#991b1b', borderRadius: 4, fontWeight: 600 }}>Locked: {g.name}</span> : null
-                                    })}
-                                </div>
-                            )}
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <BookOpen size={12} /> {c.courses?.title} • {c.difficulty.toUpperCase()}
-                            </div>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, height: '2.5rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>
-                                {c.description || 'No description provided.'}
-                            </p>
-                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.test_cases?.length || 0} Test Cases</span>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <button
-                                        onClick={() => loadSubmissions(c)}
-                                        className="btn-primary"
-                                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white' }}
-                                    >
-                                        <Eye size={14} /> Submissions
-                                    </button>
-                                    <button
-                                        onClick={() => window.open(`/student/coding/${c.id}?admin=true`, '_blank')}
-                                        className="btn-secondary"
-                                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                    >
-                                        Test Question
-                                    </button>
-                                    <button onClick={() => openEdit(c)} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>View Details</button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )
-            }
-            </>
-            ) : (
-                <OrganizerCodingDiscussions />
-            )}
-
+    const renderAccessControlModal = () => {
+        return (
+            <>
             {/* Access Control Modal */}
             {
                 lockingResource && (
@@ -690,7 +542,13 @@ export default function CodingManagement() {
                     </div>
                 )
             }
+            </>
+        );
+    };
 
+    const renderChallengeModal = () => {
+        return (
+            <>
             {/* Modal */}
             {
                 showModal && (
@@ -1329,6 +1187,13 @@ export default function CodingManagement() {
                     </div>
                 )
             }
+            </>
+        );
+    };
+
+    const renderAIModal = () => {
+        return (
+            <>
             {/* AI Generation Modal */}
             {showAIModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
@@ -1415,7 +1280,13 @@ export default function CodingManagement() {
                     </div>
                 </div>
             )}
+            </>
+        );
+    };
 
+    const renderSubmissionsModal = () => {
+        return (
+            <>
             {/* View Submissions Modal */}
             {viewingSubmissions && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
@@ -1555,13 +1426,183 @@ export default function CodingManagement() {
                     </div>
                 </div>
             )}
-            {viewingReportSession && (
+            </>
+        );
+    };
+
+    const renderProctoringModal = () => {
+        return (
+            <>
+                {            {viewingReportSession && (
                 <ProctoringReportModal 
                     studentId={viewingReportSession.studentId}
                     challengeId={viewingReportSession.challengeId}
                     onClose={() => setViewingReportSession(null)}
                 />
             )}
+        </div>}
+            </>
+        );
+    };
+
+    return (
+        <div className="animate-fade-in">
+            {/* Header Area */}
+            <div className="stack-mobile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', gap: '1.5rem' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>Coding Practice</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Create and manage coding challenges for your students</p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                        onClick={() => navigate('/organizer/proctoring')}
+                        className="btn-secondary"
+                        style={{ gap: '0.5rem', background: '#fef2f2', color: '#ef4444', borderColor: '#fecaca' }}
+                    >
+                        <ShieldAlert size={18} /> Live Proctoring
+                    </button>
+                    <button
+                        onClick={() => { setAiPrompt(''); setGeneratedChallenges([]); setShowAIModal(true) }}
+                        className="btn-secondary"
+                        style={{ gap: '0.5rem', background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}
+                    >
+                        <Sparkles size={18} /> Generate with AI
+                    </button>
+                    <button
+                        onClick={() => { resetForm(); setShowModal(true) }}
+                        className="btn-primary"
+                        style={{ gap: '0.5rem' }}
+                    >
+                        <Plus size={18} /> Create Challenge
+                    </button>
+                </div>
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', marginBottom: '1.5rem' }}>
+                <button onClick={() => setMainTab('challenges')} style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'challenges' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'challenges' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Challenges</button>
+                <button onClick={() => setMainTab('discussions')} style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'discussions' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'discussions' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Discussions</button>
+            </div>
+
+            {mainTab === 'challenges' ? (
+                <>
+                    {/* Filters & Search */}
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                    <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input
+                        id="challenge-search"
+                        name="challenge-search"
+                        type="text"
+                        placeholder="Search challenges by title or course..."
+                        style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: 12, border: '1px solid var(--card-border)', background: 'white', fontSize: '0.9rem' }}
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            {/* List */}
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ color: 'var(--text-muted)' }}>Loading coding challenges...</p>
+                </div>
+            ) : filteredChallenges.length === 0 ? (
+                <div className="glass-card" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
+                    <div style={{ width: 64, height: 64, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                        <Code size={32} color="var(--text-muted)" />
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Challenges Found</h3>
+                    <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 1.5rem' }}>Build interactive coding problems for your students to practice.</p>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                        <button onClick={() => setShowModal(true)} className="btn-secondary">
+                            <Plus size={18} /> Add Your First Challenge
+                        </button>
+                        <button onClick={() => { setAiPrompt(''); setGeneratedChallenges([]); setShowAIModal(true) }} className="btn-secondary" style={{ background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}>
+                            <Sparkles size={18} /> Generate with AI
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+                    {filteredChallenges.map(c => (
+                        <div key={c.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444'}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                                <span className="badge" style={{ background: '#f1f5f9', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+                                    {LANGUAGES.find(l => l.id === c.language)?.icon} {c.language.toUpperCase()}
+                                </span>
+                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                    <button
+                                        onClick={() => setLockingResource(c)}
+                                        className="btn-secondary"
+                                        title="Access Control"
+                                        style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                    >
+                                        <Clock size={14} /> Batch
+                                    </button>
+                                    <button onClick={() => openEdit(c)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button onClick={() => handleDelete(c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {resourceAccess.some(a => a.resource_id === c.id && a.is_locked) && <Lock size={14} color="#ef4444" style={{ flexShrink: 0 }} />}
+                                {c.title}
+                            </h3>
+                            {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.75rem' }}>
+                                    {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).map(a => {
+                                        const g = groups.find(gr => gr.id === a.group_id)
+                                        return g ? <span key={g.id} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: '#fee2e2', color: '#991b1b', borderRadius: 4, fontWeight: 600 }}>Locked: {g.name}</span> : null
+                                    })}
+                                </div>
+                            )}
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <BookOpen size={12} /> {c.courses?.title} • {c.difficulty.toUpperCase()}
+                            </div>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, height: '2.5rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>
+                                {c.description || 'No description provided.'}
+                            </p>
+                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.test_cases?.length || 0} Test Cases</span>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                        onClick={() => loadSubmissions(c)}
+                                        className="btn-primary"
+                                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white' }}
+                                    >
+                                        <Eye size={14} /> Submissions
+                                    </button>
+                                    <button
+                                        onClick={() => window.open(`/student/coding/${c.id}?admin=true`, '_blank')}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                    >
+                                        Test Question
+                                    </button>
+                                    <button onClick={() => openEdit(c)} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>View Details</button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )
+            }
+            </>
+            ) : (
+                <OrganizerCodingDiscussions />
+            )}
+
+
+            {renderAccessControlModal()}
+            {renderChallengeModal()}
+            {renderAIModal()}
+            {renderSubmissionsModal()}
+            {renderProctoringModal()}
         </div>
     )
 }
