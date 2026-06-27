@@ -1433,14 +1433,13 @@ export default function CodingManagement() {
     const renderProctoringModal = () => {
         return (
             <>
-                {            {viewingReportSession && (
-                <ProctoringReportModal 
-                    studentId={viewingReportSession.studentId}
-                    challengeId={viewingReportSession.challengeId}
-                    onClose={() => setViewingReportSession(null)}
-                />
-            )}
-        </div>}
+                {viewingReportSession && (
+                    <ProctoringReportModal 
+                        studentId={viewingReportSession.studentId}
+                        challengeId={viewingReportSession.challengeId}
+                        onClose={() => setViewingReportSession(null)}
+                    />
+                )}
             </>
         );
     };
