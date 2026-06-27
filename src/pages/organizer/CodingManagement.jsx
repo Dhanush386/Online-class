@@ -51,7 +51,8 @@ const getRiskBorder = (score) => {
     if (score >= 60) return '#ffedd5';
     return '#a7f3d0';
 };
-\nexport default function CodingManagement() {
+
+export default function CodingManagement() {
     const { profile } = useAuth()
     const location = useLocation()
     const navigate = useNavigate()
