@@ -189,7 +189,7 @@ export default function AssessmentReview() {
                                     return (
                                         <div key={i} style={{ padding: '0.75rem 1rem', borderRadius: 10, background: bg, border: `1px solid ${border}`, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: textColor }}>
                                             <div style={{ width: 20, height: 20, background: isThisCorrect ? '#10b981' : isThisSelected ? '#ef4444' : '#cbd5e1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem', flexShrink: 0 }}>
-                                                {isThisCorrect ? <CheckCircle2 size={12} /> : isThisSelected ? <XCircle size={12} /> : String.fromCharCode(65 + i)}
+                                                {isThisCorrect ? <CheckCircle2 size={12} /> : isThisSelected ? <XCircle size={12} /> : String.fromCodePoint(65 + i)}
                                             </div>
                                             {opt}
                                             {isThisSelected && !isThisCorrect && <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Your answer</span>}

@@ -271,7 +271,7 @@ export default function CodingManagement() {
             let responseText = data.candidates[0].content.parts[0].text;
             
             // Clean up possible markdown wrappers
-            responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            responseText = responseText.replaceAll('```json', '').replaceAll('```', '').trim();
             
             const parsed = JSON.parse(responseText);
             if (!Array.isArray(parsed)) throw new Error("AI did not return an array.");

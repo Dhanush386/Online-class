@@ -935,7 +935,7 @@ export default function TakeAssessment() {
                                         fontSize: '0.75rem',
                                         flexShrink: 0
                                     }}>
-                                        {isSelected ? <CheckCircle2 size={14} /> : String.fromCharCode(65 + i)}
+                                        {isSelected ? <CheckCircle2 size={14} /> : String.fromCodePoint(65 + i)}
                                     </div>
                                     {opt}
                                 </button>

@@ -46,12 +46,10 @@ export default function AssessmentQuestions() {
         const [
             { data: assessData },
             { data: questData },
-            { data: groupData },
             { data: accessData }
         ] = await Promise.all([
             supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
             supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true }),
-            supabase.from('groups').select('*').in('course_id', [assessmentId]), // This is wrong, need courseId from assessmentId
             supabase.from('resource_access').select('*').eq('resource_id', assessmentId).eq('resource_type', 'assessment')
         ])
 
@@ -190,7 +188,7 @@ export default function AssessmentQuestions() {
             let responseText = data.candidates[0].content.parts[0].text;
             
             // Clean up possible markdown wrappers
-            responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            responseText = responseText.replaceAll('```json', '').replaceAll('```', '').trim();
             
             const parsedQuestions = JSON.parse(responseText);
             if (!Array.isArray(parsedQuestions)) throw new Error("AI did not return an array.");
@@ -232,10 +230,10 @@ export default function AssessmentQuestions() {
     async function handleDelete(id) {
         if (!confirm('Delete this question?')) return
         const { error } = await supabase.from('questions').delete().eq('id', id)
-        if (!error) {
-            setQuestions(questions.filter(q => q.id !== id))
-        } else {
+        if (error) {
             alert('Error deleting: ' + error.message)
+        } else {
+            setQuestions(questions.filter(q => q.id !== id))
         }
     }
     function openEdit(q) {
@@ -248,6 +246,7 @@ export default function AssessmentQuestions() {
                 correctAnswers = [q.correct_answer]
             }
         } catch (e) {
+            console.warn('Failed to parse correct_answer JSON:', e)
             correctAnswers = [q.correct_answer]
         }
 
@@ -270,6 +269,12 @@ export default function AssessmentQuestions() {
         setFormData({ question_text: '', image_url: '', image_file: null, options: ['', '', '', ''], correct_answer: [], question_type: 'mcq', code_snippet: '', code_language: 'javascript', snippet_title: '' })
         setEditingId(null)
         setError('')
+    }
+
+    function renderSubmitButtonText() {
+        if (saving) return 'Saving...';
+        if (editingId) return <><Save size={18} /> Update</>;
+        return <><Plus size={18} /> Add Question</>;
     }
 
     function handleOptionCheckboxChange(opt, isChecked) {
@@ -429,11 +434,12 @@ export default function AssessmentQuestions() {
                                             isCorrect = opt === q.correct_answer
                                         }
                                     } catch (e) {
+                                        console.warn('Failed to parse correct_answer JSON:', e)
                                         isCorrect = opt === q.correct_answer
                                     }
 
                                     return (
-                                        <div key={i} style={{
+                                        <div key={opt || `opt-${i}`} style={{
                                             padding: '0.75rem 1rem',
                                             borderRadius: 10,
                                             background: isCorrect ? 'rgba(16,185,129,0.1)' : 'var(--bg-elevated)',
@@ -445,7 +451,7 @@ export default function AssessmentQuestions() {
                                             color: isCorrect ? '#10b981' : 'var(--text-primary)'
                                         }}>
                                             <div style={{ width: 18, height: 18, background: isCorrect ? '#10b981' : '#cbd5e1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
-                                                {isCorrect ? <CheckCircle2 size={12} /> : String.fromCharCode(65 + i)}
+                                                {isCorrect ? <CheckCircle2 size={12} /> : String.fromCodePoint(65 + i)}
                                             </div>
                                             {opt}
                                         </div>
@@ -506,8 +512,9 @@ export default function AssessmentQuestions() {
 
                             <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                 <div style={{ flex: 1, minWidth: 200 }}>
-                                    <label className="form-label">Question Type</label>
+                                    <label htmlFor="question-type" className="form-label">Question Type</label>
                                     <select
+                                        id="question-type"
                                         className="form-input"
                                         value={formData.question_type}
                                         onChange={e => setFormData(p => ({ ...p, question_type: e.target.value }))}
@@ -518,8 +525,9 @@ export default function AssessmentQuestions() {
                                 </div>
                                 {formData.question_type === 'code_mcq' && (
                                     <div style={{ flex: 1, minWidth: 200 }}>
-                                        <label className="form-label">Language</label>
+                                        <label htmlFor="code-language" className="form-label">Language</label>
                                         <select
+                                            id="code-language"
                                             className="form-input"
                                             value={formData.code_language}
                                             onChange={e => setFormData(p => ({ ...p, code_language: e.target.value }))}
@@ -542,8 +550,9 @@ export default function AssessmentQuestions() {
 
                             {formData.question_type === 'code_mcq' && (
                                 <div style={{ marginBottom: '1.5rem' }}>
-                                    <label className="form-label">Snippet Title (Optional)</label>
+                                    <label htmlFor="snippet-title" className="form-label">Snippet Title (Optional)</label>
                                     <input
+                                        id="snippet-title"
                                         type="text"
                                         className="form-input"
                                         placeholder="e.g. Python Loop Example"
@@ -570,12 +579,12 @@ export default function AssessmentQuestions() {
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                    <label className="form-label" style={{ marginBottom: 0 }}>Image (optional)</label>
+                                    <div className="form-label" style={{ marginBottom: 0 }}>Image (optional)</div>
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <button 
                                             type="button" 
                                             onClick={() => setFormData(p => ({ ...p, image_file: null }))}
-                                            style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: !formData.image_file ? '#6366f1' : 'var(--text-muted)', fontWeight: !formData.image_file ? 700 : 500, cursor: 'pointer' }}
+                                            style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: formData.image_file ? 'var(--text-muted)' : '#6366f1', fontWeight: formData.image_file ? 500 : 700, cursor: 'pointer' }}
                                         >URL</button>
                                         <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>|</span>
                                         <button 
@@ -628,7 +637,7 @@ export default function AssessmentQuestions() {
 
                             <div style={{ marginBottom: '1rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                    <label className="form-label" style={{ marginBottom: 0 }}>Options & Correct Answers</label>
+                                    <div className="form-label" style={{ marginBottom: 0 }}>Options & Correct Answers</div>
                                     <button
                                         type="button"
                                         onClick={() => setFormData(p => ({ ...p, options: [...p.options, ''] }))}
@@ -639,7 +648,7 @@ export default function AssessmentQuestions() {
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     {formData.options.map((opt, i) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div key={`option-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                             <div style={{ flexShrink: 0 }}>
                                                 <input
                                                     type="checkbox"
@@ -653,7 +662,7 @@ export default function AssessmentQuestions() {
                                                 <input
                                                     type="text"
                                                     className="form-input"
-                                                    placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                                                    placeholder={`Option ${String.fromCodePoint(65 + i)}`}
                                                     value={opt}
                                                     onChange={(e) => handleOptionTextChange(i, e.target.value)}
                                                     required
@@ -678,7 +687,7 @@ export default function AssessmentQuestions() {
                                     Cancel
                                 </button>
                                 <button type="submit" className="btn-primary" disabled={saving} style={{ padding: '0.6rem 1.5rem', gap: '0.5rem' }}>
-                                    {saving ? 'Saving...' : (editingId ? <><Save size={18} /> Update</> : <><Plus size={18} /> Add Question</>)}
+                                    {renderSubmitButtonText()}
                                 </button>
                             </div>
                         </form>
@@ -707,8 +716,9 @@ export default function AssessmentQuestions() {
                             )}
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label className="form-label">Topic or Content</label>
+                                <label htmlFor="topic-or-content" className="form-label">Topic or Content</label>
                                 <textarea
+                                    id="topic-or-content"
                                     className="form-input"
                                     rows={4}
                                     placeholder="e.g. Generate 5 multiple choice questions about React Hooks..."
@@ -733,13 +743,13 @@ export default function AssessmentQuestions() {
                                     <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Review Generated Questions</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {generatedQuestions.map((q, idx) => (
-                                            <div key={idx} style={{ padding: '1rem', background: 'var(--bg-elevated)', borderRadius: 12, border: '1px solid var(--card-border)' }}>
+                                            <div key={`gen-q-${idx}`} style={{ padding: '1rem', background: 'var(--bg-elevated)', borderRadius: 12, border: '1px solid var(--card-border)' }}>
                                                 <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>{idx + 1}. {q.question_text}</div>
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem' }}>
                                                     {q.options.map((opt, oIdx) => {
                                                         const isCorrect = Array.isArray(q.correct_answer) ? q.correct_answer.includes(opt) : opt === q.correct_answer;
                                                         return (
-                                                            <div key={oIdx} style={{ padding: '0.4rem 0.6rem', background: isCorrect ? 'rgba(16,185,129,0.1)' : 'var(--bg-base)', border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : 'var(--card-border)'}`, borderRadius: 6, color: isCorrect ? '#10b981' : 'var(--text-secondary)' }}>
+                                                            <div key={opt || `gen-opt-${oIdx}`} style={{ padding: '0.4rem 0.6rem', background: isCorrect ? 'rgba(16,185,129,0.1)' : 'var(--bg-base)', border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : 'var(--card-border)'}`, borderRadius: 6, color: isCorrect ? '#10b981' : 'var(--text-secondary)' }}>
                                                                 {opt}
                                                             </div>
                                                         )

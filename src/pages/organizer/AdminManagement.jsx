@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Plus, Users, Shield, Trash2, BookOpen, AlertCircle, X, Check, Search } from 'lucide-react'
+import { Plus, Trash2, BookOpen, X, Check } from 'lucide-react'
 
 export default function AdminManagement() {
     const { profile } = useAuth()
@@ -122,11 +122,84 @@ export default function AdminManagement() {
         
         const { error } = await supabase.rpc('delete_user_permanently', { target_user_id: id })
 
-        if (!error) loadData()
-        else alert(error.message)
+        if (error) alert(error.message)
+        else loadData()
     }
 
     if (profile?.role !== 'main_admin') return <div style={{ padding: '2rem', color: 'red' }}>Access Denied</div>
+
+    const renderSubAdminsContent = () => {
+        if (loading) {
+            return <div style={{ padding: '3rem', textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }}></div></div>
+        }
+        if (subAdmins.length === 0) {
+            return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>No sub-admins found.</div>
+        }
+        
+        const getRoleBackground = (role) => {
+            if (role === 'main_admin') return '#fee2e2'
+            if (role === 'sub_admin') return '#e0e7ff'
+            return '#f1f5f9'
+        }
+        
+        const getRoleColor = (role) => {
+            if (role === 'main_admin') return '#991b1b'
+            if (role === 'sub_admin') return '#3730a3'
+            return 'var(--text-secondary)'
+        }
+
+        return (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                    <tr style={{ textAlign: 'left', background: '#f8fafc', borderBottom: '1px solid var(--card-border)' }}>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>NAME</th>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ROLE</th>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>EMAIL</th>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ASSIGNED COURSES</th>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'right' }}>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {subAdmins.map(admin => (
+                        <tr key={admin.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
+                            <td style={{ padding: '1rem 1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div style={{ width: 32, height: 32, background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                                        {admin.name?.[0]?.toUpperCase()}
+                                    </div>
+                                    <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{admin.name} {admin.id === profile.id && '(You)'}</span>
+                                </div>
+                            </td>
+                            <td style={{ padding: '1rem 1.5rem' }}>
+                                <span className="badge" style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 4, background: getRoleBackground(admin.role), color: getRoleColor(admin.role) }}>
+                                    {admin.role.replace('_', ' ')}
+                                </span>
+                            </td>
+                            <td style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{admin.email}</td>
+                            <td style={{ padding: '1rem 1.5rem' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                                    {admin.assignedCourses.map(c => (
+                                        <span key={c.id} className="badge badge-info" style={{ fontSize: '0.7rem' }}>{c.title}</span>
+                                    ))}
+                                    <button 
+                                        onClick={() => { setSelectedAdmin(admin); setShowAssignModal(true); }}
+                                        style={{ border: 'none', background: 'none', color: '#6366f1', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', padding: '0.2rem 0.4rem' }}
+                                    >
+                                        Edit Assignments
+                                    </button>
+                                </div>
+                            </td>
+                            <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
+                                <button onClick={() => deleteSubAdmin(admin.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem' }}>
+                                    <Trash2 size={18} />
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        )
+    }
 
     return (
         <div className="animate-fade-in">
@@ -160,61 +233,7 @@ export default function AdminManagement() {
                     </button>
                 </div>
 
-                {loading ? (
-                    <div style={{ padding: '3rem', textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }}></div></div>
-                ) : subAdmins.length === 0 ? (
-                    <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>No sub-admins found.</div>
-                ) : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left', background: '#f8fafc', borderBottom: '1px solid var(--card-border)' }}>
-                                <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>NAME</th>
-                                <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ROLE</th>
-                                <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>EMAIL</th>
-                                <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ASSIGNED COURSES</th>
-                                <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'right' }}>ACTIONS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {subAdmins.map(admin => (
-                                <tr key={admin.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
-                                    <td style={{ padding: '1rem 1.5rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <div style={{ width: 32, height: 32, background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
-                                                {admin.name?.[0]?.toUpperCase()}
-                                            </div>
-                                            <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{admin.name} {admin.id === profile.id && '(You)'}</span>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem' }}>
-                                        <span className="badge" style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 4, background: admin.role === 'main_admin' ? '#fee2e2' : admin.role === 'sub_admin' ? '#e0e7ff' : '#f1f5f9', color: admin.role === 'main_admin' ? '#991b1b' : admin.role === 'sub_admin' ? '#3730a3' : 'var(--text-secondary)' }}>
-                                            {admin.role.replace('_', ' ')}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{admin.email}</td>
-                                    <td style={{ padding: '1rem 1.5rem' }}>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                                            {admin.assignedCourses.map(c => (
-                                                <span key={c.id} className="badge badge-info" style={{ fontSize: '0.7rem' }}>{c.title}</span>
-                                            ))}
-                                            <button 
-                                                onClick={() => { setSelectedAdmin(admin); setShowAssignModal(true); }}
-                                                style={{ border: 'none', background: 'none', color: '#6366f1', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', padding: '0.2rem 0.4rem' }}
-                                            >
-                                                Edit Assignments
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
-                                        <button onClick={() => deleteSubAdmin(admin.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem' }}>
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
+                {renderSubAdminsContent()}
             </div>
 
             {/* Invite Modal */}
@@ -266,8 +285,11 @@ export default function AdminManagement() {
                                     const isAssigned = selectedAdmin.assignedCourses.some(c => c.id === course.id)
                                     return (
                                         <div 
+                                            role="button"
+                                            tabIndex={0}
                                             key={course.id} 
                                             onClick={() => toggleCourseAssignment(selectedAdmin.id, course.id, isAssigned)}
+                                            onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggleCourseAssignment(selectedAdmin.id, course.id, isAssigned)}
                                             style={{ 
                                                 padding: '1rem', 
                                                 borderRadius: 12, 
