@@ -13,7 +13,7 @@
 // ============================================================
 
 import { useState } from 'react'
-import { Lock, ChevronDown, ChevronRight, Trophy, Star, BookOpen, Sparkles } from 'lucide-react'
+import { Lock, ChevronDown, ChevronRight, Trophy, BookOpen, Sparkles } from 'lucide-react'
 import { getDayShort, getDayName } from '../../constants/xpRewards'
 
 const STATUS_COLORS = {
