@@ -645,6 +645,13 @@ export default function CodeWorkspace() {
             setLoading(true)
             const { data, error } = await supabase.from('coding_challenges').select('*').eq('id', challengeId).single()
             if (error) throw error
+
+            if (data.open_time && new Date(data.open_time) > new Date()) {
+                alert(`This challenge opens at ${new Date(data.open_time).toLocaleString()}`)
+                navigate('/student/coding', { replace: true })
+                return
+            }
+
             setChallenge(data)
             
             const isCombinedData = data.test_cases?.is_combined === true;

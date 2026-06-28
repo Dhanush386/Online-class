@@ -108,15 +108,32 @@ export default function CourseDetail() {
 
             setCourse(crs)
             const now = new Date()
-            setSessions((vids || []).filter(v => !(v.scheduled_time && new Date(v.scheduled_time) > now && !v.video_url)))
+            
+            const getIsItemLocked = (item, type) => {
+                if (type === 'coding' && lockedCodingIds.includes(item.id)) return true
+                if (type === 'assessment' && lockedAssessIds.includes(item.id)) return true
+                if (type === 'resource' && lockedMaterialIds.includes(item.id)) return true
+
+                const dayAcc = groupDayAccess.find(da => da.day_number === item.day_number)
+                if (dayAcc && (dayAcc.is_locked || (dayAcc.open_time && new Date(dayAcc.open_time) > now))) return true
+                
+                const itemTime = item.open_time || item.scheduled_time || item.start_time
+                if (itemTime && new Date(itemTime) > now) return true
+
+                return false
+            }
+
+            setSessions((vids || []).map(v => ({ ...v, isLocked: getIsItemLocked(v, 'video') })))
             setProgress({ ...(prog || {}), video_progress: vpData || [] })
-            setChallenges((chls || []).filter(c => !lockedCodingIds.includes(c.id) && !(c.open_time && new Date(c.open_time) > now)))
-            setCourseResources((resData || []).filter(r => !lockedMaterialIds.includes(r.id)))
+            setChallenges((chls || []).map(c => ({ ...c, isLocked: getIsItemLocked(c, 'coding') })))
+            setCourseResources((resData || []).map(r => ({ ...r, isLocked: getIsItemLocked(r, 'resource') })))
 
             const grouped = { daily: [], weekly: [], final: [] }
                 ; (assessData || [])
-                    .filter(a => !lockedAssessIds.includes(a.id) && !(a.open_time && new Date(a.open_time) > now))
-                    .forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
+                    .forEach(a => { 
+                        a.isLocked = getIsItemLocked(a, 'assessment')
+                        if (grouped[a.type]) grouped[a.type].push(a) 
+                    })
             setAssessments(grouped)
 
             const subMap = {}

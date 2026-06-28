@@ -65,11 +65,32 @@ export default function Assessments() {
 
             const grouped = { daily: [], weekly: [], final: [] }
                 ; (assessData || [])
-                    .filter(a => {
-                        const hasStarted = !a.courses?.start_date || new Date(a.courses.start_date) <= now
-                        return hasStarted && !lockedAssessIds.includes(a.id) && !isDayLocked(a.course_id, a.day_number) && !(a.open_time && new Date(a.open_time) > now)
+                    .filter(a => !a.courses?.start_date || new Date(a.courses.start_date) <= now)
+                    .forEach(a => {
+                        let isLocked = false
+                        let lockReason = ''
+                        
+                        if (lockedAssessIds.includes(a.id)) {
+                            isLocked = true
+                            lockReason = 'This assessment is locked by the instructor.'
+                        } else {
+                            const dayAccessObj = (locksDay || []).find(da => da.course_id === a.course_id && da.day_number === a.day_number && userGroupIds.includes(da.group_id))
+                            if (dayAccessObj && (dayAccessObj.is_locked || (dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now))) {
+                                isLocked = true
+                                lockReason = dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now 
+                                    ? `This day opens at ${new Date(dayAccessObj.open_time).toLocaleString()}` 
+                                    : 'This day is currently locked.'
+                            } else if (a.open_time && new Date(a.open_time) > now) {
+                                isLocked = true
+                                lockReason = `This assessment opens at ${new Date(a.open_time).toLocaleString()}`
+                            }
+                        }
+
+                        a.isLocked = isLocked
+                        a.lockReason = lockReason
+
+                        if (grouped[a.type]) grouped[a.type].push(a) 
                     })
-                    .forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
             setAssessments(grouped)
 
             // Group submissions by assessment_id
@@ -149,9 +170,11 @@ export default function Assessments() {
                                     </span>
                                     {isExhausted
                                         ? <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4 }}><Lock size={10} /> No Attempts Left</span>
-                                        : isOverdue
-                                            ? <span className="badge badge-danger">Overdue</span>
-                                            : <span className="badge badge-success">Active</span>
+                                        : a.isLocked
+                                            ? <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4 }}><Lock size={10} /> Locked</span>
+                                            : isOverdue
+                                                ? <span className="badge badge-danger">Overdue</span>
+                                                : <span className="badge badge-success">Active</span>
                                     }
                                 </div>
 
@@ -195,6 +218,14 @@ export default function Assessments() {
                                         style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
                                     >
                                         <Eye size={15} /> Review Attempts
+                                    </button>
+                                ) : a.isLocked ? (
+                                    <button
+                                        onClick={() => alert(a.lockReason)}
+                                        className="btn-secondary"
+                                        style={{ width: '100%', justifyContent: 'center', opacity: 0.7, gap: '0.5rem' }}
+                                    >
+                                        <Lock size={15} /> Locked
                                     </button>
                                 ) : isOverdue ? (
                                     <button

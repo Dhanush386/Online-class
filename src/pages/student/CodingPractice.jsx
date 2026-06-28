@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import {
     ChevronRight, Trophy, CheckCircle2, Circle,
     ArrowRightCircle, Search, Filter, BookOpen,
-    ChevronDown, GraduationCap, Layout
+    ChevronDown, GraduationCap, Layout, Lock
 } from 'lucide-react'
 import { useNavigate, Link } from 'react-router-dom'
 
@@ -79,9 +79,24 @@ export default function CodingPractice() {
         setUserGroupIds(groupIds)
         setGroups(groupsData || [])
 
-        setChallenges((challengeData || []).filter(c => !lockedCodingIds.includes(c.id) && !isDayLocked(c.course_id, c.day_number) && !(c.open_time && new Date(c.open_time) > now)))
+        setChallenges(challengeData || [])
         setSubmissions(submissionData || [])
         setLoading(false)
+    }
+
+    const checkIfLocked = (c) => {
+        const now = new Date()
+        if (lockedCodingIds.includes(c.id)) {
+            return { locked: true, reason: 'This challenge is locked by the instructor.' }
+        }
+        if (isDayLocked(c.course_id, c.day_number)) {
+            const dayAccessObj = (locksDay || []).find(a => a.course_id === c.course_id && a.day_number === c.day_number && userGroupIds.includes(a.group_id))
+            return { locked: true, reason: dayAccessObj?.open_time ? `This day opens at ${new Date(dayAccessObj.open_time).toLocaleString()}` : 'This day is currently locked.' }
+        }
+        if (c.open_time && new Date(c.open_time) > now) {
+            return { locked: true, reason: `This challenge opens at ${new Date(c.open_time).toLocaleString()}` }
+        }
+        return { locked: false, reason: '' }
     }
 
     const getStatus = (challengeId) => {
@@ -157,6 +172,8 @@ export default function CodingPractice() {
                     const tcCount = c.test_cases?.length || 0
                     const metrics = getMetrics(c.id, c.xp_reward || 15, tcCount)
 
+                    const lockStatus = checkIfLocked(c)
+
                     return (
                         <div key={c.id} className="glass-card stack-mobile" style={{
                             padding: '1.5rem 2rem',
@@ -165,9 +182,16 @@ export default function CodingPractice() {
                             alignItems: 'center',
                             gap: window.innerWidth <= 1024 ? '1rem' : '0',
                             borderRadius: '12px',
-                            cursor: 'pointer',
+                            cursor: lockStatus.locked ? 'not-allowed' : 'pointer',
+                            opacity: lockStatus.locked ? 0.7 : 1,
                             transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                        }} onClick={() => navigate(`/student/coding/${c.id}`)}>
+                        }} onClick={() => {
+                            if (lockStatus.locked) {
+                                alert(lockStatus.reason)
+                            } else {
+                                navigate(`/student/coding/${c.id}`)
+                            }
+                        }}>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%' }}>
                                 <div style={{ fontSize: '1rem', fontWeight: 600, color: '#1e40af' }}>Q{filtered.indexOf(c) + 1}: {c.title}</div>
@@ -233,8 +257,8 @@ export default function CodingPractice() {
                             </div>
 
                             {/* Action Arrow */}
-                            <div style={{ color: '#3b82f6', display: window.innerWidth <= 1024 ? 'none' : 'block' }}>
-                                <ArrowRightCircle size={24} />
+                            <div style={{ color: lockStatus.locked ? 'var(--text-muted)' : '#3b82f6', display: window.innerWidth <= 1024 ? 'none' : 'block' }}>
+                                {lockStatus.locked ? <Lock size={22} /> : <ArrowRightCircle size={24} />}
                             </div>
                         </div>
                     )

@@ -127,8 +127,8 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                 )
                 if (!recorded) actualType = 'live';
             }
-            let isLocked = false;
-            const itemDate = item.scheduled_time || item.start_time;
+            let isLocked = item.isLocked || false;
+            const itemDate = item.open_time || item.scheduled_time || item.start_time;
             if (itemDate && new Date(itemDate) > new Date()) {
                 isLocked = true;
             }
