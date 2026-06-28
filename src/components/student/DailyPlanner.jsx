@@ -121,6 +121,14 @@ export default function DailyPlanner({
               return (
                 <div
                   key={module.id || idx}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      onModuleClick?.(module)
+                    }
+                  }}
                   onClick={() => onModuleClick?.(module)}
                   style={{
                     display: 'flex',
@@ -137,6 +145,12 @@ export default function DailyPlanner({
                     e.currentTarget.style.background = 'rgba(59,130,246,0.04)'
                   }}
                   onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent'
+                  }}
+                  onFocus={e => {
+                    e.currentTarget.style.background = 'rgba(59,130,246,0.04)'
+                  }}
+                  onBlur={e => {
                     e.currentTarget.style.background = 'transparent'
                   }}
                 >

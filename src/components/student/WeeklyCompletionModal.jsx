@@ -6,14 +6,20 @@
 import { useEffect, useState } from 'react'
 import { Trophy, Star, Coins, ArrowRight, X, Sparkles } from 'lucide-react'
 
+function getSecureRandom() {
+  const array = new Uint32Array(1)
+  window.crypto.getRandomValues(array)
+  return array[0] / (0xffffffff + 1)
+}
+
 // CSS-only confetti particles
 function ConfettiParticle({ index }) {
   const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4']
   const color = colors[index % colors.length]
-  const left = Math.random() * 100
-  const delay = Math.random() * 0.5
-  const duration = 2 + Math.random() * 2
-  const size = 6 + Math.random() * 6
+  const left = getSecureRandom() * 100
+  const delay = getSecureRandom() * 0.5
+  const duration = 2 + getSecureRandom() * 2
+  const size = 6 + getSecureRandom() * 6
 
   return (
     <div style={{
@@ -23,7 +29,7 @@ function ConfettiParticle({ index }) {
       width: size,
       height: size,
       background: color,
-      borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+      borderRadius: getSecureRandom() > 0.5 ? '50%' : '2px',
       animation: `confettiFall ${duration}s ease-out ${delay}s forwards`,
       opacity: 0,
       zIndex: 1,

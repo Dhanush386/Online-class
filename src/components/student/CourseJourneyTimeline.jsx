@@ -120,6 +120,9 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
 
                         return (
                             <div 
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsDropdownOpen(!isDropdownOpen); } }}
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 style={{ 
                                     display: 'flex', alignItems: 'center', gap: '0.75rem', 
@@ -157,6 +160,15 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                                 return (
                                     <div 
                                         key={week}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                setExpandedWeek(week)
+                                                setIsDropdownOpen(false)
+                                            }
+                                        }}
                                         onClick={() => {
                                             setExpandedWeek(week)
                                             setIsDropdownOpen(false)
@@ -172,6 +184,8 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                                         }}
                                         onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
                                         onMouseLeave={e => e.currentTarget.style.background = expandedWeek === week ? '#f8fafc' : 'white'}
+                                        onFocus={e => e.currentTarget.style.background = '#f8fafc'}
+                                        onBlur={e => e.currentTarget.style.background = expandedWeek === week ? '#f8fafc' : 'white'}
                                     >
                                         <span>{label}</span>
                                         {expandedWeek === week && <Check size={16} color="#6366f1" />}
@@ -264,7 +278,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                                             }
 
                                             return (
-                                                <div key={item.id} onClick={handleAction} style={{ 
+                                                <div key={item.id} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAction(); } }} onClick={handleAction} style={{ 
                                                     position: 'relative', 
                                                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                                     padding: '1rem 1.5rem',

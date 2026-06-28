@@ -437,7 +437,7 @@ export default function CourseManagement() {
                                 <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No materials uploaded yet.</p>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                    {Array.from(new Set(resources.map(r => `W${r.week_number || 1}-D${r.day_of_week || 1}`))).sort().map(weekDay => {
+                                    {Array.from(new Set(resources.map(r => `W${r.week_number || 1}-D${r.day_of_week || 1}`))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).map(weekDay => {
                                         const [w, d] = weekDay.replace('W','').split('-D');
                                         return (
                                         <div key={weekDay}>

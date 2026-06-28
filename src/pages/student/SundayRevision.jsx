@@ -193,6 +193,15 @@ export default function SundayRevision({
                 return (
                   <div
                     key={item.id || idx}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        if (item.module_type === 'coding' && content.id) navigate(`/student/coding/${content.id}`)
+                        else if (item.module_type === 'assessment' && content.id) navigate(`/student/assessments/${content.id}/take`)
+                      }
+                    }}
                     onClick={() => {
                       if (item.module_type === 'coding' && content.id) navigate(`/student/coding/${content.id}`)
                       else if (item.module_type === 'assessment' && content.id) navigate(`/student/assessments/${content.id}/take`)
@@ -209,6 +218,8 @@ export default function SundayRevision({
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.04)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    onFocus={e => e.currentTarget.style.background = 'rgba(139,92,246,0.04)'}
+                    onBlur={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <Icon size={16} color="#8b5cf6" />
                     <div style={{ flex: 1, minWidth: 0 }}>

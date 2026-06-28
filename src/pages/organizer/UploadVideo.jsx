@@ -375,7 +375,7 @@ export default function ScheduleLiveClass() {
                     </div>
 
                     {/* Schedule fields */}
-                    <div style={{ display: 'grid', gridTemplateColumns: mode === 'live' ? '1fr 1fr' : '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
                             <label htmlFor="week-number" className="form-label">Week</label>
                             <input id="week-number" name="week_number" type="number" className="form-input" min="1" value={form.week_number} onChange={e => setForm(p => ({ ...p, week_number: e.target.value }))} required />

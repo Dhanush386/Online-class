@@ -51,6 +51,14 @@ function ModuleRow({ module, courseId, onAction }) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleClick()
+        }
+      }}
       onClick={handleClick}
       style={{
         display: 'flex',
@@ -68,6 +76,14 @@ function ModuleRow({ module, courseId, onAction }) {
         e.currentTarget.style.transform = 'translateX(4px)'
       }}
       onMouseLeave={e => {
+        e.currentTarget.style.background = isCompleted ? 'rgba(16,185,129,0.04)' : 'rgba(0,0,0,0.01)'
+        e.currentTarget.style.transform = 'translateX(0)'
+      }}
+      onFocus={e => {
+        e.currentTarget.style.background = isCompleted ? 'rgba(16,185,129,0.08)' : 'rgba(59,130,246,0.04)'
+        e.currentTarget.style.transform = 'translateX(4px)'
+      }}
+      onBlur={e => {
         e.currentTarget.style.background = isCompleted ? 'rgba(16,185,129,0.04)' : 'rgba(0,0,0,0.01)'
         e.currentTarget.style.transform = 'translateX(0)'
       }}
