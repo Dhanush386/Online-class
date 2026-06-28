@@ -441,13 +441,13 @@ export default function JourneyMap({
 DayNodeIcon.propTypes = {
   weekLocked: PropTypes.bool,
   status: PropTypes.string,
-  colors: PropTypes.object,
+  colors: PropTypes.shape({ text: PropTypes.string }),
   totalModules: PropTypes.number,
   completedModules: PropTypes.number
 }
 
 DayNode.propTypes = {
-  day: PropTypes.object,
+  day: PropTypes.shape({ dayOfWeek: PropTypes.number, modules: PropTypes.array }),
   status: PropTypes.string,
   isSelected: PropTypes.bool,
   onClick: PropTypes.func,
@@ -456,7 +456,7 @@ DayNode.propTypes = {
 }
 
 JourneyWeekCard.propTypes = {
-  week: PropTypes.object,
+  week: PropTypes.shape({ weekNum: PropTypes.number, days: PropTypes.array }),
   locked: PropTypes.bool,
   expanded: PropTypes.bool,
   progress: PropTypes.number,
@@ -470,8 +470,8 @@ JourneyWeekCard.propTypes = {
 }
 
 JourneyMap.propTypes = {
-  weeks: PropTypes.array,
-  weekProgress: PropTypes.object,
+  weeks: PropTypes.arrayOf(PropTypes.any),
+  weekProgress: PropTypes.shape({}),
   isWeekLocked: PropTypes.func,
   getWeekGrade: PropTypes.func,
   getScheduleDate: PropTypes.func,
