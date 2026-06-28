@@ -11,6 +11,7 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend, RadialBarChart, RadialBar
 } from 'recharts'
+import { motion } from 'framer-motion'
 import { GlassCard, Avatar } from '../../design-system'
 import XpTimeline from '../../components/student/XpTimeline'
 import DailyPlanner from '../../components/student/DailyPlanner'
@@ -38,7 +39,7 @@ export default function StudentDashboard() {
 
   const [weeklyActivity, setWeeklyActivity] = useState([])
   const [learningConsistency, setLearningConsistency] = useState([])
-
+  const [assessmentScores, setAssessmentScores] = useState([])
   const [topLeaderboard, setTopLeaderboard] = useState([])
 
   useEffect(() => {
