@@ -40,6 +40,7 @@ export default function StudentDashboard() {
   const [weeklyActivity, setWeeklyActivity] = useState([])
   const [learningConsistency, setLearningConsistency] = useState([])
   const [assessmentScores, setAssessmentScores] = useState([])
+  const [schedule, setSchedule] = useState([])
   const [topLeaderboard, setTopLeaderboard] = useState([])
 
   useEffect(() => {
