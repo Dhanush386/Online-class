@@ -7,7 +7,8 @@
 // • Sunday → renders revision view
 // ============================================================
 
-import { X, Video, BookOpen, Code, ClipboardList, FileText, Radio, Award, Lock, CheckCircle2, Clock, ChevronRight, Sparkles } from 'lucide-react'
+import PropTypes from 'prop-types'
+import { Video, BookOpen, Code, ClipboardList, FileText, Radio, CheckCircle2, ChevronRight, Sparkles } from 'lucide-react'
 import { getDayName } from '../../constants/xpRewards'
 import { useNavigate } from 'react-router-dom'
 
@@ -19,6 +20,12 @@ const MODULE_ICONS = {
   resource: { icon: FileText, color: '#8b5cf6', label: 'Study Material' },
   assignment: { icon: FileText, color: '#f97316', label: 'Assignment' },
   notes: { icon: BookOpen, color: '#06b6d4', label: 'Notes' },
+}
+
+function getDifficultyColor(difficulty) {
+  if (difficulty === 'hard') return '#ef4444'
+  if (difficulty === 'medium') return '#f59e0b'
+  return '#10b981'
 }
 
 function ModuleRow({ module, courseId, onAction }) {
@@ -50,15 +57,7 @@ function ModuleRow({ module, courseId, onAction }) {
   }
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          handleClick()
-        }
-      }}
+    <button
       onClick={handleClick}
       style={{
         display: 'flex',
@@ -70,6 +69,10 @@ function ModuleRow({ module, courseId, onAction }) {
         border: `1px solid ${isCompleted ? 'rgba(16,185,129,0.15)' : 'var(--card-border)'}`,
         cursor: 'pointer',
         transition: 'all 0.2s ease',
+        width: '100%',
+        textAlign: 'left',
+        fontFamily: 'inherit',
+        color: 'inherit'
       }}
       onMouseEnter={e => {
         e.currentTarget.style.background = isCompleted ? 'rgba(16,185,129,0.08)' : 'rgba(59,130,246,0.04)'
@@ -135,7 +138,7 @@ function ModuleRow({ module, courseId, onAction }) {
               <span style={{
                 textTransform: 'uppercase',
                 fontWeight: 700,
-                color: content.difficulty === 'hard' ? '#ef4444' : content.difficulty === 'medium' ? '#f59e0b' : '#10b981',
+                color: getDifficultyColor(content.difficulty),
               }}>
                 {content.difficulty}
               </span>
@@ -160,7 +163,7 @@ function ModuleRow({ module, courseId, onAction }) {
         )}
         <ChevronRight size={14} color="var(--text-muted)" />
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -257,4 +260,38 @@ export default function DayDetailPanel({
       </div>
     </div>
   )
+}
+
+ModuleRow.propTypes = {
+  module: PropTypes.shape({
+    module_type: PropTypes.string,
+    _content: PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      title: PropTypes.string,
+      difficulty: PropTypes.string
+    }),
+    _completed: PropTypes.bool,
+    _xpEarned: PropTypes.number,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    reference_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  }).isRequired,
+  courseId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onAction: PropTypes.func
+}
+
+DayDetailPanel.propTypes = {
+  weekNum: PropTypes.number,
+  dayOfWeek: PropTypes.number,
+  day: PropTypes.shape({
+    isRevision: PropTypes.bool,
+    modules: PropTypes.array,
+    title: PropTypes.string,
+    scheduleDate: PropTypes.string,
+    startTime: PropTypes.string,
+    endTime: PropTypes.string
+  }),
+  courseId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  isVisible: PropTypes.bool,
+  onClose: PropTypes.func,
+  onModuleAction: PropTypes.func
 }

@@ -26,8 +26,11 @@ function CourseJourneyItem({ item, onModuleAction }) {
     const iconColor = item.type === 'live' ? '#ef4444' : '#10b981'
 
     return (
-        <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAction(); } }} onClick={handleAction} style={{ 
+        <button onClick={handleAction} style={{ 
             position: 'relative', 
+            width: '100%',
+            border: 'none',
+            textAlign: 'left',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '1rem 1.5rem',
             background: isActive ? '#f3e8ff' : 'transparent',
@@ -79,7 +82,7 @@ function CourseJourneyItem({ item, onModuleAction }) {
             <div style={{ color: '#64748b' }}>
                 {isLocked ? <Lock size={18} /> : <ChevronRight size={20} />}
             </div>
-        </div>
+        </button>
     )
 }
 
@@ -201,10 +204,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                         }
 
                         return (
-                            <div 
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsDropdownOpen(!isDropdownOpen); } }}
+                            <button 
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 style={{ 
                                     display: 'flex', alignItems: 'center', gap: '0.85rem', 
@@ -217,9 +217,9 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                                 <div style={{ width: 18, height: 18, borderRadius: '50%', background: statusColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Icon size={12} color="white" strokeWidth={3} />
                                 </div>
-                                <span style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>Week - {expandedWeek}</span>
+                                <span style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem', fontFamily: 'inherit' }}>Week - {expandedWeek}</span>
                                 <ChevronDown size={16} color="#64748b" style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                            </div>
+                            </button>
                         )
                     })()}
 
@@ -240,29 +240,24 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                                     }
                                 }
                                 return (
-                                    <div 
+                                    <button 
                                         key={week}
-                                        role="button"
-                                        tabIndex={0}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                e.preventDefault();
-                                                setExpandedWeek(week)
-                                                setIsDropdownOpen(false)
-                                            }
-                                        }}
                                         onClick={() => {
                                             setExpandedWeek(week)
                                             setIsDropdownOpen(false)
                                         }}
                                         style={{ 
+                                            width: '100%',
+                                            textAlign: 'left',
+                                            border: 'none',
+                                            borderBottom: '1px solid #f1f5f9',
                                             padding: '0.85rem 1rem', cursor: 'pointer', 
                                             fontWeight: expandedWeek === week ? 700 : 500,
                                             color: expandedWeek === week ? '#6366f1' : '#475569',
                                             background: expandedWeek === week ? '#f8fafc' : 'white',
-                                            borderBottom: '1px solid #f1f5f9',
                                             display: 'flex', justifyContent: 'space-between',
-                                            fontSize: '0.85rem'
+                                            fontSize: '0.85rem',
+                                            fontFamily: 'inherit'
                                         }}
                                         onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
                                         onMouseLeave={e => e.currentTarget.style.background = expandedWeek === week ? '#f8fafc' : 'white'}
@@ -271,7 +266,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                                     >
                                         <span>{label}</span>
                                         {expandedWeek === week && <Check size={16} color="#6366f1" />}
-                                    </div>
+                                    </button>
                                 )
                             })}
                         </div>

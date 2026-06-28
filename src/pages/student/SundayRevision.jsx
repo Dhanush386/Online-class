@@ -10,7 +10,7 @@
 // • Weekly report summary
 // ============================================================
 
-import { useState, useEffect } from 'react'
+
 import { BookOpen, Star, Brain, Target, ChevronRight, AlertTriangle, TrendingUp, Award, Sparkles, Clock, Video, Code, ClipboardList } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import useLearningHealth from '../../hooks/useLearningHealth'

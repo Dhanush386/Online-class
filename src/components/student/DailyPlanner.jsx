@@ -3,8 +3,8 @@
 // Uses weekly_schedule.start_time + learning_path_modules
 // ============================================================
 
+import PropTypes from 'prop-types'
 import { Clock, Video, Radio, Code, ClipboardList, FileText, BookOpen, ChevronRight, CheckCircle2, Target } from 'lucide-react'
-import { getDayName } from '../../constants/xpRewards'
 
 const MODULE_ICONS = {
   video: { icon: Video, color: '#3b82f6', label: 'Recorded Video' },
@@ -19,9 +19,14 @@ const MODULE_ICONS = {
 function formatTime(timeStr) {
   if (!timeStr) return ''
   const [h, m] = timeStr.split(':')
-  const hour = parseInt(h)
+  const hour = Number.parseInt(h, 10)
   const ampm = hour >= 12 ? 'PM' : 'AM'
-  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
+  let displayHour = hour
+  if (hour > 12) {
+    displayHour = hour - 12
+  } else if (hour === 0) {
+    displayHour = 12
+  }
   return `${displayHour}:${m} ${ampm}`
 }
 
@@ -114,21 +119,13 @@ export default function DailyPlanner({
               const isCompleted = module._completed || false
 
               // Estimate time slot based on position
-              const baseHour = startTime ? parseInt(startTime.split(':')[0]) : 9
+              const baseHour = startTime ? Number.parseInt(startTime.split(':')[0], 10) : 9
               const slotHour = baseHour + idx
               const timeLabel = `${slotHour > 12 ? slotHour - 12 : slotHour}:00 ${slotHour >= 12 ? 'PM' : 'AM'}`
 
               return (
-                <div
+                <button
                   key={module.id || idx}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      onModuleClick?.(module)
-                    }
-                  }}
                   onClick={() => onModuleClick?.(module)}
                   style={{
                     display: 'flex',
@@ -140,6 +137,11 @@ export default function DailyPlanner({
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     position: 'relative',
+                    width: '100%',
+                    border: 'none',
+                    textAlign: 'left',
+                    fontFamily: 'inherit',
+                    color: 'inherit'
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.background = 'rgba(59,130,246,0.04)'
@@ -218,7 +220,7 @@ export default function DailyPlanner({
                   {!isCompleted && (
                     <ChevronRight size={14} color="var(--text-muted)" style={{ flexShrink: 0 }} />
                   )}
-                </div>
+                </button>
               )
             })}
           </div>
@@ -257,4 +259,13 @@ export default function DailyPlanner({
       )}
     </div>
   )
+}
+
+DailyPlanner.propTypes = {
+  dayModules: PropTypes.array,
+  scheduleDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
+  startTime: PropTypes.string,
+  dayOfWeek: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  dailyGoal: PropTypes.object,
+  onModuleClick: PropTypes.func
 }

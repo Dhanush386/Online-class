@@ -9,8 +9,7 @@ import {
 } from 'lucide-react'
 
 export default function RenewAccess() {
-    const { user, profile, refreshProfileStatus, isExpired, signOut } = useAuth()
-    const navigate = useNavigate()
+    const { user, isExpired, signOut } = useAuth()
     const [saving, setSaving] = useState(false)
     const [transactionId, setTransactionId] = useState('')
     const [error, setError] = useState(null)
@@ -21,8 +20,6 @@ export default function RenewAccess() {
     const UPI_ID = "dhanush74244@okhdfcbank"
     const AMOUNT = "100"
 
-    // Construct UPI Deep Link for mobile
-    const upiLink = `upi://pay?pa=${UPI_ID}&pn=Dhanush&am=${AMOUNT}&cu=INR&tn=CourseRenewal`
 
     const handleCopyUpi = () => {
         navigator.clipboard.writeText(UPI_ID)
@@ -31,6 +28,7 @@ export default function RenewAccess() {
     }
     useEffect(() => {
         checkPendingRequest()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id])
 
     async function checkPendingRequest() {

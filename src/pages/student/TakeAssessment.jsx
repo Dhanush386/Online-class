@@ -21,7 +21,7 @@ export default function TakeAssessment() {
 
     const [assessment, setAssessment] = useState(null)
     const [questions, setQuestions] = useState([])
-    const [attemptNumber, setAttemptNumber] = useState(1)
+    const [_attemptNumber, setAttemptNumber] = useState(1)
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
@@ -37,7 +37,7 @@ export default function TakeAssessment() {
     const [requiresReentry, setRequiresReentry] = useState(false)
     const [securityAlert, setSecurityAlert] = useState(null)
     const [faceDetected, setFaceDetected] = useState(true)
-    const containerRef = useRef(null)
+    const _containerRef = useRef(null)
 
     // Proctoring Risk Engine & Session States
     const [sessionId, setSessionId] = useState(null)
@@ -148,6 +148,7 @@ export default function TakeAssessment() {
         return () => {
             if (proctorInterval.current) clearInterval(proctorInterval.current)
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isStarted, cameraEnabled, aiModel])
 
     useEffect(() => {
@@ -163,7 +164,7 @@ export default function TakeAssessment() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             setMediaStream(stream)
             setCameraEnabled(true)
-        } catch (err) {
+        } catch (_err) {
             alert('Camera and microphone permissions are required to take this proctored assessment.')
         }
     }

@@ -15,7 +15,7 @@ export default function StudentSchedule() {
         progress: []
     })
 
-    const [expandedWeek, setExpandedWeek] = useState(1)
+    const [expandedWeek] = useState(1)
 
     useEffect(() => {
         async function loadInit() {
@@ -203,7 +203,7 @@ export default function StudentSchedule() {
                             width: '2px', background: '#e2e8f0', zIndex: 0 
                         }} />
 
-                        {topicKeys.map((topic, topicIdx) => {
+                        {topicKeys.map((topic) => {
                             const items = topicsMap[topic] || []
                             const totalItems = items.length || 15 // mock fraction if empty
                             const completedItems = items.filter(i => i.completed).length || 15
@@ -235,7 +235,7 @@ export default function StudentSchedule() {
 
                                     {/* Topic Items */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        {items.map((item, idx) => {
+                                        {items.map((item) => {
                                             
                                             // Mocking the active state purely for the visual replica of the screenshot
                                             const isActive = item.active || false

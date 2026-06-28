@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import {
   Clock, BookOpen, Trophy, Award, Code as CodeIcon, ChevronRight,
   Flame, Star, ArrowRight, Zap, CheckCircle, Calendar,
@@ -13,17 +12,16 @@ import {
   Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend, RadialBarChart, RadialBar
 } from 'recharts'
 import { GlassCard, Avatar } from '../../design-system'
-import { getLevelProgress } from '../../constants/ranks'
+import { GlassCard, Avatar } from '../../design-system'
 import XpTimeline from '../../components/student/XpTimeline'
 import DailyPlanner from '../../components/student/DailyPlanner'
 import useXpAward from '../../hooks/useXpAward'
 
 export default function StudentDashboard() {
   const { profile, stats } = useAuth()
-  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-  const { todaysXp, xpTimeline, toastMessage } = useXpAward()
+  useXpAward()
 
   // Dashboard states
   const [kpis, setKpis] = useState({
@@ -41,8 +39,7 @@ export default function StudentDashboard() {
 
   const [weeklyActivity, setWeeklyActivity] = useState([])
   const [learningConsistency, setLearningConsistency] = useState([])
-  const [assessmentScores, setAssessmentScores] = useState([])
-  const [schedule, setSchedule] = useState([])
+
   const [topLeaderboard, setTopLeaderboard] = useState([])
 
   useEffect(() => {
@@ -55,6 +52,7 @@ export default function StudentDashboard() {
     if (profile?.id) {
       loadDashboardAnalytics()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, stats])
 
   const loadDashboardAnalytics = async () => {
@@ -82,7 +80,7 @@ export default function StudentDashboard() {
 
       // Execute all queries concurrently
       const [
-        enrollmentsRes, progressRes, submissionsRes, upcomingVideosRes, pastVideosRes,
+        _enrollmentsRes, progressRes, submissionsRes, upcomingVideosRes, pastVideosRes,
         attendedCountRes, codingSubsRes, liveAttRes, leaderboardRes
       ] = await Promise.all([
         enrollmentsPromise, progressPromise, submissionsPromise, upcomingVideosPromise, pastVideosPromise,
