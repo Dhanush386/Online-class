@@ -30,3 +30,23 @@ export function getDefaultUnlockTime() {
     const pad = n => String(n).padStart(2, '0')
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
+
+/**
+ * Returns the date at 18:30 (6:30 PM) local time for a specific day in a course,
+ * given the course's start date and the day number (1-indexed).
+ */
+export function getDefaultUnlockTimeForDay(startDateString, dayNumber) {
+    let d = new Date();
+    if (startDateString) {
+        d = new Date(startDateString);
+        if (!Number.isNaN(d.getTime())) {
+            // Day 1 = start_date, Day 2 = start_date + 1 day, etc.
+            d.setDate(d.getDate() + (dayNumber - 1));
+        } else {
+            d = new Date();
+        }
+    }
+    d.setHours(18, 30, 0, 0);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
