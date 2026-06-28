@@ -14,7 +14,7 @@
 
 import { useState } from 'react'
 import { Lock, ChevronDown, ChevronRight, Trophy, BookOpen } from 'lucide-react'
-import { getDayShort, getDayName } from '../../constants/xpRewards'
+import { getDayShort } from '../../constants/xpRewards'
 
 const STATUS_COLORS = {
   completed: { bg: '#10b981', border: '#059669', text: '#fff', glow: '0 0 12px rgba(16,185,129,0.4)' },
