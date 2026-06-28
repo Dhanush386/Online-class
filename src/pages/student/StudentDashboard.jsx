@@ -12,7 +12,6 @@ import {
   Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend, RadialBarChart, RadialBar
 } from 'recharts'
 import { GlassCard, Avatar } from '../../design-system'
-import { GlassCard, Avatar } from '../../design-system'
 import XpTimeline from '../../components/student/XpTimeline'
 import DailyPlanner from '../../components/student/DailyPlanner'
 import useXpAward from '../../hooks/useXpAward'
