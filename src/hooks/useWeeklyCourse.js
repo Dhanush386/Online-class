@@ -15,6 +15,96 @@ function calculateGrade(pct) {
   return 'F'
 }
 
+function buildWeeksFromSchedule(weeksMap, schedule, modules) {
+  for (const s of schedule) {
+    if (!weeksMap[s.week_number]) {
+      weeksMap[s.week_number] = {
+        weekNum: s.week_number,
+        days: {},
+      }
+    }
+    weeksMap[s.week_number].days[s.day_of_week] = {
+      dayOfWeek: s.day_of_week,
+      scheduleId: s.id,
+      scheduleDate: s.schedule_date,
+      startTime: s.start_time,
+      endTime: s.end_time,
+      title: s.title,
+      description: s.description,
+      isLive: s.is_live,
+      isRevision: s.is_revision || s.day_of_week === 7,
+      unlockDate: s.unlock_date,
+      estimatedMinutes: s.estimated_minutes,
+      modules: modules
+        .filter(m => m.schedule_id === s.id)
+        .sort((a, b) => a.module_order - b.module_order),
+    }
+  }
+}
+
+function buildWeeksFromContent(weeksMap, allContent) {
+  for (const item of allContent) {
+    const wk = item.week_number || Math.ceil((item.day_number || 1) / 7)
+    const dow = item.day_of_week || (((item.day_number || 1) - 1) % 7) + 1
+
+    if (!weeksMap[wk]) {
+      weeksMap[wk] = { weekNum: wk, days: {} }
+    }
+    if (!weeksMap[wk].days[dow]) {
+      weeksMap[wk].days[dow] = {
+        dayOfWeek: dow,
+        scheduleId: null,
+        scheduleDate: null,
+        startTime: null,
+        endTime: null,
+        title: null,
+        description: null,
+        isLive: false,
+        isRevision: dow === 7,
+        unlockDate: null,
+        estimatedMinutes: 60,
+        modules: [],
+      }
+    }
+
+    // Only add content if not already in modules via learning_path_modules
+    const existingIds = weeksMap[wk].days[dow].modules.map(m => m.reference_id)
+    if (!existingIds.includes(item._refId)) {
+      weeksMap[wk].days[dow].modules.push({
+        id: `auto-${item._refId}`,
+        module_type: item._type,
+        reference_id: item._refId,
+        module_order: weeksMap[wk].days[dow].modules.length,
+        is_required: true,
+        _content: item, // attach original content for rendering
+      })
+    }
+  }
+}
+
+function fillMissingDays(weeksMap) {
+  for (const weekNum of Object.keys(weeksMap)) {
+    for (let d = 1; d <= 7; d++) {
+      if (!weeksMap[weekNum].days[d]) {
+        weeksMap[weekNum].days[d] = {
+          dayOfWeek: d,
+          scheduleId: null,
+          scheduleDate: null,
+          startTime: null,
+          endTime: null,
+          title: null,
+          description: null,
+          isLive: false,
+          isRevision: d === 7,
+          unlockDate: null,
+          estimatedMinutes: 0,
+          modules: [],
+        }
+      }
+    }
+  }
+}
+
 export default function useWeeklyCourse(courseId) {
   const { profile } = useAuth()
   const [weeks, setWeeks] = useState([])
@@ -107,31 +197,7 @@ export default function useWeeklyCourse(courseId) {
       let weeksMap = {}
 
       if (schedule.length > 0) {
-        // Structured approach: use weekly_schedule
-        for (const s of schedule) {
-          if (!weeksMap[s.week_number]) {
-            weeksMap[s.week_number] = {
-              weekNum: s.week_number,
-              days: {},
-            }
-          }
-          weeksMap[s.week_number].days[s.day_of_week] = {
-            dayOfWeek: s.day_of_week,
-            scheduleId: s.id,
-            scheduleDate: s.schedule_date,
-            startTime: s.start_time,
-            endTime: s.end_time,
-            title: s.title,
-            description: s.description,
-            isLive: s.is_live,
-            isRevision: s.is_revision || s.day_of_week === 7,
-            unlockDate: s.unlock_date,
-            estimatedMinutes: s.estimated_minutes,
-            modules: modules
-              .filter(m => m.schedule_id === s.id)
-              .sort((a, b) => a.module_order - b.module_order),
-          }
-        }
+        buildWeeksFromSchedule(weeksMap, schedule, modules)
       }
 
       // Also build from content tables (for backward compatibility / unscheduled content)
@@ -146,65 +212,8 @@ export default function useWeeklyCourse(courseId) {
         ...(resources || []).map(r => ({ ...r, _type: 'resource', _refId: r.id })),
       ]
 
-      for (const item of allContent) {
-        const wk = item.week_number || Math.ceil((item.day_number || 1) / 7)
-        const dow = item.day_of_week || (((item.day_number || 1) - 1) % 7) + 1
-
-        if (!weeksMap[wk]) {
-          weeksMap[wk] = { weekNum: wk, days: {} }
-        }
-        if (!weeksMap[wk].days[dow]) {
-          weeksMap[wk].days[dow] = {
-            dayOfWeek: dow,
-            scheduleId: null,
-            scheduleDate: null,
-            startTime: null,
-            endTime: null,
-            title: null,
-            description: null,
-            isLive: false,
-            isRevision: dow === 7,
-            unlockDate: null,
-            estimatedMinutes: 60,
-            modules: [],
-          }
-        }
-
-        // Only add content if not already in modules via learning_path_modules
-        const existingIds = weeksMap[wk].days[dow].modules.map(m => m.reference_id)
-        if (!existingIds.includes(item._refId)) {
-          weeksMap[wk].days[dow].modules.push({
-            id: `auto-${item._refId}`,
-            module_type: item._type,
-            reference_id: item._refId,
-            module_order: weeksMap[wk].days[dow].modules.length,
-            is_required: true,
-            _content: item, // attach original content for rendering
-          })
-        }
-      }
-
-      // Fill in missing days for each week (Mon-Sun)
-      for (const weekNum of Object.keys(weeksMap)) {
-        for (let d = 1; d <= 7; d++) {
-          if (!weeksMap[weekNum].days[d]) {
-            weeksMap[weekNum].days[d] = {
-              dayOfWeek: d,
-              scheduleId: null,
-              scheduleDate: null,
-              startTime: null,
-              endTime: null,
-              title: null,
-              description: null,
-              isLive: false,
-              isRevision: d === 7,
-              unlockDate: null,
-              estimatedMinutes: 0,
-              modules: [],
-            }
-          }
-        }
-      }
+      buildWeeksFromContent(weeksMap, allContent)
+      fillMissingDays(weeksMap)
 
       // Convert to sorted array
       const weeksArr = Object.values(weeksMap)

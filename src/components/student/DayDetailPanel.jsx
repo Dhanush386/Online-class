@@ -184,25 +184,8 @@ export default function DayDetailPanel({
   const completed = modules.filter(m => m._completed).length
   const totalXp = modules.reduce((sum, m) => sum + (m._xpEarned || 0), 0)
 
-  // Format schedule date
-  let dateStr = ''
-  if (day.scheduleDate) {
-    const d = new Date(day.scheduleDate)
-    dateStr = d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })
-  }
-
-  // Format time
-  let timeStr = ''
-  if (day.startTime) {
-    const [h, m] = day.startTime.split(':')
-    const hour = parseInt(h)
-    timeStr = `${hour > 12 ? hour - 12 : hour}:${m} ${hour >= 12 ? 'PM' : 'AM'}`
-    if (day.endTime) {
-      const [h2, m2] = day.endTime.split(':')
-      const hour2 = parseInt(h2)
-      timeStr += ` – ${hour2 > 12 ? hour2 - 12 : hour2}:${m2} ${hour2 >= 12 ? 'PM' : 'AM'}`
-    }
-  }
+  const dateStr = formatScheduleDate(day.scheduleDate)
+  const timeStr = formatScheduleTime(day.startTime, day.endTime)
 
   return (
     <div
@@ -216,119 +199,26 @@ export default function DayDetailPanel({
         marginTop: '1rem',
       }}
     >
-      {/* Header */}
-      <div style={{
-        padding: '1.25rem 1.5rem',
-        background: isRevision
-          ? 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(139,92,246,0.03))'
-          : 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(99,102,241,0.03))',
-        borderBottom: '1px solid var(--card-border)',
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-      }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <span style={{
-              fontSize: '0.65rem',
-              fontWeight: 700,
-              color: isRevision ? '#8b5cf6' : '#3b82f6',
-              background: isRevision ? 'rgba(139,92,246,0.1)' : 'rgba(59,130,246,0.1)',
-              padding: '0.15rem 0.5rem',
-              borderRadius: 20,
-              textTransform: 'uppercase',
-            }}>
-              Week {weekNum} • {dayName}
-            </span>
-          </div>
-          <h3 style={{
-            fontSize: '1.1rem',
-            fontWeight: 800,
-            color: 'var(--text-primary)',
-            marginBottom: '0.2rem',
-          }}>
-            {isRevision ? '📚 Revision Day' : (day.title || dayName)}
-          </h3>
-          {dateStr && (
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Clock size={12} /> {dateStr} {timeStr && `• ${timeStr}`}
-            </div>
-          )}
-        </div>
+      <DayDetailHeader
+        isRevision={isRevision}
+        weekNum={weekNum}
+        dayName={dayName}
+        dayTitle={day.title}
+        dateStr={dateStr}
+        timeStr={timeStr}
+        onClose={onClose}
+      />
 
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--text-muted)',
-            padding: 4,
-          }}
-        >
-          <X size={18} />
-        </button>
-      </div>
-
-      {/* Progress summary */}
-      {totalRequired > 0 && (
-        <div style={{
-          padding: '0.75rem 1.5rem',
-          borderBottom: '1px solid var(--card-border)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          background: 'rgba(0,0,0,0.01)',
-        }}>
-          <div style={{ flex: 1 }}>
-            <div style={{
-              height: 6,
-              background: '#e2e8f0',
-              borderRadius: 10,
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                width: `${totalRequired > 0 ? (completed / totalRequired) * 100 : 0}%`,
-                height: '100%',
-                background: completed >= totalRequired
-                  ? 'linear-gradient(90deg, #10b981, #059669)'
-                  : 'linear-gradient(90deg, #3b82f6, #6366f1)',
-                borderRadius: 10,
-                transition: 'width 0.5s ease',
-              }} />
-            </div>
-          </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-            {completed}/{totalRequired} done
-          </span>
-          {totalXp > 0 && (
-            <span style={{
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              color: '#f59e0b',
-              background: 'rgba(245,158,11,0.1)',
-              padding: '0.2rem 0.5rem',
-              borderRadius: 20,
-            }}>
-              {totalXp} XP
-            </span>
-          )}
-        </div>
-      )}
+      <DayDetailProgress
+        totalRequired={totalRequired}
+        completed={completed}
+        totalXp={totalXp}
+      />
 
       {/* Module list */}
       <div style={{ padding: '1rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {modules.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '2rem 1rem',
-            color: 'var(--text-muted)',
-          }}>
-            <BookOpen size={32} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
-            <p style={{ fontSize: '0.85rem', fontWeight: 500 }}>
-              {isRevision ? 'No pending items — great job!' : 'No content scheduled for this day yet.'}
-            </p>
-          </div>
+          <DayDetailEmpty isRevision={isRevision} />
         ) : (
           modules.map(module => (
             <ModuleRow

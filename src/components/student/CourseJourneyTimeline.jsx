@@ -1,6 +1,87 @@
 import React, { useState } from 'react'
 import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot, Lock } from 'lucide-react'
 
+function CourseJourneyItem({ item, onModuleAction }) {
+    const isActive = item.active || false
+    const isLocked = item.isLocked
+    
+    const handleAction = () => {
+        if (isLocked) return
+        if (onModuleAction) {
+            onModuleAction(item.type, { _content: item })
+        }
+    }
+
+    let icon, typeColor, typeLabel
+    switch (item.type) {
+        case 'assessment': icon = <ClipboardList size={20} />; typeColor = '#d97706'; typeLabel = 'Quiz'; break
+        case 'coding': icon = <Code size={20} />; typeColor = '#f59e0b'; typeLabel = 'Exercise'; break
+        case 'video': icon = <Play size={20} />; typeColor = '#9333ea'; typeLabel = 'Recorded Lesson'; break
+        case 'live': icon = <Zap size={20} />; typeColor = '#ef4444'; typeLabel = 'Live Class'; break
+        case 'resource': icon = <BookOpen size={20} />; typeColor = '#9333ea'; typeLabel = 'Material'; break
+        default: icon = <BookOpen size={20} />; typeColor = '#10b981'; typeLabel = 'Lesson'; break
+    }
+    
+    const iconColor = item.type === 'live' ? '#ef4444' : '#10b981'
+
+    return (
+        <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAction(); } }} onClick={handleAction} style={{ 
+            position: 'relative', 
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '1rem 1.5rem',
+            background: isActive ? '#f3e8ff' : 'transparent',
+            borderRadius: '12px',
+            transition: 'all 0.2s',
+            cursor: isLocked ? 'not-allowed' : 'pointer',
+            opacity: isLocked ? 0.6 : 1
+        }}>
+            {/* Small Green Circle on the line */}
+            <div style={{ 
+                position: 'absolute', left: '-27px', top: '50%', transform: 'translateY(-50%)',
+                width: '16px', height: '16px', borderRadius: '50%', 
+                background: 'white', border: '2px solid #10b981',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 1 
+            }}>
+                {item.completed && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />}
+            </div>
+
+            {/* Left Content */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                <div style={{ marginTop: '2px', color: iconColor }}>
+                    {icon}
+                </div>
+                <div>
+                    <div style={{ fontSize: '1rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem' }}>
+                        {item.title}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                        <span style={{ color: '#64748b' }}>{item.duration} Mins</span>
+                        <span style={{ color: '#cbd5e1' }}>•</span>
+                        <span style={{ color: typeColor }}>
+                            {typeLabel}
+                        </span>
+                        {item.xp && (
+                            <>
+                                <span style={{ color: '#cbd5e1' }}>•</span>
+                                <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, background: '#fef3c7', borderRadius: '50%', color: '#d97706', fontSize: '0.6rem' }}>xp</span>
+                                    {item.xp}
+                                </span>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Icon */}
+            <div style={{ color: '#64748b' }}>
+                {isLocked ? <Lock size={18} /> : <ChevronRight size={20} />}
+            </div>
+        </div>
+    )
+}
+
 export default function CourseJourneyTimeline({ course, sessions, challenges, courseResources, assessments, progress, getScheduleDate, onModuleAction }) {
     const [expandedWeek, setExpandedWeek] = useState(1)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -265,80 +346,9 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
 
                                     {/* Topic Items */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        {items.map((item, idx) => {
-                                            const isActive = item.active || false
-
-                                            const isLocked = item.isLocked;
-                                            
-                                            const handleAction = () => {
-                                                if (isLocked) return;
-                                                if(onModuleAction) {
-                                                    onModuleAction(item.type, { _content: item })
-                                                }
-                                            }
-
-                                            return (
-                                                <div key={item.id} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAction(); } }} onClick={handleAction} style={{ 
-                                                    position: 'relative', 
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                    padding: '1rem 1.5rem',
-                                                    background: isActive ? '#f3e8ff' : 'transparent',
-                                                    borderRadius: '12px',
-                                                    transition: 'all 0.2s',
-                                                    cursor: isLocked ? 'not-allowed' : 'pointer',
-                                                    opacity: isLocked ? 0.6 : 1
-                                                }}>
-                                                    
-                                                    {/* Small Green Circle on the line */}
-                                                    <div style={{ 
-                                                        position: 'absolute', left: '-27px', top: '50%', transform: 'translateY(-50%)',
-                                                        width: '16px', height: '16px', borderRadius: '50%', 
-                                                        background: 'white', border: '2px solid #10b981',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        zIndex: 1 
-                                                    }}>
-                                                        {item.completed && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />}
-                                                    </div>
-
-                                                    {/* Left Content */}
-                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-                                                        <div style={{ marginTop: '2px', color: item.type === 'live' ? '#ef4444' : '#10b981' }}>
-                                                            {item.type === 'assessment' ? <ClipboardList size={20} /> : 
-                                                             item.type === 'coding' ? <Code size={20} /> :
-                                                             item.type === 'video' ? <Play size={20} /> :
-                                                             item.type === 'live' ? <Zap size={20} /> : <BookOpen size={20} />}
-                                                        </div>
-                                                        <div>
-                                                            <div style={{ fontSize: '1rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem' }}>
-                                                                {item.title}
-                                                            </div>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600 }}>
-                                                                <span style={{ color: '#64748b' }}>{item.duration} Mins</span>
-                                                                <span style={{ color: '#cbd5e1' }}>•</span>
-                                                                <span style={{ color: item.type === 'assessment' ? '#d97706' : item.type === 'coding' ? '#f59e0b' : item.type === 'live' ? '#ef4444' : '#9333ea' }}>
-                                                                    {item.type === 'assessment' ? 'Quiz' : item.type === 'coding' ? 'Exercise' : item.type === 'resource' ? 'Material' : item.type === 'live' ? 'Live Class' : 'Recorded Lesson'}
-                                                                </span>
-                                                                {item.xp && (
-                                                                    <>
-                                                                        <span style={{ color: '#cbd5e1' }}>•</span>
-                                                                        <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                                                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, background: '#fef3c7', borderRadius: '50%', color: '#d97706', fontSize: '0.6rem' }}>xp</span>
-                                                                            {item.xp}
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Right Icon */}
-                                                    <div style={{ color: '#64748b' }}>
-                                                        {isLocked ? <Lock size={18} /> : <ChevronRight size={20} />}
-                                                    </div>
-
-                                                </div>
-                                            )
-                                        })}
+                                        {items.map((item, idx) => (
+                                            <CourseJourneyItem key={item.id || idx} item={item} onModuleAction={onModuleAction} />
+                                        ))}
                                     </div>
 
                                 </div>

@@ -44,11 +44,39 @@ function getDayStatus(day, weekLocked, isCurrentDay) {
   return 'locked'
 }
 
+function DayNodeIcon({ weekLocked, status, colors, totalModules, completedModules }) {
+  if (weekLocked) {
+    return <Lock size={16} color={colors.text} />
+  }
+  if (status === 'completed') {
+    return <span style={{ fontSize: '1rem' }}>✓</span>
+  }
+  if (status === 'revision') {
+    return <BookOpen size={16} color={colors.text} />
+  }
+  if (status === 'inProgress') {
+    return <span style={{ fontSize: '0.7rem', fontWeight: 800, color: colors.text }}>{completedModules}/{totalModules}</span>
+  }
+  if (totalModules > 0) {
+    return <span style={{ fontSize: '0.7rem', fontWeight: 800, color: colors.text }}>{totalModules}</span>
+  }
+  return <span style={{ fontSize: '0.65rem', color: colors.text }}>–</span>
+}
+
+function getBoxShadow(status, isSelected, glow) {
+  if (status === 'current') return `${glow}, 0 4px 12px rgba(0,0,0,0.1)`
+  if (isSelected) return '0 4px 16px rgba(99,102,241,0.3)'
+  return '0 2px 6px rgba(0,0,0,0.08)'
+}
+
 function DayNode({ day, status, isSelected, onClick, weekLocked, dateStr }) {
   const colors = STATUS_COLORS[status]
   const dayShort = getDayShort(day.dayOfWeek)
   const totalModules = day.modules?.filter(m => m.is_required !== false).length || 0
   const completedModules = day.modules?.filter(m => m._completed).length || 0
+
+  const boxShadow = getBoxShadow(status, isSelected, colors.glow)
+  const labelColor = isSelected ? '#6366f1' : status === 'current' ? '#3b82f6' : 'var(--text-muted)'
 
   return (
     <button
@@ -78,36 +106,26 @@ function DayNode({ day, status, isSelected, onClick, weekLocked, dateStr }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: status === 'current'
-            ? `${colors.glow}, 0 4px 12px rgba(0,0,0,0.1)`
-            : isSelected
-              ? '0 4px 16px rgba(99,102,241,0.3)'
-              : '0 2px 6px rgba(0,0,0,0.08)',
+          boxShadow,
           animation: status === 'current' ? 'journeyPulse 2s ease-in-out infinite' : 'none',
           transition: 'all 0.25s ease',
           transform: isSelected ? 'scale(1.15)' : 'scale(1)',
         }}
       >
-        {weekLocked ? (
-          <Lock size={16} color={colors.text} />
-        ) : status === 'completed' ? (
-          <span style={{ fontSize: '1rem' }}>✓</span>
-        ) : status === 'revision' ? (
-          <BookOpen size={16} color={colors.text} />
-        ) : status === 'inProgress' ? (
-          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: colors.text }}>{completedModules}/{totalModules}</span>
-        ) : totalModules > 0 ? (
-          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: colors.text }}>{totalModules}</span>
-        ) : (
-          <span style={{ fontSize: '0.65rem', color: colors.text }}>–</span>
-        )}
+        <DayNodeIcon 
+          weekLocked={weekLocked} 
+          status={status} 
+          colors={colors} 
+          totalModules={totalModules} 
+          completedModules={completedModules} 
+        />
       </div>
 
       {/* Day label */}
       <span style={{
         fontSize: '0.65rem',
         fontWeight: 700,
-        color: isSelected ? '#6366f1' : status === 'current' ? '#3b82f6' : 'var(--text-muted)',
+        color: labelColor,
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
       }}>
@@ -143,6 +161,207 @@ function ConnectorLine({ fromStatus, toStatus }) {
       maxWidth: 50,
       transition: 'background 0.3s ease',
     }} />
+  )
+}
+
+function JourneyWeekCard({
+  week,
+  locked,
+  expanded,
+  progress,
+  grade,
+  isCurrentWeek,
+  toggleWeek,
+  todayDow,
+  selectedDay,
+  getScheduleDate,
+  onDaySelect,
+}) {
+  const weekNum = week.weekNum
+  const pct = progress?.completion_percentage || 0
+
+  return (
+    <div
+      className="glass-card"
+      style={{
+        overflow: 'hidden',
+        border: isCurrentWeek ? '2px solid rgba(59,130,246,0.3)' : '1px solid var(--card-border)',
+        background: locked ? 'rgba(0,0,0,0.02)' : 'var(--card-bg)',
+        transition: 'all 0.3s ease',
+      }}
+    >
+      {/* Week Header */}
+      <button
+        onClick={() => toggleWeek(weekNum)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          padding: '1rem 1.25rem',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        {/* Expand icon */}
+        <div style={{ color: 'var(--text-muted)', transition: 'transform 0.2s' }}>
+          {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+        </div>
+
+        {/* Week number badge */}
+        <div style={{
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: locked
+            ? '#e2e8f0'
+            : isCurrentWeek
+              ? 'linear-gradient(135deg, #3b82f6, #6366f1)'
+              : pct >= 100
+                ? 'linear-gradient(135deg, #10b981, #059669)'
+                : '#f1f5f9',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          {locked ? (
+            <Lock size={14} color="#94a3b8" />
+          ) : pct >= 100 ? (
+            <Trophy size={14} color="#fff" />
+          ) : (
+            <span style={{
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              color: isCurrentWeek ? '#fff' : '#64748b',
+            }}>
+              {weekNum}
+            </span>
+          )}
+        </div>
+
+        {/* Week info */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              color: locked ? 'var(--text-muted)' : 'var(--text-primary)',
+            }}>
+              Week {weekNum}
+            </span>
+            {isCurrentWeek && (
+              <span style={{
+                fontSize: '0.6rem',
+                fontWeight: 700,
+                color: '#3b82f6',
+                background: 'rgba(59,130,246,0.1)',
+                padding: '0.15rem 0.5rem',
+                borderRadius: 20,
+                textTransform: 'uppercase',
+              }}>
+                Current
+              </span>
+            )}
+            {grade && grade !== 'F' && (
+              <span style={{
+                fontSize: '0.65rem',
+                fontWeight: 800,
+                color: GRADE_COLORS[grade] || '#64748b',
+                background: `${GRADE_COLORS[grade] || '#64748b'}15`,
+                padding: '0.15rem 0.5rem',
+                borderRadius: 20,
+              }}>
+                {grade}
+              </span>
+            )}
+          </div>
+          {locked && (
+            <span style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600 }}>
+              Complete Week {weekNum - 1} (≥70%) to unlock
+            </span>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        {!locked && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <div style={{
+              width: 80,
+              height: 6,
+              background: '#e2e8f0',
+              borderRadius: 10,
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                width: `${pct}%`,
+                height: '100%',
+                background: pct >= 100
+                  ? 'linear-gradient(90deg, #10b981, #059669)'
+                  : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                borderRadius: 10,
+                transition: 'width 0.5s ease',
+              }} />
+            </div>
+            <span style={{
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              color: pct >= 100 ? '#10b981' : 'var(--text-muted)',
+              minWidth: 32,
+              textAlign: 'right',
+            }}>
+              {pct}%
+            </span>
+          </div>
+        )}
+      </button>
+
+      {/* Day nodes (expanded) */}
+      {expanded && (
+        <div style={{
+          padding: '0.5rem 1.25rem 1.25rem',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          gap: '0.25rem',
+          overflowX: 'auto',
+        }}>
+          {week.days.map((day, idx) => {
+            const isCurrentDay = isCurrentWeek && day.dayOfWeek === todayDow
+            const status = getDayStatus(day, locked, isCurrentDay)
+            const isSelected = selectedDay?.weekNum === weekNum && selectedDay?.dayOfWeek === day.dayOfWeek
+
+            // Format date if available
+            let dateStr = null
+            if (day.scheduleDate) {
+              const d = new Date(day.scheduleDate)
+              dateStr = `${d.getDate()}/${d.getMonth() + 1}`
+            } else if (getScheduleDate) {
+              const d = getScheduleDate(weekNum, day.dayOfWeek)
+              if (d) dateStr = `${d.getDate()}/${d.getMonth() + 1}`
+            }
+
+            return (
+              <div key={day.dayOfWeek} style={{ display: 'flex', alignItems: 'center' }}>
+                <DayNode
+                  day={day}
+                  status={status}
+                  isSelected={isSelected}
+                  onClick={() => onDaySelect?.({ weekNum, dayOfWeek: day.dayOfWeek, day })}
+                  weekLocked={locked}
+                  dateStr={dateStr}
+                />
+                {idx < week.days.length - 1 && (
+                  <ConnectorLine fromStatus={status} toStatus={getDayStatus(week.days[idx + 1], locked, false)} />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -196,192 +415,23 @@ export default function JourneyMap({
         const expanded = expandedWeeks.has(weekNum)
         const progress = weekProgress[weekNum]
         const grade = getWeekGrade?.(weekNum)
-        const pct = progress?.completion_percentage || 0
         const isCurrentWeek = weekNum === currentWeek
 
         return (
-          <div
+          <JourneyWeekCard
             key={weekNum}
-            className="glass-card"
-            style={{
-              overflow: 'hidden',
-              border: isCurrentWeek ? '2px solid rgba(59,130,246,0.3)' : '1px solid var(--card-border)',
-              background: locked ? 'rgba(0,0,0,0.02)' : 'var(--card-bg)',
-              transition: 'all 0.3s ease',
-            }}
-          >
-            {/* Week Header */}
-            <button
-              onClick={() => toggleWeek(weekNum)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '1rem 1.25rem',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-            >
-              {/* Expand icon */}
-              <div style={{ color: 'var(--text-muted)', transition: 'transform 0.2s' }}>
-                {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-              </div>
-
-              {/* Week number badge */}
-              <div style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: locked
-                  ? '#e2e8f0'
-                  : isCurrentWeek
-                    ? 'linear-gradient(135deg, #3b82f6, #6366f1)'
-                    : pct >= 100
-                      ? 'linear-gradient(135deg, #10b981, #059669)'
-                      : '#f1f5f9',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                {locked ? (
-                  <Lock size={14} color="#94a3b8" />
-                ) : pct >= 100 ? (
-                  <Trophy size={14} color="#fff" />
-                ) : (
-                  <span style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 800,
-                    color: isCurrentWeek ? '#fff' : '#64748b',
-                  }}>
-                    {weekNum}
-                  </span>
-                )}
-              </div>
-
-              {/* Week info */}
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    color: locked ? 'var(--text-muted)' : 'var(--text-primary)',
-                  }}>
-                    Week {weekNum}
-                  </span>
-                  {isCurrentWeek && (
-                    <span style={{
-                      fontSize: '0.6rem',
-                      fontWeight: 700,
-                      color: '#3b82f6',
-                      background: 'rgba(59,130,246,0.1)',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: 20,
-                      textTransform: 'uppercase',
-                    }}>
-                      Current
-                    </span>
-                  )}
-                  {grade && grade !== 'F' && (
-                    <span style={{
-                      fontSize: '0.65rem',
-                      fontWeight: 800,
-                      color: GRADE_COLORS[grade] || '#64748b',
-                      background: `${GRADE_COLORS[grade] || '#64748b'}15`,
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: 20,
-                    }}>
-                      {grade}
-                    </span>
-                  )}
-                </div>
-                {locked && (
-                  <span style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600 }}>
-                    Complete Week {weekNum - 1} (≥70%) to unlock
-                  </span>
-                )}
-              </div>
-
-              {/* Progress bar */}
-              {!locked && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-                  <div style={{
-                    width: 80,
-                    height: 6,
-                    background: '#e2e8f0',
-                    borderRadius: 10,
-                    overflow: 'hidden',
-                  }}>
-                    <div style={{
-                      width: `${pct}%`,
-                      height: '100%',
-                      background: pct >= 100
-                        ? 'linear-gradient(90deg, #10b981, #059669)'
-                        : 'linear-gradient(90deg, #3b82f6, #6366f1)',
-                      borderRadius: 10,
-                      transition: 'width 0.5s ease',
-                    }} />
-                  </div>
-                  <span style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    color: pct >= 100 ? '#10b981' : 'var(--text-muted)',
-                    minWidth: 32,
-                    textAlign: 'right',
-                  }}>
-                    {pct}%
-                  </span>
-                </div>
-              )}
-            </button>
-
-            {/* Day nodes (expanded) */}
-            {expanded && (
-              <div style={{
-                padding: '0.5rem 1.25rem 1.25rem',
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                gap: '0.25rem',
-                overflowX: 'auto',
-              }}>
-                {week.days.map((day, idx) => {
-                  const isCurrentDay = isCurrentWeek && day.dayOfWeek === todayDow
-                  const status = getDayStatus(day, locked, isCurrentDay)
-                  const isSelected = selectedDay?.weekNum === weekNum && selectedDay?.dayOfWeek === day.dayOfWeek
-
-                  // Format date if available
-                  let dateStr = null
-                  if (day.scheduleDate) {
-                    const d = new Date(day.scheduleDate)
-                    dateStr = `${d.getDate()}/${d.getMonth() + 1}`
-                  } else if (getScheduleDate) {
-                    const d = getScheduleDate(weekNum, day.dayOfWeek)
-                    if (d) dateStr = `${d.getDate()}/${d.getMonth() + 1}`
-                  }
-
-                  return (
-                    <div key={day.dayOfWeek} style={{ display: 'flex', alignItems: 'center' }}>
-                      <DayNode
-                        day={day}
-                        status={status}
-                        isSelected={isSelected}
-                        onClick={() => onDaySelect?.({ weekNum, dayOfWeek: day.dayOfWeek, day })}
-                        weekLocked={locked}
-                        dateStr={dateStr}
-                      />
-                      {idx < week.days.length - 1 && (
-                        <ConnectorLine fromStatus={status} toStatus={getDayStatus(week.days[idx + 1], locked, false)} />
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+            week={week}
+            locked={locked}
+            expanded={expanded}
+            progress={progress}
+            grade={grade}
+            isCurrentWeek={isCurrentWeek}
+            toggleWeek={toggleWeek}
+            todayDow={todayDow}
+            selectedDay={selectedDay}
+            getScheduleDate={getScheduleDate}
+            onDaySelect={onDaySelect}
+          />
         )
       })}
     </div>

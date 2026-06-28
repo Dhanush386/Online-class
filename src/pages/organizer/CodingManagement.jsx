@@ -52,6 +52,265 @@ const getRiskBorder = (score) => {
     return '#a7f3d0';
 };
 
+function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
+    const handleRemoveHtml = (idx) => {
+        setFormData(p => ({
+            ...p,
+            web_testcases: { ...p.web_testcases, html: p.web_testcases.html.filter((_, i) => i !== idx) }
+        }))
+    }
+    const handleUpdateHtml = (idx, field, value) => {
+        setFormData(p => {
+            const arr = [...(p.web_testcases?.html || [])]
+            arr[idx] = { ...arr[idx], [field]: value }
+            return { ...p, web_testcases: { ...p.web_testcases, html: arr } }
+        })
+    }
+    const handleAddHtml = () => {
+        setFormData(p => ({
+            ...p,
+            web_testcases: { ...p.web_testcases, html: [...(p.web_testcases?.html || []), { description: '', selector: '', minCount: 1 }] }
+        }))
+    }
+    const handleRemoveCss = (idx) => {
+        setFormData(p => ({
+            ...p,
+            web_testcases: { ...p.web_testcases, css: p.web_testcases.css.filter((_, i) => i !== idx) }
+        }))
+    }
+    const handleUpdateCss = (idx, field, value) => {
+        setFormData(p => {
+            const arr = [...(p.web_testcases?.css || [])]
+            arr[idx] = { ...arr[idx], [field]: value }
+            return { ...p, web_testcases: { ...p.web_testcases, css: arr } }
+        })
+    }
+    const handleAddCss = () => {
+        setFormData(p => ({
+            ...p,
+            web_testcases: { ...p.web_testcases, css: [...(p.web_testcases?.css || []), { description: '', selector: '', property: '', value: '' }] }
+        }))
+    }
+    const handleRemoveJs = (idx) => {
+        setFormData(p => ({
+            ...p,
+            web_testcases: { ...p.web_testcases, js: p.web_testcases.js.filter((_, i) => i !== idx) }
+        }))
+    }
+    const handleUpdateJs = (idx, field, value) => {
+        setFormData(p => {
+            const arr = [...(p.web_testcases?.js || [])]
+            arr[idx] = { ...arr[idx], [field]: value }
+            return { ...p, web_testcases: { ...p.web_testcases, js: arr } }
+        })
+    }
+    const handleAddJs = () => {
+        setFormData(p => ({
+            ...p,
+            web_testcases: { ...p.web_testcases, js: [...(p.web_testcases?.js || []), { description: '', keyword: '' }] }
+        }))
+    }
+
+    return (
+        <>
+            {/* Reference iFrame URL */}
+            <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, #eff6ff, #f0fdf4)', border: '1px solid #bfdbfe', borderRadius: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <div style={{ width: 28, height: 28, background: '#3b82f6', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ color: 'white', fontSize: '0.7rem', fontWeight: 800 }}>{'<>'}</span>
+                    </div>
+                    <label htmlFor="reference-iframe-url" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e40af', margin: 0 }}>
+                        Reference iFrame URL <span style={{ color: '#60a5fa', fontWeight: 400 }}>(optional)</span>
+                    </label>
+                </div>
+                <input
+                    id="reference-iframe-url"
+                    name="reference_iframe_url"
+                    type="url"
+                    className="form-input"
+                    placeholder="https://example.com — students see this as a live demo inside the challenge"
+                    value={formData.reference_iframe_url}
+                    onChange={e => setFormData(p => ({ ...p, reference_iframe_url: e.target.value }))}
+                />
+                {formData.reference_iframe_url && !formData.reference_iframe_url.startsWith('https://') && (
+                    <p style={{ fontSize: '0.7rem', color: '#ef4444', marginTop: '0.35rem', fontWeight: 600 }}>⚠ URL must start with https://</p>
+                )}
+                <p style={{ fontSize: '0.7rem', color: '#3b82f6', marginTop: '0.35rem' }}>Students see a live embedded demo beside the challenge description — great for "Build this page" tasks.</p>
+            </div>
+
+            {/* Frontend Testcase Engine */}
+            <div style={{ marginBottom: '1.5rem', border: '1px solid #6366f130', borderRadius: 14, overflow: 'hidden' }}>
+                {/* Header */}
+                <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: 32, height: 32, background: '#6366f1', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🧪</div>
+                    <div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ffffff' }}>Frontend Testcase Engine</div>
+                        <div style={{ fontSize: '0.68rem', color: '#a5b4fc' }}>HTML DOM · CSS Style · JS Code validation — like HackerRank for frontend</div>
+                    </div>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
+                        {['html', 'css', 'js'].map(t => {
+                            const count = (formData.web_testcases?.[t] || []).filter(x => t === 'js' ? x.keyword?.trim() : x.selector?.trim()).length
+                            return count > 0 ? (
+                                <span key={t} style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.5rem', background: getTabColor(t), color: 'white', borderRadius: 10 }}>
+                                    {t.toUpperCase()} {count}
+                                </span>
+                            ) : null
+                        })}
+                    </div>
+                </div>
+
+                {/* Tab Bar */}
+                <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                    {[
+                        { id: 'html', label: 'HTML DOM', icon: '🏷', color: '#ef4444', desc: 'Check elements exist' },
+                        { id: 'css',  label: 'CSS Style', icon: '🎨', color: '#3b82f6', desc: 'Check computed styles' },
+                        { id: 'js',   label: 'JS Code',  icon: '⚙', color: '#f59e0b', desc: 'Check code patterns' }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setWcTab(tab.id)}
+                            style={{
+                                flex: 1, padding: '0.65rem 0.5rem', border: 'none', cursor: 'pointer',
+                                background: wcTab === tab.id ? 'white' : 'transparent',
+                                borderBottom: wcTab === tab.id ? `2px solid ${tab.color}` : '2px solid transparent',
+                                color: wcTab === tab.id ? tab.color : 'var(--text-muted)',
+                                fontWeight: wcTab === tab.id ? 700 : 500,
+                                fontSize: '0.78rem', transition: 'all 0.15s'
+                            }}
+                        >
+                            <span style={{ marginRight: '0.35rem' }}>{tab.icon}</span>{tab.label}
+                            <span style={{ marginLeft: '0.35rem', fontSize: '0.6rem', opacity: 0.7 }}>
+                                ({(formData.web_testcases?.[tab.id] || []).length})
+                            </span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Tab Content */}
+                <div style={{ padding: '1rem', background: 'white' }}>
+                    {/* HTML DOM Tab */}
+                    {wcTab === 'html' && (
+                        <div>
+                            <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                Check that specific HTML elements exist using CSS selectors. <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>minCount</code> is optional (default: 1).
+                            </p>
+                            {(formData.web_testcases?.html || []).map((tc, idx) => (
+                                <div key={idx} style={{ border: '1px solid #fee2e2', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fff5f5', position: 'relative' }}>
+                                    <button type="button" onClick={() => handleRemoveHtml(idx)}
+                                        style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}>
+                                        <Trash2 size={14} />
+                                    </button>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 100px', gap: '0.6rem' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Page should have a main heading"
+                                                value={tc.description || ''} onChange={e => handleUpdateHtml(idx, 'description', e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#ef4444', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="h1, form, .nav"
+                                                value={tc.selector || ''} onChange={e => handleUpdateHtml(idx, 'selector', e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>MIN COUNT</div>
+                                            <input type="number" min="1" className="form-input" style={{ fontSize: '0.8rem' }} placeholder="1"
+                                                value={tc.minCount || ''} onChange={e => handleUpdateHtml(idx, 'minCount', Number.parseInt(e.target.value) || 1)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <button type="button"
+                                onClick={handleAddHtml}
+                                style={{ width: '100%', padding: '0.55rem', borderRadius: 8, border: '1.5px dashed #fca5a5', background: '#fff5f5', color: '#ef4444', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                                <Plus size={14} /> Add HTML Testcase
+                            </button>
+                        </div>
+                    )}
+
+                    {/* CSS Style Tab */}
+                    {wcTab === 'css' && (
+                        <div>
+                            <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                Check computed CSS properties. Leave <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>Expected Value</code> empty to just check the property is set.
+                            </p>
+                            {(formData.web_testcases?.css || []).map((tc, idx) => (
+                                <div key={idx} style={{ border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#eff6ff', position: 'relative' }}>
+                                    <button type="button" onClick={() => handleRemoveCss(idx)}
+                                        style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>
+                                        <Trash2 size={14} />
+                                    </button>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 160px 140px', gap: '0.6rem' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Container should use flexbox"
+                                                value={tc.description || ''} onChange={e => handleUpdateCss(idx, 'description', e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder=".container"
+                                                value={tc.selector || ''} onChange={e => handleUpdateCss(idx, 'selector', e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS PROPERTY *</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="display"
+                                                value={tc.property || ''} onChange={e => handleUpdateCss(idx, 'property', e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>EXPECTED VALUE</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="flex"
+                                                value={tc.value || ''} onChange={e => handleUpdateCss(idx, 'value', e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <button type="button"
+                                onClick={handleAddCss}
+                                style={{ width: '100%', padding: '0.55rem', borderRadius: 8, border: '1.5px dashed #93c5fd', background: '#eff6ff', color: '#3b82f6', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                                <Plus size={14} /> Add CSS Testcase
+                            </button>
+                        </div>
+                    )}
+
+                    {/* JS Code Tab */}
+                    {wcTab === 'js' && (
+                        <div>
+                            <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                Check that specific functions, methods, or keywords appear in the student's JavaScript code.
+                            </p>
+                            {(formData.web_testcases?.js || []).map((tc, idx) => (
+                                <div key={idx} style={{ border: '1px solid #fde68a', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fffbeb', position: 'relative' }}>
+                                    <button type="button" onClick={() => handleRemoveJs(idx)}
+                                        style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#d97706', cursor: 'pointer' }}>
+                                        <Trash2 size={14} />
+                                    </button>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '0.6rem' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Submit button should use addEventListener"
+                                                value={tc.description || ''} onChange={e => handleUpdateJs(idx, 'description', e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#d97706', display: 'block', marginBottom: '0.25rem' }}>JS KEYWORD *</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="addEventListener"
+                                                value={tc.keyword || ''} onChange={e => handleUpdateJs(idx, 'keyword', e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <button type="button"
+                                onClick={handleAddJs}
+                                style={{ width: '100%', padding: '0.55rem', borderRadius: 8, border: '1.5px dashed #fcd34d', background: '#fffbeb', color: '#d97706', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                                <Plus size={14} /> Add JS Testcase
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
+    )
+}
+
 export default function CodingManagement() {
     const { profile } = useAuth()
     const location = useLocation()
@@ -582,230 +841,7 @@ export default function CodingManagement() {
 
 
     const renderHtmlSpecificOptions = () => (
-        <>
-
-                                        {/* Reference iFrame URL */}
-                                        <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, #eff6ff, #f0fdf4)', border: '1px solid #bfdbfe', borderRadius: 12 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                                <div style={{ width: 28, height: 28, background: '#3b82f6', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <span style={{ color: 'white', fontSize: '0.7rem', fontWeight: 800 }}>{'<>'}</span>
-                                                </div>
-                                                <label htmlFor="reference-iframe-url" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e40af', margin: 0 }}>
-                                                    Reference iFrame URL <span style={{ color: '#60a5fa', fontWeight: 400 }}>(optional)</span>
-                                                </label>
-                                            </div>
-                                            <input
-                                                id="reference-iframe-url"
-                                                name="reference_iframe_url"
-                                                type="url"
-                                                className="form-input"
-                                                placeholder="https://example.com — students see this as a live demo inside the challenge"
-                                                value={formData.reference_iframe_url}
-                                                onChange={e => setFormData(p => ({ ...p, reference_iframe_url: e.target.value }))}
-                                            />
-                                            {formData.reference_iframe_url && !formData.reference_iframe_url.startsWith('https://') && (
-                                                <p style={{ fontSize: '0.7rem', color: '#ef4444', marginTop: '0.35rem', fontWeight: 600 }}>⚠ URL must start with https://</p>
-                                            )}
-                                            <p style={{ fontSize: '0.7rem', color: '#3b82f6', marginTop: '0.35rem' }}>Students see a live embedded demo beside the challenge description — great for "Build this page" tasks.</p>
-                                        </div>
-
-                                        {/* Frontend Testcase Engine */}
-                                        <div style={{ marginBottom: '1.5rem', border: '1px solid #6366f130', borderRadius: 14, overflow: 'hidden' }}>
-                                            {/* Header */}
-                                            <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <div style={{ width: 32, height: 32, background: '#6366f1', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🧪</div>
-                                                <div>
-                                                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ffffff' }}>Frontend Testcase Engine</div>
-                                                    <div style={{ fontSize: '0.68rem', color: '#a5b4fc' }}>HTML DOM · CSS Style · JS Code validation — like HackerRank for frontend</div>
-                                                </div>
-                                                <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
-                                                    {['html', 'css', 'js'].map(t => {
-                                                        const count = (formData.web_testcases?.[t] || []).filter(x => t === 'js' ? x.keyword?.trim() : x.selector?.trim()).length
-                                                        return count > 0 ? (
-                                                            <span key={t} style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.5rem', background: getTabColor(t), color: 'white', borderRadius: 10 }}>
-                                                                {t.toUpperCase()} {count}
-                                                            </span>
-                                                        ) : null
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Tab Bar */}
-                                            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                                                {[
-                                                    { id: 'html', label: 'HTML DOM', icon: '🏷', color: '#ef4444', desc: 'Check elements exist' },
-                                                    { id: 'css',  label: 'CSS Style', icon: '🎨', color: '#3b82f6', desc: 'Check computed styles' },
-                                                    { id: 'js',   label: 'JS Code',  icon: '⚙', color: '#f59e0b', desc: 'Check code patterns' }
-                                                ].map(tab => (
-                                                    <button
-                                                        key={tab.id}
-                                                        type="button"
-                                                        onClick={() => setWcTab(tab.id)}
-                                                        style={{
-                                                            flex: 1, padding: '0.65rem 0.5rem', border: 'none', cursor: 'pointer',
-                                                            background: wcTab === tab.id ? 'white' : 'transparent',
-                                                            borderBottom: wcTab === tab.id ? `2px solid ${tab.color}` : '2px solid transparent',
-                                                            color: wcTab === tab.id ? tab.color : 'var(--text-muted)',
-                                                            fontWeight: wcTab === tab.id ? 700 : 500,
-                                                            fontSize: '0.78rem', transition: 'all 0.15s'
-                                                        }}
-                                                    >
-                                                        <span style={{ marginRight: '0.35rem' }}>{tab.icon}</span>{tab.label}
-                                                        <span style={{ marginLeft: '0.35rem', fontSize: '0.6rem', opacity: 0.7 }}>
-                                                            ({(formData.web_testcases?.[tab.id] || []).length})
-                                                        </span>
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            {/* Tab Content */}
-                                            <div style={{ padding: '1rem', background: 'white' }}>
-                                                {/* HTML DOM Tab */}
-                                                {wcTab === 'html' && (
-                                                    <div>
-                                                        <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.75rem' }}>
-                                                            Check that specific HTML elements exist using CSS selectors. <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>minCount</code> is optional (default: 1).
-                                                        </p>
-                                                        {(formData.web_testcases?.html || []).map((tc, idx) => (
-                                                            <div key={idx} style={{ border: '1px solid #fee2e2', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fff5f5', position: 'relative' }}>
-                                                                <button type="button" onClick={() => setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, html: p.web_testcases.html.filter((_, i) => i !== idx) } }))}
-                                                                    style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}>
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 100px', gap: '0.6rem' }}>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
-                                                                        <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Page should have a main heading"
-                                                                            value={tc.description || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.html]; arr[idx] = { ...arr[idx], description: e.target.value }
-                                                                                setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, html: arr } }))
-                                                                            }} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#ef4444', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</div>
-                                                                        <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="h1, form, .nav"
-                                                                            value={tc.selector || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.html]; arr[idx] = { ...arr[idx], selector: e.target.value }
-                                                                                setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, html: arr } }))
-                                                                            }} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>MIN COUNT</div>
-                                                                        <input type="number" min="1" className="form-input" style={{ fontSize: '0.8rem' }} placeholder="1"
-                                                                            value={tc.minCount || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.html]; arr[idx] = { ...arr[idx], minCount: Number.parseInt(e.target.value) || 1 }
-                                                                                setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, html: arr } }))
-                                                                            }} />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                        <button type="button"
-                                                            onClick={() => setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, html: [...(p.web_testcases?.html || []), { description: '', selector: '', minCount: 1 }] } }))}
-                                                            style={{ width: '100%', padding: '0.55rem', borderRadius: 8, border: '1.5px dashed #fca5a5', background: '#fff5f5', color: '#ef4444', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-                                                            <Plus size={14} /> Add HTML Testcase
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                {/* CSS Style Tab */}
-                                                {wcTab === 'css' && (
-                                                    <div>
-                                                        <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.75rem' }}>
-                                                            Check computed CSS properties. Leave <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>Expected Value</code> empty to just check the property is set.
-                                                        </p>
-                                                        {(formData.web_testcases?.css || []).map((tc, idx) => (
-                                                            <div key={idx} style={{ border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#eff6ff', position: 'relative' }}>
-                                                                <button type="button" onClick={() => setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, css: p.web_testcases.css.filter((_, i) => i !== idx) } }))}
-                                                                    style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 160px 140px', gap: '0.6rem' }}>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
-                                                                        <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Container should use flexbox"
-                                                                            value={tc.description || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], description: e.target.value }
-                                                                                setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, css: arr } }))
-                                                                            }} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</div>
-                                                                        <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder=".container"
-                                                                            value={tc.selector || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], selector: e.target.value }
-                                                                                setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, css: arr } }))
-                                                                            }} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS PROPERTY *</div>
-                                                                        <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="display"
-                                                                            value={tc.property || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], property: e.target.value }
-                                                                                setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, css: arr } }))
-                                                                            }} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>EXPECTED VALUE</div>
-                                                                        <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="flex"
-                                                                            value={tc.value || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.css]; arr[idx] = { ...arr[idx], value: e.target.value }
-                                                                                setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, css: arr } }))
-                                                                            }} />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                        <button type="button"
-                                                            onClick={() => setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, css: [...(p.web_testcases?.css || []), { description: '', selector: '', property: '', value: '' }] } }))}
-                                                            style={{ width: '100%', padding: '0.55rem', borderRadius: 8, border: '1.5px dashed #93c5fd', background: '#eff6ff', color: '#3b82f6', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-                                                            <Plus size={14} /> Add CSS Testcase
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                {/* JS Code Tab */}
-                                                {wcTab === 'js' && (
-                                                    <div>
-                                                        <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.75rem' }}>
-                                                            Check that specific functions, methods, or keywords appear in the student's JavaScript code.
-                                                        </p>
-                                                        {(formData.web_testcases?.js || []).map((tc, idx) => (
-                                                            <div key={idx} style={{ border: '1px solid #fde68a', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fffbeb', position: 'relative' }}>
-                                                                <button type="button" onClick={() => setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, js: p.web_testcases.js.filter((_, i) => i !== idx) } }))}
-                                                                    style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#d97706', cursor: 'pointer' }}>
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '0.6rem' }}>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
-                                                                        <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Submit button should use addEventListener"
-                                                                            value={tc.description || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.js]; arr[idx] = { ...arr[idx], description: e.target.value }
-                                                                                setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, js: arr } }))
-                                                                            }} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#d97706', display: 'block', marginBottom: '0.25rem' }}>JS KEYWORD *</div>
-                                                                        <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="addEventListener"
-                                                                            value={tc.keyword || ''} onChange={e => {
-                                                                                const arr = [...formData.web_testcases.js]; arr[idx] = { ...arr[idx], keyword: e.target.value }
-                                                                                setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, js: arr } }))
-                                                                            }} />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                        <button type="button"
-                                                            onClick={() => setFormData(p => ({ ...p, web_testcases: { ...p.web_testcases, js: [...(p.web_testcases?.js || []), { description: '', keyword: '' }] } }))}
-                                                            style={{ width: '100%', padding: '0.55rem', borderRadius: 8, border: '1.5px dashed #fcd34d', background: '#fffbeb', color: '#d97706', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-                                                            <Plus size={14} /> Add JS Testcase
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-        </>
+        <HtmlSpecificOptions formData={formData} setFormData={setFormData} wcTab={wcTab} setWcTab={setWcTab} />
     );
 
     const renderStandardTestCases = () => (
