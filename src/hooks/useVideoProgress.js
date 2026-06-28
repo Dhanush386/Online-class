@@ -18,7 +18,7 @@ const PERSIST_INTERVAL_MS = 10000   // save every 10 seconds
 const SEEK_TOLERANCE = 3            // allow 3s forward tolerance (normal playback buffer)
 const COMPLETION_THRESHOLD = 95     // % of video that must be watched
 const MIN_WATCH_TIME_RATIO = 0.8    // must spend at least 80% of video duration watching
-const MAX_ALLOWED_SPEED = 2.0       // max playback speed for full XP
+const MAX_ALLOWED_SPEED = 2       // max playback speed for full XP
 const SPEED_PENALTY_FACTOR = 0.5    // reduce XP by 50% if speed exceeded 2x
 
 export default function useVideoProgress(videoId, durationSeconds) {

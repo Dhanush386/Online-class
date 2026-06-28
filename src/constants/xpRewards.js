@@ -66,8 +66,8 @@ export async function loadXpConfig() {
       config[row.event_type] = {
         xp: row.xp_amount,
         coins: row.coin_amount,
-        streak_multiplier: row.streak_multiplier || 1.0,
-        first_attempt_multiplier: row.first_attempt_multiplier || 1.0,
+        streak_multiplier: row.streak_multiplier || 1,
+        first_attempt_multiplier: row.first_attempt_multiplier || 1,
         difficulty_multipliers: row.difficulty_multipliers || { easy: 1, medium: 1.3, hard: 1.8 },
       }
     }
@@ -124,8 +124,8 @@ export function calculateReward(eventType, opts = {}) {
 
   // Difficulty multiplier
   if (opts.difficulty && config.difficulty_multipliers) {
-    const diffMult = config.difficulty_multipliers[opts.difficulty] || 1.0
-    if (diffMult !== 1.0) {
+    const diffMult = config.difficulty_multipliers[opts.difficulty] || 1
+    if (diffMult !== 1) {
       baseXp = Math.round(baseXp * diffMult)
       baseCoins = Math.round(baseCoins * diffMult)
       breakdown.difficulty = diffMult
@@ -133,13 +133,13 @@ export function calculateReward(eventType, opts = {}) {
   }
 
   // First attempt multiplier
-  if (opts.isFirstAttempt && config.first_attempt_multiplier > 1.0) {
+  if (opts.isFirstAttempt && config.first_attempt_multiplier > 1) {
     baseXp = Math.round(baseXp * config.first_attempt_multiplier)
     breakdown.firstAttempt = config.first_attempt_multiplier
   }
 
   // Streak multiplier (only applies if streak > 3 days)
-  if (opts.streakDays && opts.streakDays >= 3 && config.streak_multiplier > 1.0) {
+  if (opts.streakDays && opts.streakDays >= 3 && config.streak_multiplier > 1) {
     baseXp = Math.round(baseXp * config.streak_multiplier)
     breakdown.streak = config.streak_multiplier
   }
