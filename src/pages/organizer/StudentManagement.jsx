@@ -1121,7 +1121,7 @@ export default function StudentManagement() {
                                 {Array.from({ length: maxDay }, (_, i) => i + 1).map(day => {
                                     const access = dayAccess.find(a => a.day_number === day) || { is_locked: false, open_time: getDefaultUnlockTime(), close_time: '' }
                                     return (
-                                        <div key={day} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 100px', gap: '1rem', alignItems: 'center', padding: '1rem', background: access.is_locked ? '#fff1f2' : '#f8fafc', borderRadius: 12, border: `1px solid ${access.is_locked ? '#fecaca' : '#e2e8f0'}` }}>
+                                        <div key={day} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 100px', gap: '1rem', alignItems: 'center', padding: '1rem', background: access.is_locked ? 'rgba(239, 68, 68, 0.1)' : 'var(--card-bg)', borderRadius: 12, border: `1px solid ${access.is_locked ? 'rgba(239, 68, 68, 0.3)' : 'var(--card-border)'}` }}>
                                             <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Day {day}</div>
                                             <div>
                                                 <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>OPEN TIME</label>
@@ -1147,7 +1147,7 @@ export default function StudentManagement() {
                                                 <button
                                                     onClick={() => handleUpdateDayAccess(day, 'is_locked', !access.is_locked)}
                                                     className={access.is_locked ? "btn-primary" : "btn-secondary"}
-                                                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: access.is_locked ? '#ef4444' : 'white', width: '100%' }}
+                                                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: access.is_locked ? '#ef4444' : 'transparent', width: '100%', color: access.is_locked ? 'white' : 'var(--text-primary)' }}
                                                 >
                                                     {access.is_locked ? 'Unlock' : 'Lock'}
                                                 </button>
