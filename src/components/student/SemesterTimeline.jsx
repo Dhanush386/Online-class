@@ -6,6 +6,7 @@
 // ============================================================
 
 import { Trophy, Lock, Flame, Star, CheckCircle2 } from 'lucide-react'
+import PropTypes from 'prop-types'
 
 const GRADE_COLORS = {
   'A+': '#10b981', 'A': '#10b981', 'B': '#3b82f6', 'C': '#f59e0b', 'D': '#f97316', 'F': '#ef4444',
@@ -32,8 +33,14 @@ function getWeekStyle(status) {
     case 'locked':
       return { bg: '#e2e8f0', border: '#cbd5e1', shadow: 'none' }
     default:
-      return { bg: '#f1f5f9', border: '#e2e8f0', shadow: 'none' }
+      return { bg: '#f8fafc', border: '#e2e8f0', shadow: 'none' }
   }
+}
+
+function getWeekTextColor(status, isCurrentWeek) {
+  if (status === 'locked') return '#94a3b8'
+  if (isCurrentWeek) return '#3b82f6'
+  return 'var(--text-muted)'
 }
 
 export default function SemesterTimeline({
@@ -109,10 +116,11 @@ export default function SemesterTimeline({
           const isCurrentWeek = weekNum === currentWeek
 
           let status = 'locked'
-          if (locked) status = 'locked'
-          else if (pct >= 100) status = 'completed'
-          else if (isCurrentWeek) status = 'current'
-          else if (pct > 0) status = 'inProgress'
+          if (!locked) {
+            if (pct >= 100) status = 'completed'
+            else if (isCurrentWeek) status = 'current'
+            else if (pct > 0) status = 'inProgress'
+          }
 
           const style = getWeekStyle(status)
 
@@ -157,7 +165,7 @@ export default function SemesterTimeline({
                 <span style={{
                   fontSize: '0.5rem',
                   fontWeight: 700,
-                  color: status === 'locked' ? '#94a3b8' : isCurrentWeek ? '#3b82f6' : 'var(--text-muted)',
+                  color: getWeekTextColor(status, isCurrentWeek),
                   textTransform: 'uppercase',
                 }}>
                   W{weekNum}
@@ -192,9 +200,17 @@ export default function SemesterTimeline({
           Week {currentWeek} of {totalWeeks}
         </span>
         <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#10b981' }}>
-          {completedWeeks} week{completedWeeks !== 1 ? 's' : ''} completed
+          {completedWeeks} week{completedWeeks === 1 ? '' : 's'} completed
         </span>
       </div>
     </div>
   )
+}
+
+SemesterTimeline.propTypes = {
+  weeks: PropTypes.arrayOf(PropTypes.any),
+  weekProgress: PropTypes.shape({}),
+  currentWeek: PropTypes.number,
+  isWeekLocked: PropTypes.func,
+  getWeekGrade: PropTypes.func
 }

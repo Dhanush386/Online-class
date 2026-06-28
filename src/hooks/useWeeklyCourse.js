@@ -105,6 +105,12 @@ function fillMissingDays(weeksMap) {
   }
 }
 
+function getSessionType(s) {
+  if (s.is_recorded) return 'video'
+  if (s.video_url) return 'video'
+  return 'live_class'
+}
+
 export default function useWeeklyCourse(courseId) {
   const { profile } = useAuth()
   const [weeks, setWeeks] = useState([])
@@ -204,7 +210,7 @@ export default function useWeeklyCourse(courseId) {
       const allContent = [
         ...(sessions || []).map(s => ({
           ...s,
-          _type: s.is_recorded ? 'video' : (s.video_url ? 'video' : 'live_class'),
+          _type: getSessionType(s),
           _refId: s.id,
         })),
         ...(challenges || []).map(c => ({ ...c, _type: 'coding', _refId: c.id })),

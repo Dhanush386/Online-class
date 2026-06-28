@@ -26,14 +26,14 @@ export default function useVideoProgress(videoId, durationSeconds) {
   const [maxPosition, setMaxPosition] = useState(0)
   const [watchedPercentage, setWatchedPercentage] = useState(0)
   const [totalWatchTime, setTotalWatchTime] = useState(0)
-  const [maxPlaybackSpeed, setMaxPlaybackSpeed] = useState(1.0)
+  const [maxPlaybackSpeed, setMaxPlaybackSpeed] = useState(1)
   const [isComplete, setIsComplete] = useState(false)
 
   const lastSaveRef = useRef(0)
   const lastTickRef = useRef(Date.now())
   const maxPosRef = useRef(0)
   const totalTimeRef = useRef(0)
-  const maxSpeedRef = useRef(1.0)
+  const maxSpeedRef = useRef(1)
 
   // Load existing progress on mount
   useEffect(() => {
@@ -53,8 +53,8 @@ export default function useVideoProgress(videoId, durationSeconds) {
         setWatchedPercentage(data.watched_percentage || 0)
         setTotalWatchTime(data.total_watch_time || 0)
         totalTimeRef.current = data.total_watch_time || 0
-        setMaxPlaybackSpeed(data.max_playback_speed || 1.0)
-        maxSpeedRef.current = data.max_playback_speed || 1.0
+        setMaxPlaybackSpeed(data.max_playback_speed || 1)
+        maxSpeedRef.current = data.max_playback_speed || 1
         setIsComplete(data.completed || false)
       }
     }
@@ -66,7 +66,7 @@ export default function useVideoProgress(videoId, durationSeconds) {
    * @param {{ playedSeconds: number, played: number }} state
    * @param {number} [playbackRate] - current playback speed
    */
-  const onProgress = useCallback((state, playbackRate = 1.0) => {
+  const onProgress = useCallback((state, playbackRate = 1) => {
     if (!durationSeconds || durationSeconds <= 0) return
 
     const currentPos = state.playedSeconds || 0
@@ -143,7 +143,7 @@ export default function useVideoProgress(videoId, durationSeconds) {
   /**
    * Speed penalty multiplier for XP calculation.
    */
-  const speedMultiplier = hasSpeedPenalty ? SPEED_PENALTY_FACTOR : 1.0
+  const speedMultiplier = hasSpeedPenalty ? SPEED_PENALTY_FACTOR : 1
 
   // Persist to database
   const persistProgress = useCallback(async (pct, completed) => {

@@ -11,19 +11,19 @@ const CACHE_DURATION_MS = 30 * 60 * 1000 // 30 minutes
 
 // Hardcoded fallbacks (matches seed data in migration)
 const DEFAULTS = {
-  live_class_full:      { xp: 50,  coins: 10, streak_multiplier: 1.2, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  live_class_partial:   { xp: 10,  coins: 0,  streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  recorded_video:       { xp: 30,  coins: 5,  streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  quiz_high:            { xp: 25,  coins: 5,  streak_multiplier: 1.1, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  quiz_mid:             { xp: 15,  coins: 2,  streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  quiz_low:             { xp: 5,   coins: 0,  streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  live_class_full:      { xp: 50,  coins: 10, streak_multiplier: 1.2, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  live_class_partial:   { xp: 10,  coins: 0,  streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  recorded_video:       { xp: 30,  coins: 5,  streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  quiz_high:            { xp: 25,  coins: 5,  streak_multiplier: 1.1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  quiz_mid:             { xp: 15,  coins: 2,  streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  quiz_low:             { xp: 5,   coins: 0,  streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
   coding_solve:         { xp: 50,  coins: 10, streak_multiplier: 1.2, first_attempt_multiplier: 1.5, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  coding_all_tests:     { xp: 20,  coins: 5,  streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  coding_first_attempt: { xp: 15,  coins: 3,  streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  daily_streak:         { xp: 10,  coins: 2,  streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  weekly_bonus:         { xp: 100, coins: 25, streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  daily_goal:           { xp: 20,  coins: 5,  streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
-  attendance_badge:     { xp: 10,  coins: 5,  streak_multiplier: 1.0, first_attempt_multiplier: 1.0, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  coding_all_tests:     { xp: 20,  coins: 5,  streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  coding_first_attempt: { xp: 15,  coins: 3,  streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  daily_streak:         { xp: 10,  coins: 2,  streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  weekly_bonus:         { xp: 100, coins: 25, streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  daily_goal:           { xp: 20,  coins: 5,  streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
+  attendance_badge:     { xp: 25,  coins: 5,  streak_multiplier: 1, first_attempt_multiplier: 1, difficulty_multipliers: { easy: 1, medium: 1.3, hard: 1.8 } },
 }
 
 let _configCache = null

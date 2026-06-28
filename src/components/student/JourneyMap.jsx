@@ -70,6 +70,12 @@ function getBoxShadow(status, isSelected, glow) {
   return '0 2px 6px rgba(0,0,0,0.08)'
 }
 
+function getLabelColor(isSelected, status) {
+  if (isSelected) return '#6366f1'
+  if (status === 'current') return '#3b82f6'
+  return 'var(--text-muted)'
+}
+
 function DayNode({ day, status, isSelected, onClick, weekLocked, dateStr }) {
   const colors = STATUS_COLORS[status]
   const dayShort = getDayShort(day.dayOfWeek)
@@ -77,7 +83,7 @@ function DayNode({ day, status, isSelected, onClick, weekLocked, dateStr }) {
   const completedModules = day.modules?.filter(m => m._completed).length || 0
 
   const boxShadow = getBoxShadow(status, isSelected, colors.glow)
-  const labelColor = isSelected ? '#6366f1' : status === 'current' ? '#3b82f6' : 'var(--text-muted)'
+  const labelColor = getLabelColor(isSelected, status)
 
   return (
     <button
@@ -165,6 +171,105 @@ function ConnectorLine({ fromStatus, toStatus }) {
   )
 }
 
+function getBadgeBackground(locked, isCurrentWeek, pct) {
+  if (locked) return '#e2e8f0'
+  if (isCurrentWeek) return 'linear-gradient(135deg, #3b82f6, #6366f1)'
+  if (pct >= 100) return 'linear-gradient(135deg, #10b981, #059669)'
+  return '#f1f5f9'
+}
+
+function renderBadgeContent(locked, isCurrentWeek, pct, weekNum) {
+  if (locked) return <Lock size={14} color="#94a3b8" />
+  if (pct >= 100) return <Trophy size={14} color="#fff" />
+  return (
+    <span style={{
+      fontSize: '0.85rem',
+      fontWeight: 800,
+      color: isCurrentWeek ? '#fff' : '#64748b',
+    }}>
+      {weekNum}
+    </span>
+  )
+}
+
+function renderWeekProgressBar(pct) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+      <div style={{
+        width: 80,
+        height: 6,
+        background: '#e2e8f0',
+        borderRadius: 10,
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          width: `${pct}%`,
+          height: '100%',
+          background: pct >= 100
+            ? 'linear-gradient(90deg, #10b981, #059669)'
+            : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+          borderRadius: 10,
+          transition: 'width 0.5s ease',
+        }} />
+      </div>
+      <span style={{
+        fontSize: '0.7rem',
+        fontWeight: 700,
+        color: pct >= 100 ? '#10b981' : 'var(--text-muted)',
+        minWidth: 32,
+        textAlign: 'right',
+      }}>
+        {pct}%
+      </span>
+    </div>
+  )
+}
+
+function renderDayNodes(week, locked, isCurrentWeek, todayDow, selectedDay, getScheduleDate, onDaySelect) {
+  const weekNum = week.weekNum
+  return (
+    <div style={{
+      padding: '0.5rem 1.25rem 1.25rem',
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+      gap: '0.25rem',
+      overflowX: 'auto',
+    }}>
+      {week.days.map((day, idx) => {
+        const isCurrentDay = isCurrentWeek && day.dayOfWeek === todayDow
+        const status = getDayStatus(day, locked, isCurrentDay)
+        const isSelected = selectedDay?.weekNum === weekNum && selectedDay?.dayOfWeek === day.dayOfWeek
+
+        let dateStr = null
+        if (day.scheduleDate) {
+          const d = new Date(day.scheduleDate)
+          dateStr = `${d.getDate()}/${d.getMonth() + 1}`
+        } else if (getScheduleDate) {
+          const d = getScheduleDate(weekNum, day.dayOfWeek)
+          if (d) dateStr = `${d.getDate()}/${d.getMonth() + 1}`
+        }
+
+        return (
+          <div key={day.dayOfWeek} style={{ display: 'flex', alignItems: 'center' }}>
+            <DayNode
+              day={day}
+              status={status}
+              isSelected={isSelected}
+              onClick={() => onDaySelect?.({ weekNum, dayOfWeek: day.dayOfWeek, day })}
+              weekLocked={locked}
+              dateStr={dateStr}
+            />
+            {idx < week.days.length - 1 && (
+              <ConnectorLine fromStatus={status} toStatus={getDayStatus(week.days[idx + 1], locked, false)} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function JourneyWeekCard({
   week,
   locked,
@@ -216,31 +321,13 @@ function JourneyWeekCard({
           width: 36,
           height: 36,
           borderRadius: '50%',
-          background: locked
-            ? '#e2e8f0'
-            : isCurrentWeek
-              ? 'linear-gradient(135deg, #3b82f6, #6366f1)'
-              : pct >= 100
-                ? 'linear-gradient(135deg, #10b981, #059669)'
-                : '#f1f5f9',
+          background: getBadgeBackground(locked, isCurrentWeek, pct),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
         }}>
-          {locked ? (
-            <Lock size={14} color="#94a3b8" />
-          ) : pct >= 100 ? (
-            <Trophy size={14} color="#fff" />
-          ) : (
-            <span style={{
-              fontSize: '0.85rem',
-              fontWeight: 800,
-              color: isCurrentWeek ? '#fff' : '#64748b',
-            }}>
-              {weekNum}
-            </span>
-          )}
+          {renderBadgeContent(locked, isCurrentWeek, pct, weekNum)}
         </div>
 
         {/* Week info */}
@@ -287,81 +374,11 @@ function JourneyWeekCard({
         </div>
 
         {/* Progress bar */}
-        {!locked && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-            <div style={{
-              width: 80,
-              height: 6,
-              background: '#e2e8f0',
-              borderRadius: 10,
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                width: `${pct}%`,
-                height: '100%',
-                background: pct >= 100
-                  ? 'linear-gradient(90deg, #10b981, #059669)'
-                  : 'linear-gradient(90deg, #3b82f6, #6366f1)',
-                borderRadius: 10,
-                transition: 'width 0.5s ease',
-              }} />
-            </div>
-            <span style={{
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              color: pct >= 100 ? '#10b981' : 'var(--text-muted)',
-              minWidth: 32,
-              textAlign: 'right',
-            }}>
-              {pct}%
-            </span>
-          </div>
-        )}
+        {!locked && renderWeekProgressBar(pct)}
       </button>
 
       {/* Day nodes (expanded) */}
-      {expanded && (
-        <div style={{
-          padding: '0.5rem 1.25rem 1.25rem',
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          gap: '0.25rem',
-          overflowX: 'auto',
-        }}>
-          {week.days.map((day, idx) => {
-            const isCurrentDay = isCurrentWeek && day.dayOfWeek === todayDow
-            const status = getDayStatus(day, locked, isCurrentDay)
-            const isSelected = selectedDay?.weekNum === weekNum && selectedDay?.dayOfWeek === day.dayOfWeek
-
-            // Format date if available
-            let dateStr = null
-            if (day.scheduleDate) {
-              const d = new Date(day.scheduleDate)
-              dateStr = `${d.getDate()}/${d.getMonth() + 1}`
-            } else if (getScheduleDate) {
-              const d = getScheduleDate(weekNum, day.dayOfWeek)
-              if (d) dateStr = `${d.getDate()}/${d.getMonth() + 1}`
-            }
-
-            return (
-              <div key={day.dayOfWeek} style={{ display: 'flex', alignItems: 'center' }}>
-                <DayNode
-                  day={day}
-                  status={status}
-                  isSelected={isSelected}
-                  onClick={() => onDaySelect?.({ weekNum, dayOfWeek: day.dayOfWeek, day })}
-                  weekLocked={locked}
-                  dateStr={dateStr}
-                />
-                {idx < week.days.length - 1 && (
-                  <ConnectorLine fromStatus={status} toStatus={getDayStatus(week.days[idx + 1], locked, false)} />
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+      {expanded && renderDayNodes(week, locked, isCurrentWeek, todayDow, selectedDay, getScheduleDate, onDaySelect)}
     </div>
   )
 }
@@ -479,4 +496,9 @@ JourneyMap.propTypes = {
   selectedDay: PropTypes.object,
   onDaySelect: PropTypes.func,
   onWeekToggle: PropTypes.func
+}
+
+ConnectorLine.propTypes = {
+  fromStatus: PropTypes.string,
+  toStatus: PropTypes.string
 }

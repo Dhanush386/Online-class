@@ -4,11 +4,12 @@
 // ============================================================
 
 import { useEffect, useState } from 'react'
-import { Trophy, Star, Coins, ArrowRight, X, Sparkles } from 'lucide-react'
+import { Trophy, Star, ArrowRight, X, Sparkles } from 'lucide-react'
+import PropTypes from 'prop-types'
 
 function getSecureRandom() {
   const array = new Uint32Array(1)
-  window.crypto.getRandomValues(array)
+  globalThis.crypto.getRandomValues(array)
   return array[0] / (0xffffffff + 1)
 }
 
@@ -301,4 +302,20 @@ export default function WeeklyCompletionModal({
       </div>
     </>
   )
+}
+
+ConfettiParticle.propTypes = {
+  index: PropTypes.number
+}
+
+WeeklyCompletionModal.propTypes = {
+  isVisible: PropTypes.bool,
+  weekNumber: PropTypes.number,
+  xpEarned: PropTypes.number,
+  coinsEarned: PropTypes.number,
+  grade: PropTypes.string,
+  badgeName: PropTypes.string,
+  nextWeekNumber: PropTypes.number,
+  onClose: PropTypes.func,
+  onContinue: PropTypes.func
 }

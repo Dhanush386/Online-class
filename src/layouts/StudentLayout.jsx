@@ -6,8 +6,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useMeeting } from '../contexts/MeetingContext'
 import {
-  LayoutDashboard, BookOpen, ClipboardList, LogOut,
-  GraduationCap, Menu, Bell, Award, Code, Globe,
+  LayoutDashboard, BookOpen, LogOut,
+  GraduationCap, Menu, Bell, Award, Globe,
   User, HelpCircle, MessageCircle, Mountain,
   Flame, Star, Info, AlertTriangle, CheckCircle, Clock, Trophy, CreditCard,
   ChevronDown, Sparkles

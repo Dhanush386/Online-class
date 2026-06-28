@@ -6,6 +6,7 @@
 // ============================================================
 
 import { Star, Video, Code, ClipboardList, Radio, Flame, Trophy, Target, Award } from 'lucide-react'
+import PropTypes from 'prop-types'
 
 const EVENT_ICONS = {
   live_class_full: { icon: Radio, color: '#ef4444', emoji: '📺' },
@@ -23,12 +24,18 @@ const EVENT_ICONS = {
   attendance_badge: { icon: Award, color: '#3b82f6', emoji: '🏅' },
 }
 
+function get12Hour(h) {
+  if (h > 12) return h - 12
+  if (h === 0) return 12
+  return h
+}
+
 function formatTime(dateStr) {
   const d = new Date(dateStr)
   const h = d.getHours()
   const m = d.getMinutes().toString().padStart(2, '0')
   const ampm = h >= 12 ? 'PM' : 'AM'
-  const hour = h > 12 ? h - 12 : h === 0 ? 12 : h
+  const hour = get12Hour(h)
   return `${hour}:${m} ${ampm}`
 }
 
@@ -101,7 +108,7 @@ export default function XpTimeline({ events = [], totalXp = 0, totalCoins = 0 })
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                 }}>
-                  {event.reason || event.event_type.replace(/_/g, ' ')}
+                  {event.reason || event.event_type.replaceAll('_', ' ')}
                 </div>
                 {hasMultiplier && (
                   <div style={{ fontSize: '0.6rem', color: '#f59e0b', fontWeight: 600, marginTop: '0.1rem' }}>
@@ -143,7 +150,7 @@ export default function XpTimeline({ events = [], totalXp = 0, totalCoins = 0 })
         justifyContent: 'space-between',
       }}>
         <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-          {events.length} activit{events.length !== 1 ? 'ies' : 'y'}
+          {events.length} activit{events.length === 1 ? 'y' : 'ies'}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
           <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#6366f1' }}>
@@ -158,4 +165,10 @@ export default function XpTimeline({ events = [], totalXp = 0, totalCoins = 0 })
       </div>
     </div>
   )
+}
+
+XpTimeline.propTypes = {
+  events: PropTypes.arrayOf(PropTypes.any),
+  totalXp: PropTypes.number,
+  totalCoins: PropTypes.number
 }

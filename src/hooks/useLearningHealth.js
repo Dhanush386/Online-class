@@ -18,9 +18,9 @@ import { useAuth } from '../contexts/AuthContext'
 
 const WEIGHTS = {
   attendance: 0.25,
-  quiz: 0.30,
+  quiz: 0.3,
   coding: 0.25,
-  progress: 0.20,
+  progress: 0.2,
 }
 
 // Forgetting curve: score decays by decay_rate per day since last practice

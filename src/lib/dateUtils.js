@@ -39,11 +39,11 @@ export function getDefaultUnlockTimeForDay(startDateString, dayNumber) {
     let d = new Date();
     if (startDateString) {
         d = new Date(startDateString);
-        if (!Number.isNaN(d.getTime())) {
+        if (Number.isNaN(d.getTime())) {
+            d = new Date();
+        } else {
             // Day 1 = start_date, Day 2 = start_date + 1 day, etc.
             d.setDate(d.getDate() + (dayNumber - 1));
-        } else {
-            d = new Date();
         }
     }
     d.setHours(18, 30, 0, 0);

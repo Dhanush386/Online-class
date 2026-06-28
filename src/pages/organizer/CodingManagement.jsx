@@ -1,9 +1,10 @@
+import PropTypes from 'prop-types'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import CodeEditor from '../../components/CodeEditor'
-import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image as ImageIcon, Upload, Sparkles, Loader2, ShieldAlert, Eye, BarChart3, CheckCircle2, XCircle, Users } from 'lucide-react'
+import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Calendar, Clock, Lock, Image as ImageIcon, Upload, Sparkles, Loader2, ShieldAlert, Eye, BarChart3, CheckCircle2, XCircle, Users } from 'lucide-react'
 import ProctoringReportModal from '../../components/organizer/ProctoringReportModal'
 import OrganizerCodingDiscussions from '../../components/OrganizerCodingDiscussions'
 import { toLocalInput, toISOWithOffset, getDefaultUnlockTime } from '../../lib/dateUtils'
@@ -52,6 +53,7 @@ const getRiskBorder = (score) => {
     return '#a7f3d0';
 };
 
+// eslint-disable-next-line react/prop-types
 function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
     const handleRemoveHtml = (idx) => {
         setFormData(p => ({
@@ -69,7 +71,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
     const handleAddHtml = () => {
         setFormData(p => ({
             ...p,
-            web_testcases: { ...p.web_testcases, html: [...(p.web_testcases?.html || []), { description: '', selector: '', minCount: 1 }] }
+            web_testcases: { ...p.web_testcases, html: [...(p.web_testcases?.html || []), { id: crypto.randomUUID(), description: '', selector: '', minCount: 1 }] }
         }))
     }
     const handleRemoveCss = (idx) => {
@@ -88,7 +90,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
     const handleAddCss = () => {
         setFormData(p => ({
             ...p,
-            web_testcases: { ...p.web_testcases, css: [...(p.web_testcases?.css || []), { description: '', selector: '', property: '', value: '' }] }
+            web_testcases: { ...p.web_testcases, css: [...(p.web_testcases?.css || []), { id: crypto.randomUUID(), description: '', selector: '', property: '', value: '' }] }
         }))
     }
     const handleRemoveJs = (idx) => {
@@ -107,7 +109,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
     const handleAddJs = () => {
         setFormData(p => ({
             ...p,
-            web_testcases: { ...p.web_testcases, js: [...(p.web_testcases?.js || []), { description: '', keyword: '' }] }
+            web_testcases: { ...p.web_testcases, js: [...(p.web_testcases?.js || []), { id: crypto.randomUUID(), description: '', keyword: '' }] }
         }))
     }
 
@@ -196,7 +198,8 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                                 Check that specific HTML elements exist using CSS selectors. <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>minCount</code> is optional (default: 1).
                             </p>
                             {(formData.web_testcases?.html || []).map((tc, idx) => (
-                                <div key={idx} style={{ border: '1px solid #fee2e2', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fff5f5', position: 'relative' }}>
+                                // eslint-disable-next-line react/no-array-index-key
+                                <div key={tc.id || `html-tc-${idx}`} style={{ border: '1px solid #fee2e2', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fff5f5', position: 'relative' }}>
                                     <button type="button" onClick={() => handleRemoveHtml(idx)}
                                         style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}>
                                         <Trash2 size={14} />
@@ -235,7 +238,8 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                                 Check computed CSS properties. Leave <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>Expected Value</code> empty to just check the property is set.
                             </p>
                             {(formData.web_testcases?.css || []).map((tc, idx) => (
-                                <div key={idx} style={{ border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#eff6ff', position: 'relative' }}>
+                                // eslint-disable-next-line react/no-array-index-key
+                                <div key={tc.id || `css-tc-${idx}`} style={{ border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#eff6ff', position: 'relative' }}>
                                     <button type="button" onClick={() => handleRemoveCss(idx)}
                                         style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>
                                         <Trash2 size={14} />
@@ -279,7 +283,8 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                                 Check that specific functions, methods, or keywords appear in the student's JavaScript code.
                             </p>
                             {(formData.web_testcases?.js || []).map((tc, idx) => (
-                                <div key={idx} style={{ border: '1px solid #fde68a', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fffbeb', position: 'relative' }}>
+                                // eslint-disable-next-line react/no-array-index-key
+                                <div key={tc.id || `js-tc-${idx}`} style={{ border: '1px solid #fde68a', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fffbeb', position: 'relative' }}>
                                     <button type="button" onClick={() => handleRemoveJs(idx)}
                                         style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#d97706', cursor: 'pointer' }}>
                                         <Trash2 size={14} />
@@ -405,14 +410,13 @@ export default function CodingManagement() {
             // Keep the best attempt (or most recent accepted) per student
             const bestByStudent = {}
             ;(subs || []).forEach(s => {
-                if (!bestByStudent[s.student_id]) {
+                const current = bestByStudent[s.student_id]
+                if (
+                    !current ||
+                    (s.status === 'accepted' && current.status !== 'accepted') ||
+                    ((s.score || 0) > (current.score || 0))
+                ) {
                     bestByStudent[s.student_id] = s
-                } else {
-                    if (s.status === 'accepted' && bestByStudent[s.student_id].status !== 'accepted') {
-                        bestByStudent[s.student_id] = s
-                    } else if ((s.score || 0) > (bestByStudent[s.student_id].score || 0)) {
-                        bestByStudent[s.student_id] = s
-                    }
                 }
             })
             setSubmissionsData(Object.values(bestByStudent))
@@ -580,19 +584,28 @@ export default function CodingManagement() {
         if (generatedChallenges.length === 0) return;
         setSaving(true);
         try {
-            const payloads = generatedChallenges.map(c => ({
-                course_id: aiCourseId,
-                title: c.title || 'Untitled',
-                problem_statement: c.problem_statement || '',
-                language: c.language || 'python',
-                difficulty: c.difficulty || 'easy',
-                starter_code: c.starter_code || '',
-                solution_code: c.solution_code || '',
-                constraints: c.constraints || '',
-                test_cases: Array.isArray(c.test_cases) ? c.test_cases : [],
-                xp_reward: c.difficulty === 'hard' ? 30 : c.difficulty === 'medium' ? 20 : 15,
-                week_number: 1, day_of_week: 1 // Default
-            }));
+            const payloads = generatedChallenges.map(c => {
+                let xp_reward = 15;
+                if (c.difficulty === 'hard') {
+                    xp_reward = 30;
+                } else if (c.difficulty === 'medium') {
+                    xp_reward = 20;
+                }
+
+                return {
+                    course_id: aiCourseId,
+                    title: c.title || 'Untitled',
+                    problem_statement: c.problem_statement || '',
+                    language: c.language || 'python',
+                    difficulty: c.difficulty || 'easy',
+                    starter_code: c.starter_code || '',
+                    solution_code: c.solution_code || '',
+                    constraints: c.constraints || '',
+                    test_cases: Array.isArray(c.test_cases) ? c.test_cases : [],
+                    xp_reward,
+                    week_number: 1, day_of_week: 1 // Default
+                };
+            });
 
             const { error } = await supabase.from('coding_challenges').insert(payloads);
             if (error) throw error;
@@ -683,10 +696,10 @@ export default function CodingManagement() {
     async function handleDelete(id) {
         if (!confirm('Are you sure you want to delete this coding challenge?')) return
         const { error } = await supabase.from('coding_challenges').delete().eq('id', id)
-        if (!error) {
-            setChallenges(challenges.filter(c => c.id !== id))
-        } else {
+        if (error) {
             alert('Error deleting: ' + error.message)
+        } else {
+            setChallenges(challenges.filter(c => c.id !== id))
         }
     }
 
@@ -704,6 +717,7 @@ export default function CodingManagement() {
                     js: parsed.js || ''
                 })
             } catch (e) {
+                console.warn('Failed to parse starter web code JSON, falling back to raw html', e);
                 setStarterWebCode({
                     html: c.starter_code || '',
                     css: '',
@@ -845,16 +859,16 @@ export default function CodingManagement() {
     );
 
     const renderStandardTestCases = () => (
-        <>
-<div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                         <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Test Cases</h4>
-                                        <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: [...p.test_cases, { input: '', expected_output: '', is_hidden: false }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
+                                        <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: [...p.test_cases, { id: crypto.randomUUID(), input: '', expected_output: '', is_hidden: false }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
                                             <Plus size={14} /> Add Test Case
                                         </button>
                                     </div>
                                     {formData.test_cases.map((tc, idx) => (
-                                        <div key={idx} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '1rem', marginBottom: '1rem', background: 'white' }}>
+                                        // eslint-disable-next-line react/no-array-index-key
+                                        <div key={tc.id || `std-tc-${idx}`} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '1rem', marginBottom: '1rem', background: 'white' }}>
                                             <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.85rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                                                     <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>INPUT (STDIN)</label>
@@ -952,7 +966,6 @@ export default function CodingManagement() {
                                         </div>
                                     ))}
                                 </div>
-        </>
     );
 
     const renderSubQuestions = () => (
