@@ -67,7 +67,7 @@ export default function Assessments() {
                 ; (assessData || [])
                     .filter(a => {
                         const hasStarted = !a.courses?.start_date || new Date(a.courses.start_date) <= now
-                        return hasStarted && !lockedAssessIds.includes(a.id) && !isDayLocked(a.course_id, a.day_number)
+                        return hasStarted && !lockedAssessIds.includes(a.id) && !isDayLocked(a.course_id, a.day_number) && !(a.open_time && new Date(a.open_time) > now)
                     })
                     .forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
             setAssessments(grouped)

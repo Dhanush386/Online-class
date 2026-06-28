@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, BookOpen, ChevronRight, Clock, Eye, BarChart3, Download, CheckCircle2, XCircle, Search, Users, ShieldAlert } from 'lucide-react'
 import ProctoringReportModal from '../../components/organizer/ProctoringReportModal'
+import { getDefaultUnlockTime, toISOWithOffset, toLocalInput } from '../../lib/dateUtils'
 
 export default function OrganizerAssessments() {
     const { profile } = useAuth()
@@ -16,7 +17,7 @@ export default function OrganizerAssessments() {
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
     const [editingId, setEditingId] = useState(null)
-    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '', week_number: 1, day_of_week: 1, duration: 30 })
+    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '', week_number: 1, day_of_week: 1, duration: 30, open_time: getDefaultUnlockTime(), close_time: '' })
     const [viewingMarks, setViewingMarks] = useState(null)
     const [marksData, setMarksData] = useState([])
     const [marksLoading, setMarksLoading] = useState(false)
@@ -124,7 +125,9 @@ export default function OrganizerAssessments() {
                 description: formData.description,
                 week_number: Number.parseInt(formData.week_number) || 1,
                 day_of_week: Number.parseInt(formData.day_of_week) || 1,
-                duration: Number.parseInt(formData.duration) || 30
+                duration: Number.parseInt(formData.duration) || 30,
+                open_time: toISOWithOffset(formData.open_time),
+                close_time: toISOWithOffset(formData.close_time)
             }
 
             if (editingId) {
@@ -165,13 +168,15 @@ export default function OrganizerAssessments() {
             description: a.description || '',
             week_number: a.week_number || 1,
             day_of_week: a.day_of_week || 1,
-            duration: a.duration || 30
+            duration: a.duration || 30,
+            open_time: toLocalInput(a.open_time),
+            close_time: toLocalInput(a.close_time)
         })
         setShowModal(true)
     }
 
     function resetForm() {
-        setFormData({ title: '', course_id: '', type: 'daily', due_date: '', description: '', week_number: 1, day_of_week: 1, duration: 30 })
+        setFormData({ title: '', course_id: '', type: 'daily', due_date: '', description: '', week_number: 1, day_of_week: 1, duration: 30, open_time: getDefaultUnlockTime(), close_time: '' })
         setEditingId(null)
         setError('')
     }
@@ -527,6 +532,29 @@ export default function OrganizerAssessments() {
                                     required
                                 />
                             </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                <div>
+                                    <label htmlFor="assess-open-time" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} /> Open Time</label>
+                                    <input id="assess-open-time" name="open_time" type="datetime-local" className="form-input"
+                                        value={formData.open_time}
+                                        onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="assess-close-time" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} /> Close Time</label>
+                                    <input id="assess-close-time" name="close_time" type="datetime-local" className="form-input"
+                                        value={formData.close_time}
+                                        onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
+                                        min={formData.open_time || undefined}
+                                    />
+                                </div>
+                            </div>
+                            {formData.open_time && formData.close_time && (() => {
+                                const mins = Math.round((new Date(formData.close_time) - new Date(formData.open_time)) / 60000)
+                                if (mins > 0) return <div style={{ fontSize: '0.8rem', color: '#6366f1', marginBottom: '1rem', fontWeight: 600 }}>⏱ Window: {mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`}</div>
+                                return null
+                            })()}
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label htmlFor="assessment-desc" className="form-label">Instructions / Description</label>

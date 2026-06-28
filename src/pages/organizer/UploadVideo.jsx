@@ -128,7 +128,7 @@ export default function ScheduleLiveClass() {
                 title: form.title,
                 description: form.description,
                 video_url: finalUrl,
-                scheduled_time: mode === 'live' ? toISOWithOffset(form.scheduled_time) : null,
+                scheduled_time: form.scheduled_time ? toISOWithOffset(form.scheduled_time) : null,
                 duration_minutes: durationMins,
                 week_number: Number.parseInt(form.week_number) || 1,
                 day_of_week: Number.parseInt(form.day_of_week) || 1,
@@ -394,7 +394,7 @@ export default function ScheduleLiveClass() {
                         </div>
                     </div>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: mode === 'live' ? '1fr 1fr' : '1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         {mode === 'live' ? (
                             <>
                                 <div>
@@ -419,13 +419,22 @@ export default function ScheduleLiveClass() {
                                 </div>
                             </>
                         ) : (
-                            <div>
-                                <label htmlFor="duration" className="form-label">Duration (minutes) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                <div style={{ position: 'relative' }}>
-                                    <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                    <input id="duration" name="duration_minutes" type="number" min="1" className="form-input" value={form.duration_minutes} onChange={e => setForm(p => ({ ...p, duration_minutes: e.target.value }))} style={{ paddingLeft: '2.5rem' }} />
+                            <>
+                                <div>
+                                    <label htmlFor="open-time-video" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Calendar size={14} /> Open / Scheduled Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                        <input id="open-time-video" name="scheduled_time" type="datetime-local" className="form-input" value={form.scheduled_time} onChange={e => setForm(p => ({ ...p, scheduled_time: e.target.value }))} style={{ paddingLeft: '2.5rem' }} />
+                                    </div>
                                 </div>
-                            </div>
+                                <div>
+                                    <label htmlFor="duration" className="form-label">Duration (minutes) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                        <input id="duration" name="duration_minutes" type="number" min="1" className="form-input" value={form.duration_minutes} onChange={e => setForm(p => ({ ...p, duration_minutes: e.target.value }))} style={{ paddingLeft: '2.5rem' }} />
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
 

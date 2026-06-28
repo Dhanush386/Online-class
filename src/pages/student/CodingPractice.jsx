@@ -79,7 +79,7 @@ export default function CodingPractice() {
         setUserGroupIds(groupIds)
         setGroups(groupsData || [])
 
-        setChallenges((challengeData || []).filter(c => !lockedCodingIds.includes(c.id) && !isDayLocked(c.course_id, c.day_number)))
+        setChallenges((challengeData || []).filter(c => !lockedCodingIds.includes(c.id) && !isDayLocked(c.course_id, c.day_number) && !(c.open_time && new Date(c.open_time) > now)))
         setSubmissions(submissionData || [])
         setLoading(false)
     }

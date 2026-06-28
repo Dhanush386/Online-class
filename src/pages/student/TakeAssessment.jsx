@@ -498,6 +498,13 @@ export default function TakeAssessment() {
                 return
             }
 
+            // Check assessment-level open_time
+            if (assess.open_time && new Date(assess.open_time) > new Date()) {
+                alert(`This assessment opens at ${new Date(assess.open_time).toLocaleString()}`)
+                navigate(`/student/courses/${assess.course_id}`, { replace: true })
+                return
+            }
+
             // CHECK: Deadline Expiry
             if (assess.due_date && new Date(assess.due_date) < new Date()) {
                 alert('This assessment is no longer available as the deadline has passed.')

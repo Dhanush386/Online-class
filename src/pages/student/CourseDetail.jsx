@@ -107,14 +107,15 @@ export default function CourseDetail() {
             const lockedMaterialIds = locks?.filter(l => userGroupIds.includes(l.group_id) && (l.resource_type === 'resource' || l.resource_type === 'other')).map(l => l.resource_id) || []
 
             setCourse(crs)
-            setSessions(vids || [])
+            const now = new Date()
+            setSessions((vids || []).filter(v => !(v.scheduled_time && new Date(v.scheduled_time) > now && !v.video_url)))
             setProgress({ ...(prog || {}), video_progress: vpData || [] })
-            setChallenges((chls || []).filter(c => !lockedCodingIds.includes(c.id)))
+            setChallenges((chls || []).filter(c => !lockedCodingIds.includes(c.id) && !(c.open_time && new Date(c.open_time) > now)))
             setCourseResources((resData || []).filter(r => !lockedMaterialIds.includes(r.id)))
 
             const grouped = { daily: [], weekly: [], final: [] }
                 ; (assessData || [])
-                    .filter(a => !lockedAssessIds.includes(a.id))
+                    .filter(a => !lockedAssessIds.includes(a.id) && !(a.open_time && new Date(a.open_time) > now))
                     .forEach(a => { if (grouped[a.type]) grouped[a.type].push(a) })
             setAssessments(grouped)
 
