@@ -13,6 +13,7 @@
 // ============================================================
 
 import { useState } from 'react'
+import PropTypes from 'prop-types'
 import { Lock, ChevronDown, ChevronRight, Trophy, BookOpen } from 'lucide-react'
 import { getDayShort } from '../../constants/xpRewards'
 
@@ -436,4 +437,46 @@ export default function JourneyMap({
       })}
     </div>
   )
+}
+DayNodeIcon.propTypes = {
+  weekLocked: PropTypes.bool,
+  status: PropTypes.string,
+  colors: PropTypes.object,
+  totalModules: PropTypes.number,
+  completedModules: PropTypes.number
+}
+
+DayNode.propTypes = {
+  day: PropTypes.object,
+  status: PropTypes.string,
+  isSelected: PropTypes.bool,
+  onClick: PropTypes.func,
+  weekLocked: PropTypes.bool,
+  dateStr: PropTypes.string
+}
+
+JourneyWeekCard.propTypes = {
+  week: PropTypes.object,
+  locked: PropTypes.bool,
+  expanded: PropTypes.bool,
+  progress: PropTypes.number,
+  grade: PropTypes.string,
+  isCurrentWeek: PropTypes.bool,
+  toggleWeek: PropTypes.func,
+  todayDow: PropTypes.number,
+  selectedDay: PropTypes.object,
+  getScheduleDate: PropTypes.func,
+  onDaySelect: PropTypes.func
+}
+
+JourneyMap.propTypes = {
+  weeks: PropTypes.array,
+  weekProgress: PropTypes.object,
+  isWeekLocked: PropTypes.func,
+  getWeekGrade: PropTypes.func,
+  getScheduleDate: PropTypes.func,
+  currentWeek: PropTypes.number,
+  selectedDay: PropTypes.object,
+  onDaySelect: PropTypes.func,
+  onWeekToggle: PropTypes.func
 }
