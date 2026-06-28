@@ -500,10 +500,10 @@ export default function OrganizerAnalytics() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', fontSize: '0.85rem' }}>
-                  <th style={{ padding: '0.75rem 0' }}>Course</th>
-                  <th style={{ padding: '0.75rem 0' }}>Avg Score</th>
-                  <th style={{ padding: '0.75rem 0' }}>Completion</th>
-                  <th style={{ padding: '0.75rem 0' }}>Attendance</th>
+                  <th style={{ padding: '0.85rem 0' }}>Course</th>
+                  <th style={{ padding: '0.85rem 0' }}>Avg Score</th>
+                  <th style={{ padding: '0.85rem 0' }}>Completion</th>
+                  <th style={{ padding: '0.85rem 0' }}>Attendance</th>
                 </tr>
               </thead>
               <tbody>
@@ -528,7 +528,7 @@ export default function OrganizerAnalytics() {
           <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             🚨 Students Requiring Attention
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', flex: 1 }}>
             {atRiskStudents.length === 0 ? (
               <div style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                 <ShieldAlert size={32} color="#22c55e" />
@@ -543,7 +543,7 @@ export default function OrganizerAnalytics() {
                   <button 
                     key={v.session_id || i} 
                     onClick={() => navigate(`/organizer/proctoring`)}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.2s', width: '100%' }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.2s', width: '100%' }}
                     onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                     onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                     onFocus={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
@@ -557,7 +557,7 @@ export default function OrganizerAnalytics() {
                         <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>
                           {studentName}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
+                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 500 }}>
                           {v.course_title?.substring(0, 20)}
                         </div>
                       </div>

@@ -163,7 +163,7 @@ export default function Notifications() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                 <div style={{ gridColumn: '1 / -1' }}>
                     <div style={{ background: 'white', borderRadius: 16, border: '1px solid var(--sidebar-border)', overflow: 'hidden' }}>
-                        <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                             <History size={20} color="var(--text-secondary)" />
                             <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Broadcasting History</h2>
                         </div>
@@ -192,7 +192,7 @@ export default function Notifications() {
                                             return (
                                                 <tr key={n.id} style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
                                                     <td style={{ padding: '1rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
                                                             <div style={{ marginTop: '0.2rem' }}>{getTypeIcon(n.type)}</div>
                                                             <div>
                                                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
@@ -202,7 +202,7 @@ export default function Notifications() {
                                                     </td>
                                                     <td style={{ padding: '1rem' }}>
                                                         <span style={{ 
-                                                            fontSize: '0.75rem', 
+                                                            fontSize: '0.85rem', 
                                                             fontWeight: 600, 
                                                             padding: '0.25rem 0.6rem', 
                                                             borderRadius: 20, 
@@ -244,7 +244,7 @@ export default function Notifications() {
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
                     <div className="animate-scale-in" style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: '500px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
                         <div style={{ padding: '1.5rem', background: 'var(--accent)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                                 <Send size={24} />
                                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Send New Broadcast</h2>
                             </div>

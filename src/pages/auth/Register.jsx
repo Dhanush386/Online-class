@@ -83,7 +83,7 @@ export default function Register() {
                 }}
             >
                 {/* Logo */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                     <div style={{
                         width: 42, height: 42, borderRadius: 12,
                         background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
@@ -94,7 +94,7 @@ export default function Register() {
                     </div>
                     <div>
                         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>Learnova</div>
-                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--secondary-500)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Learning Platform</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary-500)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Learning Platform</div>
                     </div>
                 </div>
 
@@ -131,7 +131,7 @@ export default function Register() {
                             { emoji: '💻', text: 'Built-in code editor with 10+ languages' },
                             { emoji: '🤖', text: 'AI-powered study assistant (Learnova AI)' },
                         ].map(({ emoji, text }) => (
-                            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                                 <span style={{ fontSize: '1.2rem' }}>{emoji}</span>
                                 <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{text}</span>
                             </div>
@@ -188,7 +188,7 @@ export default function Register() {
                                 initial={{ opacity: 0, y: -8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0 }}
-                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.85rem', color: '#dc2626' }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '0.85rem 1rem', marginBottom: '1.25rem', fontSize: '0.85rem', color: '#dc2626' }}
                             >
                                 <AlertCircle size={16} />{error}
                             </motion.div>
@@ -198,7 +198,7 @@ export default function Register() {
                     {/* Role Selector */}
                     <div style={{ marginBottom: '1.25rem' }}>
                         <div className="form-label">I am a...</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: isInvited ? '1fr 1fr' : '1fr', gap: '0.75rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isInvited ? '1fr 1fr' : '1fr', gap: '0.85rem' }}>
                             {[
                                 { value: 'student', label: 'Student', icon: BookOpen, color: '#10b981', show: true },
                                 {
@@ -239,7 +239,7 @@ export default function Register() {
                             })}
                         </div>
                         {isInvited && !['student'].includes(form.role) && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.75rem', justifyContent: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.85rem', justifyContent: 'center' }}>
                                 <Sparkles size={14} color="#6366f1" />
                                 <span style={{ fontSize: '0.78rem', color: '#6366f1', fontWeight: 600 }}>
                                     You're invited as {form.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}!

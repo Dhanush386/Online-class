@@ -187,14 +187,14 @@ export default function ScheduleManager() {
                                             <button 
                                                 onClick={() => navigate(`/organizer/classroom/${v.id}`)} 
                                                 className={`btn-primary ${isLive(v.scheduled_time, v.duration_minutes) ? 'btn-live-pulse' : ''}`}
-                                                style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', background: isLive(v.scheduled_time, v.duration_minutes) ? '#ef4444' : '#6366f1' }}
+                                                style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem', background: isLive(v.scheduled_time, v.duration_minutes) ? '#ef4444' : '#6366f1' }}
                                             >
                                                 <Video size={13} /> Launch Classroom
                                             </button>
-                                            <button onClick={() => handleViewAttendance(v)} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}>
+                                            <button onClick={() => handleViewAttendance(v)} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
                                                 <Users size={13} /> Attendance
                                             </button>
-                                            <button onClick={() => setEditVideo({ ...v })} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}>
+                                            <button onClick={() => setEditVideo({ ...v })} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
                                                 <Edit2 size={13} /> Edit
                                             </button>
                                             <button onClick={() => handleDelete(v.id)} className="btn-danger">
@@ -266,7 +266,7 @@ export default function ScheduleManager() {
                                     </select>
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                                 <button onClick={() => setEditVideo(null)} className="btn-secondary">Cancel</button>
                                 <button onClick={handleSave} className="btn-primary" disabled={saving}>
                                     {saving ? 'Saving...' : <><Save size={16} /> Save Changes</>}
@@ -299,25 +299,25 @@ export default function ScheduleManager() {
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
                                         <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}>
                                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{totalEnrolled}</div>
-                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Students</div>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Students</div>
                                         </div>
                                         <div style={{ background: '#ecfdf5', padding: '1.25rem', borderRadius: 12, border: '1px solid #a7f3d0', textAlign: 'center' }}>
                                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#059669' }}>
                                                 {attendanceData.filter(d => d.attendance_status === 'present').length}
                                             </div>
-                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981', textTransform: 'uppercase' }}>Present</div>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981', textTransform: 'uppercase' }}>Present</div>
                                         </div>
                                         <div style={{ background: '#fef2f2', padding: '1.25rem', borderRadius: 12, border: '1px solid #fecaca', textAlign: 'center' }}>
                                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#dc2626' }}>
                                                 {Math.max(0, totalEnrolled - attendanceData.filter(d => d.attendance_status === 'present').length)}
                                             </div>
-                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', textTransform: 'uppercase' }}>Absent</div>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#ef4444', textTransform: 'uppercase' }}>Absent</div>
                                         </div>
                                         <div style={{ background: '#eff6ff', padding: '1.25rem', borderRadius: 12, border: '1px solid #bfdbfe', textAlign: 'center' }}>
                                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#2563eb' }}>
                                                 {totalEnrolled > 0 ? Math.round((attendanceData.filter(d => d.attendance_status === 'present').length / totalEnrolled) * 100) : 0}%
                                             </div>
-                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#3b82f6', textTransform: 'uppercase' }}>Attendance Rate</div>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#3b82f6', textTransform: 'uppercase' }}>Attendance Rate</div>
                                         </div>
                                     </div>
 
@@ -334,37 +334,37 @@ export default function ScheduleManager() {
                                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                                                     <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                                         <tr>
-                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Student</th>
-                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Joined</th>
-                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Left</th>
-                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Duration</th>
-                                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Status</th>
+                                                            <th style={{ padding: '0.85rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Student</th>
+                                                            <th style={{ padding: '0.85rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Joined</th>
+                                                            <th style={{ padding: '0.85rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Left</th>
+                                                            <th style={{ padding: '0.85rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Duration</th>
+                                                            <th style={{ padding: '0.85rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Status</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {attendanceData.map((record, idx) => (
                                                             <tr key={idx} style={{ borderBottom: idx === attendanceData.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
-                                                                <td style={{ padding: '0.75rem 1rem' }}>
+                                                                <td style={{ padding: '0.85rem 1rem' }}>
                                                                     <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{record.users?.name || 'Unknown'}</div>
-                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{record.users?.email}</div>
+                                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{record.users?.email}</div>
                                                                 </td>
-                                                                <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>
+                                                                <td style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>
                                                                     {formatTime(record.joined_at).split('•')[1] || '—'}
                                                                 </td>
-                                                                <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>
+                                                                <td style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>
                                                                     {record.left_at ? formatTime(record.left_at).split('•')[1] : '—'}
                                                                 </td>
-                                                                <td style={{ padding: '0.75rem 1rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                                                                <td style={{ padding: '0.85rem 1rem', fontWeight: 500, color: 'var(--text-primary)' }}>
                                                                     {record.duration_seconds > 0 ? `${Math.floor(record.duration_seconds / 60)} min` : '< 1 min'}
                                                                 </td>
-                                                                <td style={{ padding: '0.75rem 1rem' }}>
+                                                                <td style={{ padding: '0.85rem 1rem' }}>
                                                                     <select 
                                                                         value={record.attendance_status}
                                                                         onChange={(e) => handleUpdateStatus(record, e.target.value)}
                                                                         style={{ 
                                                                             padding: '0.2rem 0.5rem', 
                                                                             borderRadius: 6, 
-                                                                            fontSize: '0.75rem', 
+                                                                            fontSize: '0.85rem', 
                                                                             fontWeight: 600, 
                                                                             border: '1px solid #e2e8f0', 
                                                                             background: record.attendance_status === 'present' ? '#ecfdf5' : record.attendance_status === 'absent' ? '#fef2f2' : '#f8fafc', 

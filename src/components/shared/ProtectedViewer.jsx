@@ -70,16 +70,16 @@ export default function ProtectedViewer({ url, type, title, onClose }) {
                     </div>
                     <div>
                         <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{title}</h3>
-                        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '2px 0 0' }}>Protected Mode Active • Learnova Viewer</p>
+                        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', margin: '2px 0 0' }}>Protected Mode Active • Learnova Viewer</p>
                     </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }} title="Download Disabled">
+                    <div style={{ display: 'flex', gap: '0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }} title="Download Disabled">
                             <Download size={14} /> Disabled
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }} title="Print Disabled">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }} title="Print Disabled">
                             <Printer size={14} /> Disabled
                         </div>
                     </div>
@@ -147,7 +147,7 @@ export default function ProtectedViewer({ url, type, title, onClose }) {
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.75rem',
+                    gap: '0.85rem',
                     pointerEvents: 'none'
                 }}>
                     <ShieldAlert size={14} color="#f87171" />

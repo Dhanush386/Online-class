@@ -158,7 +158,7 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
                     <div key={record.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', padding: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <p style={{ margin: 0, color: 'white', fontSize: '0.9rem', fontWeight: 500 }}>{record.users?.name || 'Unknown'}</p>
-                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem' }}>{Math.round(record.duration_seconds / 60)} mins</p>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>{Math.round(record.duration_seconds / 60)} mins</p>
                         </div>
                         <div>
                             <select 
@@ -170,7 +170,7 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
                                     color: getStatusColor(record.attendance_status), 
                                     border: 'none',
                                     borderRadius: '12px', 
-                                    fontSize: '0.75rem',
+                                    fontSize: '0.85rem',
                                     cursor: 'pointer',
                                     outline: 'none',
                                     WebkitAppearance: 'none',

@@ -207,7 +207,7 @@ export default function WeeklyCompletionModal({
                 <Star size={20} color="#6366f1" />
               </div>
               <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#6366f1' }}>+{xpEarned}</span>
-              <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600 }}>XP</span>
+              <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>XP</span>
             </div>
 
             {/* Coins */}
@@ -229,7 +229,7 @@ export default function WeeklyCompletionModal({
                 <span style={{ fontSize: '1.25rem' }}>🪙</span>
               </div>
               <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f59e0b' }}>+{coinsEarned}</span>
-              <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600 }}>Coins</span>
+              <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>Coins</span>
             </div>
           </div>
 

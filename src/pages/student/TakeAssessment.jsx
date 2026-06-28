@@ -707,7 +707,7 @@ export default function TakeAssessment() {
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                             <button onClick={() => navigate(`/student/assessments/${assessmentId}/review`)} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                                 View Detailed Results
                             </button>
@@ -751,7 +751,7 @@ export default function TakeAssessment() {
                             </button>
                         ) : (
                             <div style={{ marginBottom: '1rem' }}>
-                                <div style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', padding: '0.75rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                <div style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', padding: '0.85rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                                     <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
                                 </div>
                                 <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem' }}>
@@ -875,14 +875,14 @@ export default function TakeAssessment() {
 
                     {currentQ?.question_type === 'code_mcq' && currentQ?.code_snippet && (
                         <div style={{ marginBottom: '2rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
-                            <div style={{ background: '#1e293b', padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
+                            <div style={{ background: '#1e293b', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <CodeIcon size={16} color="#94a3b8" />
                                     <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0' }}>
                                         {currentQ.snippet_title || 'Code Snippet'}
                                     </span>
                                 </div>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     {currentQ.code_language}
                                 </span>
                             </div>
@@ -932,7 +932,7 @@ export default function TakeAssessment() {
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         background: isSelected ? '#6366f1' : 'transparent',
                                         color: 'white',
-                                        fontSize: '0.75rem',
+                                        fontSize: '0.85rem',
                                         flexShrink: 0
                                     }}>
                                         {isSelected ? <CheckCircle2 size={14} /> : String.fromCodePoint(65 + i)}
@@ -961,12 +961,12 @@ export default function TakeAssessment() {
                                 onClick={handleSubmit}
                                 disabled={submitting || (timeLeft !== null && timeLeft > 60) || !isAnswered}
                                 className="btn-primary"
-                                style={{ gap: '0.5rem', padding: '0.75rem 2rem' }}
+                                style={{ gap: '0.5rem', padding: '0.85rem 2rem' }}
                             >
                                 {submitting ? 'Submitting...' : <><Send size={18} /> Submit Assessment</>}
                             </button>
                             {timeLeft !== null && timeLeft > 60 && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', fontSize: '0.75rem', fontWeight: 600 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600 }}>
                                     <Clock size={12} className="animate-pulse" />
                                     <span>Enabled in {formatTime(timeLeft - 60)}</span>
                                 </div>

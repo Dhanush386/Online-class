@@ -140,7 +140,7 @@ export default function StudentSchedule() {
                 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                     <button style={{ 
-                        display: 'flex', alignItems: 'center', gap: '0.75rem', 
+                        display: 'flex', alignItems: 'center', gap: '0.85rem', 
                         background: 'white', border: '1px solid #e2e8f0', 
                         borderRadius: '999px', padding: '0.5rem 1rem', 
                         boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
@@ -152,7 +152,7 @@ export default function StudentSchedule() {
                         <span style={{ fontWeight: 600, color: '#334155', fontSize: '0.95rem' }}>Week - {expandedWeek}</span>
                         <ChevronDown size={16} color="#64748b" />
                     </button>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem', marginRight: '0.5rem', fontWeight: 500 }}>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '0.5rem', marginRight: '0.5rem', fontWeight: 500 }}>
                         3rd Nov - 9th Nov
                     </span>
                 </div>
@@ -176,7 +176,7 @@ export default function StudentSchedule() {
                 
                 {/* Header Content */}
                 <div style={{ position: 'relative', zIndex: 1, padding: '2.5rem 3rem', color: '#1e293b' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: '#475569', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em', color: '#475569', marginBottom: '0.85rem', textTransform: 'uppercase' }}>
                         BACKEND DEVELOPER
                     </div>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 500, margin: 0, color: '#0f172a' }}>

@@ -45,9 +45,9 @@
   --card-border:    rgba(255, 255, 255, 0.07);
 
   /* ── Text Hierarchy ── */
-  --text-primary:   #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted:     #64748b;
+  --text-primary:   #ffffff;     /* Increased from #f1f5f9 */
+  --text-secondary: #cbd5e1;     /* Increased from #94a3b8 */
+  --text-muted:     #94a3b8;     /* Increased from #64748b */
   --text-inverse:   #ffffff;
 
   /* ── Accent helpers (kept for legacy compat) ── */

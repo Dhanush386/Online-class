@@ -199,14 +199,14 @@ export default function RenewAccess() {
                 ) : (
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         {/* ... existing form content ... */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                             <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>Step 1: Pay via UPI</label>
                             <div style={{ 
                                 display: 'flex', 
                                 alignItems: 'center', 
-                                gap: '0.75rem', 
+                                gap: '0.85rem', 
                                 background: 'rgba(255,255,255,0.05)', 
-                                padding: '0.75rem 1rem', 
+                                padding: '0.85rem 1rem', 
                                 borderRadius: '12px',
                                 border: '1px solid rgba(255,255,255,0.1)'
                             }}>
@@ -226,10 +226,10 @@ export default function RenewAccess() {
                                     {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
                                 </button>
                             </div>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Scan QR or pay to the above UPI ID using GPay, PhonePe, or Paytm.</p>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Scan QR or pay to the above UPI ID using GPay, PhonePe, or Paytm.</p>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                             <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>Step 2: Enter Transaction ID (UTR)</label>
                             <input 
                                 value={transactionId}
@@ -256,7 +256,7 @@ export default function RenewAccess() {
                                 color: '#ef4444', 
                                 fontSize: '0.85rem',
                                 background: 'rgba(239,68,68,0.1)',
-                                padding: '0.75rem',
+                                padding: '0.85rem',
                                 borderRadius: '8px'
                             }}>
                                 <AlertCircle size={16} />
@@ -272,7 +272,7 @@ export default function RenewAccess() {
                                 width: '100%', 
                                 padding: '1rem', 
                                 fontSize: '1rem', 
-                                gap: '0.75rem',
+                                gap: '0.85rem',
                                 background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                                 boxShadow: '0 10px 20px rgba(99,102,241,0.2)'
                             }}
@@ -317,13 +317,13 @@ export default function RenewAccess() {
                     flexDirection: 'column',
                     gap: '1rem'
                 }}>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'flex-start' }}>
                         <Zap size={16} color="#f59e0b" style={{ marginTop: 2, flexShrink: 0 }} />
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                             <strong>Instant Access:</strong> Your account will be activated immediately after you submit the transaction ID.
                         </p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'flex-start' }}>
                         <ShieldCheck size={16} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} />
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                             <strong>Secured:</strong> All transactions are audited. Incorrect transaction IDs may lead to permanent account suspension.

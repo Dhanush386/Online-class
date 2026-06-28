@@ -162,7 +162,7 @@ export default function AIStudyAssistant() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <Sparkles size={28} color="#7c3aed" /> AI Learning Coach
           </h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Personalized intelligence to accelerate your growth.</p>
@@ -195,7 +195,7 @@ export default function AIStudyAssistant() {
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Activity size={18} color={getHealthColor(health_score)} /> Score Breakdown
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {[
                 { label: 'Attendance', val: attendance },
                 { label: 'Assessments', val: assessments },
@@ -219,7 +219,7 @@ export default function AIStudyAssistant() {
         {/* AI Risk Alert */}
         {attendance < 75 && (
           <div className="glass-card" style={{ padding: '1.5rem', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1rem' }}>
               <div style={{ padding: '0.5rem', background: '#ef4444', borderRadius: '10px', color: 'white' }}>
                 <AlertTriangle size={20} />
               </div>
@@ -232,12 +232,12 @@ export default function AIStudyAssistant() {
             
             <div style={{ display: 'flex', gap: '1.5rem' }}>
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#991b1b', opacity: 0.8, fontWeight: 600, textTransform: 'uppercase' }}>Current</div>
+                <div style={{ fontSize: '0.85rem', color: '#991b1b', opacity: 0.8, fontWeight: 600, textTransform: 'uppercase' }}>Current</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ef4444' }}>{attendance}%</div>
               </div>
               <div style={{ width: 1, background: 'rgba(239,68,68,0.2)' }} />
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#991b1b', opacity: 0.8, fontWeight: 600, textTransform: 'uppercase' }}>Action Required</div>
+                <div style={{ fontSize: '0.85rem', color: '#991b1b', opacity: 0.8, fontWeight: 600, textTransform: 'uppercase' }}>Action Required</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#b91c1c', marginTop: '0.2rem' }}>Attend 4 more classes</div>
               </div>
             </div>
@@ -253,11 +253,11 @@ export default function AIStudyAssistant() {
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
             <Target size={18} /> Focus Areas (Weaknesses)
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {weak_topics?.length > 0 ? weak_topics.map((item, i) => (
-              <div key={i} style={{ padding: '0.75rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
+              <div key={i} style={{ padding: '0.85rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{item.topic}</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: '12px' }}>
                   {item.confidence}% Match
                 </span>
               </div>
@@ -270,11 +270,11 @@ export default function AIStudyAssistant() {
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981' }}>
             <Zap size={18} /> Strengths
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {strong_topics?.length > 0 ? strong_topics.map((item, i) => (
-              <div key={i} style={{ padding: '0.75rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+              <div key={i} style={{ padding: '0.85rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{item.topic}</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '12px' }}>
                   {item.confidence}% Match
                 </span>
               </div>
@@ -308,7 +308,7 @@ export default function AIStudyAssistant() {
               border: '1px solid var(--sidebar-border)',
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '0.75rem',
+              gap: '0.85rem',
               cursor: 'pointer',
               transition: 'all 0.2s'
             }}

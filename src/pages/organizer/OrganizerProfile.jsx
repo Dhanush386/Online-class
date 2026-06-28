@@ -177,7 +177,7 @@ export default function OrganizerProfile() {
                     position: 'fixed', top: '2rem', right: '2rem', zIndex: 2000,
                     padding: '1rem 1.5rem', borderRadius: 12,
                     background: toast.type === 'success' ? '#10b981' : '#ef4444',
-                    color: 'white', display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    color: 'white', display: 'flex', alignItems: 'center', gap: '0.85rem',
                     boxShadow: '0 10px 25px rgba(0,0,0,0.15)', animation: 'slideIn 0.3s ease-out'
                 }}>
                     {toast.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
@@ -219,7 +219,7 @@ export default function OrganizerProfile() {
                         </div>
                     </div>
                     <div style={{ position: 'absolute', top: '1rem', right: '1.5rem' }}>
-                        <span style={{ padding: '0.3rem 0.75rem', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ padding: '0.3rem 0.85rem', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             <Shield size={12} /> {profile?.role?.replace('_', ' ').toUpperCase()}
                         </span>
                     </div>
@@ -249,11 +249,11 @@ export default function OrganizerProfile() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                 {statCards.map(s => (
                     <div key={s.label} className="glass-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: `${s.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: `${s.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.85rem' }}>
                             <s.icon size={20} color={s.color} />
                         </div>
                         <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{s.value}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{s.label}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>{s.label}</div>
                     </div>
                 ))}
             </div>
@@ -274,7 +274,7 @@ export default function OrganizerProfile() {
                         <div>
                             <label className="form-label">Email</label>
                             <input value={formData.email} disabled className="form-input" style={{ background: '#f8fafc', color: 'var(--text-muted)' }} />
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#10b981', fontSize: '0.75rem', marginTop: '0.4rem', fontWeight: 600 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#10b981', fontSize: '0.85rem', marginTop: '0.4rem', fontWeight: 600 }}>
                                 <CheckCircle2 size={12} /> Verified
                             </div>
                         </div>

@@ -113,7 +113,7 @@ export default function OrganizerCodingDiscussions() {
                                 </div>
                             </div>
                             {activeThread.status !== 'resolved' && (
-                                <button onClick={() => handleMarkResolved(activeThread.id)} className="btn-secondary" style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <button onClick={() => handleMarkResolved(activeThread.id)} className="btn-secondary" style={{ fontSize: '0.85rem', padding: '0.4rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                     <CheckCircle2 size={14} /> Mark Resolved
                                 </button>
                             )}
@@ -123,7 +123,7 @@ export default function OrganizerCodingDiscussions() {
                         
                         {activeThread.code_snapshot && (
                             <div style={{ marginTop: '1.5rem', borderRadius: 8, overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                                <div style={{ padding: '0.5rem 1rem', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}><CodeIcon size={14} /> Attached Code Snapshot</div>
+                                <div style={{ padding: '0.5rem 1rem', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1', fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}><CodeIcon size={14} /> Attached Code Snapshot</div>
                                 <pre style={{ margin: 0, padding: '1rem', background: '#f1f5f9', color: 'var(--text-primary)', fontSize: '0.85rem', overflowX: 'auto', border: 'none' }}>{activeThread.code_snapshot}</pre>
                             </div>
                         )}
@@ -137,10 +137,10 @@ export default function OrganizerCodingDiscussions() {
                         ) : (
                             replies.map(reply => (
                                 <div key={reply.id} style={{ padding: '1.25rem', borderRadius: 12, background: reply.is_organizer ? '#eff6ff' : '#fff', border: `1px solid ${reply.is_organizer ? '#bfdbfe' : '#e2e8f0'}` }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.85rem' }}>
                                         <span style={{ fontSize: '0.9rem', fontWeight: 700, color: reply.is_organizer ? '#1d4ed8' : 'var(--card-border)' }}>{reply.users?.name || 'User'}</span>
-                                        {reply.is_organizer && <span style={{ padding: '2px 8px', background: '#3b82f6', color: '#fff', fontSize: '0.65rem', borderRadius: 6, fontWeight: 800 }}>ORGANIZER</span>}
-                                        <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(reply.created_at).toLocaleString()}</span>
+                                        {reply.is_organizer && <span style={{ padding: '2px 8px', background: '#3b82f6', color: '#fff', fontSize: '0.85rem', borderRadius: 6, fontWeight: 800 }}>ORGANIZER</span>}
+                                        <span style={{ marginLeft: 'auto', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(reply.created_at).toLocaleString()}</span>
                                     </div>
                                     <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{reply.content}</p>
                                 </div>
@@ -150,7 +150,7 @@ export default function OrganizerCodingDiscussions() {
                 </div>
 
                 {/* Reply Form */}
-                <form onSubmit={handlePostReply} style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+                <form onSubmit={handlePostReply} style={{ display: 'flex', gap: '0.85rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
                     <input value={replyContent} onChange={e => setReplyContent(e.target.value)} placeholder="Type your authoritative reply..." style={{ flex: 1, padding: '1rem', borderRadius: 10, border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }} />
                     <button type="submit" disabled={!replyContent.trim()} className="btn-primary" style={{ padding: '0 1.5rem', opacity: replyContent.trim() ? 1 : 0.5 }}>
                         <Send size={18} /> Reply
@@ -198,7 +198,7 @@ export default function OrganizerCodingDiscussions() {
                                 <span style={{ padding: '4px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', fontSize: '0.7rem', borderRadius: 6, fontWeight: 700, whiteSpace: 'nowrap' }}>Open</span>
                             )}
                         </div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{d.coding_challenges?.title}</span>
                             <span>•</span>
                             <span>{d.users?.name}</span>
@@ -222,7 +222,7 @@ export default function OrganizerCodingDiscussions() {
                     <input
                         type="text"
                         placeholder="Search discussions by title, challenge, or student..."
-                        style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: 10, border: '1px solid var(--card-border)', background: 'white', fontSize: '0.9rem' }}
+                        style={{ width: '100%', padding: '0.85rem 1rem 0.85rem 2.8rem', borderRadius: 10, border: '1px solid var(--card-border)', background: 'white', fontSize: '0.9rem' }}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                     />

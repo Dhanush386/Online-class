@@ -96,13 +96,13 @@ export default function Leaderboard() {
     return (
         <div className="animate-fade-in" style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '3rem' }}>
             <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 1.25rem', background: 'rgba(99,102,241,0.1)', borderRadius: '100px', color: 'var(--accent)', marginBottom: '1rem', border: '1px solid rgba(99,102,241,0.2)', position: 'relative' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.85rem', padding: '0.5rem 1.25rem', background: 'rgba(99,102,241,0.1)', borderRadius: '100px', color: 'var(--accent)', marginBottom: '1rem', border: '1px solid rgba(99,102,241,0.2)', position: 'relative' }}>
                     <div style={{ width: 8, height: 8, background: '#10b981', borderRadius: '50%', position: 'relative' }}>
                         <div className="pulse-dot" style={{ position: 'absolute', inset: 0, background: '#10b981', borderRadius: '50%', opacity: 0.6 }}></div>
                     </div>
                     <span style={{ fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em' }}>LIVE RANKINGS</span>
                 </div>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>League of <span className="gradient-text">Champions</span></h1>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>League of <span className="gradient-text">Champions</span></h1>
                 <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', margin: '0 auto' }}>Watch the board update in real-time as champions rise. Every point counts!</p>
                 <style>{`
                     @keyframes pulse {
@@ -120,14 +120,14 @@ export default function Leaderboard() {
                             <Trophy size={24} color="var(--accent)" />
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Your Current Standing</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Your Current Standing</div>
                             <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                                 Rank #{leaderboard.findIndex(s => s.id === profile.id) + 1} <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Global</span>
                             </div>
                         </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Experience</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Experience</div>
                         <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent)' }}>{(leaderboard.find(s => s.id === profile.id)?.xp || 0).toLocaleString()} XP</div>
                     </div>
                 </div>
@@ -147,7 +147,7 @@ export default function Leaderboard() {
                                         {topThree[1]?.avatar_url ? <img src={topThree[1].avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={45} style={{ margin: '15px auto', color: 'var(--text-muted)' }} />}
                                     </div>
                                 </div>
-                                <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--text-muted)', color: 'white', padding: '2px 12px', borderRadius: 10, fontSize: '0.75rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>#2</div>
+                                <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--text-muted)', color: 'white', padding: '2px 12px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>#2</div>
                                 <Medal size={24} color="var(--text-muted)" style={{ position: 'absolute', top: -15, right: -10 }} />
                             </div>
                             <div style={{ textAlign: 'center' }}>
@@ -181,7 +181,7 @@ export default function Leaderboard() {
                                         {topThree[2]?.avatar_url ? <img src={topThree[2].avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={45} style={{ margin: '15px auto', color: '#b45309' }} />}
                                     </div>
                                 </div>
-                                <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', background: '#b45309', color: 'white', padding: '2px 12px', borderRadius: 10, fontSize: '0.75rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>#3</div>
+                                <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', background: '#b45309', color: 'white', padding: '2px 12px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>#3</div>
                                 <Award size={24} color="#b45309" style={{ position: 'absolute', top: -15, left: -10 }} />
                             </div>
                             <div style={{ textAlign: 'center' }}>
@@ -198,7 +198,7 @@ export default function Leaderboard() {
                     {/* Search & List */}
                     <div className="glass-card" style={{ padding: '0', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}>
                         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative', flex: 1, maxWidth: '400px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', position: 'relative', flex: 1, maxWidth: '400px' }}>
                                 <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '1rem' }} />
                                 <input 
                                     type="text"
@@ -207,7 +207,7 @@ export default function Leaderboard() {
                                     onChange={e => setSearch(e.target.value)}
                                     style={{ 
                                         width: '100%', 
-                                        padding: '0.75rem 1rem 0.75rem 2.75rem', 
+                                        padding: '0.85rem 1rem 0.85rem 2.75rem', 
                                         borderRadius: 12, 
                                         border: '1px solid var(--sidebar-border)', 
                                         background: 'rgba(0, 0, 0, 0.25)', 
@@ -227,10 +227,10 @@ export default function Leaderboard() {
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.03)' }}>
-                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rank</th>
-                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Champion</th>
-                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>League Tier</th>
-                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Total XP</th>
+                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rank</th>
+                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Champion</th>
+                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>League Tier</th>
+                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Total XP</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -256,7 +256,7 @@ export default function Leaderboard() {
                                                     </div>
                                                 </td>
                                                 <td style={{ padding: '1rem 1.5rem' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                                                         <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-base)' }}>
                                                             {s.avatar_url ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={20} style={{ margin: '8px auto', color: 'var(--text-muted)' }} />}
                                                         </div>
@@ -272,11 +272,11 @@ export default function Leaderboard() {
                                                         display: 'inline-flex', 
                                                         alignItems: 'center', 
                                                         gap: '0.4rem', 
-                                                        padding: '0.25rem 0.75rem', 
+                                                        padding: '0.25rem 0.85rem', 
                                                         borderRadius: 100, 
                                                         background: s.bg, 
                                                         color: s.color,
-                                                        fontSize: '0.75rem',
+                                                        fontSize: '0.85rem',
                                                         fontWeight: 700,
                                                         textTransform: 'uppercase'
                                                     }}>

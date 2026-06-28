@@ -181,7 +181,7 @@ export default function SemesterTimeline({
 
       {/* Footer stats */}
       <div style={{
-        marginTop: '0.75rem',
+        marginTop: '0.85rem',
         paddingTop: '0.6rem',
         borderTop: '1px solid var(--card-border)',
         display: 'flex',

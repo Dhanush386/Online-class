@@ -160,7 +160,7 @@ export default function Assessments() {
                                 {a.description && <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1rem' }}>{a.description}</p>}
 
                                 {/* Meta */}
-                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
                                     {a.courses?.title && (
                                         <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                                             <ClipboardList size={11} /> {a.courses.title}
@@ -175,7 +175,7 @@ export default function Assessments() {
 
                                 {/* Attempt counter */}
                                 <div style={{ marginBottom: '1.25rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
                                         <span>Attempts used</span>
                                         <span style={{ fontWeight: 700, color: isExhausted ? '#dc2626' : color }}>{attemptCount} / {MAX_ATTEMPTS}</span>
                                     </div>
@@ -183,7 +183,7 @@ export default function Assessments() {
                                         <div style={{ width: `${(attemptCount / MAX_ATTEMPTS) * 100}%`, height: '100%', background: isExhausted ? '#ef4444' : color, transition: 'width 0.3s' }} />
                                     </div>
                                     {isExhausted && bestScore !== null && (
-                                        <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.4rem' }}>Best score: {bestScore} correct</p>
+                                        <p style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, marginTop: '0.4rem' }}>Best score: {bestScore} correct</p>
                                     )}
                                 </div>
 

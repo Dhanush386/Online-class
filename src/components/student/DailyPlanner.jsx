@@ -52,7 +52,7 @@ export default function DailyPlanner({
           <Clock size={16} color="#3b82f6" />
           <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Today's Plan</h4>
         </div>
-        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500 }}>{dateStr}</span>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>{dateStr}</span>
       </div>
 
       {/* Daily Goal Progress */}
@@ -61,13 +61,13 @@ export default function DailyPlanner({
           display: 'flex',
           alignItems: 'center',
           gap: '0.6rem',
-          padding: '0.6rem 0.75rem',
+          padding: '0.6rem 0.85rem',
           borderRadius: 10,
           background: dailyGoal.is_completed
             ? 'rgba(16,185,129,0.06)'
             : 'rgba(59,130,246,0.04)',
           border: `1px solid ${dailyGoal.is_completed ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.1)'}`,
-          marginBottom: '0.75rem',
+          marginBottom: '0.85rem',
         }}>
           <Target size={14} color={dailyGoal.is_completed ? '#10b981' : '#3b82f6'} />
           <span style={{
@@ -133,9 +133,9 @@ export default function DailyPlanner({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.65rem',
+                    gap: '0.85rem',
                     paddingLeft: '2rem',
-                    padding: '0.5rem 0.65rem 0.5rem 2.25rem',
+                    padding: '0.5rem 0.85rem 0.5rem 2.25rem',
                     borderRadius: 10,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
@@ -228,7 +228,7 @@ export default function DailyPlanner({
       {/* Footer summary */}
       {totalCount > 0 && (
         <div style={{
-          marginTop: '0.75rem',
+          marginTop: '0.85rem',
           paddingTop: '0.6rem',
           borderTop: '1px solid var(--card-border)',
           display: 'flex',

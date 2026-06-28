@@ -258,10 +258,10 @@ export default function Achievements() {
                     Unlock exclusive 3D badges by completing courses, solving challenges, and climbing the leaderboard.
                 </p>
 
-                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem' }}>
+                <div style={{ display: 'flex', gap: '0.85rem', marginTop: '2rem' }}>
                     <button 
                         onClick={() => setFilter('all')}
-                        style={{ padding: '0.75rem 1.5rem', borderRadius: 100, fontWeight: 700, fontSize: '0.9rem', transition: 'all 0.2s', border: '1px solid',
+                        style={{ padding: '0.85rem 1.5rem', borderRadius: 100, fontWeight: 700, fontSize: '0.9rem', transition: 'all 0.2s', border: '1px solid',
                             background: filter === 'all' ? 'var(--accent)' : 'transparent',
                             color: filter === 'all' ? 'white' : 'var(--text-secondary)',
                             borderColor: filter === 'all' ? 'var(--accent)' : '#e2e8f0'
@@ -271,7 +271,7 @@ export default function Achievements() {
                     </button>
                     <button 
                         onClick={() => setFilter('unlocked')}
-                        style={{ padding: '0.75rem 1.5rem', borderRadius: 100, fontWeight: 700, fontSize: '0.9rem', transition: 'all 0.2s', border: '1px solid',
+                        style={{ padding: '0.85rem 1.5rem', borderRadius: 100, fontWeight: 700, fontSize: '0.9rem', transition: 'all 0.2s', border: '1px solid',
                             background: filter === 'unlocked' ? 'var(--accent)' : 'transparent',
                             color: filter === 'unlocked' ? 'white' : 'var(--text-secondary)',
                             borderColor: filter === 'unlocked' ? 'var(--accent)' : '#e2e8f0'

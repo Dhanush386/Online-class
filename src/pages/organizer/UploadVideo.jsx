@@ -200,18 +200,18 @@ export default function ScheduleLiveClass() {
             </div>
 
             {success && (
-                <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', background: '#ecfdf5', border: '1px solid #10b981', borderRadius: 12, marginBottom: '1.5rem', color: '#059669', fontSize: '0.9rem', fontWeight: 500 }}>
+                <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem 1.25rem', background: '#ecfdf5', border: '1px solid #10b981', borderRadius: 12, marginBottom: '1.5rem', color: '#059669', fontSize: '0.9rem', fontWeight: 500 }}>
                     <CheckCircle size={20} /> {mode === 'live' ? 'Live class scheduled' : 'Video uploaded'} successfully!
                 </div>
             )}
             {error && (
-                <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', background: '#fef2f2', border: '1px solid #ef4444', borderRadius: 12, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.9rem', fontWeight: 500 }}>
+                <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem 1.25rem', background: '#fef2f2', border: '1px solid #ef4444', borderRadius: 12, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.9rem', fontWeight: 500 }}>
                     <AlertCircle size={20} /> {error}
                 </div>
             )}
 
             {mode === 'live' && (
-                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '0.85rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                     {meetingPlatforms.map(p => (
                         <button
                             key={p.name}
@@ -291,7 +291,7 @@ export default function ScheduleLiveClass() {
                                 <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                                     {selectedFile ? selectedFile.name : 'Click to select or drag video file'}
                                 </div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
                                     Recommended: MP4, Max: 100MB
                                 </div>
                             </div>

@@ -49,7 +49,7 @@ export default function AssessmentReview() {
         <div className="animate-fade-in" style={{ maxWidth: 820, margin: '0 auto' }}>
             {/* Header */}
             <div style={{ marginBottom: '2rem' }}>
-                <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem', padding: 0 }}>
+                <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.85rem', padding: 0 }}>
                     <ChevronLeft size={16} /> Back to Course
                 </button>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
@@ -98,7 +98,7 @@ export default function AssessmentReview() {
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Score</div>
                     </div>
                     <div style={{ flexGrow: 1 }} />
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Clock size={12} /> {new Date(currentSub.created_at).toLocaleString()}
                     </div>
                 </div>
@@ -159,7 +159,7 @@ export default function AssessmentReview() {
                                 </div>
                                 <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
                                     {!wasAnswered
-                                        ? <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Unanswered</span>
+                                        ? <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Unanswered</span>
                                         : isCorrect
                                             ? <CheckCircle2 size={20} color="#10b981" />
                                             : <XCircle size={20} color="#ef4444" />
@@ -167,7 +167,7 @@ export default function AssessmentReview() {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
                                 {q.options.map((opt, i) => {
                                     let isThisCorrect = false
                                     try {
@@ -187,7 +187,7 @@ export default function AssessmentReview() {
                                     else if (isThisSelected && !isThisCorrect) { bg = 'rgba(239, 68, 68, 0.1)'; border = 'rgba(239, 68, 68, 0.2)'; textColor = 'var(--danger)' }
 
                                     return (
-                                        <div key={i} style={{ padding: '0.75rem 1rem', borderRadius: 10, background: bg, border: `1px solid ${border}`, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: textColor }}>
+                                        <div key={i} style={{ padding: '0.85rem 1rem', borderRadius: 10, background: bg, border: `1px solid ${border}`, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.85rem', color: textColor }}>
                                             <div style={{ width: 20, height: 20, background: isThisCorrect ? '#10b981' : isThisSelected ? '#ef4444' : '#cbd5e1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem', flexShrink: 0 }}>
                                                 {isThisCorrect ? <CheckCircle2 size={12} /> : isThisSelected ? <XCircle size={12} /> : String.fromCodePoint(65 + i)}
                                             </div>

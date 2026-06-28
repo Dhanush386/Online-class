@@ -1076,7 +1076,7 @@ sys.stdin = StringIO(test_input)
                         </button>
                     ) : (
                         <div style={{ marginBottom: '1rem' }}>
-                            <div style={{ background: '#ecfdf5', color: '#059669', padding: '0.75rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600 }}>
+                            <div style={{ background: '#ecfdf5', color: '#059669', padding: '0.85rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600 }}>
                                 <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
                             </div>
                             <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', height: '3.5rem', fontSize: '1.1rem', justifyContent: 'center' }}>
@@ -1136,17 +1136,17 @@ sys.stdin = StringIO(test_input)
                 </Link>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     {violationCount > 0 && !canBypass && (
-                        <div style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 700, background: '#fef2f2', padding: '4px 10px', borderRadius: 4, border: '1px solid #fee2e2' }}>
+                        <div style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 700, background: '#fef2f2', padding: '4px 10px', borderRadius: 4, border: '1px solid #fee2e2' }}>
                             Violations: {violationCount}/3
                         </div>
                     )}
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{challenge.title}</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{challenge.title}</span>
                     {isStarted && !canBypass && (
-                        <div style={{ padding: '4px 10px', background: '#e2e8f0', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: timeLeft <= 300 ? '#ef4444' : 'var(--text-primary)' }}>
+                        <div style={{ padding: '4px 10px', background: '#e2e8f0', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: timeLeft <= 300 ? '#ef4444' : 'var(--text-primary)' }}>
                             <Clock size={14} /> {formatTime(timeLeft)}
                         </div>
                     )}
-                    <div style={{ padding: '2px 8px', background: '#10b981', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>VER 7.1</div>
+                    <div style={{ padding: '2px 8px', background: '#10b981', borderRadius: 4, fontSize: '0.85rem', fontWeight: 800 }}>VER 7.1</div>
                 </div>
             </header>
 
@@ -1173,13 +1173,13 @@ sys.stdin = StringIO(test_input)
                 {/* Column 1: Description */}
                 <div style={{ width: '28%', minWidth: 320, background: '#ffffff', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0' }}>
                     <div style={{ height: 40, borderBottom: '1px solid #e2e8f0', display: 'flex', padding: '0 4px' }}>
-                        <button onClick={() => setLeftTab('description')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'description' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'description' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <button onClick={() => setLeftTab('description')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'description' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'description' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <FileText size={14} /> Description
                         </button>
-                        <button onClick={() => setLeftTab('help')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'help' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'help' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <button onClick={() => setLeftTab('help')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'help' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'help' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <HelpCircle size={14} /> Get Help
                         </button>
-                        <button onClick={() => setLeftTab('discuss')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'discuss' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'discuss' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <button onClick={() => setLeftTab('discuss')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'discuss' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'discuss' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <MessageSquare size={14} /> Discuss
                         </button>
                     </div>
@@ -1196,7 +1196,7 @@ sys.stdin = StringIO(test_input)
                                                 <button 
                                                     key={q.id} 
                                                     onClick={() => handleSwitchSubQuestion(idx)}
-                                                    style={{ padding: '0.4rem 0.75rem', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600, border: '1px solid', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                                                    style={{ padding: '0.4rem 0.85rem', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, border: '1px solid', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
                                                         background: currentSubIndex === idx ? '#3b82f6' : (isSolved ? '#10b981' : '#ffffff'),
                                                         color: currentSubIndex === idx || isSolved ? '#ffffff' : 'var(--text-muted)',
                                                         borderColor: currentSubIndex === idx ? '#2563eb' : (isSolved ? '#059669' : '#cbd5e1')
@@ -1236,7 +1236,7 @@ sys.stdin = StringIO(test_input)
 
                                 {challenge.target_visual_url && (
                                     <div style={{ marginBottom: '2rem' }}>
-                                        <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem', color: '#3b82f6' }}>Refer to the below image.</p>
+                                        <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.85rem', color: '#3b82f6' }}>Refer to the below image.</p>
                                         <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f1f5f9' }}>
                                             <img src={challenge.target_visual_url} alt="Goal" style={{ width: '100%', display: 'block' }} />
                                         </div>
@@ -1269,7 +1269,7 @@ sys.stdin = StringIO(test_input)
                                                 loading="lazy"
                                             />
                                         </div>
-                                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>This is the reference page your output should resemble.</p>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>This is the reference page your output should resemble.</p>
                                     </div>
                                 )}
 
@@ -1287,15 +1287,15 @@ sys.stdin = StringIO(test_input)
                                         <div style={{ marginBottom: '2rem', border: `1px solid ${allPassed ? '#bbf7d0' : '#e9d5ff'}`, borderRadius: 10, overflow: 'hidden' }}>
                                             <div style={{ padding: '0.6rem 0.9rem', background: allPassed ? '#f0fdf4' : 'linear-gradient(135deg, #fdf4ff, #fefce8)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <span style={{ fontSize: '0.8rem' }}>{allPassed ? '✅' : '🔑'}</span>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: allPassed ? '#15803d' : '#6d28d9' }}>Requirements Checklist</span>
-                                                {allPassed && <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: '#16a34a', fontWeight: 600 }}>All met ✓</span>}
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: allPassed ? '#15803d' : '#6d28d9' }}>Requirements Checklist</span>
+                                                {allPassed && <span style={{ marginLeft: 'auto', fontSize: '0.85rem', color: '#16a34a', fontWeight: 600 }}>All met ✓</span>}
                                             </div>
-                                            <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'white' }}>
+                                            <div style={{ padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'white' }}>
                                                 {Object.entries(kwStatus).map(([lang, items]) => {
                                                     const st = LANG_STYLES[lang] || LANG_STYLES.html
                                                     return (
                                                         <div key={lang}>
-                                                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: st.color, textTransform: 'uppercase', marginBottom: '0.3rem', letterSpacing: '0.05em' }}>{st.label}</div>
+                                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: st.color, textTransform: 'uppercase', marginBottom: '0.3rem', letterSpacing: '0.05em' }}>{st.label}</div>
                                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                                                                 {items.map(({ kw, pass }) => (
                                                                     <span
@@ -1342,7 +1342,7 @@ sys.stdin = StringIO(test_input)
                                                 const failedCount = hasResults ? total - passedCount : 0
                                                 return (
                                                     <>
-                                                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                                                    <div style={{ display: 'flex', gap: '0.85rem', marginBottom: '1.5rem' }}>
                                                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
                                                             <CodeIcon size={14} color="var(--text-muted)" />
                                                             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total</span>
@@ -1392,13 +1392,13 @@ sys.stdin = StringIO(test_input)
                                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', padding: '0.5rem 0' }}>
                                                                         {tcData.input && (
                                                                             <div>
-                                                                                <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Input {idx + 1}</h5>
+                                                                                <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Input {idx + 1}</h5>
                                                                                 <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.input}</div>
                                                                             </div>
                                                                         )}
                                                                         {tcData.expected_output && (
                                                                             <div>
-                                                                                <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Output {idx + 1}</h5>
+                                                                                <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Output {idx + 1}</h5>
                                                                                 <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.expected_output}</div>
                                                                             </div>
                                                                         )}
@@ -1410,7 +1410,7 @@ sys.stdin = StringIO(test_input)
 
                                                             return (
                                                                 <div key={idx} style={{ padding: '1rem 1.25rem', borderRadius: 8, background: '#f8fafc', borderLeft: `3px solid ${passed === true ? '#10b981' : passed === false ? '#ef4444' : '#cbd5e1'}`, transition: 'all 0.2s ease' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
                                                                         {passed === true ? <CheckCircle2 size={18} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} /> : passed === false ? <XCircle size={18} color="#ef4444" style={{ marginTop: 2, flexShrink: 0 }} /> : <Info size={18} color="var(--text-secondary)" style={{ marginTop: 2, flexShrink: 0 }} />}
                                                                         <div style={{ flex: 1 }}>{displayContent}</div>
                                                                     </div>
@@ -1418,12 +1418,12 @@ sys.stdin = StringIO(test_input)
                                                                     {hasResults && isWebTc && (
                                                                         <div style={{ marginLeft: '2.2rem', marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                                                                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Expected</span>
+                                                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Expected</span>
                                                                                 <code style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', background: '#ecfdf5', color: '#059669', borderRadius: 4, border: '1px solid #d1fae5' }}>{tc.expected}</code>
                                                                             </div>
                                                                             {!tc.passed && (
                                                                                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                                                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Found</span>
+                                                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', width: 56 }}>Found</span>
                                                                                     <code style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', background: '#fef2f2', color: '#dc2626', borderRadius: 4, border: '1px solid #fecaca' }}>{tc.actual}</code>
                                                                                 </div>
                                                                             )}
@@ -1431,9 +1431,9 @@ sys.stdin = StringIO(test_input)
                                                                     )}
                                                                     {/* Classic testcase: stdout output */}
                                                                     {hasResults && !isWebTc && tc.actual && (
-                                                                        <div style={{ marginLeft: '2.2rem', marginTop: '0.75rem' }}>
+                                                                        <div style={{ marginLeft: '2.2rem', marginTop: '0.85rem' }}>
                                                                             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Your Output:</span>
-                                                                            <pre style={{ background: '#f1f5f9', padding: '0.5rem 0.75rem', borderRadius: 6, marginTop: '0.25rem', fontSize: '0.7rem', color: passed ? '#059669' : '#dc2626', overflowX: 'auto', border: '1px solid #1f2937' }}>{tc.actual}</pre>
+                                                                            <pre style={{ background: '#f1f5f9', padding: '0.5rem 0.85rem', borderRadius: 6, marginTop: '0.25rem', fontSize: '0.7rem', color: passed ? '#059669' : '#dc2626', overflowX: 'auto', border: '1px solid #1f2937' }}>{tc.actual}</pre>
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -1523,9 +1523,9 @@ sys.stdin = StringIO(test_input)
                         )}
                     </div>
 
-                    <div style={{ height: 48, background: 'var(--text-primary)', borderTop: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.75rem' }}>
+                    <div style={{ height: 48, background: 'var(--text-primary)', borderTop: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.85rem' }}>
                         <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Settings size={18} /></button>
-                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem' }}>
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.85rem' }}>
                             <button onClick={runCode} disabled={running} style={{ padding: '0.4rem 1.25rem', borderRadius: 6, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <Play size={14} fill="currentColor" /> Run
                             </button>
@@ -1539,7 +1539,7 @@ sys.stdin = StringIO(test_input)
                 {/* Column 3: Preview/Output */}
                 <div style={{ width: '32%', background: 'var(--text-primary)', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid var(--card-border)', overflow: 'hidden' }}>
                     <div style={{ height: 40, borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', padding: '0 1rem', background: 'var(--text-primary)' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>{challenge.language === 'html' ? 'PREVIEW' : 'OUTPUT'}</span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)' }}>{challenge.language === 'html' ? 'PREVIEW' : 'OUTPUT'}</span>
                         <div style={{ marginLeft: 'auto' }}>
                             <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)' }}><Maximize size={14} /></button>
                         </div>
@@ -1552,12 +1552,12 @@ sys.stdin = StringIO(test_input)
                             </div>
                             {/* Keyword hint / result message strip */}
                             {result && result.message && (
-                                <div style={{ margin: '0 1rem', padding: '0.6rem 0.75rem', background: result.status === 'error' ? '#450a0a' : result.status === 'warning' ? '#451a03' : '#052e16', borderRadius: 6, maxHeight: 90, overflowY: 'auto' }}>
+                                <div style={{ margin: '0 1rem', padding: '0.6rem 0.85rem', background: result.status === 'error' ? '#450a0a' : result.status === 'warning' ? '#451a03' : '#052e16', borderRadius: 6, maxHeight: 90, overflowY: 'auto' }}>
                                     <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.7rem', color: result.status === 'error' ? '#fca5a5' : result.status === 'warning' ? '#fcd34d' : '#86efac', margin: 0, lineHeight: 1.5 }}>{result.message}</pre>
                                 </div>
                             )}
-                            <div style={{ padding: '0.75rem 1.25rem 1.25rem', background: 'var(--text-primary)', borderTop: '1px solid var(--card-border)', textAlign: 'center' }}>
-                                <button onClick={handleSubmit} disabled={submitting || running} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                            <div style={{ padding: '0.85rem 1.25rem 1.25rem', background: 'var(--text-primary)', borderTop: '1px solid var(--card-border)', textAlign: 'center' }}>
+                                <button onClick={handleSubmit} disabled={submitting || running} style={{ width: '100%', padding: '0.85rem', borderRadius: 8, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                     <Layout size={16} /> {submitting ? 'Comparing...' : 'Compare & Submit'}
                                 </button>
                             </div>

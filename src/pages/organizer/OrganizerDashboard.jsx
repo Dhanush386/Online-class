@@ -148,7 +148,7 @@ export default function OrganizerDashboard() {
                             <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                                 Video Uploads — This Week
                             </h3>
-                            <Link to="/organizer/upload" style={{ fontSize: '0.75rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                            <Link to="/organizer/upload" style={{ fontSize: '0.85rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
                                 Upload <ChevronRight size={13} />
                             </Link>
                         </div>
@@ -190,7 +190,7 @@ export default function OrganizerDashboard() {
                                 <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Video size={15} color="var(--primary-500)" /> Recent Uploads
                                 </h3>
-                                <Link to="/organizer/upload" style={{ fontSize: '0.75rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600 }}>View all</Link>
+                                <Link to="/organizer/upload" style={{ fontSize: '0.85rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600 }}>View all</Link>
                             </div>
                             {recentVideos.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
@@ -201,8 +201,8 @@ export default function OrganizerDashboard() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     {recentVideos.map(v => (
                                         <div key={v.id} style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
-                                            padding: '0.65rem 0.75rem', borderRadius: 10,
+                                            display: 'flex', alignItems: 'center', gap: '0.85rem',
+                                            padding: '0.85rem 0.85rem', borderRadius: 10,
                                             background: 'rgba(99,102,241,0.04)',
                                             border: '1px solid rgba(99,102,241,0.1)',
                                         }}>
@@ -229,7 +229,7 @@ export default function OrganizerDashboard() {
                                 <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Code size={15} color="#f59e0b" /> Latest Challenges
                                 </h3>
-                                <Link to="/organizer/coding" style={{ fontSize: '0.75rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600 }}>View all</Link>
+                                <Link to="/organizer/coding" style={{ fontSize: '0.85rem', color: 'var(--primary-500)', textDecoration: 'none', fontWeight: 600 }}>View all</Link>
                             </div>
                             {recentChallenges.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
@@ -240,8 +240,8 @@ export default function OrganizerDashboard() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     {recentChallenges.map(c => (
                                         <div key={c.id} style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.75rem',
-                                            padding: '0.65rem 0.75rem', borderRadius: 10,
+                                            display: 'flex', alignItems: 'center', gap: '0.85rem',
+                                            padding: '0.85rem 0.85rem', borderRadius: 10,
                                             background: 'rgba(245,158,11,0.04)',
                                             border: '1px solid rgba(245,158,11,0.1)',
                                         }}>
@@ -253,7 +253,7 @@ export default function OrganizerDashboard() {
                                                 <div style={{ fontSize: '0.7rem', marginTop: 2 }}>
                                                     <span style={{
                                                         color: c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444',
-                                                        fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em',
+                                                        fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.04em',
                                                     }}>{c.difficulty}</span>
                                                 </div>
                                             </div>

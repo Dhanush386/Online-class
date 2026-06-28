@@ -334,16 +334,16 @@ export default function OrganizerAssessments() {
                                 <button
                                     onClick={() => loadMarks(a)}
                                     className="btn-primary"
-                                    style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem', marginTop: '0.75rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                                    style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem', marginTop: '0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
                                 >
                                     <Eye size={16} /> View Student Marks
                                 </button>
                             </div>
-                            <div style={{ padding: '0.75rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <div style={{ padding: '0.85rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                     <Calendar size={12} /> {a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No due date'}
                                 </span>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1' }}>Quiz</span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6366f1' }}>Quiz</span>
                             </div>
                         </div>
                     ))}
@@ -367,12 +367,12 @@ export default function OrganizerAssessments() {
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                                 Toggle locks for specific groups. Locked resources are invisible/non-accessible to students in that group.
                             </p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                 {groups.filter(g => g.course_id === lockingResource.course_id).length === 0 ? (
                                     <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                         No groups/batches created for this course.
                                         {groups.length > 0 && (
-                                            <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#f59e0b' }}>
+                                            <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#f59e0b' }}>
                                                 Note: Batches are course-specific. You have {groups.length} batch(es) in other courses.
                                             </div>
                                         )}
@@ -382,12 +382,12 @@ export default function OrganizerAssessments() {
                                         const access = resourceAccess.find(a => a.group_id === g.id && a.resource_id === lockingResource.id)
                                         const isLocked = access?.is_locked || false
                                         return (
-                                            <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
+                                            <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
                                                 <div style={{ fontWeight: 600, fontSize: '0.9rem', color: isLocked ? '#991b1b' : '#166534' }}>{g.name}</div>
                                                 <button
                                                     onClick={() => toggleResourceLock(g.id, lockingResource.id)}
                                                     className={isLocked ? "btn-primary" : "btn-secondary"}
-                                                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: isLocked ? '#ef4444' : 'white' }}
+                                                    style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', background: isLocked ? '#ef4444' : 'white' }}
                                                 >
                                                     {isLocked ? 'Unlock' : 'Lock'}
                                                 </button>
@@ -419,7 +419,7 @@ export default function OrganizerAssessments() {
 
                         <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
                             {error && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
                                     <AlertCircle size={18} /> {error}
                                 </div>
                             )}
@@ -574,22 +574,22 @@ export default function OrganizerAssessments() {
 
                         {/* Summary Stats */}
                         <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', background: '#f8fafc' }}>
-                            <div style={{ flex: 1, padding: '0.75rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#6366f1' }}>{marksStats.total}</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Submissions</div>
                             </div>
-                            <div style={{ flex: 1, padding: '0.75rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{marksStats.avgScore}%</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Avg Score</div>
                             </div>
-                            <div style={{ flex: 1, padding: '0.75rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{marksStats.passed}/{marksStats.total}</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Passed (≥50%)</div>
                             </div>
                         </div>
 
                         {/* Search */}
-                        <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--card-border)' }}>
+                        <div style={{ padding: '0.85rem 1.5rem', borderBottom: '1px solid var(--card-border)' }}>
                             <div style={{ position: 'relative' }}>
                                 <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
@@ -618,7 +618,7 @@ export default function OrganizerAssessments() {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     {/* Table Header */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 0.5fr', gap: '1rem', padding: '0.5rem 0.75rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 0.5fr', gap: '1rem', padding: '0.5rem 0.85rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
                                         <span>Student</span>
                                         <span style={{ textAlign: 'center' }}>Score</span>
                                         <span style={{ textAlign: 'center' }}>Percentage</span>
@@ -633,12 +633,12 @@ export default function OrganizerAssessments() {
                                             const passed = pct >= 50
                                             const pSession = proctorSessionsMap?.[sub.student_id]
                                             return (
-                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr 0.5fr', gap: '1rem', padding: '0.75rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr 0.5fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
                                                     onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
                                                     onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
                                                 >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
                                                             {sub.users?.name?.[0]?.toUpperCase() || '?'}
                                                         </div>
                                                         <div>
@@ -656,11 +656,11 @@ export default function OrganizerAssessments() {
                                                     </div>
                                                     <div style={{ textAlign: 'center' }}>
                                                         {passed ? (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600, color: '#059669' }}>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#059669' }}>
                                                                 <CheckCircle2 size={14} /> Passed
                                                             </span>
                                                         ) : (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600, color: '#dc2626' }}>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#dc2626' }}>
                                                                 <XCircle size={14} /> Failed
                                                             </span>
                                                         )}
@@ -678,7 +678,7 @@ export default function OrganizerAssessments() {
                                                                     background: pSession.final_risk_score >= 100 ? '#fef2f2' : pSession.final_risk_score >= 60 ? '#fff7ed' : '#ecfdf5',
                                                                     color: pSession.final_risk_score >= 100 ? '#ef4444' : pSession.final_risk_score >= 60 ? '#f97316' : '#10b981',
                                                                     border: `1px solid ${pSession.final_risk_score >= 100 ? '#fecaca' : pSession.final_risk_score >= 60 ? '#ffedd5' : '#a7f3d0'}`,
-                                                                    fontSize: '0.75rem',
+                                                                    fontSize: '0.85rem',
                                                                     fontWeight: 700,
                                                                     cursor: 'pointer'
                                                                 }}
@@ -686,7 +686,7 @@ export default function OrganizerAssessments() {
                                                                 🛡️ {pSession.final_risk_score} Risk
                                                             </button>
                                                         ) : (
-                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None</span>
+                                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>None</span>
                                                         )}
                                                     </div>
                                                     <div style={{ textAlign: 'right' }}>

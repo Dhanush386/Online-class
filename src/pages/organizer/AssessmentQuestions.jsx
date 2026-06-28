@@ -324,7 +324,7 @@ export default function AssessmentQuestions() {
                 margin: '-1.5rem -2rem 2rem -2rem',
                 borderBottom: '1px solid var(--card-border)'
             }}>
-                <Link to="/organizer/assessments" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6366f1', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+                <Link to="/organizer/assessments" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6366f1', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.85rem' }}>
                     <ChevronLeft size={16} /> Back to Assessments
                 </Link>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -334,7 +334,7 @@ export default function AssessmentQuestions() {
                             {assessment?.courses?.title} • {questions.length} Questions
                         </p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', gap: '0.85rem' }}>
                         <button
                             onClick={() => { setAiPrompt(''); setGeneratedQuestions([]); setShowAIModal(true) }}
                             className="btn-secondary"
@@ -366,7 +366,7 @@ export default function AssessmentQuestions() {
                     <HelpCircle size={48} style={{ margin: '0 auto 1rem', opacity: 0.2, display: 'block' }} />
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Questions Yet</h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Start building your quiz by adding the first question.</p>
-                    <button onClick={() => setShowModal(true)} className="btn-secondary" style={{ marginBottom: '0.75rem' }}>
+                    <button onClick={() => setShowModal(true)} className="btn-secondary" style={{ marginBottom: '0.85rem' }}>
                         <Plus size={18} /> Add Multiple Choice Question
                     </button>
                     <button onClick={() => { setAiPrompt(''); setGeneratedQuestions([]); setShowAIModal(true) }} className="btn-secondary" style={{ background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}>
@@ -388,15 +388,15 @@ export default function AssessmentQuestions() {
                                             <img src={q.image_url} alt="Question reference" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid var(--card-border)', alignSelf: 'flex-start' }} />
                                         )}
                                         {q.question_type === 'code_mcq' && q.code_snippet && (
-                                            <div style={{ marginTop: '0.75rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)', maxWidth: 600 }}>
+                                            <div style={{ marginTop: '0.85rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)', maxWidth: 600 }}>
                                                 <div style={{ background: '#1e293b', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                         <CodeIcon size={14} color="#94a3b8" />
-                                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#e2e8f0' }}>
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0' }}>
                                                             {q.snippet_title || 'Code Snippet'}
                                                         </span>
                                                     </div>
-                                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                                         {q.code_language}
                                                     </span>
                                                 </div>
@@ -424,7 +424,7 @@ export default function AssessmentQuestions() {
                                     </button>
                                 </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginLeft: '2.75rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginLeft: '2.75rem' }}>
                                 {q.options.map((opt, i) => {
                                     let isCorrect = false
                                     try {
@@ -440,14 +440,14 @@ export default function AssessmentQuestions() {
 
                                     return (
                                         <div key={opt || `opt-${i}`} style={{
-                                            padding: '0.75rem 1rem',
+                                            padding: '0.85rem 1rem',
                                             borderRadius: 10,
                                             background: isCorrect ? 'rgba(16,185,129,0.1)' : 'var(--bg-elevated)',
                                             border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : 'var(--card-border)'}`,
                                             fontSize: '0.85rem',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '0.75rem',
+                                            gap: '0.85rem',
                                             color: isCorrect ? '#10b981' : 'var(--text-primary)'
                                         }}>
                                             <div style={{ width: 18, height: 18, background: isCorrect ? '#10b981' : '#cbd5e1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
@@ -466,7 +466,7 @@ export default function AssessmentQuestions() {
                         <button
                             onClick={() => { resetForm(); setShowModal(true) }}
                             className="btn-secondary"
-                            style={{ gap: '0.5rem', padding: '0.75rem 2rem' }}
+                            style={{ gap: '0.5rem', padding: '0.85rem 2rem' }}
                         >
                             <Plus size={18} /> Add Next Question
                         </button>
@@ -489,7 +489,7 @@ export default function AssessmentQuestions() {
 
                         <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', maxHeight: 'calc(100vh - 140px)' }}>
                             {error && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
                                     <AlertCircle size={18} /> {error}
                                 </div>
                             )}
@@ -562,7 +562,7 @@ export default function AssessmentQuestions() {
                                     <div style={{ marginTop: '1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
                                         <div style={{ background: '#1e293b', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid #334155' }}>
                                             <CodeIcon size={14} color="#94a3b8" />
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8' }}>Code Snippet</span>
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8' }}>Code Snippet</span>
                                         </div>
                                         <div style={{ height: 250, background: '#0f172a' }}>
                                             <CodeEditor
@@ -595,9 +595,9 @@ export default function AssessmentQuestions() {
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '0.75rem', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', gap: '0.85rem', flexDirection: 'column' }}>
                                     {formData.image_file ? (
-                                        <div style={{ padding: '0.75rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div style={{ padding: '0.85rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
                                                 <span style={{ fontWeight: 600 }}>{formData.image_file.name}</span>
                                                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({(formData.image_file.size / 1024 / 1024).toFixed(2)} MB)</span>
@@ -605,7 +605,7 @@ export default function AssessmentQuestions() {
                                             <button type="button" onClick={() => setFormData(p => ({ ...p, image_file: null }))} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><X size={14} /></button>
                                         </div>
                                     ) : (
-                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.85rem' }}>
                                             <input
                                                 id="image-url"
                                                 name="image_url"
@@ -641,12 +641,12 @@ export default function AssessmentQuestions() {
                                     <button
                                         type="button"
                                         onClick={() => setFormData(p => ({ ...p, options: [...p.options, ''] }))}
-                                        style={{ fontSize: '0.75rem', color: '#6366f1', background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                        style={{ fontSize: '0.85rem', color: '#6366f1', background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                                     >
                                         <Plus size={14} /> Add Option
                                     </button>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                     {formData.options.map((opt, i) => (
                                         // eslint-disable-next-line react/no-array-index-key
                                         <div key={`option-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}> {/* NOSONAR */}
@@ -711,7 +711,7 @@ export default function AssessmentQuestions() {
 
                         <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
                             {aiError && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
                                     <AlertCircle size={18} /> {aiError}
                                 </div>
                             )}
@@ -727,7 +727,7 @@ export default function AssessmentQuestions() {
                                     onChange={e => setAiPrompt(e.target.value)}
                                     style={{ resize: 'none' }}
                                 />
-                                <div style={{ textAlign: 'right', marginTop: '0.75rem' }}>
+                                <div style={{ textAlign: 'right', marginTop: '0.85rem' }}>
                                     <button 
                                         onClick={generateQuestionsWithAI} 
                                         className="btn-primary" 
@@ -793,7 +793,7 @@ export default function AssessmentQuestions() {
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                                 Toggle locks for specific groups. Locked resources are invisible/non-accessible to students in that group.
                             </p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                 {groups.length === 0 ? (
                                     <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                         No groups created for this course.
@@ -803,12 +803,12 @@ export default function AssessmentQuestions() {
                                         const access = resourceAccess.find(a => a.group_id === g.id && a.resource_id === assessmentId)
                                         const isLocked = access?.is_locked || false
                                         return (
-                                            <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
+                                            <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
                                                 <div style={{ fontWeight: 600, fontSize: '0.9rem', color: isLocked ? '#991b1b' : '#166534' }}>{g.name}</div>
                                                 <button
                                                     onClick={() => toggleResourceLock(g.id)}
                                                     className={isLocked ? "btn-primary" : "btn-secondary"}
-                                                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: isLocked ? '#ef4444' : 'white' }}
+                                                    style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', background: isLocked ? '#ef4444' : 'white' }}
                                                 >
                                                     {isLocked ? 'Unlock' : 'Lock'}
                                                 </button>

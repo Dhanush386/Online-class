@@ -304,13 +304,13 @@ export default function CodePlayground() {
                         <div style={{ padding: '0', background: 'var(--bg-elevated)', display: 'flex', borderBottom: '1px solid var(--card-border)', justifyContent: 'space-between', alignItems: 'center' }}>
                             {language === 'html' ? (
                                 <div style={{ display: 'flex' }}>
-                                    <button onClick={() => setWebTab('html')} style={{ padding: '0.6rem 1rem', background: webTab === 'html' ? 'var(--bg-base)' : 'transparent', border: 'none', color: webTab === 'html' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'html' ? '2px solid #e34c26' : '2px solid transparent' }}>
+                                    <button onClick={() => setWebTab('html')} style={{ padding: '0.6rem 1rem', background: webTab === 'html' ? 'var(--bg-base)' : 'transparent', border: 'none', color: webTab === 'html' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'html' ? '2px solid #e34c26' : '2px solid transparent' }}>
                                         HTML
                                     </button>
-                                    <button onClick={() => setWebTab('css')} style={{ padding: '0.6rem 1rem', background: webTab === 'css' ? 'var(--bg-base)' : 'transparent', border: 'none', color: webTab === 'css' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'css' ? '2px solid #264de4' : '2px solid transparent' }}>
+                                    <button onClick={() => setWebTab('css')} style={{ padding: '0.6rem 1rem', background: webTab === 'css' ? 'var(--bg-base)' : 'transparent', border: 'none', color: webTab === 'css' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'css' ? '2px solid #264de4' : '2px solid transparent' }}>
                                         CSS
                                     </button>
-                                    <button onClick={() => setWebTab('js')} style={{ padding: '0.6rem 1rem', background: webTab === 'js' ? 'var(--bg-base)' : 'transparent', border: 'none', color: webTab === 'js' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'js' ? '2px solid #f0db4f' : '2px solid transparent' }}>
+                                    <button onClick={() => setWebTab('js')} style={{ padding: '0.6rem 1rem', background: webTab === 'js' ? 'var(--bg-base)' : 'transparent', border: 'none', color: webTab === 'js' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderTop: webTab === 'js' ? '2px solid #f0db4f' : '2px solid transparent' }}>
                                         JS
                                     </button>
                                 </div>
@@ -376,7 +376,7 @@ export default function CodePlayground() {
                                 value={stdin}
                                 onChange={e => setStdin(e.target.value)}
                                 placeholder="Paste input here if your code expects any..."
-                                style={{ flex: 1, padding: '0.75rem', border: 'none', outline: 'none', resize: 'none', fontSize: '0.85rem', background: 'var(--bg-base)', color: 'var(--text-primary)' }}
+                                style={{ flex: 1, padding: '0.85rem', border: 'none', outline: 'none', resize: 'none', fontSize: '0.85rem', background: 'var(--bg-base)', color: 'var(--text-primary)' }}
                             />
                         </div>
                     )}
@@ -431,7 +431,7 @@ export default function CodePlayground() {
                                             padding: '1rem', borderRadius: 10,
                                             background: result.status === 'success' ? 'rgba(16, 185, 129, 0.1)' : result.status === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'var(--bg-elevated)',
                                             border: `1px solid ${result.status === 'success' ? 'rgba(16, 185, 129, 0.2)' : result.status === 'error' ? 'rgba(239, 68, 68, 0.2)' : 'var(--card-border)'}`,
-                                            display: 'flex', alignItems: 'center', gap: '0.75rem'
+                                            display: 'flex', alignItems: 'center', gap: '0.85rem'
                                         }}>
                                             {result.status === 'success' ? <CheckCircle2 color="#10b981" /> : result.status === 'error' ? <XCircle color="#ef4444" /> : <Clock className="animate-spin" color="#6366f1" />}
                                             <div>
@@ -504,7 +504,7 @@ export default function CodePlayground() {
                                 </button>
                             </div>
 
-                            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                 {savedSnippets.length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                                         <Folder size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
@@ -515,7 +515,7 @@ export default function CodePlayground() {
                                         <div key={snippet.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8 }}>
                                             <div>
                                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{snippet.title}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                                                     {LANGUAGE_CONFIG[snippet.language]?.name || snippet.language} • {new Date(snippet.created_at).toLocaleDateString()}
                                                 </div>
                                             </div>

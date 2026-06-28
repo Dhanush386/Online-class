@@ -60,7 +60,7 @@ function DayNodeIcon({ weekLocked, status, colors, totalModules, completedModule
   if (totalModules > 0) {
     return <span style={{ fontSize: '0.7rem', fontWeight: 800, color: colors.text }}>{totalModules}</span>
   }
-  return <span style={{ fontSize: '0.65rem', color: colors.text }}>–</span>
+  return <span style={{ fontSize: '0.85rem', color: colors.text }}>–</span>
 }
 
 function getBoxShadow(status, isSelected, glow) {
@@ -123,7 +123,7 @@ function DayNode({ day, status, isSelected, onClick, weekLocked, dateStr }) {
 
       {/* Day label */}
       <span style={{
-        fontSize: '0.65rem',
+        fontSize: '0.85rem',
         fontWeight: 700,
         color: labelColor,
         textTransform: 'uppercase',
@@ -197,7 +197,7 @@ function JourneyWeekCard({
           width: '100%',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.75rem',
+          gap: '0.85rem',
           padding: '1rem 1.25rem',
           background: 'none',
           border: 'none',
@@ -233,7 +233,7 @@ function JourneyWeekCard({
             <Trophy size={14} color="#fff" />
           ) : (
             <span style={{
-              fontSize: '0.75rem',
+              fontSize: '0.85rem',
               fontWeight: 800,
               color: isCurrentWeek ? '#fff' : '#64748b',
             }}>
@@ -267,7 +267,7 @@ function JourneyWeekCard({
             )}
             {grade && grade !== 'F' && (
               <span style={{
-                fontSize: '0.65rem',
+                fontSize: '0.85rem',
                 fontWeight: 800,
                 color: GRADE_COLORS[grade] || '#64748b',
                 background: `${GRADE_COLORS[grade] || '#64748b'}15`,

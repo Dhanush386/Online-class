@@ -33,7 +33,7 @@ export default class ErrorBoundary extends Component {
             }}>
               💥
             </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
               Something went wrong
             </h2>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1.75rem' }}>
@@ -43,13 +43,13 @@ export default class ErrorBoundary extends Component {
             {import.meta.env.DEV && this.state.error && (
               <pre style={{
                 textAlign: 'left', background: '#fee2e2', color: '#991b1b',
-                borderRadius: 8, padding: '0.75rem', fontSize: '0.72rem',
+                borderRadius: 8, padding: '0.85rem', fontSize: '0.72rem',
                 overflowX: 'auto', marginBottom: '1.5rem', maxHeight: 120
               }}>
                 {this.state.error.toString()}
               </pre>
             )}
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.85rem' }}>
               <button
                 onClick={() => globalThis.location.reload()}
                 className="btn-primary"

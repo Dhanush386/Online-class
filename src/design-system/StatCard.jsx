@@ -62,7 +62,7 @@ export default function StatCard({
           {(delta !== undefined) && (
             <div style={{
               marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem',
-              fontSize: '0.75rem', fontWeight: 600,
+              fontSize: '0.85rem', fontWeight: 600,
               color: deltaColor,
             }}>
               <span>{deltaSign} {Math.abs(delta)}%</span>

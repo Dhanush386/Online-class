@@ -263,8 +263,8 @@ export default function StudentDashboard() {
               Your learning journey is accelerating. Keep up the great work!
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div style={{ display: 'flex', gap: '0.85rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
               🔥 {kpis.streak}d Streak
             </span>
           </div>
@@ -312,7 +312,7 @@ export default function StudentDashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', flex: 1, justifyContent: 'center' }}>
                 {learningConsistency.map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: 30, fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>{item.day}</div>
+                    <div style={{ width: 30, fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>{item.day}</div>
                     <div style={{ flex: 1, height: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
                       <div style={{ width: `${Math.max(2, item.intensity)}%`, height: '100%', background: item.intensity > 0 ? '#06b6d4' : 'transparent', borderRadius: 2 }} />
                     </div>
@@ -332,7 +332,7 @@ export default function StudentDashboard() {
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   🏅 Top Achievements
                 </h3>
-                <Link to="/student/achievements" style={{ fontSize: '0.75rem', color: '#8b5cf6', textDecoration: 'none', fontWeight: 600 }}>
+                <Link to="/student/achievements" style={{ fontSize: '0.85rem', color: '#8b5cf6', textDecoration: 'none', fontWeight: 600 }}>
                   View All
                 </Link>
               </div>
@@ -349,14 +349,14 @@ export default function StudentDashboard() {
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   🌍 Global Leaderboard
                 </h3>
-                <Link to="/student/leaderboard" style={{ fontSize: '0.75rem', color: '#8b5cf6', textDecoration: 'none', fontWeight: 600 }}>
+                <Link to="/student/leaderboard" style={{ fontSize: '0.85rem', color: '#8b5cf6', textDecoration: 'none', fontWeight: 600 }}>
                   Full Rank
                 </Link>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {topLeaderboard.map((user, i) => (
                   <div key={user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: user.id === profile.id ? 'rgba(139,92,246,0.1)' : 'transparent', borderRadius: 8, border: user.id === profile.id ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                       <span style={{ fontSize: '0.85rem', fontWeight: 800, color: i < 3 ? '#f59e0b' : '#94a3b8', width: 20 }}>#{i + 1}</span>
                       <span style={{ fontSize: '0.85rem', color: 'white', fontWeight: user.id === profile.id ? 800 : 500 }}>{user.id === profile.id ? 'You' : user.name.split(' ')[0]}</span>
                     </div>
@@ -481,7 +481,7 @@ function KPIStudentCard({ icon, title, value, subtitle, color }) {
       <div>
         <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{title}</div>
         <div style={{ fontSize: '1.25rem', fontWeight: 900, color: color || 'white', marginTop: '2px' }}>{value}</div>
-        <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '2px' }}>{subtitle}</div>
+        <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '2px' }}>{subtitle}</div>
       </div>
     </GlassCard>
   )
@@ -514,7 +514,7 @@ function BadgeBox({ icon, name, active }) {
       }}>
         {icon}
       </div>
-      <div style={{ fontSize: '0.65rem', color: active ? 'white' : '#94a3b8', fontWeight: 700, marginTop: '6px', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: '0.85rem', color: active ? 'white' : '#94a3b8', fontWeight: 700, marginTop: '6px', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {name}
       </div>
     </div>

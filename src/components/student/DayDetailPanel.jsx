@@ -63,7 +63,7 @@ function ModuleRow({ module, courseId, onAction }) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '0.75rem',
+        gap: '0.85rem',
         padding: '0.85rem 1rem',
         borderRadius: 12,
         background: isCompleted ? 'rgba(16,185,129,0.04)' : 'rgba(0,0,0,0.01)',
@@ -237,7 +237,7 @@ export default function DayDetailPanel({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.75rem',
+              gap: '0.85rem',
               padding: '1rem',
               borderRadius: 12,
               background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.05))',

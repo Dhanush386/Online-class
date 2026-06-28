@@ -51,7 +51,7 @@ export default function ProgressRing({
       }}>
         {children || (
           <>
-            <span style={{ fontSize: size > 60 ? '0.95rem' : '0.75rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', lineHeight: 1 }}>{Math.round(value)}%</span>
+            <span style={{ fontSize: size > 60 ? '0.95rem' : '0.85rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', lineHeight: 1 }}>{Math.round(value)}%</span>
             {label && <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', fontWeight: 500 }}>{label}</span>}
           </>
         )}

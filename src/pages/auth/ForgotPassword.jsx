@@ -122,7 +122,7 @@ export default function ForgotPassword() {
                 ) : (
                     <form onSubmit={otpSent ? handleResetPassword : handleSendOtp} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         {error && (
-                            <div style={{ background: '#fef2f2', color: '#ef4444', padding: '0.75rem 1rem', borderRadius: 8, fontSize: '0.85rem', border: '1px solid #fee2e2' }}>
+                            <div style={{ background: '#fef2f2', color: '#ef4444', padding: '0.85rem 1rem', borderRadius: 8, fontSize: '0.85rem', border: '1px solid #fee2e2' }}>
                                 {error}
                             </div>
                         )}
@@ -161,7 +161,7 @@ export default function ForgotPassword() {
                                             style={{ paddingLeft: '2.5rem', letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 700 }}
                                         />
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span>Check your inbox (and spam folder) for the OTP.</span>
                                         <button 
                                             type="button" 
@@ -171,7 +171,7 @@ export default function ForgotPassword() {
                                                 background: 'none', border: 'none', padding: 0, 
                                                 color: resendCooldown > 0 ? 'var(--text-muted)' : '#6366f1', 
                                                 cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
-                                                fontWeight: 600, fontSize: '0.75rem'
+                                                fontWeight: 600, fontSize: '0.85rem'
                                             }}
                                         >
                                             {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}

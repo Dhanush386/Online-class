@@ -276,7 +276,7 @@ export default function Profile() {
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.75rem',
+                    gap: '0.85rem',
                     boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
                     animation: 'slideIn 0.3s ease-out'
                 }}>
@@ -417,7 +417,7 @@ export default function Profile() {
                                                     <Camera size={40} color="#cbd5e1" />
                                                 )}
                                             </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                                 <input 
                                                     type="file" 
                                                     ref={fileInputRef} 
@@ -470,7 +470,7 @@ export default function Profile() {
                                                 }}>
                                                     <button 
                                                         onClick={stopCamera}
-                                                        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#f1f5f9', border: 'none', padding: '0.75rem', borderRadius: '50%', cursor: 'pointer', color: 'var(--text-muted)' }}
+                                                        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#f1f5f9', border: 'none', padding: '0.85rem', borderRadius: '50%', cursor: 'pointer', color: 'var(--text-muted)' }}
                                                     >
                                                         <X size={20} />
                                                     </button>
@@ -542,7 +542,7 @@ export default function Profile() {
                                                 placeholder="Ex: Sachin"
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                             />
-                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ex: Sachin</p>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ex: Sachin</p>
                                         </div>
                                         <div>
                                             <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Surname/Last Name</label>
@@ -553,7 +553,7 @@ export default function Profile() {
                                                 placeholder="Ex: Tendulkar"
                                                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                             />
-                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ex: Tendulkar</p>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ex: Tendulkar</p>
                                         </div>
                                     </div>
 
@@ -566,7 +566,7 @@ export default function Profile() {
                                             placeholder="Full name as it should appear"
                                             style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                         />
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>How would you like your name to appear on certificates?</p>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>How would you like your name to appear on certificates?</p>
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
@@ -627,7 +627,7 @@ export default function Profile() {
                                             />
                                             <button 
                                                 onClick={() => resumeInputRef.current.click()}
-                                                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)' }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)' }}
                                             >
                                                 <Upload size={18} /> {formData.resume_url ? 'Update Resume' : 'Upload Resume'}
                                             </button>
@@ -666,7 +666,7 @@ export default function Profile() {
                                                     style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                                 />
                                             </div>
-                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Primary contact number</p>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Primary contact number</p>
                                         </div>
                                         <div>
                                             <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>WhatsApp Number</label>
@@ -680,7 +680,7 @@ export default function Profile() {
                                                     style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
                                                 />
                                             </div>
-                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>For important updates on WhatsApp</p>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>For important updates on WhatsApp</p>
                                         </div>
                                     </div>
 
@@ -956,7 +956,7 @@ export default function Profile() {
                                             <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>Do you have a Laptop/Computer?</label>
                                             <div style={{ display: 'flex', gap: '2rem' }}>
                                                 {['Yes', 'No'].map(v => (
-                                                    <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                                                    <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', cursor: 'pointer' }}>
                                                         <input 
                                                             type="radio" 
                                                             name="has_laptop" 
@@ -1048,9 +1048,9 @@ export default function Profile() {
                                                 </div>
                                             )}
                                         </div>
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Click a suggestion or type and press Enter to add</p>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Click a suggestion or type and press Enter to add</p>
                                         
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.25rem' }}>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', marginTop: '1.25rem' }}>
                                             {(formData.technical_skills || []).length > 0 ? (
                                                 formData.technical_skills.map(skill => (
                                                     <div key={skill} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.85rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600 }}>
@@ -1157,7 +1157,7 @@ export default function Profile() {
                                                             newEdu[idx].school = e.target.value;
                                                             setFormData(p => ({ ...p, education_details: newEdu }));
                                                         }}
-                                                        style={{ width: '100%', padding: '0.75rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
                                                     />
                                                 </div>
                                                 <div>
@@ -1169,7 +1169,7 @@ export default function Profile() {
                                                             newEdu[idx].degree = e.target.value;
                                                             setFormData(p => ({ ...p, education_details: newEdu }));
                                                         }}
-                                                        style={{ width: '100%', padding: '0.75rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
                                                     />
                                                 </div>
                                             </div>
@@ -1223,7 +1223,7 @@ export default function Profile() {
                                                             newWork[idx].company = e.target.value;
                                                             setFormData(p => ({ ...p, work_experience: newWork }));
                                                         }}
-                                                        style={{ width: '100%', padding: '0.75rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
                                                     />
                                                 </div>
                                                 <div>
@@ -1235,7 +1235,7 @@ export default function Profile() {
                                                             newWork[idx].role = e.target.value;
                                                             setFormData(p => ({ ...p, work_experience: newWork }));
                                                         }}
-                                                        style={{ width: '100%', padding: '0.75rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
                                                     />
                                                 </div>
                                             </div>
@@ -1289,7 +1289,7 @@ export default function Profile() {
                                                             newProj[idx].title = e.target.value;
                                                             setFormData(p => ({ ...p, projects_achievements: newProj }));
                                                         }}
-                                                        style={{ width: '100%', padding: '0.75rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
                                                     />
                                                 </div>
                                                 <div>
@@ -1301,7 +1301,7 @@ export default function Profile() {
                                                             newProj[idx].link = e.target.value;
                                                             setFormData(p => ({ ...p, projects_achievements: newProj }));
                                                         }}
-                                                        style={{ width: '100%', padding: '0.75rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
                                                     />
                                                 </div>
                                             </div>
@@ -1322,7 +1322,7 @@ export default function Profile() {
                 transform: 'translateX(-50%)', 
                 background: 'rgba(255,255,255,0.8)', 
                 backdropFilter: 'blur(10px)',
-                padding: '0.75rem 2rem',
+                padding: '0.85rem 2rem',
                 borderRadius: 99,
                 boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
                 border: '1px solid rgba(255,255,255,1)',
@@ -1350,7 +1350,7 @@ export default function Profile() {
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.75rem',
+                        gap: '0.85rem',
                         transition: 'all 0.2s'
                     }}
                 >

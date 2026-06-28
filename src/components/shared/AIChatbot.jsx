@@ -290,7 +290,7 @@ export default function AIChatbot() {
 
     const renderHeader = () => (
         <div style={{ padding: '1rem 1.25rem', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                 <div style={{ padding: '6px', background: '#eff6ff', borderRadius: '8px', color: '#6366f1' }}>
                     <MessageCircle size={20} />
                 </div>
@@ -312,7 +312,7 @@ export default function AIChatbot() {
                 <button
                     key={tab}
                     onClick={() => { setActiveTab(tab); setIsChatting(false); }}
-                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366f1' : 'var(--text-muted)', position: 'relative', cursor: 'pointer', flex: 1, textTransform: 'capitalize' }}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366f1' : 'var(--text-muted)', position: 'relative', cursor: 'pointer', flex: 1, textTransform: 'capitalize' }}
                 >
                     {tabLabels[tab]}
                     {activeTab === tab && <div style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: '3px', background: 'var(--text-primary)', borderRadius: '3px 3px 0 0' }} />}
@@ -374,17 +374,17 @@ export default function AIChatbot() {
                     <ChevronRight size={14} style={{ transform: 'rotate(180deg)' }} /> Back to Home
                 </button>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={handleClearChat} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', fontSize: '0.75rem', cursor: 'pointer' }}>Reset</button>
+                    <button onClick={handleClearChat} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', fontSize: '0.85rem', cursor: 'pointer' }}>Reset</button>
                 </div>
             </div>
 
             <div 
                 ref={scrollRef}
-                style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'white' }}
+                style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', background: 'white' }}
             >
                 {getActiveMessages().map((msg, i) => (
                     <div key={msg.id || i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
-                        <div style={{ padding: '0.75rem 1rem', borderRadius: '16px', background: msg.role === 'user' ? '#7c3aed' : '#f1f5f9', color: msg.role === 'user' ? 'white' : 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                        <div style={{ padding: '0.85rem 1rem', borderRadius: '16px', background: msg.role === 'user' ? '#7c3aed' : '#f1f5f9', color: msg.role === 'user' ? 'white' : 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
                             {msg.content}
                         </div>
                     </div>
@@ -403,7 +403,7 @@ export default function AIChatbot() {
                     placeholder="Type your message..." 
                     value={input} 
                     onChange={(e) => setInput(e.target.value)}
-                    style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', background: '#f8fafc' }}
+                    style={{ flex: 1, padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', background: '#f8fafc' }}
                 />
                 <button type="submit" disabled={!input.trim() || isLoading} style={{ width: 44, height: 44, borderRadius: '10px', background: '#7c3aed', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Send size={20} />
@@ -434,11 +434,11 @@ export default function AIChatbot() {
                                     onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
                                     onBlur={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
                                 >
-                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
+                                    <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
                                         <div style={{ padding: '8px', background: '#f8fafc', borderRadius: '10px', color: '#6366f1' }}><MessageSquare size={18} /></div>
                                         <div style={{ overflow: 'hidden', flex: 1 }}>
                                             <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}><Clock size={12} /> {date}</div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}><Clock size={12} /> {date}</div>
                                         </div>
                                     </div>
                                 </button>
@@ -479,7 +479,7 @@ export default function AIChatbot() {
         }
 
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 {tickets.map(t => (
                     <button 
                         key={t.id}
@@ -532,31 +532,31 @@ export default function AIChatbot() {
                     </div>
                     <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div>
-                            <label htmlFor="ticket-subject" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Subject</label>
+                            <label htmlFor="ticket-subject" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Subject</label>
                             <input 
                                 id="ticket-subject"
                                 type="text"
                                 placeholder="What's the issue about?"
                                 value={newTicketSubject}
                                 onChange={(e) => setNewTicketSubject(e.target.value)}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none' }}
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none' }}
                                 required
                             />
                         </div>
                         <div>
-                            <label htmlFor="ticket-description" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Description</label>
+                            <label htmlFor="ticket-description" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Description</label>
                             <textarea 
                                 id="ticket-description"
                                 placeholder="Provide more details..."
                                 value={newTicketMessage}
                                 onChange={(e) => setNewTicketMessage(e.target.value)}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', minHeight: '100px', resize: 'none' }}
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', minHeight: '100px', resize: 'none' }}
                                 required
                             />
                         </div>
 
                         {/* File Upload UI */}
-                        <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
+                        <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
                             <input 
                                 type="file" 
                                 ref={fileInputRef}
@@ -572,7 +572,7 @@ export default function AIChatbot() {
                                 accept="image/*"
                             />
                             {screenshot ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'white', padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', background: 'white', padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                     <div style={{ background: '#7c3aed', color: 'white', padding: '4px', borderRadius: '4px' }}>
                                         <ImageIcon size={14} />
                                     </div>
@@ -591,7 +591,7 @@ export default function AIChatbot() {
                                 <button 
                                     type="button" 
                                     onClick={() => fileInputRef.current.click()}
-                                    style={{ width: '100%', background: 'none', border: 'none', color: '#6366f1', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '4px' }}
+                                    style={{ width: '100%', background: 'none', border: 'none', color: '#6366f1', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '4px' }}
                                 >
                                     <Paperclip size={16} /> Add Screenshot
                                 </button>
@@ -618,7 +618,7 @@ export default function AIChatbot() {
                     <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Support Tickets</h4>
                     <button 
                         onClick={() => setIsCreatingTicket(true)}
-                        style={{ padding: '0.5rem 0.8rem', background: '#eff6ff', color: '#6366f1', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        style={{ padding: '0.5rem 0.8rem', background: '#eff6ff', color: '#6366f1', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
                         <PlusCircle size={14} /> New Ticket
                     </button>

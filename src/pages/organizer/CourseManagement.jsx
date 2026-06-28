@@ -246,7 +246,7 @@ export default function CourseManagement() {
                                 </div>
                                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{course.title}</h3>
                                 {(course.start_date || course.end_date) && (
-                                    <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#f97316', fontSize: '0.75rem', fontWeight: 600 }}>
+                                    <div style={{ marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#f97316', fontSize: '0.85rem', fontWeight: 600 }}>
                                         <Clock size={14} />
                                         <span>
                                             {course.start_date ? new Date(course.start_date).toLocaleDateString() : '...'} - {course.end_date ? new Date(course.end_date).toLocaleDateString() : '...'}
@@ -258,17 +258,17 @@ export default function CourseManagement() {
                                 </p>
                             </div>
                             <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                                         Created {new Date(course.created_at).toLocaleDateString()}
                                     </span>
                                     <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Course</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    <button onClick={() => navigate(`/student/courses/${course.id}`)} className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                                    <button onClick={() => navigate(`/student/courses/${course.id}`)} className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', whiteSpace: 'nowrap' }}>
                                         <Globe size={14} /> Open Portal
                                     </button>
-                                    <button onClick={() => openResources(course)} className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                                    <button onClick={() => openResources(course)} className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', whiteSpace: 'nowrap' }}>
                                         <FileText size={14} /> Materials
                                     </button>
                                 </div>
@@ -341,7 +341,7 @@ export default function CourseManagement() {
                                         </div>
 
                                         {resourceForm.file ? (
-                                            <div style={{ padding: '0.75rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div style={{ padding: '0.85rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
                                                     <Upload size={14} color="#6366f1" />
                                                     <span style={{ fontWeight: 600 }}>{resourceForm.file.name}</span>
@@ -415,7 +415,7 @@ export default function CourseManagement() {
                                         </select>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', gridColumn: '1 / -1' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', gridColumn: '1 / -1' }}>
                                     <button type="submit" className="btn-primary" disabled={saving} style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}>
                                         {saving ? 'Adding...' : <><Plus size={16} /> Add Material</>}
                                     </button>
@@ -441,10 +441,10 @@ export default function CourseManagement() {
                                         const [w, d] = weekDay.replace('W','').split('-D');
                                         return (
                                         <div key={weekDay}>
-                                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <Calendar size={12} /> Week {w} Day {d}
                                             </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                                 {resources.filter(r => (r.week_number || 1) == w && (r.day_of_week || 1) == d).map(r => (
                                                     <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10 }}>
                                                         <div style={{ width: 36, height: 36, background: r.resource_type === 'ppt' ? '#fff7ed' : '#f0fdf4', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -493,7 +493,7 @@ export default function CourseManagement() {
 
                         <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
                             {error && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
                                     <AlertCircle size={18} /> {error}
                                 </div>
                             )}
@@ -570,7 +570,7 @@ export default function CourseManagement() {
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                                 <input
                                     id="sequential-unlock"
                                     type="checkbox"
@@ -582,7 +582,7 @@ export default function CourseManagement() {
                                     <label htmlFor="sequential-unlock" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', display: 'block' }}>
                                         Sequential Week Unlocking
                                     </label>
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                         Requires students to complete one week before accessing the next.
                                     </span>
                                 </div>

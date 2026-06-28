@@ -27,7 +27,7 @@ function ProfileSyncIssue({ signOut }) {
                     We found your account but couldn't determine your role or load your profile.
                     Try refreshing the page or signing out and back in.
                 </p>
-                <button onClick={() => globalThis.location.reload()} className="btn-primary" style={{ width: '100%', marginBottom: '0.75rem' }}>Refresh Page</button>
+                <button onClick={() => globalThis.location.reload()} className="btn-primary" style={{ width: '100%', marginBottom: '0.85rem' }}>Refresh Page</button>
                 <button onClick={() => signOut()} className="btn-secondary" style={{ width: '100%' }}>Sign Out</button>
             </div>
         </div>
@@ -43,7 +43,7 @@ function PendingApproval({ signOut }) {
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
                     Your account has been created successfully. An organizer must review and approve your registration before you can access the platform.
                 </p>
-                <button onClick={() => globalThis.location.reload()} className="btn-primary" style={{ width: '100%', marginBottom: '0.75rem' }}>Refresh Status</button>
+                <button onClick={() => globalThis.location.reload()} className="btn-primary" style={{ width: '100%', marginBottom: '0.85rem' }}>Refresh Status</button>
                 <button onClick={() => signOut()} className="btn-secondary" style={{ width: '100%' }}>Sign Out</button>
             </div>
         </div>

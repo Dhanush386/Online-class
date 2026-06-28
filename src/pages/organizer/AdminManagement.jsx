@@ -152,18 +152,18 @@ export default function AdminManagement() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                     <tr style={{ textAlign: 'left', background: '#f8fafc', borderBottom: '1px solid var(--card-border)' }}>
-                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>NAME</th>
-                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ROLE</th>
-                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>EMAIL</th>
-                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ASSIGNED COURSES</th>
-                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'right' }}>ACTIONS</th>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>NAME</th>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>ROLE</th>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>EMAIL</th>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>ASSIGNED COURSES</th>
+                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'right' }}>ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
                     {subAdmins.map(admin => (
                         <tr key={admin.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
                             <td style={{ padding: '1rem 1.5rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                                     <div style={{ width: 32, height: 32, background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
                                         {admin.name?.[0]?.toUpperCase()}
                                     </div>
@@ -171,7 +171,7 @@ export default function AdminManagement() {
                                 </div>
                             </td>
                             <td style={{ padding: '1rem 1.5rem' }}>
-                                <span className="badge" style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 4, background: getRoleBackground(admin.role), color: getRoleColor(admin.role) }}>
+                                <span className="badge" style={{ fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 4, background: getRoleBackground(admin.role), color: getRoleColor(admin.role) }}>
                                     {admin.role.replace('_', ' ')}
                                 </span>
                             </td>
@@ -211,15 +211,15 @@ export default function AdminManagement() {
             {/* Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Courses</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Courses</div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#6366f1' }}>{stats.totalCourses}</div>
                 </div>
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Questions</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Questions</div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>{stats.totalQuestions}</div>
                 </div>
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Team Members</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Team Members</div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f59e0b' }}>{stats.totalSubAdmins}</div>
                 </div>
             </div>
@@ -245,7 +245,7 @@ export default function AdminManagement() {
                             <button onClick={() => setShowInviteModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
                         </div>
                         <form onSubmit={handleInviteSubAdmin} style={{ padding: '1.5rem' }}>
-                            {error && <div style={{ color: '#ef4444', background: '#fef2f2', padding: '0.75rem', borderRadius: 8, marginBottom: '1rem', fontSize: '0.85rem' }}>{error}</div>}
+                            {error && <div style={{ color: '#ef4444', background: '#fef2f2', padding: '0.85rem', borderRadius: 8, marginBottom: '1rem', fontSize: '0.85rem' }}>{error}</div>}
                             <div style={{ marginBottom: '1rem' }}>
                                 <label htmlFor="invite-email" className="form-label">Email Address</label>
                                 <input 
@@ -259,7 +259,7 @@ export default function AdminManagement() {
                                     required 
                                 />
                             </div>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>This email will be authorized to sign up as a sub-admin. They will only see courses you assign to them.</p>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>This email will be authorized to sign up as a sub-admin. They will only see courses you assign to them.</p>
                             <button type="submit" disabled={saving} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                                 {saving ? 'Sending...' : 'Send Authorization'}
                             </button>
@@ -280,7 +280,7 @@ export default function AdminManagement() {
                             <button onClick={() => setShowAssignModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
                         </div>
                         <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                 {courses.map(course => {
                                     const isAssigned = selectedAdmin.assignedCourses.some(c => c.id === course.id)
                                     return (

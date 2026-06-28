@@ -115,7 +115,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
         <>
             {/* Reference iFrame URL */}
             <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, #eff6ff, #f0fdf4)', border: '1px solid #bfdbfe', borderRadius: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
                     <div style={{ width: 28, height: 28, background: '#3b82f6', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <span style={{ color: 'white', fontSize: '0.7rem', fontWeight: 800 }}>{'<>'}</span>
                     </div>
@@ -141,7 +141,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
             {/* Frontend Testcase Engine */}
             <div style={{ marginBottom: '1.5rem', border: '1px solid #6366f130', borderRadius: 14, overflow: 'hidden' }}>
                 {/* Header */}
-                <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                     <div style={{ width: 32, height: 32, background: '#6366f1', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🧪</div>
                     <div>
                         <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ffffff' }}>Frontend Testcase Engine</div>
@@ -151,7 +151,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                         {['html', 'css', 'js'].map(t => {
                             const count = (formData.web_testcases?.[t] || []).filter(x => t === 'js' ? x.keyword?.trim() : x.selector?.trim()).length
                             return count > 0 ? (
-                                <span key={t} style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.5rem', background: getTabColor(t), color: 'white', borderRadius: 10 }}>
+                                <span key={t} style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0.15rem 0.5rem', background: getTabColor(t), color: 'white', borderRadius: 10 }}>
                                     {t.toUpperCase()} {count}
                                 </span>
                             ) : null
@@ -171,7 +171,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                             type="button"
                             onClick={() => setWcTab(tab.id)}
                             style={{
-                                flex: 1, padding: '0.65rem 0.5rem', border: 'none', cursor: 'pointer',
+                                flex: 1, padding: '0.85rem 0.5rem', border: 'none', cursor: 'pointer',
                                 background: wcTab === tab.id ? 'white' : 'transparent',
                                 borderBottom: wcTab === tab.id ? `2px solid ${tab.color}` : '2px solid transparent',
                                 color: wcTab === tab.id ? tab.color : 'var(--text-muted)',
@@ -192,7 +192,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                     {/* HTML DOM Tab */}
                     {wcTab === 'html' && (
                         <div>
-                            <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                            <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.85rem' }}>
                                 Check that specific HTML elements exist using CSS selectors. <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>minCount</code> is optional (default: 1).
                             </p>
                             {(formData.web_testcases?.html || []).map((tc, idx) => (
@@ -231,7 +231,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                     {/* CSS Style Tab */}
                     {wcTab === 'css' && (
                         <div>
-                            <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                            <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.85rem' }}>
                                 Check computed CSS properties. Leave <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>Expected Value</code> empty to just check the property is set.
                             </p>
                             {(formData.web_testcases?.css || []).map((tc, idx) => (
@@ -275,7 +275,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                     {/* JS Code Tab */}
                     {wcTab === 'js' && (
                         <div>
-                            <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                            <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.85rem' }}>
                                 Check that specific functions, methods, or keywords appear in the student's JavaScript code.
                             </p>
                             {(formData.web_testcases?.js || []).map((tc, idx) => (
@@ -798,12 +798,12 @@ export default function CodingManagement() {
                                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                                     Toggle locks for specific groups. Locked resources are invisible/non-accessible to students in that group.
                                 </p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                     {groups.filter(g => g.course_id === lockingResource.course_id).length === 0 ? (
                                         <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                             No groups/batches created for this course.
                                             {groups.length > 0 && (
-                                                <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#f59e0b' }}>
+                                                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#f59e0b' }}>
                                                     Note: Batches are course-specific. You have {groups.length} batch(es) in other courses.
                                                 </div>
                                             )}
@@ -813,12 +813,12 @@ export default function CodingManagement() {
                                             const access = resourceAccess.find(a => a.group_id === g.id && a.resource_id === lockingResource.id)
                                             const isLocked = access?.is_locked || false
                                             return (
-                                                <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
+                                                <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1rem', background: isLocked ? '#fff1f2' : '#f0fdf4', borderRadius: 10, border: `1px solid ${isLocked ? '#fecaca' : '#bbf7d0'}` }}>
                                                     <div style={{ fontWeight: 600, fontSize: '0.9rem', color: isLocked ? '#991b1b' : '#166534' }}>{g.name}</div>
                                                     <button
                                                         onClick={() => toggleResourceLock(g.id, lockingResource.id)}
                                                         className={isLocked ? "btn-primary" : "btn-secondary"}
-                                                        style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: isLocked ? '#ef4444' : 'white' }}
+                                                        style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', background: isLocked ? '#ef4444' : 'white' }}
                                                     >
                                                         {isLocked ? 'Unlock' : 'Lock'}
                                                     </button>
@@ -849,27 +849,27 @@ export default function CodingManagement() {
 <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                         <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Test Cases</h4>
-                                        <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: [...p.test_cases, { input: '', expected_output: '', is_hidden: false }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
+                                        <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: [...p.test_cases, { input: '', expected_output: '', is_hidden: false }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
                                             <Plus size={14} /> Add Test Case
                                         </button>
                                     </div>
                                     {formData.test_cases.map((tc, idx) => (
                                         <div key={idx} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '1rem', marginBottom: '1rem', background: 'white' }}>
-                                            <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.75rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
+                                            <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.85rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                    <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)' }}>INPUT (STDIN)</label>
+                                                    <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>INPUT (STDIN)</label>
                                                     <textarea id={`tc-input-${idx}`} className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => {
                                                         const newTCData = [...formData.test_cases]; newTCData[idx].input = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
                                                     }} style={{ fontSize: '0.8rem' }} />
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                    <label htmlFor={`tc-output-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)' }}>EXPECTED OUTPUT (STDOUT)</label>
+                                                    <label htmlFor={`tc-output-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>EXPECTED OUTPUT (STDOUT)</label>
                                                     <textarea id={`tc-output-${idx}`} className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => {
                                                         const newTCData = [...formData.test_cases]; newTCData[idx].expected_output = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
                                                     }} style={{ fontSize: '0.8rem' }} />
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', paddingTop: '1.25rem' }}>
-                                                    <label htmlFor={`tc-hidden-${idx}`} style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)' }}>HIDDEN</label>
+                                                    <label htmlFor={`tc-hidden-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>HIDDEN</label>
                                                     <input
                                                         id={`tc-hidden-${idx}`}
                                                         type="checkbox"
@@ -885,10 +885,10 @@ export default function CodingManagement() {
                                             </div>
 
                                             {formData.language === 'html' && (
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', paddingTop: '0.75rem', borderTop: '1px dashed #e2e8f0' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', paddingTop: '0.85rem', borderTop: '1px dashed #e2e8f0' }}>
                                                     {['input_image_url', 'output_image_url'].map(field => (
                                                         <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' }}>
+                                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' }}>
                                                                 {field === 'input_image_url' ? 'Input Design Mockup' : 'Target Result Image'}
                                                             </span>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -921,7 +921,7 @@ export default function CodingManagement() {
                                                                             newTCData[idx][field] = e.target.value
                                                                             setFormData(p => ({ ...p, test_cases: newTCData }))
                                                                         }}
-                                                                        style={{ fontSize: '0.75rem', flex: 1 }}
+                                                                        style={{ fontSize: '0.85rem', flex: 1 }}
                                                                     />
                                                                     <label style={{ 
                                                                         cursor: 'pointer', 
@@ -931,7 +931,7 @@ export default function CodingManagement() {
                                                                         background: '#f8fafc', 
                                                                         border: '1px solid #e2e8f0', 
                                                                         borderRadius: '8px', 
-                                                                        padding: '0 0.75rem',
+                                                                        padding: '0 0.85rem',
                                                                         color: 'var(--text-muted)',
                                                                         transition: 'all 0.2s'
                                                                     }} title="Upload from desktop">
@@ -960,7 +960,7 @@ export default function CodingManagement() {
 <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                             <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sub-Questions</h4>
-                                            <button type="button" onClick={() => setFormData(p => ({ ...p, sub_questions: [...p.sub_questions, { id: 'q' + (p.sub_questions.length + 1), title: '', problem_statement: '', starter_code: '', solution_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false }] }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
+                                            <button type="button" onClick={() => setFormData(p => ({ ...p, sub_questions: [...p.sub_questions, { id: 'q' + (p.sub_questions.length + 1), title: '', problem_statement: '', starter_code: '', solution_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false }] }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
                                                 <Plus size={14} /> Add Question
                                             </button>
                                         </div>
@@ -1037,7 +1037,7 @@ export default function CodingManagement() {
                                                 if (c) setLockingResource(c)
                                             }}
                                             className="btn-secondary"
-                                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                            style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
                                         >
                                             <Clock size={14} /> Access Control
                                         </button>
@@ -1050,7 +1050,7 @@ export default function CodingManagement() {
 
                             <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
                                 {error && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
                                         <AlertCircle size={18} /> {error}
                                     </div>
                                 )}
@@ -1312,7 +1312,7 @@ export default function CodingManagement() {
 
                         <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
                             {aiError && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
                                     <AlertCircle size={18} /> {aiError}
                                 </div>
                             )}
@@ -1336,7 +1336,7 @@ export default function CodingManagement() {
                                     onChange={e => setAiPrompt(e.target.value)}
                                     style={{ resize: 'none' }}
                                 />
-                                <div style={{ textAlign: 'right', marginTop: '0.75rem' }}>
+                                <div style={{ textAlign: 'right', marginTop: '0.85rem' }}>
                                     <button 
                                         onClick={generateChallengesWithAI} 
                                         className="btn-primary" 
@@ -1359,7 +1359,7 @@ export default function CodingManagement() {
                                                     <span style={{ fontSize: '0.7rem', background: '#e2e8f0', padding: '0.2rem 0.5rem', borderRadius: 4 }}>{c.language} • {c.difficulty}</span>
                                                 </div>
                                                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{c.problem_statement?.substring(0, 100)}...</p>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                                     {Array.isArray(c.test_cases) ? c.test_cases.length : 0} Test Cases
                                                 </div>
                                             </div>
@@ -1406,22 +1406,22 @@ export default function CodingManagement() {
 
                         {/* Summary Stats */}
                         <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', background: '#f8fafc' }}>
-                            <div style={{ flex: 1, padding: '0.75rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#6366f1' }}>{submissionsStats.total}</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Submissions</div>
                             </div>
-                            <div style={{ flex: 1, padding: '0.75rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{submissionsStats.avgScore} XP</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Avg Score</div>
                             </div>
-                            <div style={{ flex: 1, padding: '0.75rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{submissionsStats.passed}/{submissionsStats.total}</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Accepted</div>
                             </div>
                         </div>
 
                         {/* Search */}
-                        <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--card-border)' }}>
+                        <div style={{ padding: '0.85rem 1.5rem', borderBottom: '1px solid var(--card-border)' }}>
                             <div style={{ position: 'relative' }}>
                                 <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
@@ -1450,7 +1450,7 @@ export default function CodingManagement() {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     {/* Table Header */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.75rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.85rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
                                         <span>Student</span>
                                         <span style={{ textAlign: 'center' }}>Score (XP)</span>
                                         <span style={{ textAlign: 'center' }}>Status</span>
@@ -1461,12 +1461,12 @@ export default function CodingManagement() {
                                         .map((sub, idx) => {
                                             const passed = sub.status === 'accepted'
                                             return (
-                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.75rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
                                                     onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
                                                     onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
                                                 >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
                                                             {sub.users?.name?.[0]?.toUpperCase() || '?'}
                                                         </div>
                                                         <div>
@@ -1479,11 +1479,11 @@ export default function CodingManagement() {
                                                     </div>
                                                     <div style={{ textAlign: 'center' }}>
                                                         {passed ? (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600, color: '#059669' }}>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#059669' }}>
                                                                 <CheckCircle2 size={14} /> Accepted
                                                             </span>
                                                         ) : (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600, color: '#dc2626' }}>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#dc2626' }}>
                                                                 <XCircle size={14} /> Failed / {sub.status || 'Attempted'}
                                                             </span>
                                                         )}
@@ -1501,7 +1501,7 @@ export default function CodingManagement() {
                                                                     background: getRiskBg(proctorSessionsMap[sub.student_id].final_risk_score),
                                                                     color: getRiskColor(proctorSessionsMap[sub.student_id].final_risk_score),
                                                                     border: `1px solid ${getRiskBorder(proctorSessionsMap[sub.student_id].final_risk_score)}`,
-                                                                    fontSize: '0.75rem',
+                                                                    fontSize: '0.85rem',
                                                                     fontWeight: 700,
                                                                     cursor: 'pointer'
                                                                 }}
@@ -1509,7 +1509,7 @@ export default function CodingManagement() {
                                                                 🛡️ {proctorSessionsMap[sub.student_id].final_risk_score} Risk
                                                             </button>
                                                         ) : (
-                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>None</span>
+                                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>None</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -1552,7 +1552,7 @@ export default function CodingManagement() {
                     <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>Coding Practice</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Create and manage coding challenges for your students</p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.85rem' }}>
                     <button
                         onClick={() => navigate('/organizer/proctoring')}
                         className="btn-secondary"
@@ -1579,8 +1579,8 @@ export default function CodingManagement() {
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', marginBottom: '1.5rem' }}>
-                <button onClick={() => setMainTab('challenges')} style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'challenges' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'challenges' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Challenges</button>
-                <button onClick={() => setMainTab('discussions')} style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'discussions' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'discussions' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Discussions</button>
+                <button onClick={() => setMainTab('challenges')} style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'challenges' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'challenges' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Challenges</button>
+                <button onClick={() => setMainTab('discussions')} style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: mainTab === 'discussions' ? '2px solid #6366f1' : '2px solid transparent', color: mainTab === 'discussions' ? '#6366f1' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Discussions</button>
             </div>
 
             {mainTab === 'challenges' ? (
@@ -1594,7 +1594,7 @@ export default function CodingManagement() {
                         name="challenge-search"
                         type="text"
                         placeholder="Search challenges by title or course..."
-                        style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: 12, border: '1px solid var(--card-border)', background: 'white', fontSize: '0.9rem' }}
+                        style={{ width: '100%', padding: '0.85rem 1rem 0.85rem 2.8rem', borderRadius: 12, border: '1px solid var(--card-border)', background: 'white', fontSize: '0.9rem' }}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                     />
@@ -1627,7 +1627,7 @@ export default function CodingManagement() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
                     {filteredChallenges.map(c => (
                         <div key={c.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${getDifficultyColor(c.difficulty)}` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
                                 <span className="badge" style={{ background: '#f1f5f9', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
                                     {LANGUAGES.find(l => l.id === c.language)?.icon} {c.language.toUpperCase()}
                                 </span>
@@ -1653,37 +1653,37 @@ export default function CodingManagement() {
                                 {c.title}
                             </h3>
                             {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.75rem' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.85rem' }}>
                                     {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).map(a => {
                                         const g = groups.find(gr => gr.id === a.group_id)
-                                        return g ? <span key={g.id} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: '#fee2e2', color: '#991b1b', borderRadius: 4, fontWeight: 600 }}>Locked: {g.name}</span> : null
+                                        return g ? <span key={g.id} style={{ fontSize: '0.85rem', padding: '0.1rem 0.4rem', background: '#fee2e2', color: '#991b1b', borderRadius: 4, fontWeight: 600 }}>Locked: {g.name}</span> : null
                                     })}
                                 </div>
                             )}
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                 <BookOpen size={12} /> {c.courses?.title} • {c.difficulty.toUpperCase()}
                             </div>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, height: '2.5rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>
                                 {c.description || 'No description provided.'}
                             </p>
-                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.test_cases?.length || 0} Test Cases</span>
+                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.test_cases?.length || 0} Test Cases</span>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     <button
                                         onClick={() => loadSubmissions(c)}
                                         className="btn-primary"
-                                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white' }}
+                                        style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white' }}
                                     >
                                         <Eye size={14} /> Submissions
                                     </button>
                                     <button
                                         onClick={() => window.open(`/student/coding/${c.id}?admin=true`, '_blank')}
                                         className="btn-secondary"
-                                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                        style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
                                     >
                                         Test Question
                                     </button>
-                                    <button onClick={() => openEdit(c)} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>View Details</button>
+                                    <button onClick={() => openEdit(c)} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>View Details</button>
                                 </div>
                             </div>
                         </div>

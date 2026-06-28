@@ -403,7 +403,7 @@ export default function CourseDetail() {
                         <div style={{ width: '100%', maxWidth: '1100px', position: 'relative' }}>
                             {/* Modal Header */}
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderTopLeftRadius: 16, borderTopRightRadius: 16, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                                     <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
                                     <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{activeVideo.title}</h2>
                                 </div>
@@ -478,7 +478,7 @@ export default function CourseDetail() {
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{course?.description}</p>
                     </div>
                     {(course?.start_date || course?.end_date) && (
-                        <div style={{ textAlign: 'right', background: 'rgba(99,102,241,0.05)', padding: '0.75rem 1.25rem', borderRadius: 12, border: '1px solid rgba(99,102,241,0.1)' }}>
+                        <div style={{ textAlign: 'right', background: 'rgba(99,102,241,0.05)', padding: '0.85rem 1.25rem', borderRadius: 12, border: '1px solid rgba(99,102,241,0.1)' }}>
                             <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Course Timeline</div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Calendar size={14} color="#6366f1" />
@@ -600,8 +600,8 @@ export default function CourseDetail() {
                 {/* Note Editor */}
                 {(isAddingNote || activeNote) && (
                     <div className="glass-card animate-slide-up" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0', background: 'white', marginBottom: '2rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                            <div style={{ display: 'flex', gap: '0.75rem', color: 'var(--text-muted)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.85rem 1rem', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                            <div style={{ display: 'flex', gap: '0.85rem', color: 'var(--text-muted)' }}>
                                 <span style={{ fontWeight: 800 }}>B</span>
                                 <span style={{ fontStyle: 'italic' }}>I</span>
                                 <span style={{ textDecoration: 'underline' }}>U</span>
@@ -642,7 +642,7 @@ export default function CourseDetail() {
                                     <Clock size={14} /> 
                                     <span>{savingNote ? 'Saving...' : 'Not Saved'}</span>
                                 </div>
-                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                <div style={{ display: 'flex', gap: '0.85rem' }}>
                                     <button 
                                         onClick={() => { setIsAddingNote(false); setActiveNote(null) }} 
                                         style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
@@ -674,15 +674,15 @@ export default function CourseDetail() {
                     ) : (
                         [...new Set(notes.map(n => n.day_number))].sort((a,b) => (a||0) - (b||0)).map(day => (
                             <div key={day || 'general'}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                                    <div style={{ padding: '0.3rem 0.8rem', background: day ? 'rgba(59,130,246,0.1)' : 'rgba(148,163,184,0.1)', color: day ? '#3b82f6' : 'var(--text-muted)', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1rem' }}>
+                                    <div style={{ padding: '0.3rem 0.8rem', background: day ? 'rgba(59,130,246,0.1)' : 'rgba(148,163,184,0.1)', color: day ? '#3b82f6' : 'var(--text-muted)', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700 }}>
                                         {day ? `Day ${day} Notes` : 'General Notes'}
                                     </div>
                                     <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, var(--card-border), transparent)' }} />
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                                     {notes.filter(n => n.day_number === day).map(note => (
-                                        <div key={note.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid var(--card-border)', background: 'white' }}>
+                                        <div key={note.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', border: '1px solid var(--card-border)', background: 'white' }}>
                                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
                                                 <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>{note.title}</h4>
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -695,7 +695,7 @@ export default function CourseDetail() {
                                                 </div>
                                             </div>
                                             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
-                                            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                                            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                                 <Calendar size={12} /> {new Date(note.created_at).toLocaleDateString()}
                                             </div>
                                         </div>

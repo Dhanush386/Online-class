@@ -35,7 +35,7 @@ const getMessageBorder = (isMine, isInstructor) => {
 function SystemMessage({ isAnnouncement, message }) {
     return (
         <div style={{ display: 'flex', justifyContent: 'center', margin: '0.5rem 0' }}>
-            <div style={{ background: isAnnouncement ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '0.4rem 0.8rem', borderRadius: 16, fontSize: '0.75rem', color: isAnnouncement ? '#f59e0b' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, fontWeight: isAnnouncement ? 600 : 400 }}>
+            <div style={{ background: isAnnouncement ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '0.4rem 0.8rem', borderRadius: 16, fontSize: '0.85rem', color: isAnnouncement ? '#f59e0b' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, fontWeight: isAnnouncement ? 600 : 400 }}>
                 <Info size={12} /> {message}
             </div>
         </div>
@@ -160,7 +160,7 @@ function MessageItem({ msg, profile, isOrganizer, reactionPickerMsgId, setReacti
                     style={{ 
                         background: getMessageBackground(isMine, isInstructor),
                         color: 'white',
-                        padding: '0.5rem 0.75rem',
+                        padding: '0.5rem 0.85rem',
                         borderRadius: 12,
                         borderTopRightRadius: isMine ? 2 : 12,
                         borderTopLeftRadius: isMine ? 12 : 2,
@@ -386,11 +386,11 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, onNewMessag
             {/* Pinned Messages Area */}
             {pinnedMessages.length > 0 && (
                 <div style={{ 
-                    padding: '0.75rem', 
+                    padding: '0.85rem', 
                     background: 'rgba(99, 102, 241, 0.1)', 
                     borderBottom: '1px solid rgba(99, 102, 241, 0.2)' 
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, color: '#818cf8', fontSize: '0.75rem', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, color: '#818cf8', fontSize: '0.85rem', fontWeight: 600 }}>
                         <Pin size={12} /> Pinned
                     </div>
                     {pinnedMessages.map(msg => (
@@ -407,7 +407,7 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, onNewMessag
             )}
 
             {/* Messages List */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 {regularMessages.length === 0 ? (
                     <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '2rem' }}>
                         No messages yet. Say hello!
@@ -430,7 +430,7 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, onNewMessag
             </div>
 
             {/* Input Area */}
-            <div style={{ padding: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15,23,42,0.95)' }}>
+            <div style={{ padding: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15,23,42,0.95)' }}>
                 {chatLocked && !isOrganizer ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#ef4444', fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}>
                         <ShieldAlert size={14} /> Chat is locked by instructor
@@ -448,7 +448,7 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, onNewMessag
                                 background: 'rgba(255,255,255,0.05)',
                                 border: '1px solid rgba(255,255,255,0.1)',
                                 color: 'white',
-                                padding: '0.5rem 0.75rem',
+                                padding: '0.5rem 0.85rem',
                                 borderRadius: 8,
                                 outline: 'none',
                                 fontSize: '0.9rem'

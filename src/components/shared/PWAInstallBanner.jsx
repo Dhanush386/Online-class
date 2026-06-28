@@ -101,7 +101,7 @@ export default function PWAInstallBanner() {
                     -webkit-backdrop-filter: blur(12px);
                     border: 1px solid rgba(255, 255, 255, 0.1);
                     border-radius: 16px;
-                    padding: 0.75rem 1rem;
+                    padding: 0.85rem 1rem;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
@@ -111,7 +111,7 @@ export default function PWAInstallBanner() {
                 .pwa-banner-info {
                     display: flex;
                     align-items: center;
-                    gap: 0.75rem;
+                    gap: 0.85rem;
                 }
 
                 .pwa-icon-box {
@@ -135,7 +135,7 @@ export default function PWAInstallBanner() {
 
                 .pwa-subtitle {
                     color: var(--text-muted);
-                    font-size: 0.75rem;
+                    font-size: 0.85rem;
                     margin: 0;
                 }
 
@@ -151,7 +151,7 @@ export default function PWAInstallBanner() {
                     border: none;
                     padding: 0.5rem 1rem;
                     border-radius: 8px;
-                    font-size: 0.75rem;
+                    font-size: 0.85rem;
                     font-weight: 700;
                     cursor: pointer;
                     display: flex;

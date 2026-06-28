@@ -21,12 +21,12 @@ const ExpiryControl = ({ studentId, currentExpiry, onUpdate, saving }) => {
     const hasChanged = val !== toLocalISO(currentExpiry)
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#9a3412' }}>Expires on:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <span style={{ fontSize: '0.85rem', color: '#9a3412' }}>Expires on:</span>
             <input
                 type="datetime-local"
                 className="form-input"
-                style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', width: 'auto', background: 'white' }}
+                style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: 'auto', background: 'white' }}
                 value={val}
                 onChange={(e) => setVal(e.target.value)}
                 disabled={saving}
@@ -45,7 +45,7 @@ const ExpiryControl = ({ studentId, currentExpiry, onUpdate, saving }) => {
                 <button
                     onClick={() => onUpdate(studentId, null)}
                     disabled={saving}
-                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
                 >
                     Clear
                 </button>
@@ -592,14 +592,14 @@ export default function StudentManagement() {
                 <button
                     className={`nav-btn ${tab === 'active' ? 'active' : ''}`}
                     onClick={() => setTab('active')}
-                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'active' ? '2px solid #6366f1' : '2px solid transparent', color: tab === 'active' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'active' ? '2px solid #6366f1' : '2px solid transparent', color: tab === 'active' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
                 >
                     Active Students
                 </button>
                 <button
                     className={`nav-btn ${tab === 'pending' ? 'active' : ''}`}
                     onClick={() => setTab('pending')}
-                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'pending' ? '2px solid #f59e0b' : '2px solid transparent', color: tab === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'pending' ? '2px solid #f59e0b' : '2px solid transparent', color: tab === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
                 >
                     Pending Approval
                     {students.filter(s => s.status === 'pending').length > 0 && (
@@ -614,7 +614,7 @@ export default function StudentManagement() {
                         onClick={handleSyncStudents}
                         disabled={saving}
                         className="btn-secondary"
-                        style={{ marginLeft: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                        style={{ marginLeft: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
                         title="Search for missing student profiles in the authentication system"
                     >
                         <Users size={14} /> {saving ? 'Syncing...' : 'Sync Students'}
@@ -623,14 +623,14 @@ export default function StudentManagement() {
                 <button
                     className={`nav-btn ${tab === 'team' ? 'active' : ''}`}
                     onClick={() => setTab('team')}
-                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'team' ? '2px solid #8b5cf6' : '2px solid transparent', color: tab === 'team' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'team' ? '2px solid #8b5cf6' : '2px solid transparent', color: tab === 'team' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
                 >
                     Organizer Team
                 </button>
                 <button
                     className={`nav-btn ${tab === 'groups' ? 'active' : ''}`}
                     onClick={() => setTab('groups')}
-                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'groups' ? '2px solid #10b981' : '2px solid transparent', color: tab === 'groups' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'groups' ? '2px solid #10b981' : '2px solid transparent', color: tab === 'groups' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
                 >
                     Batches & Groups
                 </button>
@@ -645,7 +645,7 @@ export default function StudentManagement() {
                 <div className="animate-fade-in">
                     <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Invite New Organizer</h3>
-                        <form onSubmit={handleInviteOrganizer} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.75rem' }}>
+                        <form onSubmit={handleInviteOrganizer} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.85rem' }}>
                             <div style={{ position: 'relative' }}>
                                 <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
@@ -676,7 +676,7 @@ export default function StudentManagement() {
                                 {saving ? 'Inviting...' : 'Invite'}
                             </button>
                         </form>
-                        {error && <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.5rem' }}>{error}</p>}
+                        {error && <p style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.5rem' }}>{error}</p>}
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -684,15 +684,15 @@ export default function StudentManagement() {
                             <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Users size={16} /> Current Organizers ({organizers.length})
                             </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                 {organizers.map(org => (
-                                    <div key={org.id} className="glass-card" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div key={org.id} className="glass-card" style={{ padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <div style={{ width: 32, height: 32, background: 'var(--card-border)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>
                                             {org.name?.[0]?.toUpperCase()}
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{org.name} {org.id === profile.id && '(You)'}</div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{org.email}</div>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{org.email}</div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             {profile?.role === 'main_admin' ? (
@@ -701,7 +701,7 @@ export default function StudentManagement() {
                                                         value={org.role} 
                                                         onChange={(e) => handleUpdateRole(org.id, e.target.value)}
                                                         className="form-input"
-                                                        style={{ width: 'auto', fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                                                        style={{ width: 'auto', fontSize: '0.85rem', padding: '0.2rem 0.5rem' }}
                                                         disabled={org.id === profile.id}
                                                     >
                                                         <option value="organizer">Organizer</option>
@@ -730,14 +730,14 @@ export default function StudentManagement() {
                             <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Clock size={16} /> Pending Invites ({invites.length})
                             </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                 {invites.length === 0 ? (
                                     <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                         No pending invitations
                                     </div>
                                 ) : (
                                     invites.map(invite => (
-                                        <div key={invite.email} className="glass-card" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div key={invite.email} className="glass-card" style={{ padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{invite.email}</div>
                                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
@@ -830,9 +830,9 @@ export default function StudentManagement() {
                     <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No students found</p>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                     {error && (
-                        <div style={{ padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <div style={{ padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <AlertCircle size={16} flexShrink={0} /> {error}
                         </div>
                     )}
@@ -865,24 +865,24 @@ export default function StudentManagement() {
                                     </div>
 
                                     {tab === 'pending' ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: 'auto' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto' }}>
                                             <button
                                                 className="btn-secondary"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
                                                 onClick={(e) => { e.stopPropagation(); setViewingProfileId(student.id); }}
                                             >
                                                 <Info size={14} /> View Profile
                                             </button>
                                             <button
                                                 className="btn-primary"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', background: 'linear-gradient(135deg,#10b981,#059669)' }}
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', background: 'linear-gradient(135deg,#10b981,#059669)' }}
                                                 onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'approved'); }}
                                             >
                                                 <CheckCircle2 size={14} /> Approve
                                             </button>
                                             <button
                                                 className="btn-secondary"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
                                                 onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'rejected'); }}
                                             >
                                                 <XCircle size={14} /> Reject
@@ -893,23 +893,23 @@ export default function StudentManagement() {
                                             <div style={{ display: 'flex', gap: '1.5rem' }}>
                                                 <div style={{ textAlign: 'center' }}>
                                                     <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{student.enrollments?.length || 0}</div>
-                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Courses</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Courses</div>
                                                 </div>
                                                 <div style={{ textAlign: 'center', minWidth: 60 }}>
                                                     <div style={{ fontSize: '1rem', fontWeight: 700, color: avg > 70 ? '#10b981' : avg > 40 ? '#f59e0b' : '#f87171' }}>{avg}%</div>
-                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Progress</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Progress</div>
                                                 </div>
                                                 <div style={{ textAlign: 'center', minWidth: 70 }}>
                                                     <div style={{ fontSize: '1rem', fontWeight: 700, color: student.assessAvg > 70 ? '#10b981' : student.assessAvg > 40 ? '#f59e0b' : '#f87171' }}>
                                                         {student.assessAvg}%
                                                     </div>
-                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Assignments</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Assignments</div>
                                                 </div>
                                                 <div style={{ textAlign: 'center', minWidth: 60 }}>
                                                     <div style={{ fontSize: '1rem', fontWeight: 700, color: '#6366f1' }}>
                                                         {student.codingTotal}
                                                     </div>
-                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Coding</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Coding</div>
                                                 </div>
                                             </div>
                                             <div style={{ width: 80 }} className="hide-mobile">
@@ -917,10 +917,10 @@ export default function StudentManagement() {
                                                     <div className="progress-bar-fill" style={{ width: `${avg}%`, background: avg > 70 ? 'linear-gradient(90deg,#10b981,#059669)' : avg > 40 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)' }} />
                                                 </div>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                                                 <button
                                                     className="btn-secondary"
-                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setViewingProfileId(student.id);
@@ -930,7 +930,7 @@ export default function StudentManagement() {
                                                 </button>
                                                 <button
                                                     className="btn-secondary"
-                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem' }}
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem' }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setAssigningTo(student);
@@ -958,7 +958,7 @@ export default function StudentManagement() {
 
                                 {isOpen && (
                                     <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--card-border)' }}>
-                                        <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                                        <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.85rem' }}>
                                             <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 10, border: '1px solid #fed7aa', gridColumn: '1 / -1', marginBottom: '0.5rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -973,7 +973,7 @@ export default function StudentManagement() {
                                                     />
                                                 </div>
                                                 {student.access_expires_at && new Date(student.access_expires_at) < new Date() && (
-                                                    <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                    <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                         <AlertCircle size={12} /> Access has expired
                                                     </p>
                                                 )}
@@ -981,7 +981,7 @@ export default function StudentManagement() {
                                             {student.enrollments?.length > 0 ? (
                                                 student.enrollments.map((en, i) => (
                                                     <div key={i} style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.85rem' }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                                 <BookOpen size={14} color="#818cf8" />
                                                                 <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{en.course}</span>
@@ -994,7 +994,7 @@ export default function StudentManagement() {
                                                                 <Trash2 size={12} />
                                                             </button>
                                                         </div>
-                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
                                                             <span style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}><TrendingUp size={11} /> {en.completion}%</span>
                                                             <span style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}><Clock size={11} /> {en.time} min</span>
                                                         </div>
@@ -1033,7 +1033,7 @@ export default function StudentManagement() {
                         </div>
                         <form onSubmit={handleAssignCourse}>
                             <div className="form-group" style={{ marginBottom: '2rem' }}>
-                                <label htmlFor="course-assign-select" className="form-label" style={{ marginBottom: '0.75rem' }}>Select Course</label>
+                                <label htmlFor="course-assign-select" className="form-label" style={{ marginBottom: '0.85rem' }}>Select Course</label>
                                 <div style={{ position: 'relative' }}>
                                     <BookOpen size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                     <select
@@ -1053,7 +1053,7 @@ export default function StudentManagement() {
                                     <ChevronDown size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                            <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'flex-end' }}>
                                 <button type="button" className="btn-secondary" onClick={() => setAssigningTo(null)} disabled={saving}>Cancel</button>
                                 <button type="submit" className="btn-primary" disabled={saving || !selectedCourse}>
                                     {saving ? 'Assigning...' : 'Assign'}
@@ -1082,16 +1082,16 @@ export default function StudentManagement() {
                                 .map(s => {
                                     const isMember = groupMembers.some(m => m.group_id === managingGroup.id && m.student_id === s.id)
                                     return (
-                                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
+                                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem', borderBottom: '1px solid #f1f5f9' }}>
                                             <div>
                                                 <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{s.name}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.email}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{s.email}</div>
                                             </div>
                                             <button
                                                 onClick={() => toggleMembership(managingGroup.id, s.id)}
                                                 disabled={togglingMember === s.id}
                                                 className={isMember ? "btn-secondary" : "btn-primary"}
-                                                style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', opacity: togglingMember === s.id ? 0.7 : 1 }}
+                                                style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', opacity: togglingMember === s.id ? 0.7 : 1 }}
                                             >
                                                 {togglingMember === s.id ? '...' : (isMember ? 'Remove' : 'Add')}
                                             </button>
@@ -1125,21 +1125,21 @@ export default function StudentManagement() {
                                         <div key={day} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 100px', gap: '1rem', alignItems: 'center', padding: '1rem', background: access.is_locked ? 'rgba(239, 68, 68, 0.1)' : 'var(--card-bg)', borderRadius: 12, border: `1px solid ${access.is_locked ? 'rgba(239, 68, 68, 0.3)' : 'var(--card-border)'}` }}>
                                             <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Day {day}</div>
                                             <div>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>OPEN TIME</label>
+                                                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>OPEN TIME</label>
                                                 <input
                                                     type="datetime-local"
                                                     className="form-input"
-                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
                                                     value={access.open_time ? toLocalISO(access.open_time) : ''}
                                                     onChange={e => handleUpdateDayAccess(day, 'open_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
                                                 />
                                             </div>
                                             <div>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>CLOSE TIME</label>
+                                                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>CLOSE TIME</label>
                                                 <input
                                                     type="datetime-local"
                                                     className="form-input"
-                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
                                                     value={access.close_time ? toLocalISO(access.close_time) : ''}
                                                     onChange={e => handleUpdateDayAccess(day, 'close_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
                                                 />
@@ -1148,7 +1148,7 @@ export default function StudentManagement() {
                                                 <button
                                                     onClick={() => handleUpdateDayAccess(day, 'is_locked', !access.is_locked)}
                                                     className={access.is_locked ? "btn-primary" : "btn-secondary"}
-                                                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', background: access.is_locked ? '#ef4444' : 'transparent', width: '100%', color: access.is_locked ? 'white' : 'var(--text-primary)' }}
+                                                    style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', background: access.is_locked ? '#ef4444' : 'transparent', width: '100%', color: access.is_locked ? 'white' : 'var(--text-primary)' }}
                                                 >
                                                     {access.is_locked ? 'Unlock' : 'Lock'}
                                                 </button>
@@ -1273,7 +1273,7 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     style={{
-                                        display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', borderRadius: 12, border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 600, fontSize: '0.9rem',
+                                        display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', borderRadius: 12, border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 600, fontSize: '0.9rem',
                                         background: activeTab === tab.id ? '#6366f1' : 'transparent',
                                         color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
                                         transition: 'all 0.2s'
@@ -1357,7 +1357,7 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                                             <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{edu.school}</div>
                                                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{edu.degree}</div>
                                                         </div>
-                                                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '0.25rem 0.75rem', borderRadius: 20, height: 'fit-content' }}>
+                                                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '0.25rem 0.85rem', borderRadius: 20, height: 'fit-content' }}>
                                                             {edu.year || 'N/A'}
                                                         </div>
                                                     </div>
@@ -1371,7 +1371,7 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                                     <div key={idx} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12 }}>
                                                         <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{work.company}</div>
                                                         <div style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: 600 }}>{work.role}</div>
-                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{work.duration}</div>
+                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{work.duration}</div>
                                                     </div>
                                                 )) : <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No work experience added</p>}
                                             </div>
@@ -1382,7 +1382,7 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                 {activeTab === 'skills' && (
                                     <div className="zoom-in">
                                         <SectionHeader icon={Briefcase} title="Technical Expertise" subtitle="Searchable skills and technology stack" />
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
                                             {profile.technical_skills?.length > 0 ? profile.technical_skills.map((skill, idx) => (
                                                 <span key={idx} style={{ padding: '0.6rem 1.2rem', background: '#f1f5f9', color: 'var(--text-secondary)', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600, border: '1px solid #e2e8f0' }}>
                                                     {skill}
@@ -1416,7 +1416,7 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                                 <div key={idx} style={{ padding: '1.5rem', background: '#fbfcfe', border: '1px solid #eef2ff', borderRadius: 20 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                                         <h6 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{proj.title}</h6>
-                                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.1)', padding: '0.3rem 0.8rem', borderRadius: 20 }}>
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.1)', padding: '0.3rem 0.8rem', borderRadius: 20 }}>
                                                             PROJECT
                                                         </span>
                                                     </div>

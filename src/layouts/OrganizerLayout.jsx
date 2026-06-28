@@ -253,7 +253,7 @@ function OrganizerSidebar({
       }}
     >
       {/* Logo */}
-      <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+      <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
         <div style={{
           width: 38, height: 38, borderRadius: 10, flexShrink: 0,
           background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
@@ -271,7 +271,7 @@ function OrganizerSidebar({
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0.75rem 0.625rem' }}>
+      <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0.85rem 0.625rem' }}>
         {NAV_GROUPS.map(({ label, items }) => {
           const filtered = items.filter(item => !item.role || profile?.role === item.role)
           if (!filtered.length) return null
@@ -308,7 +308,7 @@ function OrganizerSidebar({
 
       {/* Footer */}
       {(!collapsed || isMobile) && (
-        <div style={{ padding: '0.75rem', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
+        <div style={{ padding: '0.85rem', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0 }}>
           <button onClick={() => { if (requestNavigation('/student')) { return; } navigate('/student'); }} className="dropdown-item" style={{ background: 'rgba(16,185,129,0.06)', borderRadius: 8, color: '#10b981', fontWeight: 700, marginBottom: '0.25rem', border: '1px solid rgba(16,185,129,0.15)' }}>
             <GraduationCap size={14} /> Student View
           </button>
@@ -354,7 +354,7 @@ function OrganizerHeader({
       borderBottom: '1px solid var(--sidebar-border)',
       zIndex: 100, position: 'relative',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
         <button onClick={() => isMobile ? setMobileMenuOpen(!mobileMenuOpen) : setCollapsed(!collapsed)} className="btn-icon" style={{ border: 'none', background: 'transparent' }} aria-label="Toggle sidebar">
           <Menu size={18} />
         </button>
@@ -386,7 +386,7 @@ function OrganizerHeader({
                   className="dropdown-menu"
                   style={{ top: 'calc(100% + 8px)', right: 0, width: 300, zIndex: 200 }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem 0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.85rem 0.85rem' }}>
                     <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</span>
                     {unreadCount > 0 && (
                       <button onClick={handleMarkAllAsRead} style={{ border: 'none', background: 'none', fontSize: '0.72rem', color: 'var(--primary-500)', fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-body)' }}>Mark all read</button>
@@ -399,7 +399,7 @@ function OrganizerHeader({
                       </div>
                     ) : notifications.map(n => (
                       <div key={n.id} style={{
-                        padding: '0.65rem 0.75rem', borderRadius: 8, position: 'relative',
+                        padding: '0.85rem 0.85rem', borderRadius: 8, position: 'relative',
                         background: n.isRead ? 'transparent' : 'rgba(99,102,241,0.05)',
                         border: `1px solid ${n.isRead ? 'transparent' : 'rgba(99,102,241,0.12)'}`,
                       }}>
@@ -408,7 +408,7 @@ function OrganizerHeader({
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
                             <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>{n.message}</div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={9} /> {new Date(n.created_at).toLocaleDateString()}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={9} /> {new Date(n.created_at).toLocaleDateString()}</div>
                           </div>
                           {!n.isRead && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary-500)', flexShrink: 0, marginTop: 4 }} />}
                         </div>
@@ -459,7 +459,7 @@ function OrganizerHeader({
                   className="dropdown-menu"
                   style={{ top: 'calc(100% + 8px)', right: 0, width: 220, zIndex: 150 }}
                 >
-                  <div style={{ padding: '0.75rem', marginBottom: '0.25rem', borderBottom: '1px solid var(--card-border)' }}>
+                  <div style={{ padding: '0.85rem', marginBottom: '0.25rem', borderBottom: '1px solid var(--card-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                       <Avatar name={profile?.name || 'O'} size="md" />
                       <div>

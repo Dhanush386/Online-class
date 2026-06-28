@@ -221,7 +221,7 @@ function WidgetContent({ isPip }) {
                             background: 'white',
                             animation: 'widgetPulse 2s infinite',
                         }} />
-                        <span style={{ color: 'white', fontSize: '0.65rem', fontWeight: 700 }}>
+                        <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 700 }}>
                             Up: {uploadProgress}%
                         </span>
                     </div>
@@ -240,7 +240,7 @@ function WidgetContent({ isPip }) {
                             background: 'white',
                             animation: 'widgetPulse 2s infinite',
                         }} />
-                        <span style={{ color: 'white', fontSize: '0.65rem', fontWeight: 700 }}>
+                        <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 700 }}>
                             REC {formatDuration(recordingDuration)}
                         </span>
                     </div>
@@ -287,7 +287,7 @@ function WidgetContent({ isPip }) {
                         {truncatedTitle}
                     </span>
                     <span style={{
-                        color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem',
+                        color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem',
                         display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0,
                     }}>
                         <Users size={10} /> {participantCount}

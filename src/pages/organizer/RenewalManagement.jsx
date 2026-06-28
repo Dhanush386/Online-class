@@ -158,13 +158,13 @@ export default function RenewalManagement() {
                             filteredRequests.map((req) => (
                                 <tr key={req.id}>
                                     <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                                             <div style={{ width: 36, height: 36, background: 'var(--accent-glow)', color: 'var(--accent)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <User size={18} />
                                             </div>
                                             <div>
                                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{req.users.name}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{req.users.email}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{req.users.email}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -173,7 +173,7 @@ export default function RenewalManagement() {
                                             <CreditCard size={14} />
                                             {req.transaction_id}
                                         </div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>₹{req.amount} via {req.payment_method}</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>₹{req.amount} via {req.payment_method}</div>
                                     </td>
                                     <td style={{ fontSize: '0.8rem' }}>
                                         {new Date(req.created_at).toLocaleDateString()}
@@ -224,7 +224,7 @@ export default function RenewalManagement() {
                                             </div>
                                         )}
                                         {req.status !== 'pending' && (
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Processed</span>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Processed</span>
                                         )}
                                     </td>
                                 </tr>

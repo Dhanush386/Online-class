@@ -46,7 +46,7 @@ function NavigationGuardDialog({ onMinimize, onStay, onLeave, meeting }) {
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <button onClick={onMinimize} style={{
-                        width: '100%', padding: '0.75rem', borderRadius: 12,
+                        width: '100%', padding: '0.85rem', borderRadius: 12,
                         background: '#6366f1', color: 'white', border: 'none',
                         fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -55,7 +55,7 @@ function NavigationGuardDialog({ onMinimize, onStay, onLeave, meeting }) {
                         📌 Minimize & Continue
                     </button>
                     <button onClick={onStay} style={{
-                        width: '100%', padding: '0.75rem', borderRadius: 12,
+                        width: '100%', padding: '0.85rem', borderRadius: 12,
                         background: 'rgba(255,255,255,0.05)', color: 'white',
                         border: '1px solid rgba(255,255,255,0.1)',
                         fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
@@ -64,7 +64,7 @@ function NavigationGuardDialog({ onMinimize, onStay, onLeave, meeting }) {
                         Stay in Meeting
                     </button>
                     <button onClick={onLeave} style={{
-                        width: '100%', padding: '0.75rem', borderRadius: 12,
+                        width: '100%', padding: '0.85rem', borderRadius: 12,
                         background: 'rgba(239,68,68,0.1)', color: '#ef4444',
                         border: '1px solid rgba(239,68,68,0.2)',
                         fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
@@ -1005,7 +1005,7 @@ export function MeetingProvider({ children }) {
                     <div style={{ width: 24, height: 24, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Uploading Recording... {meeting.uploadProgress}%</span>
-                        <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>Please do not close this browser tab.</span>
+                        <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>Please do not close this browser tab.</span>
                     </div>
                 </div>
             )}

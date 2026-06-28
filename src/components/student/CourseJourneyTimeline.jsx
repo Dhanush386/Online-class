@@ -207,7 +207,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsDropdownOpen(!isDropdownOpen); } }}
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 style={{ 
-                                    display: 'flex', alignItems: 'center', gap: '0.75rem', 
+                                    display: 'flex', alignItems: 'center', gap: '0.85rem', 
                                     background: 'white', border: '1px solid #e2e8f0', 
                                     borderRadius: '999px', padding: '0.5rem 1rem', 
                                     boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
@@ -256,7 +256,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                                             setIsDropdownOpen(false)
                                         }}
                                         style={{ 
-                                            padding: '0.75rem 1rem', cursor: 'pointer', 
+                                            padding: '0.85rem 1rem', cursor: 'pointer', 
                                             fontWeight: expandedWeek === week ? 700 : 500,
                                             color: expandedWeek === week ? '#6366f1' : '#475569',
                                             background: expandedWeek === week ? '#f8fafc' : 'white',
@@ -276,7 +276,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                             })}
                         </div>
                     )}
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem', marginRight: '0.5rem', fontWeight: 500 }}>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '0.5rem', marginRight: '0.5rem', fontWeight: 500 }}>
                         {dateLabel}
                     </span>
                 </div>

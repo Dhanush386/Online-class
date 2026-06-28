@@ -135,7 +135,7 @@ export default function CodingPractice() {
             {/* Table Header Section */}
             <div className="hide-mobile" style={{
                 background: '#eef2ff',
-                padding: '0.75rem 2rem',
+                padding: '0.85rem 2rem',
                 borderRadius: '8px 8px 0 0',
                 display: 'grid',
                 gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto',
@@ -178,7 +178,7 @@ export default function CodingPractice() {
                                             return !!g
                                         }).map(m => {
                                             const g = groups?.find(gr => gr.id === m.group_id)
-                                            return g ? <span key={g.id} style={{ fontSize: '0.65rem', padding: '0.05rem 0.4rem', background: '#dcfce7', color: '#15803d', borderRadius: 4, fontWeight: 700 }}>Batch: {g.name}</span> : null
+                                            return g ? <span key={g.id} style={{ fontSize: '0.85rem', padding: '0.05rem 0.4rem', background: '#dcfce7', color: '#15803d', borderRadius: 4, fontWeight: 700 }}>Batch: {g.name}</span> : null
                                         })}
                                     </div>
                                 )}
@@ -213,7 +213,7 @@ export default function CodingPractice() {
                                 <div style={{ flex: window.innerWidth <= 1024 ? 1 : 'unset' }}>
                                     <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.25rem' }} className="show-mobile">TEST CASES</div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e40af' }}>
-                                        {metrics.tests}<span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>/{tcCount}</span>
+                                        {metrics.tests}<span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/{tcCount}</span>
                                     </div>
                                     <div style={{ width: '80%', height: 3, background: '#e2e8f0', marginTop: '0.25rem', borderRadius: 2, overflow: 'hidden' }}>
                                         <div style={{ width: tcCount > 0 ? `${(metrics.tests / tcCount) * 100}%` : '0%', height: '100%', background: '#2563eb' }}></div>
@@ -224,7 +224,7 @@ export default function CodingPractice() {
                                 <div style={{ flex: window.innerWidth <= 1024 ? 1 : 'unset' }}>
                                     <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.25rem' }} className="show-mobile">SCORE</div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e40af' }}>
-                                        {metrics.score}<span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>/{c.xp_reward || 15}</span>
+                                        {metrics.score}<span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/{c.xp_reward || 15}</span>
                                     </div>
                                     <div style={{ width: '80%', height: 3, background: '#e2e8f0', marginTop: '0.25rem', borderRadius: 2, overflow: 'hidden' }}>
                                         <div style={{ width: (c.xp_reward || 15) > 0 ? `${(metrics.score / (c.xp_reward || 15)) * 100}%` : '0%', height: '100%', background: '#2563eb' }}></div>

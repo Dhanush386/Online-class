@@ -129,7 +129,7 @@ export default function MyCourses() {
                                     {/* Footer stats */}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.875rem' }}>
                                         <div style={{ display: 'flex', gap: '0.875rem' }}>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                 <TrendingUp size={12} /> {course.completion}%
                                             </span>
                                             {/* Day dots: M T W T F S S */}

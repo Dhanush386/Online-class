@@ -118,7 +118,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
         onClick={openPalette}
         className="btn-icon hide-mobile"
         title="Command Palette (Ctrl+K)"
-        style={{ gap: '0.4rem', width: 'auto', padding: '0 0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}
+        style={{ gap: '0.4rem', width: 'auto', padding: '0 0.85rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}
       >
         <Search size={15} />
         <span style={{ fontFamily: 'var(--font-body)', fontWeight: 400 }}>Search...</span>
@@ -177,7 +177,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
               }}>
                 {/* Search input */}
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: '0.75rem',
+                  display: 'flex', alignItems: 'center', gap: '0.85rem',
                   padding: '1rem 1.25rem',
                   borderBottom: '1px solid rgba(226,232,240,0.6)',
                 }}>
@@ -211,9 +211,9 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                     Object.entries(groups).map(([group, cmds]) => (
                       <div key={group}>
                         <div style={{
-                          fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.08em',
+                          fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.08em',
                           textTransform: 'uppercase', color: 'var(--text-muted)',
-                          padding: '0.5rem 0.75rem 0.25rem',
+                          padding: '0.5rem 0.85rem 0.25rem',
                         }}>{group}</div>
 
                         {cmds.map((cmd) => {
@@ -226,8 +226,8 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                               onMouseEnter={() => setIndex(flatIdx)}
                               whileTap={{ scale: 0.98 }}
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                                width: '100%', padding: '0.65rem 0.75rem',
+                                display: 'flex', alignItems: 'center', gap: '0.85rem',
+                                width: '100%', padding: '0.85rem 0.85rem',
                                 border: 'none', borderRadius: 10,
                                 background: isActive ? 'rgba(99,102,241,0.08)' : 'transparent',
                                 cursor: 'pointer', textAlign: 'left',
@@ -273,7 +273,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
                     {flatFiltered.length} result{flatFiltered.length === 1 ? '' : 's'}
                   </span>
-                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
                     {[
                       { key: '↑↓', label: 'Navigate' },
                       { key: 'Enter', label: 'Select' },

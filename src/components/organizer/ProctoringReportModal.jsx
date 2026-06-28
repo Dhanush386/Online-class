@@ -424,7 +424,7 @@ export default function ProctoringReportModal({
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
         <div className="glass-card zoom-in" style={{ padding: '2.5rem', maxWidth: 450, width: '90%', textAlign: 'center', background: 'white', borderRadius: 16, border: '1px solid #fee2e2' }}>
           <AlertOctagon size={48} className="text-red-500 mx-auto mb-4" />
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>Report Unavailable</h3>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>Report Unavailable</h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
             {error || 'No active or historical proctoring session found for this student and evaluation.'}
           </p>
@@ -457,7 +457,7 @@ export default function ProctoringReportModal({
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <ShieldAlert size={20} color="#f87171" />
               <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Proctoring Session Report</h2>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: risk.bg, color: risk.color, border: `1px solid ${risk.border}` }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: risk.bg, color: risk.color, border: `1px solid ${risk.border}` }}>
                 {risk.label}
               </span>
             </div>
@@ -465,7 +465,7 @@ export default function ProctoringReportModal({
               Candidate: <strong>{session.users?.name || 'Student'}</strong> ({session.users?.email}) • {title}
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <button 
               onClick={downloadPDFReport}
               className="btn-primary" 
@@ -518,29 +518,29 @@ export default function ProctoringReportModal({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
                 <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Current Risk Score</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Current Risk Score</div>
                   <div style={{ fontSize: '2rem', fontWeight: 850, color: risk.color, marginTop: '0.25rem' }}>
                     {session.final_risk_score}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Classification: {risk.label}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>Classification: {risk.label}</div>
                 </div>
 
                 <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Session Duration</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Session Duration</div>
                   <div style={{ fontSize: '2rem', fontWeight: 850, color: '#0f172a', marginTop: '0.25rem' }}>
                     {formatDuration()}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>
                     Started: {new Date(session.start_time).toLocaleTimeString()}
                   </div>
                 </div>
 
                 <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Total Violations</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Total Violations</div>
                   <div style={{ fontSize: '2rem', fontWeight: 850, color: totalViolations > 0 ? '#ef4444' : '#10b981', marginTop: '0.25rem' }}>
                     {session.total_violations}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Warnings sent: {violations.filter(v => v.violation_type === 'warning_sent').length}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>Warnings sent: {violations.filter(v => v.violation_type === 'warning_sent').length}</div>
                 </div>
               </div>
 
@@ -550,7 +550,7 @@ export default function ProctoringReportModal({
                 <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>
                   Change the review state of this session submission for administrative tracking.
                 </p>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>Review Status:</span>
                   <select
                     value={session.review_status}
@@ -563,12 +563,12 @@ export default function ProctoringReportModal({
                     <option value="reviewed_flagged">🔴 Reviewed - Flagged/Suspicious</option>
                     <option value="needs_followup">🟡 Needs Follow-up</option>
                   </select>
-                  {saving && <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Saving...</span>}
+                  {saving && <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Saving...</span>}
                 </div>
               </div>
 
               {/* Auto escalation notice */}
-              <div style={{ display: 'flex', gap: '0.75rem', padding: '1rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, color: '#1e40af', fontSize: '0.8rem', lineHeight: 1.5 }}>
+              <div style={{ display: 'flex', gap: '0.85rem', padding: '1rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, color: '#1e40af', fontSize: '0.8rem', lineHeight: 1.5 }}>
                 <HelpCircle size={18} style={{ flexShrink: 0, marginTop: 2 }} />
                 <div>
                   <strong>Security Escalation Rules Policy:</strong> When the candidate exceeds <strong>200 Risk Points</strong> (or logs more than 3 active warnings/exits), the session is marked for automatic review. The student is never failed automatically without manual faculty validation.
@@ -585,7 +585,7 @@ export default function ProctoringReportModal({
                   <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <BarChart3 size={16} /> Violation Frequency
                   </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                     {[
                       { label: 'Tab Switch / Focus Lost', count: tabSwitches, color: '#3b82f6' },
                       { label: 'Cell Phone Detected', count: phones, color: '#ef4444' },
@@ -615,7 +615,7 @@ export default function ProctoringReportModal({
                     </div>
                     <div>
                       <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>{netQuality} Connection</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>
+                      <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>
                         Telemetry signals monitored over LiveKit SFU channel.
                       </div>
                     </div>
@@ -641,10 +641,10 @@ export default function ProctoringReportModal({
                   <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Student is fully compliant with the security regulations.</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {violations.map((v, i) => (
-                    <div key={v.id || i} style={{ display: 'flex', justifyItems: 'center', justifySelf: 'stretch', gap: '1rem', padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', borderLeft: `4px solid ${getViolationColor(v.risk_score_increment)}` }}>
-                      <div style={{ width: 64, flexShrink: 0, fontSize: '0.75rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                    <div key={v.id || i} style={{ display: 'flex', justifyItems: 'center', justifySelf: 'stretch', gap: '1rem', padding: '0.85rem 1rem', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', borderLeft: `4px solid ${getViolationColor(v.risk_score_increment)}` }}>
+                      <div style={{ width: 64, flexShrink: 0, fontSize: '0.85rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                         {new Date(v.timestamp).toLocaleTimeString()}
                       </div>
                       <div style={{ flex: 1 }}>
@@ -695,10 +695,10 @@ export default function ProctoringReportModal({
                         />
                       </div>
                       <div style={{ background: '#f8fafc', padding: '0.5rem', borderTop: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           {v.violation_type === 'phone_detected' ? '📱' : '👥'} {v.violation_type?.replace('_', ' ')?.toUpperCase()}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '2px', display: 'flex', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px', display: 'flex', justifyContent: 'space-between' }}>
                           <span>{new Date(v.timestamp).toLocaleTimeString()}</span>
                           <span style={{ color: '#ef4444', fontWeight: 700 }}>+{v.risk_score_increment} Risk</span>
                         </div>
@@ -713,11 +713,11 @@ export default function ProctoringReportModal({
           {/* TAB: AI Review */}
           {activeTab === 'ai' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ padding: '1.25rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12, display: 'flex', gap: '0.75rem', color: '#0369a1' }}>
+              <div style={{ padding: '1.25rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12, display: 'flex', gap: '0.85rem', color: '#0369a1' }}>
                 <ShieldCheck size={20} style={{ flexShrink: 0, marginTop: 2 }} />
                 <div>
                   <h4 style={{ fontSize: '0.85rem', fontWeight: 700, margin: 0 }}>Gemini AI Co-Pilot Assistant</h4>
-                  <p style={{ fontSize: '0.75rem', lineHeight: 1.4, marginTop: '0.25rem' }}>
+                  <p style={{ fontSize: '0.85rem', lineHeight: 1.4, marginTop: '0.25rem' }}>
                     Our AI models generate summaries based on student focus log timelines, device alerts, and behavioral patterns to assist examiners.
                   </p>
                 </div>
@@ -756,7 +756,7 @@ export default function ProctoringReportModal({
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '0.85rem' }}>
           <button onClick={onClose} className="btn-secondary" style={{ fontSize: '0.85rem' }}>
             Close Report
           </button>

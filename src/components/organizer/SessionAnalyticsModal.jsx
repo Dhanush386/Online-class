@@ -187,29 +187,29 @@ export default function SessionAnalyticsModal({ modalData, onClose }) {
                                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
                                     <div style={{ color: '#10b981' }}><Users size={20} /></div>
                                     <div>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{metrics.present} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>/ {metrics.totalEnrolled}</span></div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Present</div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{metrics.present} <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>/ {metrics.totalEnrolled}</span></div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Present</div>
                                     </div>
                                 </div>
                                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
                                     <div style={{ color: '#6366f1' }}><Clock size={20} /></div>
                                     <div>
                                         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{metrics.avgDurationMins}m</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Avg Duration</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Avg Duration</div>
                                     </div>
                                 </div>
                                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
                                     <div style={{ color: '#f59e0b' }}><AlertTriangle size={20} /></div>
                                     <div>
                                         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{metrics.late}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Late</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Late</div>
                                     </div>
                                 </div>
                                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
                                     <div style={{ color: '#ef4444' }}><UserMinus size={20} /></div>
                                     <div>
                                         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{metrics.leftEarly}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Left Early</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Left Early</div>
                                     </div>
                                 </div>
                             </div>
@@ -220,16 +220,16 @@ export default function SessionAnalyticsModal({ modalData, onClose }) {
                 {/* Footer */}
                 <div style={{ padding: '1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button onClick={onClose} style={{ flex: 1, padding: '0.75rem', background: 'white', border: '1px solid var(--card-border)', borderRadius: 10, fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }} className="hover-scale">
+                        <button onClick={onClose} style={{ flex: 1, padding: '0.85rem', background: 'white', border: '1px solid var(--card-border)', borderRadius: 10, fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }} className="hover-scale">
                             Close
                         </button>
-                        <button onClick={exportCSV} disabled={loading} style={{ flex: 1, padding: '0.75rem', background: '#4f46e5', border: 'none', borderRadius: 10, fontWeight: 600, color: 'white', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} className="hover-scale">
+                        <button onClick={exportCSV} disabled={loading} style={{ flex: 1, padding: '0.85rem', background: '#4f46e5', border: 'none', borderRadius: 10, fontWeight: 600, color: 'white', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} className="hover-scale">
                             <Download size={18} /> Export CSV
                         </button>
                     </div>
                     
                     {videoInfo?.drive_file_id && (
-                        <button onClick={handleDeleteRecording} disabled={deleting} style={{ width: '100%', padding: '0.75rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, fontWeight: 600, color: '#ef4444', cursor: deleting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} className="hover-scale">
+                        <button onClick={handleDeleteRecording} disabled={deleting} style={{ width: '100%', padding: '0.85rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, fontWeight: 600, color: '#ef4444', cursor: deleting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} className="hover-scale">
                             {deleting ? <Loader size={18} className="animate-spin" /> : <Trash2 size={18} />}
                             {deleting ? 'Deleting...' : 'Delete Recording'}
                         </button>

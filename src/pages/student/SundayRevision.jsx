@@ -210,7 +210,7 @@ export default function SundayRevision({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.6rem',
-                      padding: '0.6rem 0.75rem',
+                      padding: '0.6rem 0.85rem',
                       borderRadius: 10,
                       border: '1px solid var(--card-border)',
                       cursor: 'pointer',
@@ -266,7 +266,7 @@ export default function SundayRevision({
           {/* Weak Topics */}
           {weakTopics.length > 0 && (
             <div className="glass-card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
                 <Brain size={16} color="#ef4444" />
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Weakest Topics</h4>
               </div>
@@ -282,7 +282,7 @@ export default function SundayRevision({
                   }}>
                     <MasteryStars level={topic.mastery_level} effectiveScore={topic.effective_score} />
                     <span style={{
-                      fontSize: '0.75rem',
+                      fontSize: '0.85rem',
                       fontWeight: 600,
                       color: 'var(--text-primary)',
                       flex: 1,
@@ -308,7 +308,7 @@ export default function SundayRevision({
               padding: '1rem 1.25rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.75rem',
+              gap: '0.85rem',
               background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.05))',
               border: '1px dashed rgba(139,92,246,0.3)',
               cursor: 'pointer',

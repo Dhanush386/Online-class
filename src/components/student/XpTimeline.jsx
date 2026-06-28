@@ -42,10 +42,10 @@ export default function XpTimeline({ events = [], totalXp = 0, totalCoins = 0 })
         padding: '1.25rem',
         background: 'var(--card-bg)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
           <Star size={16} color="#f59e0b" />
           <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Today's XP</h4>
-          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>{dateStr}</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>{dateStr}</span>
         </div>
         <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: 'var(--text-muted)' }}>
           <Star size={28} style={{ opacity: 0.2, marginBottom: '0.5rem' }} />
@@ -64,7 +64,7 @@ export default function XpTimeline({ events = [], totalXp = 0, totalCoins = 0 })
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
         <Star size={16} color="#f59e0b" />
         <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Today's XP</h4>
-        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>{dateStr}</span>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>{dateStr}</span>
       </div>
 
       {/* Event list */}
@@ -80,8 +80,8 @@ export default function XpTimeline({ events = [], totalXp = 0, totalCoins = 0 })
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.65rem',
-                padding: '0.55rem 0.75rem',
+                gap: '0.85rem',
+                padding: '0.55rem 0.85rem',
                 borderRadius: 10,
                 background: 'rgba(0,0,0,0.015)',
                 border: '1px solid rgba(0,0,0,0.04)',
@@ -119,7 +119,7 @@ export default function XpTimeline({ events = [], totalXp = 0, totalCoins = 0 })
 
               {/* XP amount */}
               <span style={{
-                fontSize: '0.75rem',
+                fontSize: '0.85rem',
                 fontWeight: 800,
                 color: config.color,
                 flexShrink: 0,
@@ -135,17 +135,17 @@ export default function XpTimeline({ events = [], totalXp = 0, totalCoins = 0 })
 
       {/* Total */}
       <div style={{
-        marginTop: '0.75rem',
-        paddingTop: '0.75rem',
+        marginTop: '0.85rem',
+        paddingTop: '0.85rem',
         borderTop: '2px dashed var(--card-border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
       }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
           {events.length} activit{events.length !== 1 ? 'ies' : 'y'}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
           <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#6366f1' }}>
             {totalXp} XP
           </span>

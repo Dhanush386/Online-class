@@ -315,7 +315,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                                 })}
                             </div>
                             
-                            <div style={{ marginTop: '0.8rem', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <div style={{ marginTop: '0.8rem', fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                 <BarChart2 size={12} /> {totalVotes} total votes
                             </div>
                         </div>

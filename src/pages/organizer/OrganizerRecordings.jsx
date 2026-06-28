@@ -193,7 +193,7 @@ export default function OrganizerRecordings() {
                                     <tr key={rec.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
                                         <td style={{ padding: '1rem' }}>
                                             <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{rec.title}</div>
-                                            {rec.file_size_mb && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}><Database size={12}/> {rec.file_size_mb} MB</div>}
+                                            {rec.file_size_mb && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}><Database size={12}/> {rec.file_size_mb} MB</div>}
                                         </td>
                                         <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{rec.courses?.title || 'Unknown'}</td>
                                         <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
@@ -210,19 +210,19 @@ export default function OrganizerRecordings() {
                                         </td>
                                         <td style={{ padding: '1rem' }}>
                                             {rec.recording_status === 'uploading' ? (
-                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#e0e7ff', color: '#4f46e5', borderRadius: 999, fontSize: '0.75rem', fontWeight: 600 }}>
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#e0e7ff', color: '#4f46e5', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
                                                     <Loader className="animate-spin" size={12} /> Uploading
                                                 </span>
                                             ) : rec.recording_status === 'completed' || rec.drive_file_id ? (
-                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#dcfce7', color: '#16a34a', borderRadius: 999, fontSize: '0.75rem', fontWeight: 600 }}>
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#dcfce7', color: '#16a34a', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
                                                     <CheckCircle size={12} /> Completed
                                                 </span>
                                             ) : rec.recording_status === 'failed' ? (
-                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#fee2e2', color: '#dc2626', borderRadius: 999, fontSize: '0.75rem', fontWeight: 600 }}>
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#fee2e2', color: '#dc2626', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
                                                     <AlertCircle size={12} /> Failed
                                                 </span>
                                             ) : (
-                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#fef3c7', color: '#d97706', borderRadius: 999, fontSize: '0.75rem', fontWeight: 600 }}>
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#fef3c7', color: '#d97706', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
                                                     <Video size={12} /> Recording
                                                 </span>
                                             )}

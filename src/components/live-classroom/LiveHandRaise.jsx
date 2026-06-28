@@ -142,7 +142,7 @@ export default function LiveHandRaise({ isOrganizer, channel }) {
                     <div key={hand.student_id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <p style={{ margin: 0, color: 'white', fontSize: '0.95rem', fontWeight: 500 }}>{hand.student_name}</p>
-                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                 Raised {new Date(hand.raised_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             </p>
                         </div>

@@ -251,7 +251,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
                 <div style={{
                     position: 'absolute', top: screenTrack ? 36 : 8, left: 8,
                     background: 'rgba(245,158,11,0.9)', color: 'white',
-                    padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700,
+                    padding: '3px 8px', borderRadius: 6, fontSize: '0.85rem', fontWeight: 700,
                     display: 'flex', alignItems: 'center', gap: 4,
                     animation: 'pulse 2s infinite',
                 }}>
@@ -268,7 +268,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
                     border: '1px solid rgba(255,255,255,0.1)'
                 }}>
                     <button onClick={handleZoomOut} disabled={scale <= 1} style={{ background: 'transparent', border: 'none', color: scale > 1 ? 'white' : 'rgba(255,255,255,0.3)', cursor: scale > 1 ? 'pointer' : 'default', padding: 4, display: 'flex' }}><ZoomOut size={16} /></button>
-                    <button onClick={handleResetZoom} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '0 8px', fontSize: '0.75rem', fontWeight: 600, minWidth: '48px' }}>{Math.round(scale * 100)}%</button>
+                    <button onClick={handleResetZoom} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '0 8px', fontSize: '0.85rem', fontWeight: 600, minWidth: '48px' }}>{Math.round(scale * 100)}%</button>
                     <button onClick={handleZoomIn} disabled={scale >= 5} style={{ background: 'transparent', border: 'none', color: scale < 5 ? 'white' : 'rgba(255,255,255,0.3)', cursor: scale < 5 ? 'pointer' : 'default', padding: 4, display: 'flex' }}><ZoomIn size={16} /></button>
                 </div>
             )}
@@ -659,7 +659,7 @@ function ReactionOverlay({ reactions }) {
                     }}>
                         <span style={{ fontSize: '2.5rem' }}>{r.emoji}</span>
                         <span style={{
-                            fontSize: '0.65rem', color: 'white', fontWeight: 600,
+                            fontSize: '0.85rem', color: 'white', fontWeight: 600,
                             background: 'rgba(0,0,0,0.5)', padding: '1px 6px', borderRadius: 4,
                             whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)'
                         }}>{r.senderName}</span>
@@ -730,7 +730,7 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
                 {handsUp.length > 0 && (
                     <button onClick={onLowerAll} style={{
                         background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none',
-                        padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600,
+                        padding: '4px 10px', borderRadius: 6, fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600,
                     }}>Lower All</button>
                 )}
             </div>
@@ -741,7 +741,7 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
                     {handsUp.map((h, i) => (
                         <div key={h.identity} style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: 'rgba(255,255,255,0.03)', padding: '0.6rem 0.75rem', borderRadius: 10,
+                            background: 'rgba(255,255,255,0.03)', padding: '0.6rem 0.85rem', borderRadius: 10,
                             border: '1px solid rgba(255,255,255,0.05)',
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -819,7 +819,7 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
     const controlBtnStyle = (color = '#6366f1') => ({
         width: '100%', display: 'flex', alignItems: 'center', gap: 10,
         background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-        padding: '0.75rem 1rem', borderRadius: 10, cursor: 'pointer', color: 'white',
+        padding: '0.85rem 1rem', borderRadius: 10, cursor: 'pointer', color: 'white',
         fontSize: '0.85rem', fontWeight: 500, transition: 'all 0.15s ease',
     })
 
@@ -849,8 +849,8 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
             </button>
 
             {/* Announcements */}
-            <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructor Announcement</p>
+            <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructor Announcement</p>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <input 
                         type="text" 
@@ -876,8 +876,8 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
             </div>
 
             {/* Toggles */}
-            <div style={{ marginTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Locks</p>
+            <div style={{ marginTop: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Locks</p>
                 <button onClick={handleToggleMicLock} style={{
                     ...controlBtnStyle(), background: micLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
                     border: micLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
@@ -929,15 +929,15 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
 
             {/* Per-participant list */}
             {remoteParticipants.length > 0 && (
-                <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Participants</p>
+                <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Participants</p>
                     {remoteParticipants.map(p => {
                         let meta = {}; try { meta = JSON.parse(p.metadata || '{}') } catch {}
                         const pName = p.name || meta.name || p.identity
                         return (
                             <div key={p.identity} style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '0.5rem 0.75rem', borderRadius: 8,
+                                padding: '0.5rem 0.85rem', borderRadius: 8,
                                 background: 'rgba(255,255,255,0.02)', marginBottom: 4,
                             }}>
                                 <span style={{ color: 'white', fontSize: '0.8rem', fontWeight: 500 }}>{pName}</span>
@@ -1124,8 +1124,8 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
 
     return (
         <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.5rem' : '0.75rem',
-            padding: isMobile ? '0.75rem 1rem' : '1rem 2rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.5rem' : '0.85rem',
+            padding: isMobile ? '0.85rem 1rem' : '1rem 2rem',
             background: 'rgba(15,23,42,0.95)',
             borderTop: '1px solid rgba(255,255,255,0.05)',
         }}>
@@ -1330,20 +1330,20 @@ function WaitingRoomTab({ waitingStudents, setWaitingStudents, channel }) {
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
                 {waitingStudents.map(s => (
-                    <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: 8, marginBottom: '0.5rem' }}>
+                    <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '0.85rem', borderRadius: 8, marginBottom: '0.5rem' }}>
                         <div>
                             <div style={{ fontWeight: 600, color: 'white', fontSize: '0.9rem' }}>{s.name}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button onClick={() => handleAdmit(s.id)} style={{ background: '#22c55e', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Admit</button>
-                            <button onClick={() => handleDeny(s.id)} style={{ background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '0.4rem 0.75rem', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Deny</button>
+                            <button onClick={() => handleAdmit(s.id)} style={{ background: '#22c55e', color: 'white', border: 'none', padding: '0.4rem 0.85rem', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Admit</button>
+                            <button onClick={() => handleDeny(s.id)} style={{ background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '0.4rem 0.85rem', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Deny</button>
                         </div>
                     </div>
                 ))}
             </div>
             <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                <button onClick={handleAdmitAll} style={{ width: '100%', background: '#6366f1', color: 'white', border: 'none', padding: '0.75rem', borderRadius: 8, cursor: 'pointer', fontWeight: 600, display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center' }}>
+                <button onClick={handleAdmitAll} style={{ width: '100%', background: '#6366f1', color: 'white', border: 'none', padding: '0.85rem', borderRadius: 8, cursor: 'pointer', fontWeight: 600, display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center' }}>
                     <CheckCircle size={16} /> Admit All ({waitingStudents.length})
                 </button>
             </div>
@@ -1798,13 +1798,13 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         }}>
             {/* Top Bar */}
             <div style={{
-                padding: '0.75rem 1.5rem',
+                padding: '0.85rem 1.5rem',
                 background: 'rgba(15, 23, 42, 0.95)',
                 borderBottom: '1px solid rgba(255,255,255,0.05)',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10,
                 backdropFilter: 'blur(12px)'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                     <div style={{
                         width: 32, height: 32, borderRadius: 8,
                         background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
@@ -1826,7 +1826,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                     {!isMobile && (
                         <button onClick={toggleFullScreen} style={{
                             background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)',
-                            border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.75rem',
+                            border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.85rem',
                             borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: '0.3rem'
                         }}>
@@ -1836,7 +1836,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                     <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
                         background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
                         color: sidebarOpen ? '#818cf8' : 'var(--text-muted)',
-                        border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.75rem',
+                        border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.85rem',
                         borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer'
                     }}>
                         {sidebarOpen ? 'Close Panel' : 'Open Panel'}
@@ -1909,7 +1909,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                     color: sidebarTab === tab.id ? 'white' : 'var(--text-muted)',
                                     border: 'none', borderRadius: '6px', cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    gap: '0.3rem', fontSize: '0.75rem', minWidth: '50px'
+                                    gap: '0.3rem', fontSize: '0.85rem', minWidth: '50px'
                                 }}>
                                     <tab.icon size={14} /> {tab.label}
                                 </button>
@@ -1958,7 +1958,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                     {waitingStudents.slice(-3).map(s => (
                         <div key={s.id} style={{
                             background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12,
-                            padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem',
+                            padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem',
                             boxShadow: '0 10px 25px rgba(0,0,0,0.5)', width: 280, backdropFilter: 'blur(8px)',
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1993,14 +1993,14 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                     <div style={{ background: '#1e293b', padding: '2rem', borderRadius: 16, width: 400, maxWidth: '90%', border: '1px solid rgba(255,255,255,0.1)' }}>
                         <h3 style={{ margin: '0 0 1rem', color: 'white', fontSize: '1.25rem' }}>Leave Meeting</h3>
                         <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Do you want to just leave the meeting, or end it for everyone?</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <button onClick={confirmEndClass} style={{ padding: '0.75rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                            <button onClick={confirmEndClass} style={{ padding: '0.85rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
                                 End Class for All & Clear Chat
                             </button>
-                            <button onClick={confirmJustLeave} style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                            <button onClick={confirmJustLeave} style={{ padding: '0.85rem', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
                                 Just Leave
                             </button>
-                            <button onClick={() => setShowLeaveConfirm(false)} style={{ padding: '0.75rem', background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                            <button onClick={() => setShowLeaveConfirm(false)} style={{ padding: '0.85rem', background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
                                 Cancel
                             </button>
                         </div>
@@ -2033,7 +2033,7 @@ function ParticipantCount() {
     return (
         <div style={{
             display: 'flex', alignItems: 'center', gap: 4,
-            background: 'rgba(255,255,255,0.05)', padding: '0.4rem 0.75rem',
+            background: 'rgba(255,255,255,0.05)', padding: '0.4rem 0.85rem',
             borderRadius: 8, fontSize: '0.8rem', color: 'var(--text-muted)'
         }}>
             <Users size={14} /> {participants.length + 1}
@@ -2334,13 +2334,13 @@ export default function LiveClassroom() {
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                                 <button onClick={() => navigate(-1)} style={{
                                     background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.1)',
-                                    padding: '0.75rem 1.5rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600
+                                    padding: '0.85rem 1.5rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600
                                 }}>
                                     Leave
                                 </button>
                                 <button onClick={handleAskToJoin} style={{
                                     background: '#f59e0b', color: 'white', border: 'none',
-                                    padding: '0.75rem 1.5rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600
+                                    padding: '0.85rem 1.5rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600
                                 }}>
                                     Retry
                                 </button>
@@ -2364,13 +2364,13 @@ export default function LiveClassroom() {
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                                 <button onClick={() => navigate(-1)} style={{
                                     background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.1)',
-                                    padding: '0.75rem 1.5rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600
+                                    padding: '0.85rem 1.5rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600
                                 }}>
                                     Return
                                 </button>
                                 <button onClick={handleAskToJoin} disabled={askCooldown > 0} style={{
                                     background: askCooldown > 0 ? 'rgba(99,102,241,0.5)' : '#6366f1', color: 'white', border: 'none',
-                                    padding: '0.75rem 1.5rem', borderRadius: 10, cursor: askCooldown > 0 ? 'not-allowed' : 'pointer', fontWeight: 600
+                                    padding: '0.85rem 1.5rem', borderRadius: 10, cursor: askCooldown > 0 ? 'not-allowed' : 'pointer', fontWeight: 600
                                 }}>
                                     {askCooldown > 0 ? `Wait ${askCooldown}s` : 'Ask Again'}
                                 </button>
@@ -2417,10 +2417,10 @@ export default function LiveClassroom() {
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
                         Failed to connect to Learnova Meet. Please try again.
                     </p>
-                    <p style={{ color: '#ef4444', fontSize: '0.75rem', marginBottom: '2rem' }}>{tokenError}</p>
+                    <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '2rem' }}>{tokenError}</p>
                     <button onClick={() => { setTokenError(null); setLivekitToken(null) }} style={{
                         background: '#6366f1', color: 'white', border: 'none',
-                        padding: '0.75rem 2rem', borderRadius: 10, cursor: 'pointer',
+                        padding: '0.85rem 2rem', borderRadius: 10, cursor: 'pointer',
                         fontWeight: 600, fontSize: '0.9rem'
                     }}>
                         Retry

@@ -125,17 +125,17 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                 <form onSubmit={handleCreateThread} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
                         <label htmlFor="thread-title" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Title</label>
-                        <input id="thread-title" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="E.g. Getting an EOFError on Test Case 2" required style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem' }} />
+                        <input id="thread-title" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="E.g. Getting an EOFError on Test Case 2" required style={{ width: '100%', padding: '0.85rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem' }} />
                     </div>
                     <div>
                         <label htmlFor="thread-desc" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Description</label>
-                        <textarea id="thread-desc" value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Describe what you need help with..." required rows={5} style={{ width: '100%', padding: '0.75rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem', resize: 'vertical' }} />
+                        <textarea id="thread-desc" value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Describe what you need help with..." required rows={5} style={{ width: '100%', padding: '0.85rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem', resize: 'vertical' }} />
                     </div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#cbd5e1' }}>
                         <input type="checkbox" checked={attachCode} onChange={e => setAttachCode(e.target.checked)} />
                         <span>Attach my current code workspace snapshot</span>
                     </label>
-                    <button type="submit" style={{ padding: '0.75rem', borderRadius: 8, background: '#3b82f6', border: 'none', color: '#fff', fontWeight: 700, marginTop: '1rem', cursor: 'pointer' }}>Post Thread</button>
+                    <button type="submit" style={{ padding: '0.85rem', borderRadius: 8, background: '#3b82f6', border: 'none', color: '#fff', fontWeight: 700, marginTop: '1rem', cursor: 'pointer' }}>Post Thread</button>
                 </form>
             </div>
         )
@@ -152,7 +152,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                     {/* Original Post */}
                     <div style={{ marginBottom: '2rem' }}>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>{activeThread.title}</h2>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                             <span>Posted by {activeThread.users?.name || 'Student'}</span>
                             <span>•</span>
                             <Clock size={12} /> {new Date(activeThread.created_at).toLocaleDateString()}
@@ -161,7 +161,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                         
                         {activeThread.code_snapshot && (
                             <div style={{ marginTop: '1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
-                                <div style={{ padding: '0.5rem 1rem', background: 'var(--text-primary)', borderBottom: '1px solid var(--card-border)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CodeIcon size={14} /> Attached Code Snapshot</div>
+                                <div style={{ padding: '0.5rem 1rem', background: 'var(--text-primary)', borderBottom: '1px solid var(--card-border)', fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CodeIcon size={14} /> Attached Code Snapshot</div>
                                 <pre style={{ margin: 0, padding: '1rem', background: 'var(--text-primary)', color: '#e2e8f0', fontSize: '0.8rem', overflowX: 'auto' }}>{activeThread.code_snapshot}</pre>
                             </div>
                         )}
@@ -189,7 +189,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
 
                 {/* Reply Form */}
                 <form onSubmit={handlePostReply} style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--card-border)' }}>
-                    <input value={replyContent} onChange={e => setReplyContent(e.target.value)} placeholder="Type your reply..." style={{ flex: 1, padding: '0.75rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem' }} />
+                    <input value={replyContent} onChange={e => setReplyContent(e.target.value)} placeholder="Type your reply..." style={{ flex: 1, padding: '0.85rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem' }} />
                     <button type="submit" disabled={!replyContent.trim()} style={{ padding: '0 1.25rem', borderRadius: 8, background: '#3b82f6', border: 'none', color: '#fff', cursor: replyContent.trim() ? 'pointer' : 'not-allowed', opacity: replyContent.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Send size={18} />
                     </button>
@@ -202,12 +202,12 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
         <div className="animate-fade-in" style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MessageSquare size={18} /> Discussions</h3>
-                <button onClick={() => setView('create')} style={{ padding: '0.4rem 0.8rem', borderRadius: 6, background: '#3b82f6', border: 'none', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button onClick={() => setView('create')} style={{ padding: '0.4rem 0.8rem', borderRadius: 6, background: '#3b82f6', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Plus size={14} /> New Thread
                 </button>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 {discussions.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
                         <MessageSquare size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
@@ -222,10 +222,10 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                         >
                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem' }}>
                                 <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#e2e8f0', margin: 0, lineHeight: 1.4 }}>{d.title}</h4>
-                                {d.status === 'resolved' && <span style={{ padding: '2px 6px', background: '#10b98120', color: '#10b981', border: '1px solid #10b98150', fontSize: '0.65rem', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}><CheckCircle2 size={10} /> Resolved</span>}
+                                {d.status === 'resolved' && <span style={{ padding: '2px 6px', background: '#10b98120', color: '#10b981', border: '1px solid #10b98150', fontSize: '0.85rem', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}><CheckCircle2 size={10} /> Resolved</span>}
                             </div>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>{d.content}</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                 <span>{d.users?.name || 'Student'}</span>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><ThumbsUp size={12} /> {d.upvotes}</span>
                                 {d.code_snapshot && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CodeIcon size={12} /> Code attached</span>}

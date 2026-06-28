@@ -47,7 +47,7 @@ export function ToastProvider({ children }) {
       {/* Toast container */}
       <div style={{
         position: 'fixed', bottom: '1.5rem', right: '1.5rem',
-        display: 'flex', flexDirection: 'column', gap: '0.75rem',
+        display: 'flex', flexDirection: 'column', gap: '0.85rem',
         zIndex: 99999, pointerEvents: 'none',
         maxWidth: 'min(380px, calc(100vw - 2rem))',
       }}>
@@ -55,7 +55,7 @@ export function ToastProvider({ children }) {
           const c = COLORS[t.type] || COLORS.info
           return (
             <div key={t.id} style={{
-              display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+              display: 'flex', alignItems: 'flex-start', gap: '0.85rem',
               background: c.bg, border: `1px solid ${c.border}`,
               borderRadius: 12, padding: '0.875rem 1rem',
               boxShadow: '0 8px 24px rgba(0,0,0,0.12)',

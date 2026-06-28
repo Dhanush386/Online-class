@@ -23,22 +23,22 @@ export default function MobileBlocker() {
                     <Monitor size={32} color="#3b82f6" />
                 </div>
 
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.75rem' }}>Desktop Required</h1>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.85rem' }}>Desktop Required</h1>
                 
                 <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '2rem' }}>
                     This feature is designed for laptops and desktop computers to provide the best experience.
                 </p>
 
                 <div style={{ width: '100%', background: '#0f172a', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: 700, marginBottom: '0.75rem' }}>Required Setup</div>
+                    <div style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: 700, marginBottom: '0.85rem' }}>Required Setup</div>
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#e2e8f0', fontSize: '0.85rem' }}><Keyboard size={16} color="#10b981" /> Physical Keyboard</li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#e2e8f0', fontSize: '0.85rem' }}><MousePointer2 size={16} color="#10b981" /> Precision Mouse/Trackpad</li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#e2e8f0', fontSize: '0.85rem' }}><Monitor size={16} color="#10b981" /> Minimum Width: 1024px</li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', color: '#e2e8f0', fontSize: '0.85rem' }}><Keyboard size={16} color="#10b981" /> Physical Keyboard</li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', color: '#e2e8f0', fontSize: '0.85rem' }}><MousePointer2 size={16} color="#10b981" /> Precision Mouse/Trackpad</li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', color: '#e2e8f0', fontSize: '0.85rem' }}><Monitor size={16} color="#10b981" /> Minimum Width: 1024px</li>
                     </ul>
                 </div>
 
-                <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 8, marginBottom: '2rem' }}>
+                <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 8, marginBottom: '2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
                         <AlertTriangle size={18} />
                         <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Current Device:</span>

@@ -132,7 +132,7 @@ export default function SharedProject() {
                     {/* Project Info */}
                     <div>
                         <h1 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'white', margin: 0 }}>{project.title}</h1>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 2 }}>
                             <span>by {author || 'Unknown Developer'}</span>
                             <span>•</span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Eye size={12} /> {project.views + 1} views</span>

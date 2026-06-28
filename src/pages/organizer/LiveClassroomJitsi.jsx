@@ -448,10 +448,10 @@ export default function LiveClassroom() {
             paddingLeft: 'env(safe-area-inset-left)',
             paddingRight: 'env(safe-area-inset-right)'
         }}>
-            <div style={{ padding: '0.75rem 1rem', background: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+            <div style={{ padding: '0.85rem 1rem', background: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
                 <div>
                     <h1 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{videoData?.title}</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>{isOrganizer ? 'Instructor Control Panel' : 'Live Class Session'}</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{isOrganizer ? 'Instructor Control Panel' : 'Live Class Session'}</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     {isOrganizer && !isMobile && (
@@ -478,7 +478,7 @@ export default function LiveClassroom() {
                             {isFullScreen ? <><Minimize size={14} /> Exit Fullscreen</> : <><Maximize size={14} /> Fullscreen</>}
                         </button>
                     )}
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: sidebarOpen ? '#818cf8' : 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 0.75rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
+                    <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: sidebarOpen ? '#818cf8' : 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 0.85rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
                         {sidebarOpen ? 'Close Panel' : 'Open Panel'}
                     </button>
                     {!isMobile && <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>Leave</button>}

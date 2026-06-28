@@ -54,7 +54,7 @@ function StudentLiveKitStream({ assessmentId, studentId, onStop }) {
             )}
             <button 
                 onClick={onStop}
-                style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, background: 'rgba(239,68,68,0.9)', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', fontSize: '0.75rem', cursor: 'pointer' }}
+                style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, background: 'rgba(239,68,68,0.9)', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', fontSize: '0.85rem', cursor: 'pointer' }}
             >
                 Stop Live
             </button>
@@ -355,7 +355,7 @@ export default function LiveProctoring() {
                     <Link to="/organizer/coding" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 600, marginBottom: '0.5rem' }}>
                         <ChevronLeft size={16} /> Back
                     </Link>
-                    <h1 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <h1 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                         <ShieldAlert size={isMobile ? 24 : 28} color="#ef4444" /> Live Proctoring
                     </h1>
                     <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem', fontSize: isMobile ? '0.85rem' : '1rem' }}>Monitor active students in real-time.</p>
@@ -369,10 +369,10 @@ export default function LiveProctoring() {
                             placeholder="Search student..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            style={{ padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: 8, border: '1px solid #cbd5e1', width: isMobile ? '100%' : 250, fontSize: '0.9rem', boxSizing: 'border-box' }}
+                            style={{ padding: '0.85rem 1rem 0.85rem 2.8rem', borderRadius: 8, border: '1px solid #cbd5e1', width: isMobile ? '100%' : 250, fontSize: '0.9rem', boxSizing: 'border-box' }}
                         />
                     </div>
-                    <div style={{ background: '#ecfdf5', color: '#059669', padding: '0.75rem 1rem', borderRadius: 8, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid #a7f3d0' }}>
+                    <div style={{ background: '#ecfdf5', color: '#059669', padding: '0.85rem 1rem', borderRadius: 8, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid #a7f3d0' }}>
                         <div style={{ width: 8, height: 8, background: '#10b981', borderRadius: '50%', animation: 'pulse 2s infinite' }}></div>
                         {studentsList.length} Active
                     </div>
@@ -438,7 +438,7 @@ export default function LiveProctoring() {
                                     borderBottom: '1px solid',
                                     borderColor: student.riskScore >= 200 ? '#fee2e2' : student.riskScore >= 150 ? '#ffe4e6' : '#fef3c7',
                                     textAlign: 'center',
-                                    fontSize: '0.75rem',
+                                    fontSize: '0.85rem',
                                     fontWeight: 700,
                                     display: 'flex',
                                     alignItems: 'center',
@@ -474,7 +474,7 @@ export default function LiveProctoring() {
                                         Loading feed...
                                     </div>
                                 )}
-                                <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 6 }}>
+                                <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 8px', borderRadius: 4, fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 6 }}>
                                     <div style={{ width: 6, height: 6, background: watchingLive[id] ? '#ef4444' : '#10b981', borderRadius: '50%' }}></div> 
                                     {watchingLive[id] ? 'LIVE STREAM' : 'SNAPSHOT'}
                                 </div>
@@ -484,7 +484,7 @@ export default function LiveProctoring() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                     <div>
                                         <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{student.name}</h3>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{student.type === 'assessment' ? 'Assessment' : 'Coding Challenge'}</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{student.type === 'assessment' ? 'Assessment' : 'Coding Challenge'}</div>
                                         
                                         {/* Network Quality Badge */}
                                         {(() => {
@@ -500,7 +500,7 @@ export default function LiveProctoring() {
                                     {(() => {
                                         const risk = getRiskStatus(student.riskScore || 0);
                                         return (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: risk.color, background: risk.bg, border: `1px solid ${risk.border}`, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: risk.color, background: risk.bg, border: `1px solid ${risk.border}`, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
                                                 {risk.label} ({student.riskScore || 0})
                                             </div>
                                         );
@@ -547,23 +547,23 @@ export default function LiveProctoring() {
                                 </button>
                                 
                                 {expandedTimeline[id] && (
-                                    <div style={{ marginTop: '0.75rem', maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div style={{ marginTop: '0.85rem', maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                         {(!student.violations || student.violations.length === 0) ? (
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem' }}>No violations recorded.</div>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem' }}>No violations recorded.</div>
                                         ) : (
                                             student.violations.map((v, i) => (
                                                 <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.6rem', background: '#f8fafc', borderRadius: 6, borderLeft: `4px solid ${v.increment >= 40 ? '#ef4444' : v.increment >= 30 ? '#f97316' : '#eab308'}`, border: '1px solid #e2e8f0' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                         <div>
-                                                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                                                                 {v.type?.replace('_', ' ')?.toUpperCase()}
                                                             </div>
-                                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                                                 {v.time} (+{v.increment} Risk)
                                                             </div>
                                                         </div>
                                                         {v.evidenceUrl && (
-                                                            <a href={v.evidenceUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.65rem', color: '#6366f1', textDecoration: 'underline', fontWeight: 600 }}>
+                                                            <a href={v.evidenceUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#6366f1', textDecoration: 'underline', fontWeight: 600 }}>
                                                                 Fullscreen
                                                             </a>
                                                         )}

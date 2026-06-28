@@ -247,7 +247,7 @@ function StudentSidebar({
         borderRight: '1px solid var(--sidebar-border)',
       }}
     >
-      <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+      <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
         <div style={{
           width: 38, height: 38, borderRadius: 10, flexShrink: 0,
           background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
@@ -264,7 +264,7 @@ function StudentSidebar({
         )}
       </div>
 
-      <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0.75rem 0.625rem' }}>
+      <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0.85rem 0.625rem' }}>
         {NAV_GROUPS.map(({ label, items }) => (
           <div key={label}>
             {(!collapsed || isMobile) && (
@@ -304,14 +304,14 @@ function StudentSidebar({
               <LayoutDashboard size={14} /> Back to Organizer
             </button>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.6rem' }}>
             <ProgressRing value={rankInfo.progress} size={40} stroke={3} color={rankInfo.color} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {rankInfo.name}
               </div>
               {rankInfo.xpToNext > 0 && (
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 1 }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 1 }}>
                   {rankInfo.xpToNext} XP to {rankInfo.nextName}
                 </div>
               )}
@@ -367,7 +367,7 @@ function StudentHeader({
       borderBottom: '1px solid var(--sidebar-border)',
       zIndex: 100, position: 'relative',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
         <button
           onClick={() => isMobile ? setMobileMenuOpen(!mobileMenuOpen) : setCollapsed(!collapsed)}
           className="btn-icon" style={{ border: 'none', background: 'transparent' }}
@@ -387,7 +387,7 @@ function StudentHeader({
               <Flame size={13} fill={stats?.streak > 0 ? 'currentColor' : 'none'} /> {stats?.streak || 0}
             </span>
             <span className="xp-chip xp-chip-xp" title="Total XP">
-              <Star size={13} fill="currentColor" /> {(stats?.xp || 0).toLocaleString()} <span style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 600 }}>XP</span>
+              <Star size={13} fill="currentColor" /> {(stats?.xp || 0).toLocaleString()} <span style={{ fontSize: '0.85rem', opacity: 0.7, fontWeight: 600 }}>XP</span>
             </span>
           </div>
         )}
@@ -420,7 +420,7 @@ function StudentHeader({
                   className="dropdown-menu"
                   style={{ top: 'calc(100% + 8px)', right: 0, width: 300, zIndex: 200 }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem 0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.85rem 0.85rem' }}>
                     <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</span>
                     {unreadCount > 0 && (
                       <button onClick={handleMarkAllAsRead} style={{ border: 'none', background: 'none', fontSize: '0.72rem', color: 'var(--secondary-500)', fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-body)' }}>
@@ -436,7 +436,7 @@ function StudentHeader({
                       </div>
                     ) : notifications.map(n => (
                       <div key={n.id} style={{
-                        padding: '0.65rem 0.75rem', borderRadius: 8, position: 'relative',
+                        padding: '0.85rem 0.85rem', borderRadius: 8, position: 'relative',
                         background: n.isRead ? 'transparent' : 'rgba(16,185,129,0.05)',
                         border: `1px solid ${n.isRead ? 'transparent' : 'rgba(16,185,129,0.12)'}`,
                       }}>
@@ -445,7 +445,7 @@ function StudentHeader({
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
                             <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>{n.message}</div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
                               <Clock size={9} /> {new Date(n.created_at).toLocaleDateString()}
                             </div>
                           </div>
@@ -497,7 +497,7 @@ function StudentHeader({
                   className="dropdown-menu"
                   style={{ top: 'calc(100% + 8px)', right: 0, width: 240, zIndex: 150 }}
                 >
-                  <div style={{ padding: '0.75rem', marginBottom: '0.25rem', borderBottom: '1px solid var(--card-border)' }}>
+                  <div style={{ padding: '0.85rem', marginBottom: '0.25rem', borderBottom: '1px solid var(--card-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                       <Avatar name={profile?.name || 'S'} size="md" />
                       <div>
@@ -506,8 +506,8 @@ function StudentHeader({
                       </div>
                     </div>
                     <div style={{ marginTop: '0.6rem', display: 'flex', gap: '0.4rem' }}>
-                      <span className="xp-chip xp-chip-streak" style={{ fontSize: '0.65rem' }}><Flame size={11} /> {stats?.streak || 0} day</span>
-                      <span className="xp-chip xp-chip-xp" style={{ fontSize: '0.65rem' }}><Star size={11} /> {(stats?.xp || 0).toLocaleString()} XP</span>
+                      <span className="xp-chip xp-chip-streak" style={{ fontSize: '0.85rem' }}><Flame size={11} /> {stats?.streak || 0} day</span>
+                      <span className="xp-chip xp-chip-xp" style={{ fontSize: '0.85rem' }}><Star size={11} /> {(stats?.xp || 0).toLocaleString()} XP</span>
                     </div>
                   </div>
 

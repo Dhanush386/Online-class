@@ -25,7 +25,7 @@ export default function Avatar({
   className = '',
 }) {
   const sizeMap = { sm: 28, md: 36, lg: 48, xl: 64, '2xl': 80 }
-  const fontMap = { sm: '0.65rem', md: '0.8rem', lg: '1rem', xl: '1.25rem', '2xl': '1.5rem' }
+  const fontMap = { sm: '0.85rem', md: '0.8rem', lg: '1rem', xl: '1.25rem', '2xl': '1.5rem' }
   const px      = sizeMap[size] || 36
 
   return (
