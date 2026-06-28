@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Users, User, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink, Info } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { getDefaultUnlockTime } from '../../lib/dateUtils'
 
 const toLocalISO = (date) => {
     if (!date) return ''
@@ -1118,7 +1119,7 @@ export default function StudentManagement() {
                         <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {Array.from({ length: maxDay }, (_, i) => i + 1).map(day => {
-                                    const access = dayAccess.find(a => a.day_number === day) || { is_locked: false, open_time: '', close_time: '' }
+                                    const access = dayAccess.find(a => a.day_number === day) || { is_locked: false, open_time: getDefaultUnlockTime(), close_time: '' }
                                     return (
                                         <div key={day} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 100px', gap: '1rem', alignItems: 'center', padding: '1rem', background: access.is_locked ? '#fff1f2' : '#f8fafc', borderRadius: 12, border: `1px solid ${access.is_locked ? '#fecaca' : '#e2e8f0'}` }}>
                                             <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Day {day}</div>

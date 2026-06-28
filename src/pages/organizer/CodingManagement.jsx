@@ -6,7 +6,7 @@ import CodeEditor from '../../components/CodeEditor'
 import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Filter, Calendar, Clock, Lock, Image as ImageIcon, Upload, Sparkles, Loader2, ShieldAlert, Eye, BarChart3, CheckCircle2, XCircle, Users } from 'lucide-react'
 import ProctoringReportModal from '../../components/organizer/ProctoringReportModal'
 import OrganizerCodingDiscussions from '../../components/OrganizerCodingDiscussions'
-import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
+import { toLocalInput, toISOWithOffset, getDefaultUnlockTime } from '../../lib/dateUtils'
 
 const LANGUAGES = [
     { id: 'html', name: 'HTML/CSS/JS (Web)', icon: '🌐' },
@@ -73,7 +73,7 @@ export default function CodingManagement() {
         title: '', description: '', problem_statement: '',
         course_id: '', language: 'python', difficulty: 'easy',
         starter_code: '', solution_code: '', constraints: '', input_format: '', output_format: '',
-        xp_reward: 15, open_time: '', close_time: '',
+        xp_reward: 15, open_time: getDefaultUnlockTime(), close_time: '',
         target_visual_url: '', allowed_assets: '',
         week_number: 1, day_of_week: 1,
         is_combined: false,
@@ -498,7 +498,7 @@ export default function CodingManagement() {
             title: '', description: '', problem_statement: '',
             course_id: formData.course_id, language: 'python', difficulty: 'easy',
             starter_code: '', solution_code: '', constraints: '', input_format: '', output_format: '',
-            xp_reward: 15, open_time: '', close_time: '',
+            xp_reward: 15, open_time: getDefaultUnlockTime(), close_time: '',
             target_visual_url: '', allowed_assets: '',
             week_number: 1, day_of_week: 1,
             is_combined: false,

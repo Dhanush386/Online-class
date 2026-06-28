@@ -20,3 +20,13 @@ export function toISOWithOffset(localStr) {
     if (Number.isNaN(d.getTime())) return null
     return d.toISOString()       // store as UTC ISO
 }
+
+/**
+ * Returns the current date at 18:30 (6:30 PM) local time formatted for <input type="datetime-local">
+ */
+export function getDefaultUnlockTime() {
+    const d = new Date()
+    d.setHours(18, 30, 0, 0)
+    const pad = n => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
