@@ -53,7 +53,6 @@ const getRiskBorder = (score) => {
     return '#a7f3d0';
 };
 
-// eslint-disable-next-line react/prop-types
 function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
     const handleRemoveHtml = (idx) => {
         setFormData(p => ({
@@ -314,6 +313,41 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
             </div>
         </>
     )
+}
+
+HtmlSpecificOptions.propTypes = {
+    formData: PropTypes.shape({
+        reference_iframe_url: PropTypes.string,
+        web_testcases: PropTypes.shape({
+            html: PropTypes.arrayOf(
+                PropTypes.shape({
+                    id: PropTypes.string,
+                    description: PropTypes.string,
+                    selector: PropTypes.string,
+                    minCount: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+                })
+            ),
+            css: PropTypes.arrayOf(
+                PropTypes.shape({
+                    id: PropTypes.string,
+                    description: PropTypes.string,
+                    selector: PropTypes.string,
+                    property: PropTypes.string,
+                    value: PropTypes.string
+                })
+            ),
+            js: PropTypes.arrayOf(
+                PropTypes.shape({
+                    id: PropTypes.string,
+                    description: PropTypes.string,
+                    keyword: PropTypes.string
+                })
+            )
+        })
+    }).isRequired,
+    setFormData: PropTypes.func.isRequired,
+    wcTab: PropTypes.string.isRequired,
+    setWcTab: PropTypes.func.isRequired
 }
 
 export default function CodingManagement() {
