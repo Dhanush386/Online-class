@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import PropTypes from 'prop-types'
 import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot, Lock } from 'lucide-react'
 
 function CourseJourneyItem({ item, onModuleAction }) {
@@ -363,4 +364,29 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
             </div>
         </div>
     )
+}
+
+CourseJourneyItem.propTypes = {
+    item: PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        active: PropTypes.bool,
+        isLocked: PropTypes.bool,
+        type: PropTypes.string,
+        title: PropTypes.string,
+        duration: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        xp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        completed: PropTypes.bool,
+    }).isRequired,
+    onModuleAction: PropTypes.func
+}
+
+CourseJourneyTimeline.propTypes = {
+    course: PropTypes.object,
+    sessions: PropTypes.array,
+    challenges: PropTypes.array,
+    courseResources: PropTypes.array,
+    assessments: PropTypes.object,
+    progress: PropTypes.object,
+    getScheduleDate: PropTypes.func,
+    onModuleAction: PropTypes.func
 }
