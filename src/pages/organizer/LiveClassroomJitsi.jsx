@@ -53,8 +53,6 @@ export default function LiveClassroom() {
     const mediaRecorderRef = useRef(null)
     const videoDataRef = useRef(null)
     const tokenClientRef = useRef(null)
-    const uploadUrlRef = useRef(null)
-    const totalBytesRecordedRef = useRef(0)
     const containerRef = useRef(null)
 
     const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
