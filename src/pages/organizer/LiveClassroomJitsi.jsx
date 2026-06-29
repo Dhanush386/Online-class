@@ -14,17 +14,17 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
 
 function useDeviceOrientation() {
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
-    const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight)
+    const [isMobile, setIsMobile] = useState(globalThis.innerWidth <= 768)
+    const [isLandscape, setIsLandscape] = useState(globalThis.innerWidth > globalThis.innerHeight)
 
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth <= 768)
-            setIsLandscape(window.innerWidth > window.innerHeight)
+            setIsMobile(globalThis.innerWidth <= 768)
+            setIsLandscape(globalThis.innerWidth > globalThis.innerHeight)
         }
-        window.addEventListener('resize', handleResize)
+        globalThis.addEventListener('resize', handleResize)
         handleResize()
-        return () => window.removeEventListener('resize', handleResize)
+        return () => globalThis.removeEventListener('resize', handleResize)
     }, [])
 
     return { isMobile, isLandscape }
@@ -105,34 +105,39 @@ export default function LiveClassroom() {
             let intervalId = null;
             const channel = supabase.channel(`class-lobby-${videoId}`, { config: { broadcast: { self: true } } })
             setChannelInstance(channel)
+            const handleCheckInstructor = () => {
+                if (isOrganizer) channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
+            }
+
+            const handlePresence = (p) => {
+                if (p.payload.instructorJoined) {
+                    setInstructorPresent(true)
+                    if (intervalId) {
+                        clearInterval(intervalId)
+                        intervalId = null
+                    }
+                }
+            }
+
+            const sendPresenceBroadcast = () => channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
+            const sendCheckInstructorBroadcast = () => channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
+
+            const handleSubscribe = (status) => {
+                if (status === 'SUBSCRIBED') {
+                    if (isOrganizer) {
+                        sendPresenceBroadcast()
+                        intervalId = setInterval(sendPresenceBroadcast, 3000)
+                    } else {
+                        sendCheckInstructorBroadcast()
+                        intervalId = setInterval(sendCheckInstructorBroadcast, 3000)
+                    }
+                }
+            }
+
             channel
-                .on('broadcast', { event: 'check_instructor' }, () => {
-                    if (isOrganizer) channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
-                })
-                .on('broadcast', { event: 'presence' }, (p) => {
-                    if (p.payload.instructorJoined) {
-                        setInstructorPresent(true)
-                        if (intervalId) {
-                            clearInterval(intervalId)
-                            intervalId = null
-                        }
-                    }
-                })
-                .subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
-                        if (isOrganizer) {
-                            channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
-                            intervalId = setInterval(() => {
-                                channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
-                            }, 3000)
-                        } else {
-                            channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
-                            intervalId = setInterval(() => {
-                                channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
-                            }, 3000)
-                        }
-                    }
-                })
+                .on('broadcast', { event: 'check_instructor' }, handleCheckInstructor)
+                .on('broadcast', { event: 'presence' }, handlePresence)
+                .subscribe(handleSubscribe)
 
             return () => {
                 if (intervalId) clearInterval(intervalId)
@@ -143,14 +148,14 @@ export default function LiveClassroom() {
         fetchVideo()
         return () => {
             if (jitsiApiRef.current) jitsiApiRef.current.dispose()
-            document.head.removeChild(jitsiScript)
-            document.body.removeChild(gScript)
+            jitsiScript.remove()
+            gScript.remove()
         }
     }, [videoId])
 
     function initGoogleAuth() {
-        if (!window.google || !GOOGLE_CLIENT_ID) return
-        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+        if (!globalThis.google || !GOOGLE_CLIENT_ID) return
+        tokenClientRef.current = globalThis.google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/drive.file',
             callback: (res) => { if (res.access_token) setGToken(res.access_token) }
@@ -210,13 +215,46 @@ export default function LiveClassroom() {
                 p2p: { enabled: false } // Disabled: Prevents audio drops when transitioning from 1-on-1 to group mode (when late students join)
             }
         }
-        jitsiApiRef.current = new window.JitsiMeetExternalAPI(domain, options)
+        jitsiApiRef.current = new globalThis.JitsiMeetExternalAPI(domain, options)
 
         let joinTime = null;
         let attendanceInterval = null;
         let attendanceMarked = false;
 
-        jitsiApiRef.current.on('videoConferenceJoined', () => {
+        const checkAttendance = async () => {
+            if (!joinTime) return;
+            const durationSec = Math.floor((Date.now() - joinTime) / 1000);
+            const isSufficient = durationSec >= 300; // 5 minutes
+
+            const updateData = {
+                student_id: profile.id,
+                video_id: data.id,
+                left_at: new Date().toISOString(),
+                duration_seconds: durationSec
+            };
+
+            if (isSufficient && !attendanceMarked) {
+                updateData.attendance_status = 'present';
+                updateData.streak_awarded = true;
+                attendanceMarked = true;
+                
+                toast.success('🎉 Attendance Marked! +20 XP earned');
+                
+                // Award XP
+                const { data: userProfile } = await supabase.from('users').select('xp').eq('id', profile.id).single();
+                if (userProfile) {
+                    await supabase.from('users').update({ xp: (userProfile.xp || 0) + 20 }).eq('id', profile.id);
+                    refreshStats(); // Update streak and XP context
+                }
+            } else if (!attendanceMarked) {
+                 updateData.attendance_status = 'insufficient_time';
+            }
+
+            supabase.from('live_attendance').upsert(updateData, { onConflict: 'student_id,video_id' })
+                .then(({error}) => { if(error) console.error(error) });
+        };
+
+        const handleVideoConferenceJoined = () => {
             if (!isOrganizer && profile?.id) {
                 joinTime = Date.now();
                 // Initial insert
@@ -230,44 +268,11 @@ export default function LiveClassroom() {
                 })
 
                 // Start duration tracking
-                attendanceInterval = setInterval(async () => {
-                    if (!joinTime) return;
-                    const durationSec = Math.floor((Date.now() - joinTime) / 1000);
-                    const isSufficient = durationSec >= 300; // 5 minutes
-
-                    const updateData = {
-                        student_id: profile.id,
-                        video_id: data.id,
-                        left_at: new Date().toISOString(),
-                        duration_seconds: durationSec
-                    };
-
-                    if (isSufficient && !attendanceMarked) {
-                        updateData.attendance_status = 'present';
-                        updateData.streak_awarded = true;
-                        attendanceMarked = true;
-                        
-                        toast.success('🎉 Attendance Marked! +20 XP earned');
-                        
-                        // Award XP
-                        const { data: userProfile } = await supabase.from('users').select('xp').eq('id', profile.id).single();
-                        if (userProfile) {
-                            await supabase.from('users').update({ xp: (userProfile.xp || 0) + 20 }).eq('id', profile.id);
-                            refreshStats(); // Update streak and XP context
-                        }
-                    } else if (!attendanceMarked) {
-                         updateData.attendance_status = 'insufficient_time';
-                    }
-
-                    supabase.from('live_attendance').upsert(updateData, { onConflict: 'student_id,video_id' })
-                        .then(({error}) => { if(error) console.error(error) });
-
-                }, 10000); // Check every 10s
+                attendanceInterval = setInterval(checkAttendance, 10000); // Check every 10s
             }
-        });
+        };
 
-        // Auto-navigate back when the user leaves the conference
-        jitsiApiRef.current.on('videoConferenceLeft', () => {
+        const handleVideoConferenceLeft = () => {
             if (attendanceInterval) clearInterval(attendanceInterval);
             if (!isOrganizer && !attendanceMarked && joinTime) {
                 const durationSec = Math.floor((Date.now() - joinTime) / 1000);
@@ -283,7 +288,10 @@ export default function LiveClassroom() {
                 }, { onConflict: 'student_id,video_id' }).then();
             }
             setTimeout(() => navigate(-1), 500)
-        })
+        };
+
+        jitsiApiRef.current.on('videoConferenceJoined', handleVideoConferenceJoined);
+        jitsiApiRef.current.on('videoConferenceLeft', handleVideoConferenceLeft);
     }
 
     // Recording System
@@ -301,11 +309,11 @@ export default function LiveClassroom() {
             try {
                 micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
             } catch (e) {
-                console.warn('Microphone access denied or not available.')
+                console.warn('Microphone access denied or not available.', e)
             }
 
             // 3. Mix Audio (Microphone + System Audio)
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+            const audioContext = new (globalThis.AudioContext || globalThis.webkitAudioContext)()
             const mixedOutput = audioContext.createMediaStreamDestination()
 
             // Add System Audio to Mix
@@ -421,16 +429,25 @@ export default function LiveClassroom() {
         }
     }
 
-      const getSidebarStyles = () => ({
-        width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape ? '280px' : '360px'),
-        height: (isMobile && !isLandscape) ? '50%' : '100%',
-        minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
-        maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
-        background: 'var(--text-primary)', 
-        borderLeft: (isMobile && !isLandscape) ? 'none' : '1px solid rgba(255,255,255,0.1)', 
-        borderTop: (isMobile && !isLandscape) ? '1px solid rgba(255,255,255,0.1)' : 'none',
-        display: 'flex', flexDirection: 'column', zIndex: 20
-    });
+    const getSidebarStyles = () => {
+        let width = '360px';
+        if (isMobile && !isLandscape) {
+            width = '100%';
+        } else if (isMobile && isLandscape) {
+            width = '280px';
+        }
+
+        return {
+            width,
+            height: (isMobile && !isLandscape) ? '50%' : '100%',
+            minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
+            maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
+            background: 'var(--text-primary)', 
+            borderLeft: (isMobile && !isLandscape) ? 'none' : '1px solid rgba(255,255,255,0.1)', 
+            borderTop: (isMobile && !isLandscape) ? '1px solid rgba(255,255,255,0.1)' : 'none',
+            display: 'flex', flexDirection: 'column', zIndex: 20
+        };
+    };
 
     const renderRecordingControls = () => {
         if (!gToken) {

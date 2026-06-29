@@ -1,15 +1,15 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import PropTypes from 'prop-types'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useMeeting } from '../../contexts/MeetingContext'
 import { useToast } from '../../components/Toast'
-import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, UserCheck, Play, StopCircle, ZoomIn, ZoomOut, UserPlus, XCircle, CheckCircle, Clock, Smile, ShieldCheck, Lock, Unlock, UserMinus, ArrowDown, MoreVertical, Pin, PinOff } from 'lucide-react'
+import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff, MessageSquare, BarChart2, Edit3, Users, Maximize, Minimize, Hand, ZoomIn, ZoomOut, UserPlus, XCircle, CheckCircle, Clock, Smile, ShieldCheck, Lock, Unlock, UserMinus, ArrowDown, MoreVertical, Pin, PinOff } from 'lucide-react'
 
 import LiveNotes from '../../components/live-classroom/LiveNotes'
 import LivePolls from '../../components/live-classroom/LivePolls'
 import LiveAttendance from '../../components/live-classroom/LiveAttendance'
-import LiveHandRaise from '../../components/live-classroom/LiveHandRaise'
 import LiveChat from '../../components/live-classroom/LiveChat'
 
 import {
@@ -20,7 +20,7 @@ import {
     useConnectionState
 } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { Track, RoomEvent, ConnectionState, ParticipantEvent, DataPacket_Kind } from 'livekit-client'
+import { Track, RoomEvent, ConnectionState, ParticipantEvent } from 'livekit-client'
 
 // Constants
 const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'wss://meet.learnova.com'
@@ -56,6 +56,13 @@ function CustomVideoTrack({ track, objectFit = 'cover' }) {
     }, [track])
     return <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit, background: 'black', pointerEvents: 'none' }} />
 }
+CustomVideoTrack.propTypes = {
+    track: PropTypes.shape({
+        attach: PropTypes.func.isRequired,
+        detach: PropTypes.func.isRequired
+    }),
+    objectFit: PropTypes.string
+};
 
 function CustomAudioTrack({ track }) {
     const audioRef = useRef(null)
@@ -66,12 +73,23 @@ function CustomAudioTrack({ track }) {
             return () => track.detach(el)
         }
     }, [track])
-    return <audio ref={audioRef} autoPlay />
+    return (
+        <audio ref={audioRef} autoPlay>
+            <track kind="captions" />
+        </audio>
+    )
 }
+CustomAudioTrack.propTypes = {
+    track: PropTypes.shape({
+        attach: PropTypes.func.isRequired,
+        detach: PropTypes.func.isRequired
+    })
+};
 
 // ─── Hook: get tracks for a single participant via direct events (no LiveKit hooks) ──
 function useManualParticipantTracks(participant) {
-    const [, setTick] = useState(0)
+    // eslint-disable-next-line no-unused-vars
+    const [tick, setTick] = useState(0)
     useEffect(() => {
         if (!participant) return
         const bump = () => setTick(n => n + 1)
@@ -103,139 +121,193 @@ function useManualParticipantTracks(participant) {
     return { camera, screen, mic }
 }
 
-// ─── Participant Tile ────────────────────────────────────────────────────────
-function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isPinned = false }) {
-    const { isMobile } = useDeviceOrientation()
+// ─── Tile Helper Components ────────────────────────────────────────────────────────
 
-    const { camera, screen, mic } = useManualParticipantTracks(participant)
-    const cameraTrack = camera?.track
-    const screenTrack = screen?.track
-    const audioTrack = mic?.track
+function getTileContainerStyle(isSpeaking, isSpotlight, isMobile) {
+    return {
+        position: 'relative',
+        borderRadius: 16,
+        overflow: 'hidden',
+        background: 'linear-gradient(145deg, rgba(15,23,42,0.9), rgba(30,41,59,0.8))',
+        border: isSpeaking ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.08)',
+        boxShadow: isSpeaking ? '0 0 20px rgba(99,102,241,0.3)' : 'none',
+        transition: 'all 0.3s ease',
+        aspectRatio: isSpotlight ? 'auto' : '16/9',
+        width: '100%',
+        height: (isMobile && !isSpotlight) ? 'auto' : '100%',
+        minHeight: (isMobile && !isSpotlight) ? '180px' : 0,
+    };
+}
 
-    const isMuted = !participant.isMicrophoneEnabled
-    const isCameraOff = !participant.isCameraEnabled
-    
-    const displayTrack = screenTrack || cameraTrack
-    const isScreenShareDisplay = !!screenTrack
-    const shouldShowVideo = !!displayTrack && (isScreenShareDisplay || !isCameraOff)
+function ZoomControls({ scale, onZoomOut, onResetZoom, onZoomIn, isSpeaking }) {
+    return (
+        <div style={{
+            position: 'absolute', top: 8, right: isSpeaking ? 24 : 8,
+            display: 'flex', alignItems: 'center', gap: 4, 
+            background: 'rgba(15,23,42,0.8)', padding: '4px 8px', borderRadius: 8, zIndex: 10,
+            border: '1px solid rgba(255,255,255,0.1)'
+        }}>
+            <button onClick={onZoomOut} disabled={scale <= 1} style={{ background: 'transparent', border: 'none', color: scale > 1 ? 'white' : 'rgba(255,255,255,0.3)', cursor: scale > 1 ? 'pointer' : 'default', padding: 4, display: 'flex' }}><ZoomOut size={16} /></button>
+            <button onClick={onResetZoom} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '0 8px', fontSize: '0.85rem', fontWeight: 600, minWidth: '48px' }}>{Math.round(scale * 100)}%</button>
+            <button onClick={onZoomIn} disabled={scale >= 5} style={{ background: 'transparent', border: 'none', color: scale < 5 ? 'white' : 'rgba(255,255,255,0.3)', cursor: scale < 5 ? 'pointer' : 'default', padding: 4, display: 'flex' }}><ZoomIn size={16} /></button>
+        </div>
+    );
+}
 
-    let metadata = {}
-    try { metadata = JSON.parse(participant.metadata || '{}') } catch {}
-    const name = participant.name || metadata.name || participant.identity
-    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+function getZoomContainerStyle(scale) {
+    return { 
+        width: '100%', height: '100%', 
+        overflow: 'hidden',
+        touchAction: scale > 1 ? 'none' : 'auto'
+    };
+}
 
-    const [scale, setScale] = useState(1)
-    const [pan, setPan] = useState({ x: 0, y: 0 })
-    const isDragging = useRef(false)
-    const lastPos = useRef({ x: 0, y: 0 })
+function getZoomContentStyle(pan, scale, isDragging) {
+    let cursorStyle = 'auto';
+    if (scale > 1) {
+        cursorStyle = isDragging ? 'grabbing' : 'grab';
+    }
+
+    return {
+        width: '100%', height: '100%',
+        transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+        transformOrigin: 'center',
+        transition: isDragging ? 'none' : 'transform 0.1s ease',
+        cursor: cursorStyle
+    };
+}
+
+function ZoomableVideo({ track, isScreenShareDisplay, isSpotlight, isSpeaking }) {
+    const [scale, setScale] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [isDraggingUI, setIsDraggingUI] = useState(false);
+    const isDragging = useRef(false);
+    const lastPos = useRef({ x: 0, y: 0 });
 
     const handleWheel = (e) => {
         if (!isSpotlight || !isScreenShareDisplay) return;
-        const zoomDelta = e.deltaY * -0.002
-        let newScale = Math.min(Math.max(1, scale + zoomDelta), 5)
-        setScale(newScale)
-        if (newScale === 1) setPan({ x: 0, y: 0 })
-    }
+        const zoomDelta = e.deltaY * -0.002;
+        let newScale = Math.min(Math.max(1, scale + zoomDelta), 5);
+        setScale(newScale);
+        if (newScale === 1) setPan({ x: 0, y: 0 });
+    };
 
     const handlePointerDown = (e) => {
         if (scale <= 1 || !isSpotlight || !isScreenShareDisplay) return;
-        isDragging.current = true
-        lastPos.current = { x: e.clientX, y: e.clientY }
-        e.target.setPointerCapture(e.pointerId)
-    }
+        isDragging.current = true;
+        setIsDraggingUI(true);
+        lastPos.current = { x: e.clientX, y: e.clientY };
+        e.target.setPointerCapture(e.pointerId);
+    };
 
     const handlePointerMove = (e) => {
         if (!isDragging.current) return;
-        const dx = e.clientX - lastPos.current.x
-        const dy = e.clientY - lastPos.current.y
-        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }))
-        lastPos.current = { x: e.clientX, y: e.clientY }
-    }
+        const dx = e.clientX - lastPos.current.x;
+        const dy = e.clientY - lastPos.current.y;
+        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+        lastPos.current = { x: e.clientX, y: e.clientY };
+    };
 
     const handlePointerUp = (e) => {
-        isDragging.current = false
+        isDragging.current = false;
+        setIsDraggingUI(false);
         if (e.target.hasPointerCapture(e.pointerId)) {
-            e.target.releasePointerCapture(e.pointerId)
+            e.target.releasePointerCapture(e.pointerId);
         }
-    }
+    };
 
-    const handleZoomIn = () => setScale(s => Math.min(s + 0.5, 5))
+    const handleZoomIn = () => setScale(s => Math.min(s + 0.5, 5));
     const handleZoomOut = () => setScale(s => {
-        const newScale = Math.max(s - 0.5, 1)
-        if (newScale === 1) setPan({ x: 0, y: 0 })
-        return newScale
-    })
+        const newScale = Math.max(s - 0.5, 1);
+        if (newScale === 1) setPan({ x: 0, y: 0 });
+        return newScale;
+    });
     const handleResetZoom = () => {
-        setScale(1)
-        setPan({ x: 0, y: 0 })
+        setScale(1);
+        setPan({ x: 0, y: 0 });
+    };
+
+    return (
+        <>
+            <div 
+                onWheel={handleWheel}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                style={getZoomContainerStyle(scale)}
+            >
+                <div style={getZoomContentStyle(pan, scale, isDraggingUI)}>
+                    <CustomVideoTrack
+                        track={track}
+                        objectFit={isScreenShareDisplay ? 'contain' : 'cover'}
+                    />
+                </div>
+            </div>
+            {isScreenShareDisplay && isSpotlight && (
+                <ZoomControls 
+                    scale={scale} 
+                    onZoomOut={handleZoomOut} 
+                    onResetZoom={handleResetZoom} 
+                    onZoomIn={handleZoomIn} 
+                    isSpeaking={isSpeaking} 
+                />
+            )}
+        </>
+    );
+}
+
+ZoomableVideo.propTypes = {
+    track: PropTypes.any,
+    isScreenShareDisplay: PropTypes.bool,
+    isSpotlight: PropTypes.bool,
+    isSpeaking: PropTypes.bool
+};
+ZoomControls.propTypes = {
+    scale: PropTypes.number,
+    onZoomOut: PropTypes.func,
+    onResetZoom: PropTypes.func,
+    onZoomIn: PropTypes.func,
+    isSpeaking: PropTypes.bool
+};
+
+function ParticipantAvatar({ initials }) {
+    return (
+        <div style={{
+            width: '100%', height: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'linear-gradient(145deg, #1e293b, #0f172a)'
+        }}>
+            <div style={{
+                width: 72, height: 72, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.5rem', fontWeight: 700, color: 'white',
+                boxShadow: '0 4px 20px rgba(99,102,241,0.3)'
+            }}>
+                {initials}
+            </div>
+        </div>
+    );
+}
+
+ParticipantAvatar.propTypes = { initials: PropTypes.string };
+
+function ParticipantOverlayInfo({ 
+    name, isLocal, isMuted, isPinned, onPin, participantIdentity, 
+    isSpeaking, hasScreenShare, isSpotlight, handRaised 
+}) {
+    let pinButtonRightOffset = 8;
+    if (hasScreenShare && isSpotlight) {
+        pinButtonRightOffset = isSpeaking ? 160 : 144;
+    } else {
+        pinButtonRightOffset = isSpeaking ? 24 : 8;
     }
 
     return (
-        <div style={{
-            position: 'relative',
-            borderRadius: 16,
-            overflow: 'hidden',
-            background: 'linear-gradient(145deg, rgba(15,23,42,0.9), rgba(30,41,59,0.8))',
-            border: participant.isSpeaking ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.08)',
-            boxShadow: participant.isSpeaking ? '0 0 20px rgba(99,102,241,0.3)' : 'none',
-            transition: 'all 0.3s ease',
-            aspectRatio: isSpotlight ? 'auto' : '16/9',
-            width: '100%',
-            height: (isMobile && !isSpotlight) ? 'auto' : '100%',
-            minHeight: (isMobile && !isSpotlight) ? '180px' : 0,
-        }}>
-            {/* Audio Track */}
-            {audioTrack && !isLocal && (
-                <CustomAudioTrack track={audioTrack} />
-            )}
-
-            {/* Video or Avatar */}
-            {shouldShowVideo ? (
-                <div 
-                    onWheel={handleWheel}
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={handlePointerUp}
-                    onPointerCancel={handlePointerUp}
-                    style={{ 
-                        width: '100%', height: '100%', 
-                        overflow: 'hidden',
-                        touchAction: scale > 1 ? 'none' : 'auto'
-                    }}
-                >
-                    <div style={{
-                        width: '100%', height: '100%',
-                        transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-                        transformOrigin: 'center',
-                        transition: isDragging.current ? 'none' : 'transform 0.1s ease',
-                        cursor: scale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'auto'
-                    }}>
-                        <CustomVideoTrack
-                            track={displayTrack}
-                            objectFit={isScreenShareDisplay ? 'contain' : 'cover'}
-                        />
-                    </div>
-                </div>
-            ) : (
-                <div style={{
-                    width: '100%', height: '100%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'linear-gradient(145deg, #1e293b, #0f172a)'
-                }}>
-                    <div style={{
-                        width: 72, height: 72, borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '1.5rem', fontWeight: 700, color: 'white',
-                        boxShadow: '0 4px 20px rgba(99,102,241,0.3)'
-                    }}>
-                        {initials}
-                    </div>
-                </div>
-            )}
-
+        <>
             {/* Screen Share Badge */}
-            {screenTrack && (
+            {hasScreenShare && (
                 <div style={{
                     position: 'absolute', top: 8, left: 8,
                     background: 'rgba(99,102,241,0.9)', color: 'white',
@@ -247,9 +319,9 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
             )}
 
             {/* Hand Raise Badge */}
-            {metadata.handRaised && (
+            {handRaised && (
                 <div style={{
-                    position: 'absolute', top: screenTrack ? 36 : 8, left: 8,
+                    position: 'absolute', top: hasScreenShare ? 36 : 8, left: 8,
                     background: 'rgba(245,158,11,0.9)', color: 'white',
                     padding: '3px 8px', borderRadius: 6, fontSize: '0.85rem', fontWeight: 700,
                     display: 'flex', alignItems: 'center', gap: 4,
@@ -259,26 +331,12 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
                 </div>
             )}
 
-            {/* Zoom Controls (only if screen share in spotlight) */}
-            {isScreenShareDisplay && isSpotlight && (
-                <div style={{
-                    position: 'absolute', top: 8, right: participant.isSpeaking ? 24 : 8,
-                    display: 'flex', alignItems: 'center', gap: 4, 
-                    background: 'rgba(15,23,42,0.8)', padding: '4px 8px', borderRadius: 8, zIndex: 10,
-                    border: '1px solid rgba(255,255,255,0.1)'
-                }}>
-                    <button onClick={handleZoomOut} disabled={scale <= 1} style={{ background: 'transparent', border: 'none', color: scale > 1 ? 'white' : 'rgba(255,255,255,0.3)', cursor: scale > 1 ? 'pointer' : 'default', padding: 4, display: 'flex' }}><ZoomOut size={16} /></button>
-                    <button onClick={handleResetZoom} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '0 8px', fontSize: '0.85rem', fontWeight: 600, minWidth: '48px' }}>{Math.round(scale * 100)}%</button>
-                    <button onClick={handleZoomIn} disabled={scale >= 5} style={{ background: 'transparent', border: 'none', color: scale < 5 ? 'white' : 'rgba(255,255,255,0.3)', cursor: scale < 5 ? 'pointer' : 'default', padding: 4, display: 'flex' }}><ZoomIn size={16} /></button>
-                </div>
-            )}
-
             {/* Pin / Unpin Button */}
             {onPin && (
-                <button onClick={(e) => { e.stopPropagation(); onPin(participant.identity) }} title={isPinned ? 'Unpin' : 'Pin'} style={{
+                <button onClick={(e) => { e.stopPropagation(); onPin(participantIdentity); }} title={isPinned ? 'Unpin' : 'Pin'} style={{
                     position: 'absolute',
                     top: 8,
-                    right: (isScreenShareDisplay && isSpotlight) ? (participant.isSpeaking ? 160 : 144) : (participant.isSpeaking ? 24 : 8),
+                    right: pinButtonRightOffset,
                     zIndex: 11,
                     width: 32, height: 32, borderRadius: 8,
                     background: isPinned ? 'rgba(99,102,241,0.9)' : 'rgba(15,23,42,0.8)',
@@ -318,7 +376,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
             </div>
 
             {/* Speaking Indicator */}
-            {participant.isSpeaking && (
+            {isSpeaking && (
                 <div style={{
                     position: 'absolute', top: 8, right: 8,
                     width: 10, height: 10, borderRadius: '50%',
@@ -326,8 +384,261 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
                     animation: 'pulse 1.5s infinite'
                 }} />
             )}
+        </>
+    );
+}
+
+ParticipantOverlayInfo.propTypes = {
+    name: PropTypes.string,
+    isLocal: PropTypes.bool,
+    isMuted: PropTypes.bool,
+    isPinned: PropTypes.bool,
+    onPin: PropTypes.func,
+    participantIdentity: PropTypes.string,
+    isSpeaking: PropTypes.bool,
+    hasScreenShare: PropTypes.bool,
+    isSpotlight: PropTypes.bool,
+    handRaised: PropTypes.bool
+};
+
+function parseParticipantMetadata(participant) {
+    try { 
+        return JSON.parse(participant.metadata || '{}'); 
+    } catch {
+        return {};
+    }
+}
+
+// ─── Participant Tile ────────────────────────────────────────────────────────
+function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isPinned = false }) {
+    const { isMobile } = useDeviceOrientation();
+    const { camera, screen, mic } = useManualParticipantTracks(participant);
+    const cameraTrack = camera?.track;
+    const screenTrack = screen?.track;
+    const audioTrack = mic?.track;
+
+    const isMuted = !participant.isMicrophoneEnabled;
+    const isCameraOff = !participant.isCameraEnabled;
+    
+    const displayTrack = screenTrack || cameraTrack;
+    const isScreenShareDisplay = !!screenTrack;
+    const shouldShowVideo = !!displayTrack && (isScreenShareDisplay || !isCameraOff);
+
+    const metadata = parseParticipantMetadata(participant);
+    const name = participant.name || metadata.name || participant.identity;
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+    return (
+        <div style={getTileContainerStyle(participant.isSpeaking, isSpotlight, isMobile)}>
+            {/* Audio Track */}
+            {audioTrack && !isLocal && (
+                <CustomAudioTrack track={audioTrack} />
+            )}
+
+            {/* Video or Avatar */}
+            {shouldShowVideo ? (
+                <ZoomableVideo 
+                    track={displayTrack}
+                    isScreenShareDisplay={isScreenShareDisplay}
+                    isSpotlight={isSpotlight}
+                    isSpeaking={participant.isSpeaking}
+                />
+            ) : (
+                <ParticipantAvatar initials={initials} />
+            )}
+
+            <ParticipantOverlayInfo 
+                name={name}
+                isLocal={isLocal}
+                isMuted={isMuted}
+                isPinned={isPinned}
+                onPin={onPin}
+                participantIdentity={participant.identity}
+                isSpeaking={participant.isSpeaking}
+                hasScreenShare={isScreenShareDisplay}
+                isSpotlight={isSpotlight}
+                handRaised={metadata.handRaised}
+            />
         </div>
-    )
+    );
+}
+
+ParticipantTile.propTypes = {
+    participant: PropTypes.shape({
+        isMicrophoneEnabled: PropTypes.bool,
+        isCameraEnabled: PropTypes.bool,
+        metadata: PropTypes.string,
+        name: PropTypes.string,
+        identity: PropTypes.string,
+        isSpeaking: PropTypes.bool
+    }).isRequired,
+    isLocal: PropTypes.bool,
+    isSpotlight: PropTypes.bool,
+    onPin: PropTypes.func,
+    isPinned: PropTypes.bool
+};
+
+// ─── Video Grid ──────────────────────────────────────────────────────────────
+// CRITICAL: Single return path. All participants rendered in a flat list with
+// stable keys. Layout changes are CSS-only (gridColumn/order). No component
+// unmount/remount when screen sharing starts — that was the root cause of #300.
+// ─── Video Grid Helpers ──────────────────────────────────────────────────────
+
+function calculateGridColumns(count, isMobilePortrait) {
+    if (isMobilePortrait) {
+        if (count <= 2) return 1;
+        if (count <= 6) return 2;
+        if (count <= 12) return 3;
+        return 4;
+    }
+    if (count <= 4) return 2;
+    if (count <= 9) return 3;
+    if (count <= 16) return 4;
+    return 5;
+}
+
+function getPresenterName(screenSharer) {
+    if (!screenSharer) return '';
+    try {
+        const m = JSON.parse(screenSharer.metadata || '{}');
+        return screenSharer.name || m.name || screenSharer.identity;
+    } catch {
+        return screenSharer.name || screenSharer.identity;
+    }
+}
+
+function getVideoGridLayoutStyle(hasScreenShare, isMobilePortrait, cols, count, layoutTransition) {
+    let flexDirection = undefined;
+    if (hasScreenShare) {
+        flexDirection = isMobilePortrait ? 'column' : 'row';
+    }
+
+    let animation = 'none';
+    if (layoutTransition) {
+        animation = hasScreenShare ? 'spotlightFadeIn 300ms ease-out' : 'gridFadeIn 300ms ease-out';
+    }
+
+    return {
+        flex: 1,
+        display: hasScreenShare ? 'flex' : 'grid',
+        flexDirection,
+        padding: '0.5rem',
+        gap: '0.5rem',
+        gridTemplateColumns: hasScreenShare ? undefined : `repeat(${cols}, 1fr)`,
+        gridAutoRows: hasScreenShare ? undefined : '1fr',
+        alignContent: (!hasScreenShare && count <= 2) ? 'center' : 'start',
+        overflow: 'hidden',
+        width: '100%',
+        height: '100%',
+        minWidth: 0,
+        minHeight: 0,
+        boxSizing: 'border-box',
+        animation,
+    };
+}
+
+function getFilmstripStyle(isMobilePortrait, isMobile) {
+    if (isMobilePortrait) {
+        return {
+            height: '90px',
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '0.5rem',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            paddingBottom: '2px',
+        };
+    }
+    return {
+        width: isMobile ? '120px' : '180px',
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        paddingRight: '2px',
+    };
+}
+
+function getFilmstripItemStyle(isMobilePortrait, isMobile) {
+    const baseStyle = {
+        minWidth: 0,
+        minHeight: 0,
+        overflow: 'hidden',
+        borderRadius: 12,
+    };
+
+    if (isMobilePortrait) {
+        return {
+            ...baseStyle,
+            width: '120px',
+            height: '100%',
+            flexShrink: 0,
+        };
+    }
+    
+    return {
+        ...baseStyle,
+        width: '100%',
+        height: isMobile ? '80px' : '120px',
+        flexShrink: 0,
+    };
+}
+
+function PinnedParticipantView({ pinnedParticipant, localParticipant, handlePin }) {
+    return (
+        <div style={{
+            flex: 1, display: 'flex', padding: '0.5rem', overflow: 'hidden',
+            width: '100%', height: '100%', minWidth: 0, minHeight: 0,
+            boxSizing: 'border-box', position: 'relative',
+        }}>
+            <div style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden', borderRadius: 16 }}>
+                <ParticipantTile
+                    participant={pinnedParticipant}
+                    isLocal={pinnedParticipant.identity === localParticipant?.identity}
+                    isSpotlight={true}
+                    onPin={handlePin}
+                    isPinned={true}
+                />
+            </div>
+        </div>
+    );
+}
+
+function ScreenShareSpotlight({ screenSharer, localParticipant, handlePin, presenterName }) {
+    if (!screenSharer) return null;
+    return (
+        <div key={screenSharer.identity} style={{
+            flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden',
+            borderRadius: 16, display: 'flex', flexDirection: 'column',
+        }}>
+            <div style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+                background: 'rgba(15,23,42,0.85)', borderRadius: '12px 12px 0 0',
+                border: '1px solid rgba(255,255,255,0.06)', borderBottom: 'none',
+                backdropFilter: 'blur(8px)', flexShrink: 0,
+            }}>
+                <MonitorUp size={14} color="#818cf8" />
+                <span style={{
+                    color: 'rgba(255,255,255,0.9)', fontSize: '0.8rem', fontWeight: 600,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                    📺 {presenterName} is presenting
+                </span>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', borderRadius: '0 0 12px 12px' }}>
+                <ParticipantTile
+                    participant={screenSharer}
+                    isLocal={screenSharer.identity === localParticipant?.identity}
+                    isSpotlight={true}
+                    onPin={handlePin}
+                    isPinned={false}
+                />
+            </div>
+        </div>
+    );
 }
 
 // ─── Video Grid ──────────────────────────────────────────────────────────────
@@ -335,258 +646,96 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
 // stable keys. Layout changes are CSS-only (gridColumn/order). No component
 // unmount/remount when screen sharing starts — that was the root cause of #300.
 function VideoGrid() {
-    const remoteParticipants = useRemoteParticipants()
-    const { localParticipant } = useLocalParticipant()
-    const room = useRoomContext()
-    const [, setTick] = useState(0)
-    const [pinnedIdentity, setPinnedIdentity] = useState(null)
+    const remoteParticipants = useRemoteParticipants();
+    const { localParticipant } = useLocalParticipant();
+    const room = useRoomContext();
+    const [tick, setTick] = useState(0);
+    const [pinnedIdentity, setPinnedIdentity] = useState(null);
 
     // Listen for screen-share track events at the Room level to detect layout changes
     useEffect(() => {
-        if (!room) return
-        const bump = () => setTick(n => n + 1)
-        room.on(RoomEvent.TrackPublished, bump)
-        room.on(RoomEvent.TrackUnpublished, bump)
-        room.on(RoomEvent.LocalTrackPublished, bump)
-        room.on(RoomEvent.LocalTrackUnpublished, bump)
+        if (!room) return;
+        const bump = () => setTick(n => n + 1);
+        room.on(RoomEvent.TrackPublished, bump);
+        room.on(RoomEvent.TrackUnpublished, bump);
+        room.on(RoomEvent.LocalTrackPublished, bump);
+        room.on(RoomEvent.LocalTrackUnpublished, bump);
         return () => {
-            room.off(RoomEvent.TrackPublished, bump)
-            room.off(RoomEvent.TrackUnpublished, bump)
-            room.off(RoomEvent.LocalTrackPublished, bump)
-            room.off(RoomEvent.LocalTrackUnpublished, bump)
-        }
-    }, [room])
+            room.off(RoomEvent.TrackPublished, bump);
+            room.off(RoomEvent.TrackUnpublished, bump);
+            room.off(RoomEvent.LocalTrackPublished, bump);
+            room.off(RoomEvent.LocalTrackUnpublished, bump);
+        };
+    }, [room]);
 
     // Build participant list: local first, then remotes (no duplicates)
     const allParticipants = useMemo(() => {
-        if (!localParticipant) return remoteParticipants
-        return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)]
-    }, [localParticipant, remoteParticipants])
+        if (!localParticipant) return remoteParticipants;
+        return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)];
+    }, [localParticipant, remoteParticipants]);
 
-    // TWEAK 1: Multiple screen sharers — latest (last in list) wins priority
-    // This prevents flickering when two organizers accidentally share at the same time
-    const screenSharers = allParticipants.filter(p => p.isScreenShareEnabled)
-    const screenSharerIdentity = screenSharers.length > 0 ? screenSharers[screenSharers.length - 1].identity : null
-    const hasScreenShare = !!screenSharerIdentity
+    // Multiple screen sharers — latest wins priority
+    const screenSharers = allParticipants.filter(p => p.isScreenShareEnabled);
+    const screenSharerIdentity = screenSharers.length > 0 ? screenSharers[screenSharers.length - 1].identity : null;
+    const hasScreenShare = !!screenSharerIdentity;
 
-    // Track previous screen share state for exit animation
-    const prevHadScreenShare = useRef(false)
-    const [layoutTransition, setLayoutTransition] = useState(false)
+    const prevHadScreenShare = useRef(false);
+    const [layoutTransition, setLayoutTransition] = useState(false);
 
     useEffect(() => {
         if (prevHadScreenShare.current !== hasScreenShare) {
-            setLayoutTransition(true)
-            const timer = setTimeout(() => setLayoutTransition(false), 300)
-            prevHadScreenShare.current = hasScreenShare
-            return () => clearTimeout(timer)
+            setLayoutTransition(true);
+            const timer = setTimeout(() => setLayoutTransition(false), 300);
+            prevHadScreenShare.current = hasScreenShare;
+            return () => clearTimeout(timer);
         }
-    }, [hasScreenShare])
+    }, [hasScreenShare]);
 
-    // Auto-clear pinned identity if the participant left
     useEffect(() => {
-        if (pinnedIdentity && !allParticipants.find(p => p.identity === pinnedIdentity)) {
-            setPinnedIdentity(null)
+        if (pinnedIdentity && !allParticipants.some(p => p.identity === pinnedIdentity)) {
+            setPinnedIdentity(null);
         }
-    }, [allParticipants, pinnedIdentity])
+    }, [allParticipants, pinnedIdentity]);
 
-    // Toggle pin: if already pinned, unpin; otherwise pin
     const handlePin = useCallback((identity) => {
-        setPinnedIdentity(prev => prev === identity ? null : identity)
-    }, [])
+        setPinnedIdentity(prev => prev === identity ? null : identity);
+    }, []);
 
-    const count = allParticipants.length
-    const { isMobile, isLandscape } = useDeviceOrientation()
-    const isMobilePortrait = isMobile && !isLandscape
+    const count = allParticipants.length;
+    const { isMobile, isLandscape } = useDeviceOrientation();
+    const isMobilePortrait = isMobile && !isLandscape;
 
-    // If a participant is pinned, show ONLY that participant
-    const pinnedParticipant = pinnedIdentity ? allParticipants.find(p => p.identity === pinnedIdentity) : null
-
+    const pinnedParticipant = pinnedIdentity ? allParticipants.find(p => p.identity === pinnedIdentity) : null;
+    
     if (pinnedParticipant) {
         return (
-            <div style={{
-                flex: 1,
-                display: 'flex',
-                padding: '0.5rem',
-                overflow: 'hidden',
-                width: '100%',
-                height: '100%',
-                minWidth: 0,
-                minHeight: 0,
-                boxSizing: 'border-box',
-                position: 'relative',
-            }}>
-                <div style={{
-                    flex: 1,
-                    minWidth: 0,
-                    minHeight: 0,
-                    overflow: 'hidden',
-                    borderRadius: 16,
-                }}>
-                    <ParticipantTile
-                        participant={pinnedParticipant}
-                        isLocal={pinnedParticipant.identity === localParticipant?.identity}
-                        isSpotlight={true}
-                        onPin={handlePin}
-                        isPinned={true}
-                    />
-                </div>
-            </div>
-        )
+            <PinnedParticipantView 
+                pinnedParticipant={pinnedParticipant} 
+                localParticipant={localParticipant} 
+                handlePin={handlePin} 
+            />
+        );
     }
 
-    // Dynamic grid sizing
-    let cols = 1
-    if (isMobilePortrait) {
-        if (count === 1) cols = 1
-        else if (count === 2) cols = 1
-        else if (count <= 6) cols = 2
-        else if (count <= 12) cols = 3
-        else cols = 4
-    } else {
-        if (count === 2) cols = 2
-        else if (count <= 4) cols = 2
-        else if (count <= 9) cols = 3
-        else if (count <= 16) cols = 4
-        else cols = 5
-    }
+    const cols = calculateGridColumns(count, isMobilePortrait);
+    const screenSharer = hasScreenShare ? allParticipants.find(p => p.identity === screenSharerIdentity) : null;
+    const otherParticipants = hasScreenShare ? allParticipants.filter(p => p.identity !== screenSharerIdentity) : allParticipants;
+    const presenterName = getPresenterName(screenSharer);
 
-    // Separate screen sharer from other participants for layout purposes
-    const screenSharer = hasScreenShare ? allParticipants.find(p => p.identity === screenSharerIdentity) : null
-    const otherParticipants = hasScreenShare ? allParticipants.filter(p => p.identity !== screenSharerIdentity) : allParticipants
-
-    // Get presenter display name for the banner
-    let presenterName = ''
-    if (screenSharer) {
-        try {
-            const m = JSON.parse(screenSharer.metadata || '{}')
-            presenterName = screenSharer.name || m.name || screenSharer.identity
-        } catch {
-            presenterName = screenSharer.name || screenSharer.identity
-        }
-    }
-
-    // SINGLE RETURN PATH — no conditional JSX trees
-    // When screen sharing:
-    //   Desktop / Mobile Landscape: flex row (spotlight + right filmstrip)
-    //   Mobile Portrait: flex column (spotlight + bottom horizontal filmstrip)
-    // When no screen share: normal grid layout
     return (
-        <div style={{
-            flex: 1,
-            display: hasScreenShare ? 'flex' : 'grid',
-            flexDirection: hasScreenShare
-                ? (isMobilePortrait ? 'column' : 'row')
-                : undefined,
-            padding: '0.5rem',
-            gap: '0.5rem',
-            gridTemplateColumns: hasScreenShare ? undefined : `repeat(${cols}, 1fr)`,
-            gridAutoRows: hasScreenShare ? undefined : '1fr',
-            alignContent: (!hasScreenShare && count <= 2) ? 'center' : 'start',
-            overflow: 'hidden',
-            width: '100%',
-            height: '100%',
-            minWidth: 0,
-            minHeight: 0,
-            boxSizing: 'border-box',
-            // TWEAK 2: Smooth fade transition when entering/exiting spotlight
-            animation: layoutTransition
-                ? (hasScreenShare ? 'spotlightFadeIn 300ms ease-out' : 'gridFadeIn 300ms ease-out')
-                : 'none',
-        }}>
-            {/* Screen share spotlight: fills main area */}
-            {screenSharer && (
-                <div key={screenSharer.identity} style={{
-                    flex: 1,
-                    minWidth: 0,
-                    minHeight: 0,
-                    overflow: 'hidden',
-                    borderRadius: 16,
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}>
-                    {/* TWEAK 4: Presenter name banner — Google Meet style */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        padding: '6px 12px',
-                        background: 'rgba(15,23,42,0.85)',
-                        borderRadius: '12px 12px 0 0',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        borderBottom: 'none',
-                        backdropFilter: 'blur(8px)',
-                        flexShrink: 0,
-                    }}>
-                        <MonitorUp size={14} color="#818cf8" />
-                        <span style={{
-                            color: 'rgba(255,255,255,0.9)',
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                        }}>
-                            📺 {presenterName} is presenting
-                        </span>
-                    </div>
-                    <div style={{
-                        flex: 1,
-                        minHeight: 0,
-                        overflow: 'hidden',
-                        borderRadius: '0 0 12px 12px',
-                    }}>
-                        <ParticipantTile
-                            participant={screenSharer}
-                            isLocal={screenSharer.identity === localParticipant?.identity}
-                            isSpotlight={true}
-                            onPin={handlePin}
-                            isPinned={false}
-                        />
-                    </div>
-                </div>
-            )}
+        <div style={getVideoGridLayoutStyle(hasScreenShare, isMobilePortrait, cols, count, layoutTransition)}>
+            <ScreenShareSpotlight 
+                screenSharer={screenSharer} 
+                localParticipant={localParticipant} 
+                handlePin={handlePin} 
+                presenterName={presenterName} 
+            />
 
-            {/* Filmstrip: right sidebar (desktop/landscape) or bottom row (mobile portrait) */}
             {hasScreenShare ? (
                 otherParticipants.length > 0 && (
-                    <div style={{
-                        // TWEAK 3: Mobile portrait → horizontal bottom filmstrip
-                        ...(isMobilePortrait ? {
-                            height: '90px',
-                            flexShrink: 0,
-                            display: 'flex',
-                            flexDirection: 'row',
-                            gap: '0.5rem',
-                            overflowX: 'auto',
-                            overflowY: 'hidden',
-                            paddingBottom: '2px',
-                        } : {
-                            width: isMobile ? '120px' : '180px',
-                            flexShrink: 0,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.5rem',
-                            overflowY: 'auto',
-                            overflowX: 'hidden',
-                            paddingRight: '2px',
-                        }),
-                    }}>
+                    <div style={getFilmstripStyle(isMobilePortrait, isMobile)}>
                         {otherParticipants.map(p => (
-                            <div key={p.identity} style={{
-                                ...(isMobilePortrait ? {
-                                    width: '120px',
-                                    height: '100%',
-                                    flexShrink: 0,
-                                } : {
-                                    width: '100%',
-                                    height: isMobile ? '80px' : '120px',
-                                    flexShrink: 0,
-                                }),
-                                minWidth: 0,
-                                minHeight: 0,
-                                overflow: 'hidden',
-                                borderRadius: 12,
-                            }}>
+                            <div key={p.identity} style={getFilmstripItemStyle(isMobilePortrait, isMobile)}>
                                 <ParticipantTile
                                     participant={p}
                                     isLocal={p.identity === localParticipant?.identity}
@@ -600,11 +749,7 @@ function VideoGrid() {
                 )
             ) : (
                 otherParticipants.map(p => (
-                    <div key={p.identity} style={{
-                        minWidth: 0,
-                        minHeight: 0,
-                        overflow: 'hidden',
-                    }}>
+                    <div key={p.identity} style={{ minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
                         <ParticipantTile
                             participant={p}
                             isLocal={p.identity === localParticipant?.identity}
@@ -616,7 +761,7 @@ function VideoGrid() {
                 ))
             )}
         </div>
-    )
+    );
 }
 
 // ─── Reaction Overlay (floating emojis) ──────────────────────────────────────
@@ -670,6 +815,15 @@ function ReactionOverlay({ reactions }) {
     )
 }
 
+ReactionOverlay.propTypes = {
+    reactions: PropTypes.arrayOf(PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        x: PropTypes.number.isRequired,
+        emoji: PropTypes.string.isRequired
+    })).isRequired
+};
+
+
 // ─── Reaction Picker ─────────────────────────────────────────────────────────
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '👏', '😮']
 
@@ -697,6 +851,12 @@ function ReactionPicker({ onSelect, onClose }) {
     )
 }
 
+ReactionPicker.propTypes = {
+    onSelect: PropTypes.func.isRequired,
+    onClose: PropTypes.func.isRequired
+};
+
+
 // ─── Raised Hands Panel (Speaking Queue) ─────────────────────────────────────
 function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLowerHand, onLowerAll }) {
     // Merge metadata-based and data-channel-based hand raises
@@ -709,7 +869,7 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
             if (m.handRaised) {
                 handsMap.set(p.identity, { identity: p.identity, name: p.name || m.name || p.identity, raisedAt: m.handRaisedAt || 0 })
             }
-        } catch {}
+        } catch (e) { console.error("Caught exception:", e); }
     })
     
     // From data channel (fallback)
@@ -765,40 +925,223 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
     )
 }
 
+RaisedHandsPanel.propTypes = {
+    participants: PropTypes.array.isRequired,
+    raisedHandsFromDataChannel: PropTypes.object,
+    onLowerHand: PropTypes.func.isRequired,
+    onLowerAll: PropTypes.func.isRequired
+};
+
+
+// ─── Host Controls Tab ───────────────────────────────────────────────────────
+// ─── Host Controls Helpers ───────────────────────────────────────────────────
+function controlBtnStyle() {
+    return {
+        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+        padding: '0.85rem 1rem', borderRadius: 10, cursor: 'pointer', color: 'white',
+        fontSize: '0.85rem', fontWeight: 500, transition: 'all 0.15s ease',
+    };
+}
+
+function HostToggleButton({ isLocked, onToggle, IconLocked, IconUnlocked, labelLocked, labelUnlocked }) {
+    const background = isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)';
+    const border = isLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)';
+    const iconColor = isLocked ? '#ef4444' : '#22c55e';
+    
+    return (
+        <button onClick={onToggle} style={{ ...controlBtnStyle(), marginTop: '0.5rem', background, border }}>
+            {isLocked ? <IconLocked size={16} color={iconColor} /> : <IconUnlocked size={16} color={iconColor} />}
+            {isLocked ? labelLocked : labelUnlocked}
+        </button>
+    );
+}
+
+HostToggleButton.propTypes = {
+    isLocked: PropTypes.bool.isRequired,
+    onToggle: PropTypes.func.isRequired,
+    IconLocked: PropTypes.elementType.isRequired,
+    IconUnlocked: PropTypes.elementType.isRequired,
+    labelLocked: PropTypes.string.isRequired,
+    labelUnlocked: PropTypes.string.isRequired
+};
+
+function HostLocksSection({ 
+    micLocked, handleToggleMicLock, 
+    chatLocked, handleToggleChatLock, 
+    videoLocked, handleToggleVideoLock, 
+    screenShareLocked, handleToggleScreenShareLock, 
+    handsLocked, handleToggleHandsLock, 
+    reactionsDisabled, handleToggleReactions 
+}) {
+    return (
+        <div style={{ marginTop: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Locks</p>
+            
+            <HostToggleButton 
+                isLocked={micLocked} onToggle={handleToggleMicLock} 
+                IconLocked={Lock} IconUnlocked={Unlock} 
+                labelLocked="Mic Locked — Students Cannot Unmute" 
+                labelUnlocked="Mic Unlocked — Students Can Unmute" 
+            />
+            
+            <HostToggleButton 
+                isLocked={chatLocked} onToggle={handleToggleChatLock} 
+                IconLocked={Lock} IconUnlocked={Unlock} 
+                labelLocked="Chat Locked — Students Cannot Send Messages" 
+                labelUnlocked="Chat Unlocked — Students Can Send Messages" 
+            />
+            
+            <HostToggleButton 
+                isLocked={videoLocked} onToggle={handleToggleVideoLock} 
+                IconLocked={Lock} IconUnlocked={Unlock} 
+                labelLocked="Video Locked — Students Cannot Enable Camera" 
+                labelUnlocked="Video Unlocked — Students Can Enable Camera" 
+            />
+            
+            <HostToggleButton 
+                isLocked={screenShareLocked} onToggle={handleToggleScreenShareLock} 
+                IconLocked={Lock} IconUnlocked={Unlock} 
+                labelLocked="Screen Share Locked — Students Cannot Share" 
+                labelUnlocked="Screen Share Unlocked — Students Can Share" 
+            />
+            
+            <HostToggleButton 
+                isLocked={handsLocked} onToggle={handleToggleHandsLock} 
+                IconLocked={Lock} IconUnlocked={Unlock} 
+                labelLocked="Hands Locked — Students Cannot Raise Hand" 
+                labelUnlocked="Hands Unlocked — Students Can Raise Hand" 
+            />
+
+            <HostToggleButton 
+                isLocked={reactionsDisabled} onToggle={handleToggleReactions} 
+                IconLocked={Smile} IconUnlocked={Smile} 
+                labelLocked="Reactions Disabled" 
+                labelUnlocked="Reactions Enabled" 
+            />
+        </div>
+    );
+}
+
+HostLocksSection.propTypes = {
+    micLocked: PropTypes.bool.isRequired,
+    handleToggleMicLock: PropTypes.func.isRequired,
+    chatLocked: PropTypes.bool.isRequired,
+    handleToggleChatLock: PropTypes.func.isRequired,
+    videoLocked: PropTypes.bool.isRequired,
+    handleToggleVideoLock: PropTypes.func.isRequired,
+    screenShareLocked: PropTypes.bool.isRequired,
+    handleToggleScreenShareLock: PropTypes.func.isRequired,
+    handsLocked: PropTypes.bool.isRequired,
+    handleToggleHandsLock: PropTypes.func.isRequired,
+    reactionsDisabled: PropTypes.bool.isRequired,
+    handleToggleReactions: PropTypes.func.isRequired,
+};
+
+function HostParticipantList({ remoteParticipants, sendHostCommand, onRemoveParticipant }) {
+    if (remoteParticipants.length === 0) return null;
+
+    return (
+        <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Participants</p>
+            {remoteParticipants.map(p => {
+                let meta = {}; 
+                try { meta = JSON.parse(p.metadata || '{}'); } catch (e) { console.error("Caught exception:", e); }
+                const pName = p.name || meta.name || p.identity;
+                
+                return (
+                    <div key={p.identity} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '0.5rem 0.85rem', borderRadius: 8,
+                        background: 'rgba(255,255,255,0.02)', marginBottom: 4,
+                    }}>
+                        <span style={{ color: 'white', fontSize: '0.8rem', fontWeight: 500 }}>{pName}</span>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                            <button onClick={() => sendHostCommand('mute_participant', { identity: p.identity })} title="Mute" style={{
+                                background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6,
+                                padding: 4, cursor: 'pointer', display: 'flex',
+                            }}><MicOff size={14} color="#ef4444" /></button>
+                            <button onClick={() => sendHostCommand('request_camera_off', { identity: p.identity })} title="Request Camera Off" style={{
+                                background: 'rgba(245,158,11,0.1)', border: 'none', borderRadius: 6,
+                                padding: 4, cursor: 'pointer', display: 'flex',
+                            }}><VideoOff size={14} color="#f59e0b" /></button>
+                            <button onClick={() => onRemoveParticipant(p.identity)} title="Remove" style={{
+                                background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6,
+                                padding: 4, cursor: 'pointer', display: 'flex',
+                            }}><UserMinus size={14} color="#ef4444" /></button>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+HostParticipantList.propTypes = {
+    remoteParticipants: PropTypes.array.isRequired,
+    sendHostCommand: PropTypes.func.isRequired,
+    onRemoveParticipant: PropTypes.func.isRequired
+};
+
+function HostAnnouncement({ announcementText, setAnnouncementText, onSendAnnouncement }) {
+    return (
+        <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructor Announcement</p>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input 
+                    type="text" 
+                    value={announcementText} 
+                    onChange={e => setAnnouncementText(e.target.value)} 
+                    placeholder="Enter announcement..." 
+                    style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '0.5rem', borderRadius: 8, fontSize: '0.8rem' }}
+                />
+                <button onClick={onSendAnnouncement} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Send</button>
+            </div>
+        </div>
+    );
+}
+
+HostAnnouncement.propTypes = {
+    announcementText: PropTypes.string.isRequired,
+    setAnnouncementText: PropTypes.func.isRequired,
+    onSendAnnouncement: PropTypes.func.isRequired
+};
+
 // ─── Host Controls Tab ───────────────────────────────────────────────────────
 function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLocked, setMicLocked, videoLocked, setVideoLocked, screenShareLocked, setScreenShareLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant }) {
     const sendHostCommand = (command, extra = {}) => {
-        const msg = JSON.stringify({ type: 'host_command', command, ...extra })
-        const encoder = new TextEncoder()
-        room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
-    }
+        const msg = JSON.stringify({ type: 'host_command', command, ...extra });
+        const encoder = new TextEncoder();
+        room.localParticipant.publishData(encoder.encode(msg), { reliable: true });
+    };
 
-    const handleMuteAll = () => sendHostCommand('mute_all')
-    const handleRequestCameraOffAll = () => sendHostCommand('request_camera_off_all')
+    const handleMuteAll = () => sendHostCommand('mute_all');
+    const handleRequestCameraOffAll = () => sendHostCommand('request_camera_off_all');
+    
     const handleToggleMicLock = () => {
-        const newVal = !micLocked
-        setMicLocked(newVal)
-        sendHostCommand('mic_lock', { enabled: newVal })
-    }
+        const newVal = !micLocked;
+        setMicLocked(newVal);
+        sendHostCommand('mic_lock', { enabled: newVal });
+    };
     const handleToggleVideoLock = () => {
-        const newVal = !videoLocked
-        setVideoLocked(newVal)
-        sendHostCommand('video_lock', { enabled: newVal })
-    }
+        const newVal = !videoLocked;
+        setVideoLocked(newVal);
+        sendHostCommand('video_lock', { enabled: newVal });
+    };
     const handleToggleScreenShareLock = () => {
-        const newVal = !screenShareLocked
-        setScreenShareLocked(newVal)
-        sendHostCommand('screen_share_lock', { enabled: newVal })
-    }
+        const newVal = !screenShareLocked;
+        setScreenShareLocked(newVal);
+        sendHostCommand('screen_share_lock', { enabled: newVal });
+    };
     const handleToggleHandsLock = () => {
-        const newVal = !handsLocked
-        setHandsLocked(newVal)
-        sendHostCommand('hands_lock', { enabled: newVal })
-    }
+        const newVal = !handsLocked;
+        setHandsLocked(newVal);
+        sendHostCommand('hands_lock', { enabled: newVal });
+    };
     const handleToggleChatLock = async () => {
-        const newVal = !chatLocked
-        setChatLocked(newVal)
-        sendHostCommand('chat_lock', { enabled: newVal })
+        const newVal = !chatLocked;
+        setChatLocked(newVal);
+        sendHostCommand('chat_lock', { enabled: newVal });
         try {
             await supabase.from('live_chat_messages').insert({
                 video_id: room.name,
@@ -806,22 +1149,15 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
                 message: newVal ? '📢 Chat has been locked by the instructor.' : '📢 Chat has been unlocked.',
                 message_type: 'system'
             });
-        } catch (e) {}
-    }
+        } catch (e) { console.error("Caught exception:", e); }
+    };
     const handleToggleReactions = () => {
-        const newVal = !reactionsDisabled
-        setReactionsDisabled(newVal)
-        sendHostCommand('reactions_disabled', { value: newVal })
-    }
+        const newVal = !reactionsDisabled;
+        setReactionsDisabled(newVal);
+        sendHostCommand('reactions_disabled', { value: newVal });
+    };
 
-    const remoteParticipants = participants.filter(p => !p.isLocal)
-
-    const controlBtnStyle = (color = '#6366f1') => ({
-        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-        padding: '0.85rem 1rem', borderRadius: 10, cursor: 'pointer', color: 'white',
-        fontSize: '0.85rem', fontWeight: 500, transition: 'all 0.15s ease',
-    })
+    const remoteParticipants = participants.filter(p => !p.isLocal);
 
     return (
         <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -848,121 +1184,72 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
                 <ArrowDown size={16} color="#f59e0b" /> Lower All Hands
             </button>
 
-            {/* Announcements */}
-            <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructor Announcement</p>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input 
-                        type="text" 
-                        value={announcementText} 
-                        onChange={e => setAnnouncementText(e.target.value)} 
-                        placeholder="Enter announcement..." 
-                        style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '0.5rem', borderRadius: 8, fontSize: '0.8rem' }}
-                    />
-                    <button onClick={async () => {
-                        if (!announcementText.trim()) return;
-                        try {
-                            await supabase.from('live_chat_messages').insert({
-                                video_id: room.name,
-                                user_id: participants.find(p => p.isLocal)?.identity,
-                                message: `📣 ${announcementText}`,
-                                message_type: 'announcement',
-                                is_pinned: true
-                            });
-                            setAnnouncementText('');
-                        } catch (e) {}
-                    }} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Send</button>
-                </div>
-            </div>
+            <HostAnnouncement 
+                announcementText={announcementText} 
+                setAnnouncementText={setAnnouncementText} 
+                onSendAnnouncement={async () => {
+                    if (!announcementText.trim()) return;
+                    try {
+                        await supabase.from('live_chat_messages').insert({
+                            video_id: room.name,
+                            user_id: participants.find(p => p.isLocal)?.identity,
+                            message: `📣 ${announcementText}`,
+                            message_type: 'announcement',
+                            is_pinned: true
+                        });
+                        setAnnouncementText('');
+                    } catch (e) { console.error("Caught exception:", e); }
+                }} 
+            />
 
-            {/* Toggles */}
-            <div style={{ marginTop: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Locks</p>
-                <button onClick={handleToggleMicLock} style={{
-                    ...controlBtnStyle(), background: micLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
-                    border: micLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                }}>
-                    {micLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
-                    {micLocked ? 'Mic Locked — Students Cannot Unmute' : 'Mic Unlocked — Students Can Unmute'}
-                </button>
-                <button onClick={handleToggleChatLock} style={{
-                    ...controlBtnStyle(), marginTop: '0.5rem',
-                    background: chatLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
-                    border: chatLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                }}>
-                    {chatLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
-                    {chatLocked ? 'Chat Locked — Students Cannot Send Messages' : 'Chat Unlocked — Students Can Send Messages'}
-                </button>
-                <button onClick={handleToggleVideoLock} style={{
-                    ...controlBtnStyle(), marginTop: '0.5rem',
-                    background: videoLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
-                    border: videoLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                }}>
-                    {videoLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
-                    {videoLocked ? 'Video Locked — Students Cannot Enable Camera' : 'Video Unlocked — Students Can Enable Camera'}
-                </button>
-                <button onClick={handleToggleScreenShareLock} style={{
-                    ...controlBtnStyle(), marginTop: '0.5rem',
-                    background: screenShareLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
-                    border: screenShareLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                }}>
-                    {screenShareLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
-                    {screenShareLocked ? 'Screen Share Locked — Students Cannot Share' : 'Screen Share Unlocked — Students Can Share'}
-                </button>
-                <button onClick={handleToggleHandsLock} style={{
-                    ...controlBtnStyle(), marginTop: '0.5rem',
-                    background: handsLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
-                    border: handsLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                }}>
-                    {handsLocked ? <Lock size={16} color="#ef4444" /> : <Unlock size={16} color="#22c55e" />}
-                    {handsLocked ? 'Hands Locked — Students Cannot Raise Hand' : 'Hands Unlocked — Students Can Raise Hand'}
-                </button>
-                <button onClick={handleToggleReactions} style={{
-                    ...controlBtnStyle(), marginTop: '0.5rem',
-                    background: reactionsDisabled ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
-                    border: reactionsDisabled ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                }}>
-                    <Smile size={16} color={reactionsDisabled ? '#ef4444' : '#22c55e'} />
-                    {reactionsDisabled ? 'Reactions Disabled' : 'Reactions Enabled'}
-                </button>
-            </div>
+            <HostLocksSection 
+                micLocked={micLocked} handleToggleMicLock={handleToggleMicLock}
+                chatLocked={chatLocked} handleToggleChatLock={handleToggleChatLock}
+                videoLocked={videoLocked} handleToggleVideoLock={handleToggleVideoLock}
+                screenShareLocked={screenShareLocked} handleToggleScreenShareLock={handleToggleScreenShareLock}
+                handsLocked={handsLocked} handleToggleHandsLock={handleToggleHandsLock}
+                reactionsDisabled={reactionsDisabled} handleToggleReactions={handleToggleReactions}
+            />
 
-            {/* Per-participant list */}
-            {remoteParticipants.length > 0 && (
-                <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Participants</p>
-                    {remoteParticipants.map(p => {
-                        let meta = {}; try { meta = JSON.parse(p.metadata || '{}') } catch {}
-                        const pName = p.name || meta.name || p.identity
-                        return (
-                            <div key={p.identity} style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '0.5rem 0.85rem', borderRadius: 8,
-                                background: 'rgba(255,255,255,0.02)', marginBottom: 4,
-                            }}>
-                                <span style={{ color: 'white', fontSize: '0.8rem', fontWeight: 500 }}>{pName}</span>
-                                <div style={{ display: 'flex', gap: 4 }}>
-                                    <button onClick={() => sendHostCommand('mute_participant', { identity: p.identity })} title="Mute" style={{
-                                        background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6,
-                                        padding: 4, cursor: 'pointer', display: 'flex',
-                                    }}><MicOff size={14} color="#ef4444" /></button>
-                                    <button onClick={() => sendHostCommand('request_camera_off', { identity: p.identity })} title="Request Camera Off" style={{
-                                        background: 'rgba(245,158,11,0.1)', border: 'none', borderRadius: 6,
-                                        padding: 4, cursor: 'pointer', display: 'flex',
-                                    }}><VideoOff size={14} color="#f59e0b" /></button>
-                                    <button onClick={() => onRemoveParticipant(p.identity)} title="Remove" style={{
-                                        background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6,
-                                        padding: 4, cursor: 'pointer', display: 'flex',
-                                    }}><UserMinus size={14} color="#ef4444" /></button>
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-            )}
+            <HostParticipantList 
+                remoteParticipants={remoteParticipants} 
+                sendHostCommand={sendHostCommand} 
+                onRemoveParticipant={onRemoveParticipant} 
+            />
         </div>
-    )
+    );
 }
+
+HostControlsTab.propTypes = {
+    room: PropTypes.shape({
+        name: PropTypes.string,
+        localParticipant: PropTypes.shape({
+            publishData: PropTypes.func
+        })
+    }).isRequired,
+    participants: PropTypes.arrayOf(
+        PropTypes.shape({
+            isLocal: PropTypes.bool,
+            identity: PropTypes.string,
+            name: PropTypes.string,
+            metadata: PropTypes.string
+        })
+    ).isRequired,
+    chatLocked: PropTypes.bool.isRequired,
+    setChatLocked: PropTypes.func.isRequired,
+    micLocked: PropTypes.bool.isRequired,
+    setMicLocked: PropTypes.func.isRequired,
+    videoLocked: PropTypes.bool.isRequired,
+    setVideoLocked: PropTypes.func.isRequired,
+    screenShareLocked: PropTypes.bool.isRequired,
+    setScreenShareLocked: PropTypes.func.isRequired,
+    handsLocked: PropTypes.bool.isRequired,
+    setHandsLocked: PropTypes.func.isRequired,
+    reactionsDisabled: PropTypes.bool.isRequired,
+    setReactionsDisabled: PropTypes.func.isRequired,
+    onLowerAllHands: PropTypes.func.isRequired,
+    onRemoveParticipant: PropTypes.func.isRequired
+};
 
 // ─── Participant Control Overlay (hover desktop / tap mobile) ────────────────
 function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room }) {
@@ -1399,7 +1686,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                         message: `📢 ${p.name || 'A student'} joined the class.`,
                         message_type: 'system'
                     });
-                } catch (e) {}
+                } catch (e) { console.error("Caught exception:", e); }
             }, 10000);
         };
         
@@ -1417,7 +1704,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                         message: `📢 ${p.name || 'A student'} left the class.`,
                         message_type: 'system'
                     });
-                } catch (e) {}
+                } catch (e) { console.error("Caught exception:", e); }
             }
         };
         
@@ -1444,7 +1731,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     const raisedHandsCount = useMemo(() => {
         const fromMetadata = new Set()
         allParticipants.forEach(p => {
-            try { if (JSON.parse(p.metadata || '{}').handRaised) fromMetadata.add(p.identity) } catch {}
+            try { if (JSON.parse(p.metadata || '{}').handRaised) fromMetadata.add(p.identity) } catch (e) { console.error("Caught exception:", e); }
         })
         const fromDataChannel = new Set(Object.keys(raisedHands))
         return new Set([...fromMetadata, ...fromDataChannel]).size
@@ -1567,7 +1854,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                     if (meta.handRaised) {
                                         lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
                                     }
-                                } catch {}
+                                } catch (e) { console.error("Caught exception:", e); }
                                 setHandRaised(false)
                                 toast.warning('🔒 Instructor locked hand raising')
                             } else {
@@ -1583,7 +1870,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                 try {
                                     const meta = JSON.parse(lp.metadata || '{}')
                                     lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-                                } catch {}
+                                } catch (e) { console.error("Caught exception:", e); }
                                 setHandRaised(false)
                                 setRaisedHands(prev => { const n = { ...prev }; delete n[lp.identity]; return n })
                                 toast.info('✋ Instructor lowered your hand')
@@ -1595,7 +1882,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                 if (meta.handRaised) {
                                     lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
                                 }
-                            } catch {}
+                            } catch (e) { console.error("Caught exception:", e); }
                             setHandRaised(false)
                             setRaisedHands({})
                             toast.info('✋ Instructor lowered all hands')
@@ -1626,7 +1913,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         lastReactionTime.current = now
 
         let meta = {}
-        try { meta = JSON.parse(room.localParticipant.metadata || '{}') } catch {}
+        try { meta = JSON.parse(room.localParticipant.metadata || '{}') } catch (e) { console.error("Caught exception:", e); }
         const senderName = room.localParticipant.name || meta.name || room.localParticipant.identity
 
         const msg = JSON.stringify({ type: 'reaction', emoji, senderName, timestamp: now })
@@ -1650,7 +1937,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         // Try metadata first (survives reconnects)
         try {
             let meta = {}
-            try { meta = JSON.parse(lp.metadata || '{}') } catch {}
+            try { meta = JSON.parse(lp.metadata || '{}') } catch (e) { console.error("Caught exception:", e); }
             await lp.setMetadata(JSON.stringify({
                 ...meta,
                 handRaised: newRaised,
@@ -1681,7 +1968,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
             try {
                 const meta = JSON.parse(room.localParticipant.metadata || '{}')
                 room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-            } catch {}
+            } catch (e) { console.error("Caught exception:", e); }
             setHandRaised(false)
         }
     }, [room])
@@ -1698,7 +1985,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
             if (meta.handRaised) {
                 room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
             }
-        } catch {}
+        } catch (e) { console.error("Caught exception:", e); }
         setHandRaised(false)
     }, [room])
 
@@ -2070,7 +2357,7 @@ export default function LiveClassroom() {
             if (admitted[videoId] && (Date.now() - admitted[videoId] < 1000 * 60 * 60 * 2)) {
                 return 'admitted'
             }
-        } catch {}
+        } catch (e) { console.error("Caught exception:", e); }
         return 'idle' // idle, requesting, timeout, admitted_animating, admitted, denied
     })
 
@@ -2128,7 +2415,7 @@ export default function LiveClassroom() {
                                 const admitted = JSON.parse(sessionStorage.getItem('admitted_classes') || '{}')
                                 admitted[videoId] = Date.now()
                                 sessionStorage.setItem('admitted_classes', JSON.stringify(admitted))
-                            } catch {}
+                            } catch (e) { console.error("Caught exception:", e); }
                         } else {
                             setJoinStatus('denied')
                         }

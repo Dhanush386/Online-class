@@ -275,6 +275,13 @@ export default function CourseManagement() {
         );
     };
 
+    const handleDeleteResourceClick = (e) => {
+        const id = e.currentTarget.dataset.id;
+        if (id) {
+            deleteResource(id);
+        }
+    };
+
     const renderResourcesContent = () => {
         if (loadingResources) {
             return <p style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>Loading...</p>;
@@ -303,7 +310,7 @@ export default function CourseManagement() {
                                             <LinkIcon size={10} /> View Link
                                         </a>
                                     </div>
-                                    <button onClick={() => deleteResource(r.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
+                                    <button data-id={r.id} onClick={handleDeleteResourceClick} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
                                         <Trash2 size={16} />
                                     </button>
                                 </div>

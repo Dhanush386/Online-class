@@ -1613,6 +1613,13 @@ export default function CodingManagement() {
 
     const handleSubmissionMouseEnter = (e) => { e.currentTarget.style.border = '1px solid #6366f130' }
     const handleSubmissionMouseLeave = (e) => { e.currentTarget.style.border = '1px solid transparent' }
+    const handleViewReportSession = (e) => {
+        const studentId = e.currentTarget.dataset.studentId;
+        const challengeId = e.currentTarget.dataset.challengeId;
+        if (studentId && challengeId) {
+            setViewingReportSession({ studentId, challengeId });
+        }
+    }
 
     const renderSubmissionsContent = () => {
         if (submissionsLoading) {
@@ -1675,7 +1682,9 @@ export default function CodingManagement() {
                                 <div style={{ textAlign: 'center' }}>
                                     {proctorSessionsMap[sub.student_id] ? (
                                         <button
-                                            onClick={() => setViewingReportSession({ studentId: sub.student_id, challengeId: sub.challenge_id })}
+                                            data-student-id={sub.student_id}
+                                            data-challenge-id={sub.challenge_id}
+                                            onClick={handleViewReportSession}
                                             style={{
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
