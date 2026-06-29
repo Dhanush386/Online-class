@@ -1108,7 +1108,7 @@ HostAnnouncement.propTypes = {
 };
 
 // ─── Host Controls Tab ───────────────────────────────────────────────────────
-function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLocked, setMicLocked, videoLocked, setVideoLocked, screenShareLocked, setScreenShareLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant }) {
+function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLocked, setMicLocked, videoLocked, setVideoLocked, screenShareLocked, setScreenShareLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant, announcementText, setAnnouncementText }) {
     const sendHostCommand = (command, extra = {}) => {
         const msg = JSON.stringify({ type: 'host_command', command, ...extra });
         const encoder = new TextEncoder();
@@ -1248,7 +1248,9 @@ HostControlsTab.propTypes = {
     reactionsDisabled: PropTypes.bool.isRequired,
     setReactionsDisabled: PropTypes.func.isRequired,
     onLowerAllHands: PropTypes.func.isRequired,
-    onRemoveParticipant: PropTypes.func.isRequired
+    onRemoveParticipant: PropTypes.func.isRequired,
+    announcementText: PropTypes.string.isRequired,
+    setAnnouncementText: PropTypes.func.isRequired
 };
 
 // ─── Participant Control Overlay (hover desktop / tap mobile) ────────────────
@@ -2232,6 +2234,8 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                                     setReactionsDisabled={setReactionsDisabled}
                                     onLowerAllHands={lowerAllHands}
                                     onRemoveParticipant={removeParticipant}
+                                    announcementText={announcementText}
+                                    setAnnouncementText={setAnnouncementText}
                                 />
                             )}
                         </div>
