@@ -1234,9 +1234,123 @@ export default function CodingManagement() {
         <HtmlSpecificOptions formData={formData} setFormData={setFormData} wcTab={wcTab} setWcTab={setWcTab} />
     );
 
+    const renderNormalModeFields = () => (
+        <>
+            <div style={{ marginBottom: '1.25rem' }}>
+                <label htmlFor="problem-statement" className="form-label">Problem Statement (Markdown supported)</label>
+                <textarea id="problem-statement" name="problem_statement" className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
+            </div>
 
+            <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div>
+                    <div htmlFor="starter-code" className="form-label">Starter Code</div>
+                    {formData.language === 'html' ? (
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                            <div style={{ display: 'flex', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1' }}>
+                                <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
+                                <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
+                                <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
+                            </div>
+                            <div style={{ height: '180px', background: 'var(--text-primary)' }}>
+                                {webTab === 'html' && (
+                                    <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="Initial HTML..." />
+                                )}
+                                {webTab === 'css' && (
+                                    <CodeEditor value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} language="css" placeholder="Initial CSS..." />
+                                )}
+                                {webTab === 'js' && (
+                                    <CodeEditor value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} language="js" placeholder="Initial JS..." />
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                            <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} placeholder="Initial code..." />
+                        </div>
+                    )}
+                </div>
+                <div>
+                    <label htmlFor="constraints" className="form-label">Constraints</label>
+                    <textarea id="constraints" name="constraints" className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
+                </div>
+            </div>
+
+            <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Solution Code (Optional)</div>
+                <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                    <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} placeholder="Correct answer..." />
+                </div>
+            </div>
+
+            {/* Open / Close Time */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div>
+                    <label htmlFor="open-time" className="form-label">Open Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                    <div style={{ position: 'relative' }}>
+                        <Calendar size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input id="open-time" name="open_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
+                            value={formData.open_time}
+                            onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label htmlFor="close-time" className="form-label">Close Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                    <div style={{ position: 'relative' }}>
+                        <Clock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input id="close-time" name="close_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
+                            value={formData.close_time}
+                            min={formData.open_time || undefined}
+                            onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
+                        />
+                    </div>
+                    {formData.open_time && formData.close_time && (() => {
+                        const mins = Math.round((new Date(formData.close_time) - new Date(formData.open_time)) / 60000)
+                        return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.3rem' }}>⏱ {mins} min window</div> : null
+                    })()}
+                </div>
+            </div>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+                <label htmlFor="target-visual" className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                <input
+                    id="target-visual"
+                    name="target_visual_url"
+                    type="text"
+                    className="form-input"
+                    placeholder="Link to an image or video for the student to replicate"
+                    value={formData.target_visual_url}
+                    onChange={e => setFormData(p => ({ ...p, target_visual_url: e.target.value }))}
+                />
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Useful for HTML/CSS challenges where students need a visual goal.</p>
+            </div>
+
+            {/* ── Reference iFrame & Required Keywords (HTML only) ── */}
+            {formData.language === 'html' && renderHtmlSpecificOptions()}
+
+            <div style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor="allowed-assets" className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                <textarea
+                    id="allowed-assets"
+                    name="allowed_assets"
+                    className="form-input"
+                    rows={3}
+                    placeholder="List links (one per line) students can copy-paste (images, fonts, etc.)"
+                    value={formData.allowed_assets}
+                    onChange={e => setFormData(p => ({ ...p, allowed_assets: e.target.value }))}
+                />
+            </div>
+
+            <StandardTestCases formData={formData} setFormData={setFormData} />
+        </>
+    );
 
     const renderChallengeModal = () => {
+        const renderSubmitButtonText = () => {
+            if (saving) return 'Saving...';
+            if (editingId) return <><Save size={18} /> Update</>;
+            return <><Plus size={18} /> Create Challenge</>;
+        };
         return (
             <>
             {/* Modal */}
@@ -1385,123 +1499,16 @@ export default function CodingManagement() {
                                     />
                                 </div>
 
-                                {!formData.is_combined ? (
-                                    <>
-                                        <div style={{ marginBottom: '1.25rem' }}>
-                                            <label htmlFor="problem-statement" className="form-label">Problem Statement (Markdown supported)</label>
-                                            <textarea id="problem-statement" name="problem_statement" className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
-                                        </div>
-
-                                <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                                    <div>
-                                        <div htmlFor="starter-code" className="form-label">Starter Code</div>
-                                        {formData.language === 'html' ? (
-                                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                                                <div style={{ display: 'flex', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1' }}>
-                                                    <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
-                                                    <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
-                                                    <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
-                                                </div>
-                                                <div style={{ height: '180px', background: 'var(--text-primary)' }}>
-                                                    {webTab === 'html' && (
-                                                        <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="Initial HTML..." />
-                                                    )}
-                                                    {webTab === 'css' && (
-                                                        <CodeEditor value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} language="css" placeholder="Initial CSS..." />
-                                                    )}
-                                                    {webTab === 'js' && (
-                                                        <CodeEditor value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} language="js" placeholder="Initial JS..." />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
-                                                <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} placeholder="Initial code..." />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label htmlFor="constraints" className="form-label">Constraints</label>
-                                        <textarea id="constraints" name="constraints" className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
-                                    </div>
-                                </div>
-
-                                <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-                                    <div style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Solution Code (Optional)</div>
-                                    <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
-                                        <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} placeholder="Correct answer..." />
-                                    </div>
-                                </div>
-
-                                {/* Open / Close Time */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                                    <div>
-                                        <label htmlFor="open-time" className="form-label">Open Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                        <div style={{ position: 'relative' }}>
-                                            <Calendar size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                            <input id="open-time" name="open_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
-                                                value={formData.open_time}
-                                                onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="close-time" className="form-label">Close Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                        <div style={{ position: 'relative' }}>
-                                            <Clock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                            <input id="close-time" name="close_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
-                                                value={formData.close_time}
-                                                min={formData.open_time || undefined}
-                                                onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
-                                            />
-                                        </div>
-                                        {formData.open_time && formData.close_time && (() => {
-                                            const mins = Math.round((new Date(formData.close_time) - new Date(formData.open_time)) / 60000)
-                                            return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.3rem' }}>⏱ {mins} min window</div> : null
-                                        })()}
-                                    </div>
-                                </div>
-
-                                <div style={{ marginBottom: '1.25rem' }}>
-                                    <label htmlFor="target-visual" className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                    <input
-                                        id="target-visual"
-                                        name="target_visual_url"
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="Link to an image or video for the student to replicate"
-                                        value={formData.target_visual_url}
-                                        onChange={e => setFormData(p => ({ ...p, target_visual_url: e.target.value }))}
-                                    />
-                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Useful for HTML/CSS challenges where students need a visual goal.</p>
-                                </div>
-
-                                {/* ── Reference iFrame & Required Keywords (HTML only) ── */}
-                                {formData.language === 'html' && renderHtmlSpecificOptions()}
-
-                                <div style={{ marginBottom: '1.5rem' }}>
-                                    <label htmlFor="allowed-assets" className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                    <textarea
-                                        id="allowed-assets"
-                                        name="allowed_assets"
-                                        className="form-input"
-                                        rows={3}
-                                        placeholder="List links (one per line) students can copy-paste (images, fonts, etc.)"
-                                        value={formData.allowed_assets}
-                                        onChange={e => setFormData(p => ({ ...p, allowed_assets: e.target.value }))}
-                                    />
-                                </div>
-
-                                <StandardTestCases formData={formData} setFormData={setFormData} />
-                                </>
-                                ) : (
+                                {formData.is_combined ? (
                                     <SubQuestions formData={formData} setFormData={setFormData} />
+                                ) : (
+                                    renderNormalModeFields()
                                 )}
 
                                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
                                     <button type="button" onClick={() => setShowModal(false)} className="btn-secondary" style={{ padding: '0.6rem 1.25rem' }}>Cancel</button>
                                     <button type="submit" className="btn-primary" disabled={saving} style={{ padding: '0.6rem 1.5rem', gap: '0.5rem' }}>
-                                        {saving ? 'Saving...' : (editingId ? <><Save size={18} /> Update</> : <><Plus size={18} /> Create Challenge</>)}
+                                        {renderSubmitButtonText()}
                                     </button>
                                 </div>
                             </form>
@@ -1605,6 +1612,94 @@ export default function CodingManagement() {
     };
 
     const renderSubmissionsModal = () => {
+        const renderSubmissionsContent = () => {
+            if (submissionsLoading) {
+                return (
+                    <div style={{ textAlign: 'center', padding: '3rem' }}>
+                        <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading submissions...</p>
+                    </div>
+                );
+            }
+            if (filteredSubmissions.length === 0) {
+                return (
+                    <div style={{ textAlign: 'center', padding: '3rem' }}>
+                        <Users size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{submissionsData.length === 0 ? 'No students have submitted this challenge yet.' : 'No results match your search.'}</p>
+                    </div>
+                );
+            }
+            return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {/* Table Header */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.85rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
+                        <span>Student</span>
+                        <span style={{ textAlign: 'center' }}>Score (XP)</span>
+                        <span style={{ textAlign: 'center' }}>Status</span>
+                        <span style={{ textAlign: 'center' }}>Proctoring</span>
+                    </div>
+                    {filteredSubmissions
+                        .sort((a, b) => (b.score || 0) - (a.score || 0))
+                        .map((sub, idx) => {
+                            const passed = sub.status === 'accepted'
+                            return (
+                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                                    onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
+                                    onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
+                                            {sub.users?.name?.[0]?.toUpperCase() || '?'}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{sub.users?.name || 'Unknown'}</div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{sub.users?.email}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                        {sub.score || 0} XP
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        {passed ? (
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#059669' }}>
+                                                <CheckCircle2 size={14} /> Accepted
+                                            </span>
+                                        ) : (
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#dc2626' }}>
+                                                <XCircle size={14} /> Failed / {sub.status || 'Attempted'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        {proctorSessionsMap[sub.student_id] ? (
+                                            <button
+                                                onClick={() => setViewingReportSession({ studentId: sub.student_id, challengeId: sub.challenge_id })}
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    padding: '0.25rem 0.5rem',
+                                                    borderRadius: 6,
+                                                    background: getRiskBg(proctorSessionsMap[sub.student_id].final_risk_score),
+                                                    color: getRiskColor(proctorSessionsMap[sub.student_id].final_risk_score),
+                                                    border: `1px solid ${getRiskBorder(proctorSessionsMap[sub.student_id].final_risk_score)}`,
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 700,
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                🛡️ {proctorSessionsMap[sub.student_id].final_risk_score} Risk
+                                            </button>
+                                        ) : (
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>None</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                </div>
+            );
+        };
         return (
             <>
             {/* View Submissions Modal */}
@@ -1657,86 +1752,7 @@ export default function CodingManagement() {
 
                         {/* Student List */}
                         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.5rem' }}>
-                            {submissionsLoading ? (
-                                <div style={{ textAlign: 'center', padding: '3rem' }}>
-                                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading submissions...</p>
-                                </div>
-                            ) : filteredSubmissions.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '3rem' }}>
-                                    <Users size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{submissionsData.length === 0 ? 'No students have submitted this challenge yet.' : 'No results match your search.'}</p>
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                    {/* Table Header */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.85rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
-                                        <span>Student</span>
-                                        <span style={{ textAlign: 'center' }}>Score (XP)</span>
-                                        <span style={{ textAlign: 'center' }}>Status</span>
-                                        <span style={{ textAlign: 'center' }}>Proctoring</span>
-                                    </div>
-                                    {filteredSubmissions
-                                        .sort((a, b) => (b.score || 0) - (a.score || 0))
-                                        .map((sub, idx) => {
-                                            const passed = sub.status === 'accepted'
-                                            return (
-                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
-                                                    onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
-                                                    onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
-                                                >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
-                                                            {sub.users?.name?.[0]?.toUpperCase() || '?'}
-                                                        </div>
-                                                        <div>
-                                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{sub.users?.name || 'Unknown'}</div>
-                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{sub.users?.email}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                                        {sub.score || 0} XP
-                                                    </div>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        {passed ? (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#059669' }}>
-                                                                <CheckCircle2 size={14} /> Accepted
-                                                            </span>
-                                                        ) : (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#dc2626' }}>
-                                                                <XCircle size={14} /> Failed / {sub.status || 'Attempted'}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        {proctorSessionsMap[sub.student_id] ? (
-                                                            <button
-                                                                onClick={() => setViewingReportSession({ studentId: sub.student_id, challengeId: sub.challenge_id })}
-                                                                style={{
-                                                                    display: 'inline-flex',
-                                                                    alignItems: 'center',
-                                                                    gap: '4px',
-                                                                    padding: '0.25rem 0.5rem',
-                                                                    borderRadius: 6,
-                                                                    background: getRiskBg(proctorSessionsMap[sub.student_id].final_risk_score),
-                                                                    color: getRiskColor(proctorSessionsMap[sub.student_id].final_risk_score),
-                                                                    border: `1px solid ${getRiskBorder(proctorSessionsMap[sub.student_id].final_risk_score)}`,
-                                                                    fontSize: '0.85rem',
-                                                                    fontWeight: 700,
-                                                                    cursor: 'pointer'
-                                                                }}
-                                                            >
-                                                                🛡️ {proctorSessionsMap[sub.student_id].final_risk_score} Risk
-                                                            </button>
-                                                        ) : (
-                                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>None</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                </div>
-                            )}
+                            {renderSubmissionsContent()}
                         </div>
 
                         {/* Footer */}
@@ -1765,6 +1781,21 @@ export default function CodingManagement() {
     };
 
     const renderChallengeList = () => {
+        const renderLockedGroups = (challengeId) => {
+            const nodes = [];
+            for (const access of resourceAccess) {
+                if (access.resource_id === challengeId && access.is_locked) {
+                    for (const g of groups) {
+                        if (g.id === access.group_id) {
+                            nodes.push(<span key={g.id} style={{ fontSize: '0.85rem', padding: '0.1rem 0.4rem', background: '#fee2e2', color: '#991b1b', borderRadius: 4, fontWeight: 600 }}>Locked: {g.name}</span>);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (nodes.length === 0) return null;
+            return <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.85rem' }}>{nodes}</div>;
+        };
         if (loading) {
             return (
                 <div style={{ textAlign: 'center', padding: '4rem' }}>
@@ -1823,14 +1854,7 @@ export default function CodingManagement() {
                             {resourceAccess.some(a => a.resource_id === c.id && a.is_locked) && <Lock size={14} color="#ef4444" style={{ flexShrink: 0 }} />}
                             {c.title}
                         </h3>
-                        {resourceAccess.some(a => a.resource_id === c.id && a.is_locked) && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.85rem' }}>
-                                {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).map(a => {
-                                    const g = groups.find(gr => gr.id === a.group_id)
-                                    return g ? <span key={g.id} style={{ fontSize: '0.85rem', padding: '0.1rem 0.4rem', background: '#fee2e2', color: '#991b1b', borderRadius: 4, fontWeight: 600 }}>Locked: {g.name}</span> : null
-                                })}
-                            </div>
-                        )}
+                        {renderLockedGroups(c.id)}
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             <BookOpen size={12} /> {c.courses?.title} • {c.difficulty.toUpperCase()}
                         </div>
