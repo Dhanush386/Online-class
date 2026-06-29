@@ -3,12 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
-import { Loader2, Video, StopCircle, Play, UserCheck, MessageSquare, BarChart2, Edit3, Users, Hand, Maximize, Minimize } from 'lucide-react'
+import { Loader2, Video, StopCircle, Play, UserCheck, BarChart2, Edit3, Users, Maximize, Minimize } from 'lucide-react'
 
 import LiveNotes from '../../components/live-classroom/LiveNotes'
 import LivePolls from '../../components/live-classroom/LivePolls'
 import LiveAttendance from '../../components/live-classroom/LiveAttendance'
-import LiveHandRaise from '../../components/live-classroom/LiveHandRaise'
 
 // Constants
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
