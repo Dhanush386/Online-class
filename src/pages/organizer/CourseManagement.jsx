@@ -407,11 +407,17 @@ export default function CourseManagement() {
                                         onChange={(e) => {
                                             const file = e.target.files[0]
                                             if (file) {
+                                                let type = 'other';
+                                                if (file.name.endsWith('.pdf')) {
+                                                    type = 'pdf';
+                                                } else if (file.name.includes('.ppt')) {
+                                                    type = 'ppt';
+                                                }
                                                 setResourceForm(p => ({ 
                                                     ...p, 
                                                     file,
                                                     title: p.title || file.name.replace(/\.[^/.]+$/, ""),
-                                                    resource_type: file.name.endsWith('.pdf') ? 'pdf' : (file.name.includes('.ppt') ? 'ppt' : 'other')
+                                                    resource_type: type
                                                 }))
                                             }
                                         }}
