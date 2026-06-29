@@ -2350,6 +2350,8 @@ export default function LiveClassroom() {
     const [channelInstance, setChannelInstance] = useState(null)
     const [waitingStudents, setWaitingStudents] = useState([])
     const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
+    const isOrganizerRef = useRef(isOrganizer)
+    useEffect(() => { isOrganizerRef.current = isOrganizer }, [isOrganizer])
 
     const [askCooldown, setAskCooldown] = useState(0)
     const joinTimeoutRef = useRef(null)
@@ -2385,16 +2387,17 @@ export default function LiveClassroom() {
             setChannelInstance(channel)
             channel
                 .on('broadcast', { event: 'check_instructor' }, () => {
-                    if (isOrganizer) channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
+                    if (isOrganizerRef.current) channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
                 })
                 .on('broadcast', { event: 'presence' }, (p) => {
                     if (p.payload.instructorJoined) {
                         setInstructorPresent(true)
-                        if (intervalId) { clearInterval(intervalId); intervalId = null }
+                        // Don't clear intervalId here — let check_instructor interval keep running
+                        // so newly joining students also get presence confirmation
                     }
                 })
                 .on('broadcast', { event: 'join_request' }, (p) => {
-                    if (isOrganizer) {
+                    if (isOrganizerRef.current) {
                         setWaitingStudents(prev => {
                             if (prev.some(s => s.id === p.payload.studentId)) return prev
                             return [...prev, {
@@ -2406,12 +2409,12 @@ export default function LiveClassroom() {
                     }
                 })
                 .on('broadcast', { event: 'join_cancelled' }, (p) => {
-                    if (isOrganizer) {
+                    if (isOrganizerRef.current) {
                         setWaitingStudents(prev => prev.filter(s => s.id !== p.payload.studentId))
                     }
                 })
                 .on('broadcast', { event: 'join_response' }, (p) => {
-                    if (!isOrganizer && p.payload.studentId === profile?.id) {
+                    if (!isOrganizerRef.current && p.payload.studentId === profile?.id) {
                         if (p.payload.admitted) {
                             setJoinStatus('admitted_animating')
                             setTimeout(() => setJoinStatus('admitted'), 1500)
@@ -2427,7 +2430,9 @@ export default function LiveClassroom() {
                 })
                 .subscribe((status) => {
                     if (status === 'SUBSCRIBED') {
-                        if (isOrganizer) {
+                        if (isOrganizerRef.current) {
+                            // Broadcast presence immediately and keep pinging every 15s
+                            // so any student who joins later also gets notified
                             channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
                             intervalId = setInterval(() => {
                                 channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
@@ -2447,7 +2452,7 @@ export default function LiveClassroom() {
             if (intervalId) clearInterval(intervalId)
             if (localChannel) supabase.removeChannel(localChannel)
         }
-    }, [videoId])
+    }, [videoId, isOrganizer])
 
     // ── Fetch LiveKit Token ──
     useEffect(() => {
