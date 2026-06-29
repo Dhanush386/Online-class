@@ -1611,95 +1611,99 @@ export default function CodingManagement() {
         );
     };
 
-    const renderSubmissionsModal = () => {
-        const renderSubmissionsContent = () => {
-            if (submissionsLoading) {
-                return (
-                    <div style={{ textAlign: 'center', padding: '3rem' }}>
-                        <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading submissions...</p>
-                    </div>
-                );
-            }
-            if (filteredSubmissions.length === 0) {
-                return (
-                    <div style={{ textAlign: 'center', padding: '3rem' }}>
-                        <Users size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{submissionsData.length === 0 ? 'No students have submitted this challenge yet.' : 'No results match your search.'}</p>
-                    </div>
-                );
-            }
+    const handleSubmissionMouseEnter = (e) => { e.currentTarget.style.border = '1px solid #6366f130' }
+    const handleSubmissionMouseLeave = (e) => { e.currentTarget.style.border = '1px solid transparent' }
+
+    const renderSubmissionsContent = () => {
+        if (submissionsLoading) {
             return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {/* Table Header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.85rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
-                        <span>Student</span>
-                        <span style={{ textAlign: 'center' }}>Score (XP)</span>
-                        <span style={{ textAlign: 'center' }}>Status</span>
-                        <span style={{ textAlign: 'center' }}>Proctoring</span>
-                    </div>
-                    {filteredSubmissions
-                        .sort((a, b) => (b.score || 0) - (a.score || 0))
-                        .map((sub, idx) => {
-                            const passed = sub.status === 'accepted'
-                            return (
-                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
-                                    onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
-                                    onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
-                                            {sub.users?.name?.[0]?.toUpperCase() || '?'}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{sub.users?.name || 'Unknown'}</div>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{sub.users?.email}</div>
-                                        </div>
-                                    </div>
-                                    <div style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                        {sub.score || 0} XP
-                                    </div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        {passed ? (
-                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#059669' }}>
-                                                <CheckCircle2 size={14} /> Accepted
-                                            </span>
-                                        ) : (
-                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#dc2626' }}>
-                                                <XCircle size={14} /> Failed / {sub.status || 'Attempted'}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        {proctorSessionsMap[sub.student_id] ? (
-                                            <button
-                                                onClick={() => setViewingReportSession({ studentId: sub.student_id, challengeId: sub.challenge_id })}
-                                                style={{
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px',
-                                                    padding: '0.25rem 0.5rem',
-                                                    borderRadius: 6,
-                                                    background: getRiskBg(proctorSessionsMap[sub.student_id].final_risk_score),
-                                                    color: getRiskColor(proctorSessionsMap[sub.student_id].final_risk_score),
-                                                    border: `1px solid ${getRiskBorder(proctorSessionsMap[sub.student_id].final_risk_score)}`,
-                                                    fontSize: '0.85rem',
-                                                    fontWeight: 700,
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                🛡️ {proctorSessionsMap[sub.student_id].final_risk_score} Risk
-                                            </button>
-                                        ) : (
-                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>None</span>
-                                        )}
-                                    </div>
-                                </div>
-                            )
-                        })}
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading submissions...</p>
                 </div>
             );
-        };
+        }
+        if (filteredSubmissions.length === 0) {
+            return (
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                    <Users size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{submissionsData.length === 0 ? 'No students have submitted this challenge yet.' : 'No results match your search.'}</p>
+                </div>
+            );
+        }
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {/* Table Header */}
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.5rem 0.85rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
+                    <span>Student</span>
+                    <span style={{ textAlign: 'center' }}>Score (XP)</span>
+                    <span style={{ textAlign: 'center' }}>Status</span>
+                    <span style={{ textAlign: 'center' }}>Proctoring</span>
+                </div>
+                {filteredSubmissions
+                    .sort((a, b) => (b.score || 0) - (a.score || 0))
+                    .map((sub, idx) => {
+                        const passed = sub.status === 'accepted'
+                        return (
+                            <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                                onMouseEnter={handleSubmissionMouseEnter}
+                                onMouseLeave={handleSubmissionMouseLeave}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
+                                        {sub.users?.name?.[0]?.toUpperCase() || '?'}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{sub.users?.name || 'Unknown'}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{sub.users?.email}</div>
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                    {sub.score || 0} XP
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    {passed ? (
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#059669' }}>
+                                            <CheckCircle2 size={14} /> Accepted
+                                        </span>
+                                    ) : (
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#dc2626' }}>
+                                            <XCircle size={14} /> Failed / {sub.status || 'Attempted'}
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    {proctorSessionsMap[sub.student_id] ? (
+                                        <button
+                                            onClick={() => setViewingReportSession({ studentId: sub.student_id, challengeId: sub.challenge_id })}
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: 6,
+                                                background: getRiskBg(proctorSessionsMap[sub.student_id].final_risk_score),
+                                                color: getRiskColor(proctorSessionsMap[sub.student_id].final_risk_score),
+                                                border: `1px solid ${getRiskBorder(proctorSessionsMap[sub.student_id].final_risk_score)}`,
+                                                fontSize: '0.85rem',
+                                                fontWeight: 700,
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            🛡️ {proctorSessionsMap[sub.student_id].final_risk_score} Risk
+                                        </button>
+                                    ) : (
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>None</span>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+            </div>
+        );
+    };
+
+    const renderSubmissionsModal = () => {
         return (
             <>
             {/* View Submissions Modal */}
