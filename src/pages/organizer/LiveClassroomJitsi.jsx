@@ -423,20 +423,118 @@ export default function LiveClassroom() {
         }
     }
 
+      const getSidebarStyles = () => ({
+        width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape ? '280px' : '360px'),
+        height: (isMobile && !isLandscape) ? '50%' : '100%',
+        minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
+        maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
+        background: 'var(--text-primary)', 
+        borderLeft: (isMobile && !isLandscape) ? 'none' : '1px solid rgba(255,255,255,0.1)', 
+        borderTop: (isMobile && !isLandscape) ? '1px solid rgba(255,255,255,0.1)' : 'none',
+        display: 'flex', flexDirection: 'column', zIndex: 20
+    });
+
+    const renderRecordingControls = () => {
+        if (!gToken) {
+            return (
+                <button onClick={() => tokenClientRef.current.requestAccessToken()} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                    <UserCheck size={16} /> Login to Drive
+                </button>
+            )
+        }
+        if (!recording) {
+            return (
+                <button onClick={startRecording} style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                    <Play size={16} /> Record Class
+                </button>
+            )
+        }
+        return (
+            <button onClick={() => mediaRecorderRef.current.stop()} style={{ background: '#f87171', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                <StopCircle size={16} /> End & Save
+            </button>
+        )
+    };
+
+    const renderHeaderControls = () => (
+        <div style={{ padding: '0.85rem 1rem', background: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+            <div>
+                <h1 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{videoData?.title}</h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{isOrganizer ? 'Instructor Control Panel' : 'Live Class Session'}</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {isOrganizer && !isMobile && renderRecordingControls()}
+                {!isMobile && (
+                    <button onClick={toggleFullScreen} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        {isFullScreen ? <><Minimize size={14} /> Exit Fullscreen</> : <><Maximize size={14} /> Fullscreen</>}
+                    </button>
+                )}
+                <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: sidebarOpen ? '#818cf8' : 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 0.85rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
+                    {sidebarOpen ? 'Close Panel' : 'Open Panel'}
+                </button>
+                {!isMobile && <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>Leave</button>}
+            </div>
+        </div>
+    );
+
+    const renderSidebar = () => {
+        if (!sidebarOpen || !channelInstance) return null;
+        
+        return (
+            <div 
+                onTouchStart={(e) => { e.currentTarget.dataset.startY = e.touches[0].clientY }}
+                onTouchEnd={(e) => { 
+                    const startY = Number(e.currentTarget.dataset.startY || 0)
+                    if (e.changedTouches[0].clientY - startY > 50 && isMobile && !isLandscape) {
+                        setSidebarOpen(false)
+                    }
+                }}
+                style={getSidebarStyles()}>
+                {/* Drag Handle for Mobile */}
+                {isMobile && !isLandscape && (
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '8px 0', cursor: 'grab' }}>
+                        <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+                    </div>
+                )}
+                <div style={{ display: 'flex', background: 'var(--text-primary)', padding: '0.5rem', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
+                    <button onClick={() => setSidebarTab('notes')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'notes' ? '#6366f1' : 'transparent', color: sidebarTab === 'notes' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                        <Edit3 size={14} /> Notes
+                    </button>
+                    <button onClick={() => setSidebarTab('polls')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'polls' ? '#6366f1' : 'transparent', color: sidebarTab === 'polls' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                        <BarChart2 size={14} /> Polls
+                    </button>
+                    {isOrganizer && (
+                        <button onClick={() => setSidebarTab('attendance')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'attendance' ? '#6366f1' : 'transparent', color: sidebarTab === 'attendance' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
+                            <Users size={14} /> Att.
+                        </button>
+                    )}
+                </div>
+                
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
+                    {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
+                    {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
+                </div>
+            </div>
+        );
+    };
+
+    const renderWaitingScreen = () => (
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#020617', color: 'white', textAlign: 'center', padding: '2rem' }}>
+            <div style={{ maxWidth: 400 }}>
+                <div style={{ width: 80, height: 80, background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', animation: 'pulse 2s infinite' }}>
+                    <Video size={40} color="#6366f1" />
+                </div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1rem' }}>Waiting for Instructor</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>The class will start automatically when your teacher joins. Stay tuned!</p>
+            </div>
+        </div>
+    );
+
     if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#020617' }}><Loader2 className="animate-spin" color="white" /></div>
 
     if (!isOrganizer && !instructorPresent) {
-        return (
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#020617', color: 'white', textAlign: 'center', padding: '2rem' }}>
-                <div style={{ maxWidth: 400 }}>
-                    <div style={{ width: 80, height: 80, background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', animation: 'pulse 2s infinite' }}>
-                        <Video size={40} color="#6366f1" />
-                    </div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1rem' }}>Waiting for Instructor</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>The class will start automatically when your teacher joins. Stay tuned!</p>
-                </div>
-            </div>
-        )
+        return renderWaitingScreen()
     }
 
     return (
@@ -447,96 +545,18 @@ export default function LiveClassroom() {
             paddingLeft: 'env(safe-area-inset-left)',
             paddingRight: 'env(safe-area-inset-right)'
         }}>
-            <div style={{ padding: '0.85rem 1rem', background: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-                <div>
-                    <h1 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{videoData?.title}</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{isOrganizer ? 'Instructor Control Panel' : 'Live Class Session'}</p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {isOrganizer && !isMobile && (
-                        <>
-                            {!gToken ? (
-                                <button onClick={() => tokenClientRef.current.requestAccessToken()} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                                    <UserCheck size={16} /> Login to Drive
-                                </button>
-                            ) : (
-                                !recording ? (
-                                    <button onClick={startRecording} style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                                        <Play size={16} /> Record Class
-                                    </button>
-                                ) : (
-                                    <button onClick={() => mediaRecorderRef.current.stop()} style={{ background: '#f87171', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                                        <StopCircle size={16} /> End & Save
-                                    </button>
-                                )
-                            )}
-                        </>
-                    )}
-                    {!isMobile && (
-                        <button onClick={toggleFullScreen} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            {isFullScreen ? <><Minimize size={14} /> Exit Fullscreen</> : <><Maximize size={14} /> Fullscreen</>}
-                        </button>
-                    )}
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: sidebarOpen ? '#818cf8' : 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 0.85rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
-                        {sidebarOpen ? 'Close Panel' : 'Open Panel'}
-                    </button>
-                    {!isMobile && <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', cursor: 'pointer' }}>Leave</button>}
-                </div>
-            </div>
+            {renderHeaderControls()}
+            
             {uploading && (
                 <div style={{ background: '#6366f1', color: 'white', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem', fontWeight: 600 }}>
                     💾 Finalizing recording and saving to Google Drive... please wait.
                 </div>
             )}
+            
             <div style={{ flex: 1, display: 'flex', flexDirection: (isMobile && !isLandscape) ? 'column' : 'row', width: '100%', overflow: 'hidden' }}>
                 <div ref={jitsiContainerRef} style={{ flex: 1, height: '100%', background: '#000' }} />
                 
-                {sidebarOpen && channelInstance && (
-                    <div 
-                        onTouchStart={(e) => { e.currentTarget.dataset.startY = e.touches[0].clientY }}
-                        onTouchEnd={(e) => { 
-                            const startY = Number(e.currentTarget.dataset.startY || 0)
-                            if (e.changedTouches[0].clientY - startY > 50 && isMobile && !isLandscape) {
-                                setSidebarOpen(false)
-                            }
-                        }}
-                        style={{ 
-                            width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape ? '280px' : '360px'),
-                            height: (isMobile && !isLandscape) ? '50%' : '100%',
-                            minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
-                            maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
-                            background: 'var(--text-primary)', 
-                            borderLeft: (isMobile && !isLandscape) ? 'none' : '1px solid rgba(255,255,255,0.1)', 
-                            borderTop: (isMobile && !isLandscape) ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                            display: 'flex', flexDirection: 'column', zIndex: 20
-                        }}>
-                        {/* Drag Handle for Mobile */}
-                        {isMobile && !isLandscape && (
-                            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '8px 0', cursor: 'grab' }}>
-                                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
-                            </div>
-                        )}
-                        <div style={{ display: 'flex', background: 'var(--text-primary)', padding: '0.5rem', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
-                            <button onClick={() => setSidebarTab('notes')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'notes' ? '#6366f1' : 'transparent', color: sidebarTab === 'notes' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
-                                <Edit3 size={14} /> Notes
-                            </button>
-                            <button onClick={() => setSidebarTab('polls')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'polls' ? '#6366f1' : 'transparent', color: sidebarTab === 'polls' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
-                                <BarChart2 size={14} /> Polls
-                            </button>
-                            {isOrganizer && (
-                                <button onClick={() => setSidebarTab('attendance')} style={{ flex: 1, padding: '0.5rem', background: sidebarTab === 'attendance' ? '#6366f1' : 'transparent', color: sidebarTab === 'attendance' ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.8rem', minWidth: '65px' }}>
-                                    <Users size={14} /> Att.
-                                </button>
-                            )}
-                        </div>
-                        
-                        <div style={{ flex: 1, overflowY: 'auto' }}>
-                            {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
-                            {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
-                            {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
-                        </div>
-                    </div>
-                )}
+                {renderSidebar()}
             </div>
         </div>
     )
