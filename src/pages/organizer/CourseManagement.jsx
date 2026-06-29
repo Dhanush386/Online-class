@@ -362,7 +362,7 @@ export default function CourseManagement() {
                                 </div>
                                 <div style={{ gridColumn: '1 / -1' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                        <label className="form-label" style={{ marginBottom: 0 }}>Add via File or URL</label>
+                                        <div className="form-label" style={{ marginBottom: 0 }}>Add via File or URL</div>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <button 
                                                 type="button" 
