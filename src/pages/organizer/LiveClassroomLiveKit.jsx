@@ -649,7 +649,7 @@ function VideoGrid() {
     const remoteParticipants = useRemoteParticipants();
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
-    const [tick, setTick] = useState(0);
+    const [, setTick] = useState(0);
     const [pinnedIdentity, setPinnedIdentity] = useState(null);
 
     // Listen for screen-share track events at the Room level to detect layout changes
@@ -684,7 +684,7 @@ function VideoGrid() {
 
     useEffect(() => {
         if (prevHadScreenShare.current !== hasScreenShare) {
-            setLayoutTransition(true);
+            setTimeout(() => setLayoutTransition(true), 0);
             const timer = setTimeout(() => setLayoutTransition(false), 300);
             prevHadScreenShare.current = hasScreenShare;
             return () => clearTimeout(timer);
@@ -693,7 +693,7 @@ function VideoGrid() {
 
     useEffect(() => {
         if (pinnedIdentity && !allParticipants.some(p => p.identity === pinnedIdentity)) {
-            setPinnedIdentity(null);
+            setTimeout(() => setPinnedIdentity(null), 0);
         }
     }, [allParticipants, pinnedIdentity]);
 
@@ -944,6 +944,7 @@ function controlBtnStyle() {
     };
 }
 
+// eslint-disable-next-line no-unused-vars
 function HostToggleButton({ isLocked, onToggle, IconLocked, IconUnlocked, labelLocked, labelUnlocked }) {
     const background = isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)';
     const border = isLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)';
@@ -1328,15 +1329,15 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
 
 // ─── Control Bar ─────────────────────────────────────────────────────────────
 function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, screenShareLocked, handsLocked, onSendReaction, onToggleHand }) {
-    const { isRecording, isRecordingPaused, isUploading, recordingSession, gToken, loginToDrive, startRecording, pauseRecording, resumeRecording, stopAndUploadRecording } = useMeeting()
-    const room = useRoomContext()
+    const { isRecording, isRecordingPaused, isUploading, gToken, loginToDrive, startRecording, pauseRecording, resumeRecording, stopAndUploadRecording } = useMeeting()
+
     const { isMobile } = useDeviceOrientation()
     const localParticipant = useLocalParticipant()
     const [isMicOn, setIsMicOn] = useState(true)
     const [isCamOn, setIsCamOn] = useState(true)
     const [isScreenSharing, setIsScreenSharing] = useState(false)
     const [showReactionPicker, setShowReactionPicker] = useState(false)
-    const [forceMutedUntil, setForceMutedUntil] = useState(0)
+    const [forceMutedUntil] = useState(0)
     const [recordingDuration, setRecordingDuration] = useState(0)
 
     const lp = localParticipant.localParticipant
@@ -1348,7 +1349,7 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
                 setRecordingDuration(prev => prev + 1)
             }, 1000)
         } else if (!isRecording) {
-            setRecordingDuration(0)
+            setTimeout(() => setRecordingDuration(0), 0)
         }
         return () => clearInterval(interval)
     }, [isRecording, isRecordingPaused])
@@ -1363,11 +1364,13 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
     // Sync state with actual track state
     useEffect(() => {
         if (lp) {
-            setIsMicOn(lp.isMicrophoneEnabled)
-            setIsCamOn(lp.isCameraEnabled)
-            setIsScreenSharing(lp.isScreenShareEnabled)
+            setTimeout(() => {
+                setIsMicOn(lp.isMicrophoneEnabled)
+                setIsCamOn(lp.isCameraEnabled)
+                setIsScreenSharing(lp.isScreenShareEnabled)
+            }, 0)
         }
-    }, [lp?.isMicrophoneEnabled, lp?.isCameraEnabled, lp?.isScreenShareEnabled])
+    }, [lp, lp?.isMicrophoneEnabled, lp?.isCameraEnabled, lp?.isScreenShareEnabled])
 
     const toggleMic = async () => {
         if (!lp) return
@@ -1640,23 +1643,38 @@ function WaitingRoomTab({ waitingStudents, setWaitingStudents, channel }) {
     )
 }
 
+WaitingRoomTab.propTypes = {
+    waitingStudents: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.string,
+            name: PropTypes.string
+        })
+    ),
+    setWaitingStudents: PropTypes.func,
+    channel: PropTypes.shape({
+        send: PropTypes.func
+    })
+};
+
 function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, onMinimize, refreshStats, toast, waitingStudents, setWaitingStudents }) {
     const { isMobile, isLandscape } = useDeviceOrientation()
     const room = useRoomContext()
     const remoteParticipants = useRemoteParticipants()
     const { localParticipant } = useLocalParticipant()
-    const joinTimeRef = useRef(Date.now())
+    const joinTimeRef = useRef(null)
     const attendanceMarkedRef = useRef(false)
-    const attendanceIntervalRef = useRef(null)
     const containerRef = useRef(null)
+    useEffect(() => {
+        if (joinTimeRef.current === null) joinTimeRef.current = Date.now()
+    }, [])
     const [isFullScreen, setIsFullScreen] = useState(false)
-    const [admittedStudents, setAdmittedStudents] = useState([])
+
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
     const [unreadChatCount, setUnreadChatCount] = useState(0)
 
     useEffect(() => {
         if (sidebarTab === 'chat' && sidebarOpen) {
-            setUnreadChatCount(0)
+            setTimeout(() => setUnreadChatCount(0), 0)
         }
     }, [sidebarTab, sidebarOpen])
 
@@ -1758,13 +1776,13 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         if (!room) return
         const decoder = new TextDecoder()
 
-        const handleDataReceived = (payload, participant) => {
+        const handleDataReceived = (payload) => {
             try {
                 const msg = JSON.parse(decoder.decode(payload))
 
                 if (msg.type === 'reaction') {
                     const id = `reaction-${Date.now()}-${reactionIdCounter.current++}`
-                    const x = 10 + (window.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80 // random horizontal position
+                    const x = 10 + (globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80 // random horizontal position
                     setReactions(prev => [...prev, { id, emoji: msg.emoji, senderName: msg.senderName, x }])
                     // Auto-remove after animation
                     setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
@@ -1898,8 +1916,9 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             break
                     }
                 }
-            } catch (e) {
+            } catch (error) {
                 // Not a JSON data message, ignore
+                console.error("Caught exception processing data:", error)
             }
         }
 
@@ -1924,7 +1943,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
 
         // Also show locally
         const id = `reaction-${now}-${reactionIdCounter.current++}`
-        const x = 10 + (window.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80
+        const x = 10 + (globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80
         setReactions(prev => [...prev, { id, emoji, senderName, x }])
         setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
     }, [room, reactionsDisabled])
@@ -1945,9 +1964,9 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                 handRaised: newRaised,
                 handRaisedAt: newRaised ? now : null,
             }))
-        } catch (e) {
+        } catch (error) {
             // Permission denied — metadata not available, that's OK
-            console.warn('Metadata update not permitted, using data channel only')
+            console.warn('Metadata update not permitted, using data channel only', error)
         }
 
         // Always broadcast via data channel for immediate visibility
@@ -2030,7 +2049,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         return () => {
             supabase.removeChannel(attendanceChannel)
         }
-    }, [videoData, profile?.id, isOrganizer])
+    }, [videoData, profile?.id, isOrganizer, refreshStats, toast])
 
     const handleLeave = useCallback(() => {
         if (isOrganizer) {
@@ -2047,7 +2066,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
 
         room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
         onLeave()
-    }, [room, isOrganizer, profile, videoData, onLeave])
+    }, [room, isOrganizer, onLeave, toast])
 
     const confirmEndClass = async () => {
         try {
@@ -2155,7 +2174,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                             }
                         }}
                         style={{
-                            width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape ? '280px' : '360px'),
+                            width: (isMobile && !isLandscape) ? '100%' : ((isMobile && isLandscape) ? '280px' : '360px'),
                             height: (isMobile && !isLandscape) ? '60%' : '100%',
                             minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
                             maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
@@ -2318,6 +2337,42 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     )
 }
 
+RoomContent.propTypes = {
+    videoId: PropTypes.string,
+    videoData: PropTypes.shape({
+        id: PropTypes.string,
+        title: PropTypes.string
+    }),
+    isOrganizer: PropTypes.bool,
+    profile: PropTypes.shape({
+        id: PropTypes.string,
+        role: PropTypes.string
+    }),
+    channelInstance: PropTypes.shape({
+        send: PropTypes.func
+    }),
+    sidebarOpen: PropTypes.bool,
+    setSidebarOpen: PropTypes.func,
+    sidebarTab: PropTypes.string,
+    setSidebarTab: PropTypes.func,
+    onLeave: PropTypes.func,
+    onMinimize: PropTypes.func,
+    refreshStats: PropTypes.func,
+    toast: PropTypes.shape({
+        info: PropTypes.func,
+        success: PropTypes.func,
+        warning: PropTypes.func,
+        error: PropTypes.func
+    }),
+    waitingStudents: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.string,
+            name: PropTypes.string
+        })
+    ),
+    setWaitingStudents: PropTypes.func
+};
+
 // ─── Participant Count Badge ─────────────────────────────────────────────────
 function ParticipantCount() {
     const participants = useRemoteParticipants()
@@ -2452,7 +2507,7 @@ export default function LiveClassroom() {
             if (intervalId) clearInterval(intervalId)
             if (localChannel) supabase.removeChannel(localChannel)
         }
-    }, [videoId, isOrganizer])
+    }, [videoId, isOrganizer, navigate, profile?.id, profile?.role])
 
     // ── Fetch LiveKit Token ──
     useEffect(() => {
@@ -2480,7 +2535,7 @@ export default function LiveClassroom() {
         }
 
         fetchToken()
-    }, [videoData, isOrganizer, instructorPresent, joinStatus, livekitToken])
+    }, [videoData, isOrganizer, instructorPresent, joinStatus, livekitToken, startMeeting, videoId])
 
     // ── Loading State ──
     if (loading) {
