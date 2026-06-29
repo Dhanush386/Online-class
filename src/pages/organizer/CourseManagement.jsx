@@ -367,7 +367,7 @@ export default function CourseManagement() {
                                             <button 
                                                 type="button" 
                                                 onClick={() => setResourceForm(p => ({ ...p, file: null }))}
-                                                style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: !resourceForm.file ? '#6366f1' : 'var(--text-muted)', fontWeight: !resourceForm.file ? 700 : 500, cursor: 'pointer' }}
+                                                style={{ fontSize: '0.7rem', background: 'none', border: 'none', color: resourceForm.file ? 'var(--text-muted)' : '#6366f1', fontWeight: resourceForm.file ? 500 : 700, cursor: 'pointer' }}
                                             >URL</button>
                                             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>|</span>
                                             <button 
