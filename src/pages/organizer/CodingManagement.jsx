@@ -197,7 +197,6 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                                 Check that specific HTML elements exist using CSS selectors. <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>minCount</code> is optional (default: 1).
                             </p>
                             {(formData.web_testcases?.html || []).map((tc, idx) => (
-                                // eslint-disable-next-line react/no-array-index-key
                                 <div key={tc.id || `html-tc-${idx}`} style={{ border: '1px solid #fee2e2', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fff5f5', position: 'relative' }}>
                                     <button type="button" onClick={() => handleRemoveHtml(idx)}
                                         style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}>
@@ -237,7 +236,6 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                                 Check computed CSS properties. Leave <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>Expected Value</code> empty to just check the property is set.
                             </p>
                             {(formData.web_testcases?.css || []).map((tc, idx) => (
-                                // eslint-disable-next-line react/no-array-index-key
                                 <div key={tc.id || `css-tc-${idx}`} style={{ border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#eff6ff', position: 'relative' }}>
                                     <button type="button" onClick={() => handleRemoveCss(idx)}
                                         style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>
@@ -282,7 +280,6 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                                 Check that specific functions, methods, or keywords appear in the student's JavaScript code.
                             </p>
                             {(formData.web_testcases?.js || []).map((tc, idx) => (
-                                // eslint-disable-next-line react/no-array-index-key
                                 <div key={tc.id || `js-tc-${idx}`} style={{ border: '1px solid #fde68a', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fffbeb', position: 'relative' }}>
                                     <button type="button" onClick={() => handleRemoveJs(idx)}
                                         style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#d97706', cursor: 'pointer' }}>
@@ -348,6 +345,378 @@ HtmlSpecificOptions.propTypes = {
     setFormData: PropTypes.func.isRequired,
     wcTab: PropTypes.string.isRequired,
     setWcTab: PropTypes.func.isRequired
+}
+
+function StandardTestCases({ formData, setFormData }) {
+    const handleAddTestCase = () => {
+        setFormData(p => ({
+            ...p,
+            test_cases: [...p.test_cases, { id: crypto.randomUUID(), input: '', expected_output: '', is_hidden: false }]
+        }))
+    }
+
+    const handleUpdateTestCase = (idx, field, value) => {
+        setFormData(p => {
+            const arr = [...p.test_cases]
+            arr[idx] = { ...arr[idx], [field]: value }
+            return { ...p, test_cases: arr }
+        })
+    }
+
+    const handleRemoveTestCase = (idx) => {
+        setFormData(p => ({
+            ...p,
+            test_cases: p.test_cases.filter((_, i) => i !== idx)
+        }))
+    }
+
+    async function handleTCImageUpload(e, idx, field) {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${crypto.randomUUID().split("-")[0]}-${Date.now()}.${fileExt}`
+        const filePath = `challenges/test-cases/${fileName}`
+
+        try {
+            const { error: uploadError } = await supabase.storage
+                .from('study-materials')
+                .upload(filePath, file)
+
+            if (uploadError) throw uploadError
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('study-materials')
+                .getPublicUrl(filePath)
+
+            setFormData(p => {
+                const newTCData = [...p.test_cases]
+                newTCData[idx] = { ...newTCData[idx], [field]: publicUrl }
+                return { ...p, test_cases: newTCData }
+            })
+        } catch (err) {
+            alert('Error uploading image: ' + err.message)
+        }
+    }
+
+    return (
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Test Cases</h4>
+                <button type="button" onClick={handleAddTestCase} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
+                    <Plus size={14} /> Add Test Case
+                </button>
+            </div>
+            {formData.test_cases.map((tc, idx) => (
+                <div key={tc.id || `std-tc-${idx}`} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '1rem', marginBottom: '1rem', background: 'white' }}>
+                    <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.85rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>INPUT (STDIN)</label>
+                            <textarea id={`tc-input-${idx}`} className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => handleUpdateTestCase(idx, 'input', e.target.value)} style={{ fontSize: '0.8rem' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <label htmlFor={`tc-output-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>EXPECTED OUTPUT (STDOUT)</label>
+                            <textarea id={`tc-output-${idx}`} className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => handleUpdateTestCase(idx, 'expected_output', e.target.value)} style={{ fontSize: '0.8rem' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', paddingTop: '1.25rem' }}>
+                            <label htmlFor={`tc-hidden-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>HIDDEN</label>
+                            <input
+                                id={`tc-hidden-${idx}`}
+                                type="checkbox"
+                                checked={tc.is_hidden}
+                                onChange={e => handleUpdateTestCase(idx, 'is_hidden', e.target.checked)}
+                            />
+                        </div>
+                        <button type="button" onClick={() => handleRemoveTestCase(idx)} style={{ background: 'none', border: 'none', color: '#ef4444', padding: '0.5rem', cursor: 'pointer', alignSelf: 'flex-start', marginTop: '1.25rem' }}>
+                            <Trash2 size={18} />
+                        </button>
+                    </div>
+
+                    {formData.language === 'html' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', paddingTop: '0.85rem', borderTop: '1px dashed #e2e8f0' }}>
+                            {['input_image_url', 'output_image_url'].map(field => (
+                                <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' }}>
+                                        {field === 'input_image_url' ? 'Input Design Mockup' : 'Target Result Image'}
+                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{ 
+                                            width: 60, 
+                                            height: 60, 
+                                            borderRadius: 8, 
+                                            background: '#f1f5f9', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            overflow: 'hidden',
+                                            border: '1px solid #e2e8f0',
+                                            flexShrink: 0
+                                        }}>
+                                            {tc[field] ? (
+                                                <img src={tc[field]} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <ImageIcon size={20} color="#cbd5e1" />
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                placeholder="Image URL"
+                                                value={tc[field] || ''}
+                                                onChange={e => handleUpdateTestCase(idx, field, e.target.value)}
+                                                style={{ fontSize: '0.85rem', flex: 1 }}
+                                            />
+                                            <label style={{ 
+                                                cursor: 'pointer', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center', 
+                                                background: '#f8fafc', 
+                                                border: '1px solid #e2e8f0', 
+                                                borderRadius: '8px', 
+                                                padding: '0 0.85rem',
+                                                color: 'var(--text-muted)',
+                                                transition: 'all 0.2s'
+                                            }} title="Upload from desktop">
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    style={{ display: 'none' }}
+                                                    onChange={e => handleTCImageUpload(e, idx, field)}
+                                                />
+                                                <Upload size={16} />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
+    )
+}
+
+StandardTestCases.propTypes = {
+    formData: PropTypes.shape({
+        language: PropTypes.string,
+        test_cases: PropTypes.arrayOf(
+            PropTypes.shape({
+                id: PropTypes.string,
+                input: PropTypes.string,
+                expected_output: PropTypes.string,
+                is_hidden: PropTypes.bool,
+                input_image_url: PropTypes.string,
+                output_image_url: PropTypes.string
+            })
+        )
+    }).isRequired,
+    setFormData: PropTypes.func.isRequired
+}
+
+function SubQuestionItem({
+    q,
+    qIdx,
+    language,
+    handleRemoveQuestion,
+    handleUpdateQuestionField,
+    handleAddTestCase,
+    handleRemoveTestCase,
+    handleUpdateTestCaseField
+}) {
+    return (
+        <div style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '1rem', marginBottom: '1.5rem', background: 'white' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h5 style={{ fontWeight: 700 }}>Question {qIdx + 1}</h5>
+                <button type="button" onClick={() => handleRemoveQuestion(qIdx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                    <label htmlFor={`sq-title-${qIdx}`} className="form-label">Title</label>
+                    <input id={`sq-title-${qIdx}`} className="form-input" value={q.title} onChange={e => handleUpdateQuestionField(qIdx, 'title', e.target.value)} required />
+                </div>
+                <div>
+                    <label htmlFor={`sq-xp-${qIdx}`} className="form-label">XP Reward</label>
+                    <input id={`sq-xp-${qIdx}`} type="number" className="form-input" value={q.xp_reward} onChange={e => handleUpdateQuestionField(qIdx, 'xp_reward', Number.parseInt(e.target.value) || 0)} required />
+                </div>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <label htmlFor={`sq-ps-${qIdx}`} className="form-label">Problem Statement</label>
+                <textarea id={`sq-ps-${qIdx}`} className="form-input" rows={3} value={q.problem_statement} onChange={e => handleUpdateQuestionField(qIdx, 'problem_statement', e.target.value)} required />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <div className="form-label">Starter Code</div>
+                <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                    <CodeEditor value={q.starter_code} onChange={e => handleUpdateQuestionField(qIdx, 'starter_code', e.target.value)} language={language} placeholder="Initial code..." />
+                </div>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <div className="form-label">Solution Code (Optional)</div>
+                <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                    <CodeEditor value={q.solution_code || ''} onChange={e => handleUpdateQuestionField(qIdx, 'solution_code', e.target.value)} language={language} placeholder="Correct answer..." />
+                </div>
+            </div>
+            <div style={{ marginTop: '1rem', padding: '1rem', background: '#f1f5f9', borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <strong style={{ fontSize: '0.85rem' }}>Test Cases for Q{qIdx + 1}</strong>
+                    <button type="button" onClick={() => handleAddTestCase(qIdx)} className="btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}>+ TC</button>
+                </div>
+                {q.test_cases.map((tc, tcIdx) => (
+                    <div key={tc.id || `tc-${tcIdx}`} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'flex-start' }}>
+                        <textarea className="form-input" placeholder="Input" value={tc.input} onChange={e => handleUpdateTestCaseField(qIdx, tcIdx, 'input', e.target.value)} style={{ flex: 1, height: '40px', minHeight: '40px' }} />
+                        <textarea className="form-input" placeholder="Expected" value={tc.expected_output} onChange={e => handleUpdateTestCaseField(qIdx, tcIdx, 'expected_output', e.target.value)} style={{ flex: 1, height: '40px', minHeight: '40px' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.6rem' }}>Hide</span>
+                            <input type="checkbox" checked={tc.is_hidden} onChange={e => handleUpdateTestCaseField(qIdx, tcIdx, 'is_hidden', e.target.checked)} />
+                        </div>
+                        <button type="button" onClick={() => handleRemoveTestCase(qIdx, tcIdx)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+SubQuestionItem.propTypes = {
+    q: PropTypes.shape({
+        id: PropTypes.string,
+        title: PropTypes.string,
+        problem_statement: PropTypes.string,
+        starter_code: PropTypes.string,
+        solution_code: PropTypes.string,
+        xp_reward: PropTypes.number,
+        test_cases: PropTypes.arrayOf(
+            PropTypes.shape({
+                input: PropTypes.string,
+                expected_output: PropTypes.string,
+                is_hidden: PropTypes.bool
+            })
+        )
+    }).isRequired,
+    qIdx: PropTypes.number.isRequired,
+    language: PropTypes.string.isRequired,
+    handleRemoveQuestion: PropTypes.func.isRequired,
+    handleUpdateQuestionField: PropTypes.func.isRequired,
+    handleAddTestCase: PropTypes.func.isRequired,
+    handleRemoveTestCase: PropTypes.func.isRequired,
+    handleUpdateTestCaseField: PropTypes.func.isRequired
+}
+
+function SubQuestions({ formData, setFormData }) {
+    const handleAddQuestion = () => {
+        setFormData(p => ({
+            ...p,
+            sub_questions: [
+                ...p.sub_questions,
+                {
+                    id: 'q' + (p.sub_questions.length + 1),
+                    title: '',
+                    problem_statement: '',
+                    starter_code: '',
+                    solution_code: '',
+                    xp_reward: 15,
+                    test_cases: [{ input: '', expected_output: '', is_hidden: false }]
+                }
+            ]
+        }))
+    }
+
+    const handleRemoveQuestion = (qIdx) => {
+        setFormData(p => ({
+            ...p,
+            sub_questions: p.sub_questions.filter((_, i) => i !== qIdx)
+        }))
+    }
+
+    const handleUpdateQuestionField = (qIdx, field, value) => {
+        setFormData(p => {
+            const sq = [...p.sub_questions]
+            sq[qIdx] = { ...sq[qIdx], [field]: value }
+            return { ...p, sub_questions: sq }
+        })
+    }
+
+    const handleAddTestCase = (qIdx) => {
+        setFormData(p => {
+            const sq = [...p.sub_questions]
+            sq[qIdx] = {
+                ...sq[qIdx],
+                test_cases: [...sq[qIdx].test_cases, { input: '', expected_output: '', is_hidden: false }]
+            }
+            return { ...p, sub_questions: sq }
+        })
+    }
+
+    const handleRemoveTestCase = (qIdx, tcIdx) => {
+        setFormData(p => {
+            const sq = [...p.sub_questions]
+            sq[qIdx] = {
+                ...sq[qIdx],
+                test_cases: sq[qIdx].test_cases.filter((_, i) => i !== tcIdx)
+            }
+            return { ...p, sub_questions: sq }
+        })
+    }
+
+    const handleUpdateTestCaseField = (qIdx, tcIdx, field, value) => {
+        setFormData(p => {
+            const sq = [...p.sub_questions]
+            const tcArr = [...sq[qIdx].test_cases]
+            tcArr[tcIdx] = { ...tcArr[tcIdx], [field]: value }
+            sq[qIdx] = { ...sq[qIdx], test_cases: tcArr }
+            return { ...p, sub_questions: sq }
+        })
+    }
+
+    return (
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sub-Questions</h4>
+                <button type="button" onClick={handleAddQuestion} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
+                    <Plus size={14} /> Add Question
+                </button>
+            </div>
+            {formData.sub_questions.map((q, qIdx) => (
+                <SubQuestionItem
+                    key={q.id}
+                    q={q}
+                    qIdx={qIdx}
+                    language={formData.language}
+                    handleRemoveQuestion={handleRemoveQuestion}
+                    handleUpdateQuestionField={handleUpdateQuestionField}
+                    handleAddTestCase={handleAddTestCase}
+                    handleRemoveTestCase={handleRemoveTestCase}
+                    handleUpdateTestCaseField={handleUpdateTestCaseField}
+                />
+            ))}
+        </div>
+    )
+}
+
+SubQuestions.propTypes = {
+    formData: PropTypes.shape({
+        language: PropTypes.string,
+        sub_questions: PropTypes.arrayOf(
+            PropTypes.shape({
+                id: PropTypes.string,
+                title: PropTypes.string,
+                problem_statement: PropTypes.string,
+                starter_code: PropTypes.string,
+                solution_code: PropTypes.string,
+                xp_reward: PropTypes.number,
+                test_cases: PropTypes.arrayOf(
+                    PropTypes.shape({
+                        input: PropTypes.string,
+                        expected_output: PropTypes.string,
+                        is_hidden: PropTypes.bool
+                    })
+                )
+            })
+        )
+    }).isRequired,
+    setFormData: PropTypes.func.isRequired
 }
 
 export default function CodingManagement() {
@@ -498,33 +867,6 @@ export default function CodingManagement() {
         setGroups(groupData || [])
         setResourceAccess(accessData || [])
         setLoading(false)
-    }
-
-    async function handleTCImageUpload(e, idx, field) {
-        const file = e.target.files?.[0]
-        if (!file) return
-
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${crypto.randomUUID().split("-")[0]}-${Date.now()}.${fileExt}`
-        const filePath = `challenges/test-cases/${fileName}`
-
-        try {
-            const { error: uploadError } = await supabase.storage
-                .from('study-materials')
-                .upload(filePath, file)
-
-            if (uploadError) throw uploadError
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('study-materials')
-                .getPublicUrl(filePath)
-
-            const newTCData = [...formData.test_cases]
-            newTCData[idx][field] = publicUrl
-            setFormData(p => ({ ...p, test_cases: newTCData }))
-        } catch (err) {
-            alert('Error uploading image: ' + err.message)
-        }
     }
 
     async function toggleResourceLock(groupId, resourceId) {
@@ -892,176 +1234,7 @@ export default function CodingManagement() {
         <HtmlSpecificOptions formData={formData} setFormData={setFormData} wcTab={wcTab} setWcTab={setWcTab} />
     );
 
-    const renderStandardTestCases = () => (
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Test Cases</h4>
-                                        <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: [...p.test_cases, { id: crypto.randomUUID(), input: '', expected_output: '', is_hidden: false }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
-                                            <Plus size={14} /> Add Test Case
-                                        </button>
-                                    </div>
-                                    {formData.test_cases.map((tc, idx) => (
-                                        // eslint-disable-next-line react/no-array-index-key
-                                        <div key={tc.id || `std-tc-${idx}`} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '1rem', marginBottom: '1rem', background: 'white' }}>
-                                            <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.85rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                    <label htmlFor={`tc-input-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>INPUT (STDIN)</label>
-                                                    <textarea id={`tc-input-${idx}`} className="form-input" placeholder="Input" rows={2} value={tc.input} onChange={e => {
-                                                        const newTCData = [...formData.test_cases]; newTCData[idx].input = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                                    }} style={{ fontSize: '0.8rem' }} />
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                    <label htmlFor={`tc-output-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>EXPECTED OUTPUT (STDOUT)</label>
-                                                    <textarea id={`tc-output-${idx}`} className="form-input" placeholder="Expected Output" rows={2} value={tc.expected_output} onChange={e => {
-                                                        const newTCData = [...formData.test_cases]; newTCData[idx].expected_output = e.target.value; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                                    }} style={{ fontSize: '0.8rem' }} />
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', paddingTop: '1.25rem' }}>
-                                                    <label htmlFor={`tc-hidden-${idx}`} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>HIDDEN</label>
-                                                    <input
-                                                        id={`tc-hidden-${idx}`}
-                                                        type="checkbox"
-                                                        checked={tc.is_hidden}
-                                                        onChange={e => {
-                                                            const newTCData = [...formData.test_cases]; newTCData[idx].is_hidden = e.target.checked; setFormData(p => ({ ...p, test_cases: newTCData }))
-                                                        }}
-                                                    />
-                                                </div>
-                                                <button type="button" onClick={() => setFormData(p => ({ ...p, test_cases: p.test_cases.filter((_, i) => i !== idx) }))} style={{ background: 'none', border: 'none', color: '#ef4444', padding: '0.5rem', cursor: 'pointer', alignSelf: 'flex-start', marginTop: '1.25rem' }}>
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
 
-                                            {formData.language === 'html' && (
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', paddingTop: '0.85rem', borderTop: '1px dashed #e2e8f0' }}>
-                                                    {['input_image_url', 'output_image_url'].map(field => (
-                                                        <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' }}>
-                                                                {field === 'input_image_url' ? 'Input Design Mockup' : 'Target Result Image'}
-                                                            </span>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                                <div style={{ 
-                                                                    width: 60, 
-                                                                    height: 60, 
-                                                                    borderRadius: 8, 
-                                                                    background: '#f1f5f9', 
-                                                                    display: 'flex', 
-                                                                    alignItems: 'center', 
-                                                                    justifyContent: 'center',
-                                                                    overflow: 'hidden',
-                                                                    border: '1px solid #e2e8f0',
-                                                                    flexShrink: 0
-                                                                }}>
-                                                                    {tc[field] ? (
-                                                                        <img src={tc[field]} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                                    ) : (
-                                                                        <ImageIcon size={20} color="#cbd5e1" />
-                                                                    )}
-                                                                </div>
-                                                                <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
-                                                                    <input
-                                                                        type="text"
-                                                                        className="form-input"
-                                                                        placeholder="Image URL"
-                                                                        value={tc[field] || ''}
-                                                                        onChange={e => {
-                                                                            const newTCData = [...formData.test_cases]
-                                                                            newTCData[idx][field] = e.target.value
-                                                                            setFormData(p => ({ ...p, test_cases: newTCData }))
-                                                                        }}
-                                                                        style={{ fontSize: '0.85rem', flex: 1 }}
-                                                                    />
-                                                                    <label style={{ 
-                                                                        cursor: 'pointer', 
-                                                                        display: 'flex', 
-                                                                        alignItems: 'center', 
-                                                                        justifyContent: 'center', 
-                                                                        background: '#f8fafc', 
-                                                                        border: '1px solid #e2e8f0', 
-                                                                        borderRadius: '8px', 
-                                                                        padding: '0 0.85rem',
-                                                                        color: 'var(--text-muted)',
-                                                                        transition: 'all 0.2s'
-                                                                    }} title="Upload from desktop">
-                                                                        <input 
-                                                                            type="file" 
-                                                                            accept="image/*" 
-                                                                            style={{ display: 'none' }}
-                                                                            onChange={e => handleTCImageUpload(e, idx, field)}
-                                                                        />
-                                                                        <Upload size={16} />
-                                                                    </label>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-    );
-
-    const renderSubQuestions = () => (
-        <>
-<div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                            <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sub-Questions</h4>
-                                            <button type="button" onClick={() => setFormData(p => ({ ...p, sub_questions: [...p.sub_questions, { id: 'q' + (p.sub_questions.length + 1), title: '', problem_statement: '', starter_code: '', solution_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false }] }] }))} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
-                                                <Plus size={14} /> Add Question
-                                            </button>
-                                        </div>
-                                        {formData.sub_questions.map((q, qIdx) => (
-                                            <div key={qIdx} style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '1rem', marginBottom: '1.5rem', background: 'white' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                                    <h5 style={{ fontWeight: 700 }}>Question {qIdx + 1}</h5>
-                                                    <button type="button" onClick={() => setFormData(p => ({ ...p, sub_questions: p.sub_questions.filter((_, i) => i !== qIdx) }))} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', gap: '1rem', marginBottom: '1rem' }}>
-                                                    <div>
-                                                        <label htmlFor={`sq-title-${qIdx}`} className="form-label">Title</label>\n                                                        <input id={`sq-title-${qIdx}`} className="form-input" value={q.title} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].title = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
-                                                    </div>
-                                                    <div>
-                                                        <label htmlFor={`sq-xp-${qIdx}`} className="form-label">XP Reward</label>\n                                                        <input id={`sq-xp-${qIdx}`} type="number" className="form-input" value={q.xp_reward} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].xp_reward = Number.parseInt(e.target.value) || 0; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
-                                                    </div>
-                                                </div>
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <label htmlFor={`sq-ps-${qIdx}`} className="form-label">Problem Statement</label>\n                                                    <textarea id={`sq-ps-${qIdx}`} className="form-input" rows={3} value={q.problem_statement} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].problem_statement = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} required />
-                                                </div>
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <div className="form-label">Starter Code</div>
-                                                    <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
-                                                        <CodeEditor value={q.starter_code} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].starter_code = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} language={formData.language} placeholder="Initial code..." />
-                                                    </div>
-                                                </div>
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <div className="form-label">Solution Code (Optional)</div>
-                                                    <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
-                                                        <CodeEditor value={q.solution_code || ''} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].solution_code = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} language={formData.language} placeholder="Correct answer..." />
-                                                    </div>
-                                                </div>
-                                                <div style={{ marginTop: '1rem', padding: '1rem', background: '#f1f5f9', borderRadius: 8 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                                        <strong style={{ fontSize: '0.85rem' }}>Test Cases for Q{qIdx + 1}</strong>
-                                                        <button type="button" onClick={() => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases.push({ input: '', expected_output: '', is_hidden: false }); setFormData(p => ({ ...p, sub_questions: sq })) }} className="btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}>+ TC</button>
-                                                    </div>
-                                                    {q.test_cases.map((tc, tcIdx) => (
-                                                        <div key={tcIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'flex-start' }}>
-                                                            <textarea className="form-input" placeholder="Input" value={tc.input} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases[tcIdx].input = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} style={{ flex: 1, height: '40px', minHeight: '40px' }} />
-                                                            <textarea className="form-input" placeholder="Expected" value={tc.expected_output} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases[tcIdx].expected_output = e.target.value; setFormData(p => ({ ...p, sub_questions: sq })) }} style={{ flex: 1, height: '40px', minHeight: '40px' }} />
-                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: '0.6rem' }}>Hide</span>
-                                                                <input type="checkbox" checked={tc.is_hidden} onChange={e => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases[tcIdx].is_hidden = e.target.checked; setFormData(p => ({ ...p, sub_questions: sq })) }} />
-                                                            </div>
-                                                            <button type="button" onClick={() => { const sq = [...formData.sub_questions]; sq[qIdx].test_cases = sq[qIdx].test_cases.filter((_, i) => i !== tcIdx); setFormData(p => ({ ...p, sub_questions: sq })) }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-        </>
-    );
 
     const renderChallengeModal = () => {
         return (
@@ -1319,10 +1492,10 @@ export default function CodingManagement() {
                                     />
                                 </div>
 
-                                {renderStandardTestCases()}
+                                <StandardTestCases formData={formData} setFormData={setFormData} />
                                 </>
                                 ) : (
-                                    renderSubQuestions()
+                                    <SubQuestions formData={formData} setFormData={setFormData} />
                                 )}
 
                                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
@@ -1400,7 +1573,7 @@ export default function CodingManagement() {
                                     <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Review Generated Challenges</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {generatedChallenges.map((c, idx) => (
-                                            <div key={idx} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                            <div key={c.title || `gen-${idx}`} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
                                                 <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                                                     <span>{idx + 1}. {c.title}</span>
                                                     <span style={{ fontSize: '0.7rem', background: '#e2e8f0', padding: '0.2rem 0.5rem', borderRadius: 4 }}>{c.language} • {c.difficulty}</span>
@@ -1591,6 +1764,105 @@ export default function CodingManagement() {
         );
     };
 
+    const renderChallengeList = () => {
+        if (loading) {
+            return (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ color: 'var(--text-muted)' }}>Loading coding challenges...</p>
+                </div>
+            )
+        }
+
+        if (filteredChallenges.length === 0) {
+            return (
+                <div className="glass-card" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
+                    <div style={{ width: 64, height: 64, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                        <Code size={32} color="var(--text-muted)" />
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Challenges Found</h3>
+                    <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 1.5rem' }}>Build interactive coding problems for your students to practice.</p>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                        <button onClick={() => setShowModal(true)} className="btn-secondary">
+                            <Plus size={18} /> Add Your First Challenge
+                        </button>
+                        <button onClick={() => { setAiPrompt(''); setGeneratedChallenges([]); setShowAIModal(true) }} className="btn-secondary" style={{ background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}>
+                            <Sparkles size={18} /> Generate with AI
+                        </button>
+                    </div>
+                </div>
+            )
+        }
+
+        return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+                {filteredChallenges.map(c => (
+                    <div key={c.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${getDifficultyColor(c.difficulty)}` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
+                            <span className="badge" style={{ background: '#f1f5f9', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+                                {LANGUAGES.find(l => l.id === c.language)?.icon} {c.language.toUpperCase()}
+                            </span>
+                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                <button
+                                    onClick={() => setLockingResource(c)}
+                                    className="btn-secondary"
+                                    title="Access Control"
+                                    style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                >
+                                    <Clock size={14} /> Batch
+                                </button>
+                                <button onClick={() => openEdit(c)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>
+                                    <Edit2 size={16} />
+                                </button>
+                                <button onClick={() => handleDelete(c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        </div>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {resourceAccess.some(a => a.resource_id === c.id && a.is_locked) && <Lock size={14} color="#ef4444" style={{ flexShrink: 0 }} />}
+                            {c.title}
+                        </h3>
+                        {resourceAccess.some(a => a.resource_id === c.id && a.is_locked) && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.85rem' }}>
+                                {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).map(a => {
+                                    const g = groups.find(gr => gr.id === a.group_id)
+                                    return g ? <span key={g.id} style={{ fontSize: '0.85rem', padding: '0.1rem 0.4rem', background: '#fee2e2', color: '#991b1b', borderRadius: 4, fontWeight: 600 }}>Locked: {g.name}</span> : null
+                                })}
+                            </div>
+                        )}
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <BookOpen size={12} /> {c.courses?.title} • {c.difficulty.toUpperCase()}
+                        </div>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, height: '2.5rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>
+                            {c.description || 'No description provided.'}
+                        </p>
+                        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.test_cases?.length || 0} Test Cases</span>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => loadSubmissions(c)}
+                                    className="btn-primary"
+                                    style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white' }}
+                                >
+                                    <Eye size={14} /> Submissions
+                                </button>
+                                <button
+                                    onClick={() => window.open(`/student/coding/${c.id}?admin=true`, '_blank')}
+                                    className="btn-secondary"
+                                    style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                >
+                                    Test Question
+                                </button>
+                                <button onClick={() => openEdit(c)} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
     return (
         <div className="animate-fade-in">
             {/* Header Area */}
@@ -1649,95 +1921,7 @@ export default function CodingManagement() {
             </div>
 
             {/* List */}
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                    <p style={{ color: 'var(--text-muted)' }}>Loading coding challenges...</p>
-                </div>
-            ) : filteredChallenges.length === 0 ? (
-                <div className="glass-card" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
-                    <div style={{ width: 64, height: 64, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                        <Code size={32} color="var(--text-muted)" />
-                    </div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Challenges Found</h3>
-                    <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 1.5rem' }}>Build interactive coding problems for your students to practice.</p>
-                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                        <button onClick={() => setShowModal(true)} className="btn-secondary">
-                            <Plus size={18} /> Add Your First Challenge
-                        </button>
-                        <button onClick={() => { setAiPrompt(''); setGeneratedChallenges([]); setShowAIModal(true) }} className="btn-secondary" style={{ background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}>
-                            <Sparkles size={18} /> Generate with AI
-                        </button>
-                    </div>
-                </div>
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
-                    {filteredChallenges.map(c => (
-                        <div key={c.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${getDifficultyColor(c.difficulty)}` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
-                                <span className="badge" style={{ background: '#f1f5f9', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
-                                    {LANGUAGES.find(l => l.id === c.language)?.icon} {c.language.toUpperCase()}
-                                </span>
-                                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                    <button
-                                        onClick={() => setLockingResource(c)}
-                                        className="btn-secondary"
-                                        title="Access Control"
-                                        style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                    >
-                                        <Clock size={14} /> Batch
-                                    </button>
-                                    <button onClick={() => openEdit(c)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button onClick={() => handleDelete(c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                {resourceAccess.some(a => a.resource_id === c.id && a.is_locked) && <Lock size={14} color="#ef4444" style={{ flexShrink: 0 }} />}
-                                {c.title}
-                            </h3>
-                            {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.85rem' }}>
-                                    {resourceAccess.filter(a => a.resource_id === c.id && a.is_locked).map(a => {
-                                        const g = groups.find(gr => gr.id === a.group_id)
-                                        return g ? <span key={g.id} style={{ fontSize: '0.85rem', padding: '0.1rem 0.4rem', background: '#fee2e2', color: '#991b1b', borderRadius: 4, fontWeight: 600 }}>Locked: {g.name}</span> : null
-                                    })}
-                                </div>
-                            )}
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <BookOpen size={12} /> {c.courses?.title} • {c.difficulty.toUpperCase()}
-                            </div>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, height: '2.5rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>
-                                {c.description || 'No description provided.'}
-                            </p>
-                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.test_cases?.length || 0} Test Cases</span>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <button
-                                        onClick={() => loadSubmissions(c)}
-                                        className="btn-primary"
-                                        style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white' }}
-                                    >
-                                        <Eye size={14} /> Submissions
-                                    </button>
-                                    <button
-                                        onClick={() => window.open(`/student/coding/${c.id}?admin=true`, '_blank')}
-                                        className="btn-secondary"
-                                        style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                    >
-                                        Test Question
-                                    </button>
-                                    <button onClick={() => openEdit(c)} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>View Details</button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )
-            }
+            {renderChallengeList()}
             </>
             ) : (
                 <OrganizerCodingDiscussions />
