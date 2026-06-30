@@ -28,17 +28,17 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
 
 function useDeviceOrientation() {
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
-    const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight)
+    const [isMobile, setIsMobile] = useState(globalThis.innerWidth <= 768)
+    const [isLandscape, setIsLandscape] = useState(globalThis.innerWidth > globalThis.innerHeight)
 
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth <= 768)
-            setIsLandscape(window.innerWidth > window.innerHeight)
+            setIsMobile(globalThis.innerWidth <= 768)
+            setIsLandscape(globalThis.innerWidth > globalThis.innerHeight)
         }
-        window.addEventListener('resize', handleResize)
+        globalThis.addEventListener('resize', handleResize)
         handleResize()
-        return () => window.removeEventListener('resize', handleResize)
+        return () => globalThis.removeEventListener('resize', handleResize)
     }, [])
 
     return { isMobile, isLandscape }
@@ -88,8 +88,7 @@ CustomAudioTrack.propTypes = {
 
 // ─── Hook: get tracks for a single participant via direct events (no LiveKit hooks) ──
 function useManualParticipantTracks(participant) {
-    // eslint-disable-next-line no-unused-vars
-    const [tick, setTick] = useState(0)
+    const [_tick, setTick] = useState(0)
     useEffect(() => {
         if (!participant) return
         const bump = () => setTick(n => n + 1)
@@ -297,7 +296,7 @@ function ParticipantOverlayInfo({
     name, isLocal, isMuted, isPinned, onPin, participantIdentity, 
     isSpeaking, hasScreenShare, isSpotlight, handRaised 
 }) {
-    let pinButtonRightOffset = 8;
+    let pinButtonRightOffset;
     if (hasScreenShare && isSpotlight) {
         pinButtonRightOffset = isSpeaking ? 160 : 144;
     } else {
@@ -508,7 +507,7 @@ function getPresenterName(screenSharer) {
 }
 
 function getVideoGridLayoutStyle(hasScreenShare, isMobilePortrait, cols, count, layoutTransition) {
-    let flexDirection = undefined;
+    let flexDirection;
     if (hasScreenShare) {
         flexDirection = isMobilePortrait ? 'column' : 'row';
     }
@@ -607,6 +606,16 @@ function PinnedParticipantView({ pinnedParticipant, localParticipant, handlePin 
     );
 }
 
+PinnedParticipantView.propTypes = {
+    pinnedParticipant: PropTypes.shape({
+        identity: PropTypes.string.isRequired
+    }).isRequired,
+    localParticipant: PropTypes.shape({
+        identity: PropTypes.string
+    }),
+    handlePin: PropTypes.func.isRequired
+};
+
 function ScreenShareSpotlight({ screenSharer, localParticipant, handlePin, presenterName }) {
     if (!screenSharer) return null;
     return (
@@ -641,6 +650,17 @@ function ScreenShareSpotlight({ screenSharer, localParticipant, handlePin, prese
     );
 }
 
+ScreenShareSpotlight.propTypes = {
+    screenSharer: PropTypes.shape({
+        identity: PropTypes.string.isRequired
+    }),
+    localParticipant: PropTypes.shape({
+        identity: PropTypes.string
+    }),
+    handlePin: PropTypes.func.isRequired,
+    presenterName: PropTypes.string.isRequired
+};
+
 // ─── Video Grid ──────────────────────────────────────────────────────────────
 // CRITICAL: Single return path. All participants rendered in a flat list with
 // stable keys. Layout changes are CSS-only (gridColumn/order). No component
@@ -649,7 +669,7 @@ function VideoGrid() {
     const remoteParticipants = useRemoteParticipants();
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
-    const [, setTick] = useState(0);
+    const [_tick, setTick] = useState(0);
     const [pinnedIdentity, setPinnedIdentity] = useState(null);
 
     // Listen for screen-share track events at the Room level to detect layout changes
@@ -1285,7 +1305,7 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
                     <MoreVertical size={14} color="white" />
                 </button>
                 {showControls && (
-                    <div onClick={(e) => e.stopPropagation()} style={{
+                    <div role="button" tabIndex={0} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} style={{
                         position: 'absolute', bottom: 40, left: 8, right: 8, zIndex: 20,
                         background: 'rgba(15,23,42,0.95)', borderRadius: 12, padding: 8,
                         border: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 6, justifyContent: 'center',
@@ -1327,20 +1347,35 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
     )
 }
 
-// ─── Control Bar ─────────────────────────────────────────────────────────────
-function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, screenShareLocked, handsLocked, onSendReaction, onToggleHand }) {
-    const { isRecording, isRecordingPaused, isUploading, gToken, loginToDrive, startRecording, pauseRecording, resumeRecording, stopAndUploadRecording } = useMeeting()
+ParticipantControlOverlay.propTypes = {
+    participant: PropTypes.shape({
+        identity: PropTypes.string.isRequired,
+        isLocal: PropTypes.bool
+    }).isRequired,
+    isOrganizer: PropTypes.bool.isRequired,
+    isMobile: PropTypes.bool.isRequired,
+    room: PropTypes.shape({
+        localParticipant: PropTypes.shape({
+            publishData: PropTypes.func.isRequired
+        }).isRequired
+    }).isRequired
+};
 
-    const { isMobile } = useDeviceOrientation()
-    const localParticipant = useLocalParticipant()
-    const [isMicOn, setIsMicOn] = useState(true)
-    const [isCamOn, setIsCamOn] = useState(true)
-    const [isScreenSharing, setIsScreenSharing] = useState(false)
-    const [showReactionPicker, setShowReactionPicker] = useState(false)
-    const [forceMutedUntil] = useState(0)
+// ─── Recording Controls (Organizer Only) ─────────────────────────────────────
+function RecordingControls({ isOrganizer, isMobile }) {
+    const { 
+        isRecording, 
+        isRecordingPaused, 
+        isUploading, 
+        gToken, 
+        loginToDrive, 
+        startRecording, 
+        pauseRecording, 
+        resumeRecording, 
+        stopAndUploadRecording 
+    } = useMeeting()
+
     const [recordingDuration, setRecordingDuration] = useState(0)
-
-    const lp = localParticipant.localParticipant
 
     useEffect(() => {
         let interval;
@@ -1361,6 +1396,239 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
     }
 
+    const getRecordingUI = () => {
+        if (!gToken) {
+            return (
+                <button onClick={loginToDrive} style={{
+                    background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)',
+                    padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                }}>
+                    🔴 Drive Login
+                </button>
+            )
+        }
+
+        if (!isRecording && !isUploading) {
+            return (
+                <>
+                    <div style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+                        ☁️ Drive Connected
+                    </div>
+                    <button onClick={startRecording} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
+                        Start Record
+                    </button>
+                </>
+            )
+        }
+
+        if (isRecording) {
+            return (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {isRecordingPaused ? (
+                        <button onClick={resumeRecording} style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center' }}>
+                            ▶ Resume
+                        </button>
+                    ) : (
+                        <button onClick={pauseRecording} style={{ background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center' }}>
+                            ⏸ Pause
+                        </button>
+                    )}
+                    <button onClick={stopAndUploadRecording} style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center', animation: isRecordingPaused ? 'none' : 'pulse 2s infinite' }}>
+                        ⏹ REC {formatDuration(recordingDuration)}
+                    </button>
+                </div>
+            )
+        }
+
+        return (
+            <div style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700 }}>
+                ⏳ Uploading...
+            </div>
+        )
+    }
+
+    if (!isOrganizer || isMobile) return null
+
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: 'auto' }}>
+            {getRecordingUI()}
+        </div>
+    )
+}
+
+RecordingControls.propTypes = {
+    isOrganizer: PropTypes.bool.isRequired,
+    isMobile: PropTypes.bool.isRequired
+}
+
+// ─── Mic Button ─────────────────────────────────────────────────────────────
+function MicButton({ isOrganizer, micLocked, isMicOn, toggleMic, btnStyle }) {
+    const isMicBlocked = !isOrganizer && micLocked && !isMicOn
+    
+    let icon = <MicOff size={20} />
+    if (isMicBlocked) {
+        icon = <Lock size={20} />
+    } else if (isMicOn) {
+        icon = <Mic size={20} />
+    }
+
+    return (
+        <button onClick={toggleMic} style={{
+            ...btnStyle(isMicOn),
+            ...(isMicBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+        }} title={isMicBlocked ? 'Mic locked by instructor' : isMicOn ? 'Mute' : 'Unmute'}>
+            {icon}
+        </button>
+    )
+}
+
+MicButton.propTypes = {
+    isOrganizer: PropTypes.bool.isRequired,
+    micLocked: PropTypes.bool.isRequired,
+    isMicOn: PropTypes.bool.isRequired,
+    toggleMic: PropTypes.func.isRequired,
+    btnStyle: PropTypes.func.isRequired
+}
+
+// ─── Camera Button ──────────────────────────────────────────────────────────
+function CameraButton({ isOrganizer, videoLocked, isCamOn, toggleCam, btnStyle }) {
+    const isCamBlocked = !isOrganizer && videoLocked && !isCamOn
+    
+    let icon = <VideoOff size={20} />
+    if (isCamBlocked) {
+        icon = <Lock size={20} />
+    } else if (isCamOn) {
+        icon = <Video size={20} />
+    }
+
+    return (
+        <button onClick={toggleCam} style={{
+            ...btnStyle(isCamOn),
+            ...(isCamBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+        }} title={isCamBlocked ? 'Video locked by instructor' : isCamOn ? 'Camera Off' : 'Camera On'}>
+            {icon}
+        </button>
+    )
+}
+
+CameraButton.propTypes = {
+    isOrganizer: PropTypes.bool.isRequired,
+    videoLocked: PropTypes.bool.isRequired,
+    isCamOn: PropTypes.bool.isRequired,
+    toggleCam: PropTypes.func.isRequired,
+    btnStyle: PropTypes.func.isRequired
+}
+
+// ─── Screen Share Button ────────────────────────────────────────────────────
+function ScreenShareButton({ isOrganizer, screenShareLocked, isScreenSharing, toggleScreen, btnStyle }) {
+    const hasGetDisplayMedia = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia
+    if (!hasGetDisplayMedia) return null
+
+    const isShareBlocked = !isOrganizer && screenShareLocked && !isScreenSharing
+    return (
+        <button onClick={toggleScreen} style={{
+            ...btnStyle(true),
+            background: isScreenSharing ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
+            color: isScreenSharing ? '#818cf8' : 'white',
+            ...(isShareBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+        }} title={isShareBlocked ? 'Screen share locked by instructor' : 'Share Screen'}>
+            {isShareBlocked ? <Lock size={20} /> : <MonitorUp size={20} />}
+        </button>
+    )
+}
+
+ScreenShareButton.propTypes = {
+    isOrganizer: PropTypes.bool.isRequired,
+    screenShareLocked: PropTypes.bool.isRequired,
+    isScreenSharing: PropTypes.bool.isRequired,
+    toggleScreen: PropTypes.func.isRequired,
+    btnStyle: PropTypes.func.isRequired
+}
+
+// ─── Reactions Button ───────────────────────────────────────────────────────
+function ReactionsButton({ reactionsDisabled, showReactionPicker, setShowReactionPicker, onSendReaction, btnStyle }) {
+    return (
+        <div style={{ position: 'relative' }}>
+            <button onClick={() => !reactionsDisabled && setShowReactionPicker(!showReactionPicker)}
+                style={{
+                    ...btnStyle(true),
+                    background: showReactionPicker ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
+                    ...(reactionsDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+                }} title={reactionsDisabled ? 'Reactions disabled by instructor' : 'Send Reaction'}>
+                <Smile size={20} />
+            </button>
+            {showReactionPicker && !reactionsDisabled && (
+                <ReactionPicker onSelect={onSendReaction} onClose={() => setShowReactionPicker(false)} />
+            )}
+        </div>
+    )
+}
+
+ReactionsButton.propTypes = {
+    reactionsDisabled: PropTypes.bool.isRequired,
+    showReactionPicker: PropTypes.bool.isRequired,
+    setShowReactionPicker: PropTypes.func.isRequired,
+    onSendReaction: PropTypes.func.isRequired,
+    btnStyle: PropTypes.func.isRequired
+}
+
+// ─── Hand Raise Button ──────────────────────────────────────────────────────
+function HandRaiseButton({ isOrganizer, handsLocked, handRaised, onToggleHand, raisedHandsCount, btnStyle }) {
+    const isHandBlocked = !isOrganizer && handsLocked && !handRaised
+    
+    let title = 'Raise Hand'
+    if (isHandBlocked) {
+        title = 'Hands locked by instructor'
+    } else if (handRaised) {
+        title = 'Lower Hand'
+    }
+
+    return (
+        <button onClick={() => {
+            if (!isHandBlocked) {
+                onToggleHand();
+            }
+        }} style={{
+            ...btnStyle(true),
+            background: handRaised ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)',
+            color: handRaised ? '#f59e0b' : 'white',
+            position: 'relative',
+            ...(isHandBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+        }} title={title}>
+            <Hand size={20} />
+            {raisedHandsCount > 0 && (
+                <span style={{
+                    position: 'absolute', top: -4, right: -4,
+                    background: '#f59e0b', color: '#000', fontSize: '0.6rem', fontWeight: 800,
+                    width: 18, height: 18, borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>{raisedHandsCount}</span>
+            )}
+        </button>
+    )
+}
+
+HandRaiseButton.propTypes = {
+    isOrganizer: PropTypes.bool.isRequired,
+    handsLocked: PropTypes.bool.isRequired,
+    handRaised: PropTypes.bool.isRequired,
+    onToggleHand: PropTypes.func.isRequired,
+    raisedHandsCount: PropTypes.number.isRequired,
+    btnStyle: PropTypes.func.isRequired
+}
+
+// ─── Control Bar ─────────────────────────────────────────────────────────────
+function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, screenShareLocked, handsLocked, onSendReaction, onToggleHand }) {
+    const { isMobile } = useDeviceOrientation()
+    const localParticipant = useLocalParticipant()
+    const [isMicOn, setIsMicOn] = useState(true)
+    const [isCamOn, setIsCamOn] = useState(true)
+    const [isScreenSharing, setIsScreenSharing] = useState(false)
+    const [showReactionPicker, setShowReactionPicker] = useState(false)
+    const [forceMutedUntil] = useState(0)
+
+    const lp = localParticipant.localParticipant
+
     // Sync state with actual track state
     useEffect(() => {
         if (lp) {
@@ -1374,17 +1642,15 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
 
     const toggleMic = async () => {
         if (!lp) return
-        // If mic is locked by instructor and user is not organizer, block unmute
-        if (!isOrganizer && micLocked && !isMicOn) return
-        // If force-muted recently, block unmute for 5 seconds
-        if (!isOrganizer && !isMicOn && Date.now() < forceMutedUntil) return
+        const cannotUnmute = !isOrganizer && micLocked && !isMicOn
+        const forceMuted = !isOrganizer && !isMicOn && Date.now() < forceMutedUntil
+        if (cannotUnmute || forceMuted) return
         await lp.setMicrophoneEnabled(!isMicOn)
         setIsMicOn(!isMicOn)
     }
 
     const toggleCam = async () => {
         if (!lp) return
-        // If video is locked by instructor and user is not organizer, block enable
         if (!isOrganizer && videoLocked && !isCamOn) return
         await lp.setCameraEnabled(!isCamOn)
         setIsCamOn(!isCamOn)
@@ -1392,7 +1658,6 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
 
     const toggleScreen = async () => {
         if (!lp) return
-        // If screen share is locked by instructor and user is not organizer, block
         if (!isOrganizer && screenShareLocked && !isScreenSharing) return
         try {
             await lp.setScreenShareEnabled(!isScreenSharing)
@@ -1402,17 +1667,35 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
         }
     }
 
-    const btnStyle = (active, danger) => ({
-        width: 48, height: 48, borderRadius: '50%',
-        border: 'none', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'all 0.2s ease',
-        background: danger ? '#ef4444' : active ? 'rgba(255,255,255,0.1)' : 'rgba(239,68,68,0.15)',
-        color: danger ? 'white' : active ? 'white' : '#ef4444',
-        boxShadow: danger ? '0 4px 15px rgba(239,68,68,0.4)' : 'none',
-    })
+    const btnStyle = (active, danger) => {
+        let background = 'rgba(239,68,68,0.15)';
+        let color = '#ef4444';
+        let boxShadow = 'none';
 
-    const isMicBlocked = !isOrganizer && micLocked && !isMicOn
+        if (danger) {
+            background = '#ef4444';
+            color = 'white';
+            boxShadow = '0 4px 15px rgba(239,68,68,0.4)';
+        } else if (active) {
+            background = 'rgba(255,255,255,0.1)';
+            color = 'white';
+        }
+
+        return {
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s ease',
+            background,
+            color,
+            boxShadow
+        };
+    }
 
     return (
         <div style={{
@@ -1422,91 +1705,43 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
             borderTop: '1px solid rgba(255,255,255,0.05)',
         }}>
             {/* Recording Controls (Organizer Only) */}
-            {isOrganizer && !isMobile && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: 'auto' }}>
-                    {!gToken ? (
-                        <button onClick={loginToDrive} style={{
-                            background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)',
-                            padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            🔴 Drive Login
-                        </button>
-                    ) : (
-                        !isRecording && !isUploading ? (
-                            <>
-                                <div style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
-                                    ☁️ Drive Connected
-                                </div>
-                                <button onClick={startRecording} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
-                                    Start Record
-                                </button>
-                            </>
-                        ) : isRecording ? (
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                {isRecordingPaused ? (
-                                    <button onClick={resumeRecording} style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center' }}>
-                                        ▶ Resume
-                                    </button>
-                                ) : (
-                                    <button onClick={pauseRecording} style={{ background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center' }}>
-                                        ⏸ Pause
-                                    </button>
-                                )}
-                                <button onClick={stopAndUploadRecording} style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center', animation: isRecordingPaused ? 'none' : 'pulse 2s infinite' }}>
-                                    ⏹ REC {formatDuration(recordingDuration)}
-                                </button>
-                            </div>
-                        ) : (
-                            <div style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.5)', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700 }}>
-                                ⏳ Uploading...
-                            </div>
-                        )
-                    )}
-                </div>
-            )}
+            <RecordingControls isOrganizer={isOrganizer} isMobile={isMobile} />
 
             {/* Mic */}
-            <button onClick={toggleMic} style={{
-                ...btnStyle(isMicOn),
-                ...(isMicBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
-            }} title={isMicBlocked ? 'Mic locked by instructor' : isMicOn ? 'Mute' : 'Unmute'}>
-                {isMicBlocked ? <Lock size={20} /> : isMicOn ? <Mic size={20} /> : <MicOff size={20} />}
-            </button>
+            <MicButton 
+                isOrganizer={isOrganizer} 
+                micLocked={micLocked} 
+                isMicOn={isMicOn} 
+                toggleMic={toggleMic} 
+                btnStyle={btnStyle} 
+            />
 
             {/* Camera */}
-            <button onClick={toggleCam} style={{
-                ...btnStyle(isCamOn),
-                ...(!isOrganizer && videoLocked && !isCamOn ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
-            }} title={!isOrganizer && videoLocked && !isCamOn ? 'Video locked by instructor' : isCamOn ? 'Camera Off' : 'Camera On'}>
-                {!isOrganizer && videoLocked && !isCamOn ? <Lock size={20} /> : isCamOn ? <Video size={20} /> : <VideoOff size={20} />}
-            </button>
+            <CameraButton 
+                isOrganizer={isOrganizer} 
+                videoLocked={videoLocked} 
+                isCamOn={isCamOn} 
+                toggleCam={toggleCam} 
+                btnStyle={btnStyle} 
+            />
 
             {/* Screen Share (if supported by browser) */}
-            {typeof navigator !== 'undefined' && navigator.mediaDevices?.getDisplayMedia && (
-                <button onClick={toggleScreen} style={{
-                    ...btnStyle(true),
-                    background: isScreenSharing ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
-                    color: isScreenSharing ? '#818cf8' : 'white',
-                    ...(!isOrganizer && screenShareLocked && !isScreenSharing ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
-                }} title={!isOrganizer && screenShareLocked && !isScreenSharing ? 'Screen share locked by instructor' : 'Share Screen'}>
-                    {!isOrganizer && screenShareLocked && !isScreenSharing ? <Lock size={20} /> : <MonitorUp size={20} />}
-                </button>
-            )}
+            <ScreenShareButton 
+                isOrganizer={isOrganizer} 
+                screenShareLocked={screenShareLocked} 
+                isScreenSharing={isScreenSharing} 
+                toggleScreen={toggleScreen} 
+                btnStyle={btnStyle} 
+            />
 
             {/* Reactions */}
-            <div style={{ position: 'relative' }}>
-                <button onClick={() => !reactionsDisabled && setShowReactionPicker(!showReactionPicker)}
-                    style={{
-                        ...btnStyle(true),
-                        background: showReactionPicker ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
-                        ...(reactionsDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
-                    }} title={reactionsDisabled ? 'Reactions disabled by instructor' : 'Send Reaction'}>
-                    <Smile size={20} />
-                </button>
-                {showReactionPicker && !reactionsDisabled && (
-                    <ReactionPicker onSelect={onSendReaction} onClose={() => setShowReactionPicker(false)} />
-                )}
-            </div>
+            <ReactionsButton 
+                reactionsDisabled={reactionsDisabled} 
+                showReactionPicker={showReactionPicker} 
+                setShowReactionPicker={setShowReactionPicker} 
+                onSendReaction={onSendReaction} 
+                btnStyle={btnStyle} 
+            />
 
             {/* Minimize */}
             <button onClick={onMinimize} style={btnStyle(true)} title="Minimize Meeting">
@@ -1514,23 +1749,14 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
             </button>
 
             {/* Hand Raise */}
-            <button onClick={() => { if (!isOrganizer && handsLocked && !handRaised) return; onToggleHand() }} style={{
-                ...btnStyle(true),
-                background: handRaised ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)',
-                color: handRaised ? '#f59e0b' : 'white',
-                position: 'relative',
-                ...(!isOrganizer && handsLocked && !handRaised ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
-            }} title={!isOrganizer && handsLocked && !handRaised ? 'Hands locked by instructor' : handRaised ? 'Lower Hand' : 'Raise Hand'}>
-                <Hand size={20} />
-                {raisedHandsCount > 0 && (
-                    <span style={{
-                        position: 'absolute', top: -4, right: -4,
-                        background: '#f59e0b', color: '#000', fontSize: '0.6rem', fontWeight: 800,
-                        width: 18, height: 18, borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>{raisedHandsCount}</span>
-                )}
-            </button>
+            <HandRaiseButton 
+                isOrganizer={isOrganizer} 
+                handsLocked={handsLocked} 
+                handRaised={handRaised} 
+                onToggleHand={onToggleHand} 
+                raisedHandsCount={raisedHandsCount} 
+                btnStyle={btnStyle} 
+            />
 
             {/* Leave */}
             <button onClick={onLeave} style={btnStyle(false, true)} title="Leave Meeting">
@@ -1539,6 +1765,21 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
         </div>
     )
 }
+
+MeetControlBar.propTypes = {
+    onLeave: PropTypes.func.isRequired,
+    onMinimize: PropTypes.func.isRequired,
+    isOrganizer: PropTypes.bool.isRequired,
+    handRaised: PropTypes.bool.isRequired,
+    raisedHandsCount: PropTypes.number.isRequired,
+    reactionsDisabled: PropTypes.bool.isRequired,
+    micLocked: PropTypes.bool.isRequired,
+    videoLocked: PropTypes.bool.isRequired,
+    screenShareLocked: PropTypes.bool.isRequired,
+    handsLocked: PropTypes.bool.isRequired,
+    onSendReaction: PropTypes.func.isRequired,
+    onToggleHand: PropTypes.func.isRequired
+};
 
 // ─── Connection Status Banner ─────────────────────────────────────────────────
 function ConnectionBanner() {
@@ -1568,7 +1809,7 @@ function ConnectionBanner() {
 // ─── Notification Sound (Web Audio API) ──────────────────────────────────────
 const playNotificationSound = () => {
     try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext
+        const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext
         if (!AudioContext) return
         const ctx = new AudioContext()
         
@@ -1589,7 +1830,7 @@ const playNotificationSound = () => {
         }
         
         playTone(659.25, ctx.currentTime, 0.4) // E5
-        playTone(880.00, ctx.currentTime + 0.1, 0.6) // A5
+        playTone(880, ctx.currentTime + 0.1, 0.6) // A5
     } catch (e) {
         console.error('Failed to play notification sound', e)
     }
@@ -1656,139 +1897,33 @@ WaitingRoomTab.propTypes = {
     })
 };
 
-function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, onMinimize, refreshStats, toast, waitingStudents, setWaitingStudents }) {
-    const { isMobile, isLandscape } = useDeviceOrientation()
-    const room = useRoomContext()
-    const remoteParticipants = useRemoteParticipants()
-    const { localParticipant } = useLocalParticipant()
-    const joinTimeRef = useRef(null)
-    const attendanceMarkedRef = useRef(false)
-    const containerRef = useRef(null)
-    useEffect(() => {
-        if (joinTimeRef.current === null) joinTimeRef.current = Date.now()
-    }, [])
-    const [isFullScreen, setIsFullScreen] = useState(false)
-
-    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
-    const [unreadChatCount, setUnreadChatCount] = useState(0)
-
-    useEffect(() => {
-        if (sidebarTab === 'chat' && sidebarOpen) {
-            setTimeout(() => setUnreadChatCount(0), 0)
-        }
-    }, [sidebarTab, sidebarOpen])
-
-
-    // ── New Feature State ──
-    const [reactions, setReactions] = useState([])
-    const [handRaised, setHandRaised] = useState(false)
-    const [micLocked, setMicLocked] = useState(false)
-    const [videoLocked, setVideoLocked] = useState(false)
-    const [screenShareLocked, setScreenShareLocked] = useState(false)
-    const [handsLocked, setHandsLocked] = useState(false)
-    const [reactionsDisabled, setReactionsDisabled] = useState(false)
-    const [chatLocked, setChatLocked] = useState(false)
-    const [announcementText, setAnnouncementText] = useState('')
-
-    // System Messages for Join/Leave (Organizer only)
-    useEffect(() => {
-        if (!room || !isOrganizer) return;
-        const timers = {};
-        const joinedSet = new Set();
-        
-        const onParticipantConnected = (p) => {
-            timers[p.identity] = setTimeout(async () => {
-                joinedSet.add(p.identity);
-                try {
-                    await supabase.from('live_chat_messages').insert({
-                        video_id: videoData.id,
-                        user_id: profile.id,
-                        message: `📢 ${p.name || 'A student'} joined the class.`,
-                        message_type: 'system'
-                    });
-                } catch (e) { console.error("Caught exception:", e); }
-            }, 10000);
-        };
-        
-        const onParticipantDisconnected = async (p) => {
-            if (timers[p.identity]) {
-                clearTimeout(timers[p.identity]);
-                delete timers[p.identity];
-            }
-            if (joinedSet.has(p.identity)) {
-                joinedSet.delete(p.identity);
-                try {
-                    await supabase.from('live_chat_messages').insert({
-                        video_id: videoData.id,
-                        user_id: profile.id,
-                        message: `📢 ${p.name || 'A student'} left the class.`,
-                        message_type: 'system'
-                    });
-                } catch (e) { console.error("Caught exception:", e); }
-            }
-        };
-        
-        room.on(RoomEvent.ParticipantConnected, onParticipantConnected);
-        room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
-        
-        return () => {
-            room.off(RoomEvent.ParticipantConnected, onParticipantConnected);
-            room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
-            Object.values(timers).forEach(clearTimeout);
-        };
-    }, [room, isOrganizer, videoData?.id, profile?.id]);
-    const [raisedHands, setRaisedHands] = useState({}) // { identity: { name, raisedAt } } — data channel fallback
-    const lastReactionTime = useRef(0)
-    const reactionIdCounter = useRef(0)
-
-    // All participants list for host controls
-    const allParticipants = useMemo(() => {
-        if (!localParticipant) return remoteParticipants
-        return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)]
-    }, [localParticipant, remoteParticipants])
-
-    // Count raised hands (merge metadata + data channel sources)
-    const raisedHandsCount = useMemo(() => {
-        const fromMetadata = new Set()
-        allParticipants.forEach(p => {
-            try { if (JSON.parse(p.metadata || '{}').handRaised) fromMetadata.add(p.identity) } catch (e) { console.error("Caught exception:", e); }
-        })
-        const fromDataChannel = new Set(Object.keys(raisedHands))
-        return new Set([...fromMetadata, ...fromDataChannel]).size
-    }, [allParticipants, raisedHands])
-
-    useEffect(() => {
-        const handleFullscreenChange = () => setIsFullScreen(!!document.fullscreenElement)
-        document.addEventListener('fullscreenchange', handleFullscreenChange)
-        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }, [])
-
-    const toggleFullScreen = () => {
-        if (!document.fullscreenElement && containerRef.current) {
-            containerRef.current.requestFullscreen().catch(err => console.log(err))
-        } else if (document.fullscreenElement) {
-            document.exitFullscreen()
-        }
-    }
-
-    // ── Data Channel Listener (reactions + host commands) ──
+function useRoomDataChannel(room, isOrganizer, toast, onLeave, {
+    setReactions,
+    setRaisedHands,
+    setMicLocked,
+    setVideoLocked,
+    setScreenShareLocked,
+    setChatLocked,
+    setHandsLocked,
+    setHandRaised,
+    setReactionsDisabled
+}) {
     useEffect(() => {
         if (!room) return
         const decoder = new TextDecoder()
+        let reactionIdCounter = 0
 
         const handleDataReceived = (payload) => {
             try {
                 const msg = JSON.parse(decoder.decode(payload))
 
                 if (msg.type === 'reaction') {
-                    const id = `reaction-${Date.now()}-${reactionIdCounter.current++}`
-                    const x = 10 + (globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80 // random horizontal position
+                    const id = `reaction-${Date.now()}-${reactionIdCounter++}`
+                    const x = 10 + (globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80
                     setReactions(prev => [...prev, { id, emoji: msg.emoji, senderName: msg.senderName, x }])
-                    // Auto-remove after animation
                     setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
                 }
 
-                // Hand raise via data channel (works even without metadata permission)
                 if (msg.type === 'hand_raise') {
                     if (msg.raised) {
                         setRaisedHands(prev => ({ ...prev, [msg.identity]: { name: msg.name, raisedAt: msg.timestamp } }))
@@ -1868,7 +2003,6 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                         case 'hands_lock':
                             setHandsLocked(msg.enabled)
                             if (msg.enabled) {
-                                // Lower hand if currently raised
                                 try {
                                     const meta = JSON.parse(lp.metadata || '{}')
                                     if (meta.handRaised) {
@@ -1917,24 +2051,509 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                     }
                 }
             } catch (error) {
-                // Not a JSON data message, ignore
                 console.error("Caught exception processing data:", error)
             }
         }
 
         room.on(RoomEvent.DataReceived, handleDataReceived)
         return () => room.off(RoomEvent.DataReceived, handleDataReceived)
-    }, [room, isOrganizer, toast, onLeave])
+    }, [
+        room, isOrganizer, toast, onLeave,
+        setReactions, setRaisedHands, setMicLocked, setVideoLocked,
+        setScreenShareLocked, setChatLocked, setHandsLocked, setHandRaised,
+        setReactionsDisabled
+    ])
+}
+
+function useParticipantSystemMessages(room, isOrganizer, videoDataId, profileId) {
+    useEffect(() => {
+        if (!room || !isOrganizer) return;
+        const timers = {};
+        const joinedSet = new Set();
+        
+        const onParticipantConnected = (p) => {
+            timers[p.identity] = setTimeout(async () => {
+                joinedSet.add(p.identity);
+                try {
+                    await supabase.from('live_chat_messages').insert({
+                        video_id: videoDataId,
+                        user_id: profileId,
+                        message: `📢 ${p.name || 'A student'} joined the class.`,
+                        message_type: 'system'
+                    });
+                } catch (e) { console.error("Caught exception:", e); }
+            }, 10000);
+        };
+        
+        const onParticipantDisconnected = async (p) => {
+            if (timers[p.identity]) {
+                clearTimeout(timers[p.identity]);
+                delete timers[p.identity];
+            }
+            if (joinedSet.has(p.identity)) {
+                joinedSet.delete(p.identity);
+                try {
+                    await supabase.from('live_chat_messages').insert({
+                        video_id: videoDataId,
+                        user_id: profileId,
+                        message: `📢 ${p.name || 'A student'} left the class.`,
+                        message_type: 'system'
+                    });
+                } catch (e) { console.error("Caught exception:", e); }
+            }
+        };
+        
+        room.on(RoomEvent.ParticipantConnected, onParticipantConnected);
+        room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
+        
+        return () => {
+            room.off(RoomEvent.ParticipantConnected, onParticipantConnected);
+            room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
+            Object.values(timers).forEach(clearTimeout);
+        };
+    }, [room, isOrganizer, videoDataId, profileId]);
+}
+
+function useAttendanceTracking(isOrganizer, profileId, videoDataId, refreshStats, toast, joinTimeRef, attendanceMarkedRef) {
+    useEffect(() => {
+        if (isOrganizer || !profileId || !videoDataId) return
+
+        joinTimeRef.current = Date.now()
+
+        const attendanceChannel = supabase.channel(`attendance-${profileId}-${videoDataId}`)
+            .on('postgres_changes', { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'live_attendance',
+                filter: `student_id=eq.${profileId}`
+            }, (payload) => {
+                if (payload.new.video_id === videoDataId) {
+                    if (payload.new.xp_awarded && !payload.old.xp_awarded) {
+                        if (!attendanceMarkedRef.current) {
+                            attendanceMarkedRef.current = true
+                            toast.success('🎉 Attendance Marked! +50 XP earned')
+                            refreshStats()
+                        }
+                    }
+                }
+            })
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(attendanceChannel)
+        }
+    }, [videoDataId, profileId, isOrganizer, refreshStats, toast, joinTimeRef, attendanceMarkedRef])
+}
+
+function RoomTopBar({ videoTitle, isOrganizer, isMobile, isFullScreen, sidebarOpen, setSidebarOpen, toggleFullScreen }) {
+    return (
+        <div style={{
+            padding: '0.85rem 1.5rem',
+            background: 'rgba(15, 23, 42, 0.95)',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10,
+            backdropFilter: 'blur(12px)'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <Video size={16} color="white" />
+                </div>
+                <div>
+                    <h1 style={{ color: 'white', fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>
+                        {videoTitle}
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', margin: 0 }}>
+                        Learnova Meet • {isOrganizer ? 'Instructor' : 'Student'}
+                    </p>
+                </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ParticipantCount />
+                {!isMobile && (
+                    <button onClick={toggleFullScreen} style={{
+                        background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)',
+                        border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.85rem',
+                        borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '0.3rem'
+                    }}>
+                        {isFullScreen ? <><Minimize size={14} /> Exit</> : <><Maximize size={14} /> Full</>}
+                    </button>
+                )}
+                <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
+                    background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
+                    color: sidebarOpen ? '#818cf8' : 'var(--text-muted)',
+                    border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.85rem',
+                    borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer'
+                }}>
+                    {sidebarOpen ? 'Close Panel' : 'Open Panel'}
+                </button>
+            </div>
+        </div>
+    )
+}
+
+RoomTopBar.propTypes = {
+    videoTitle: PropTypes.string,
+    isOrganizer: PropTypes.bool.isRequired,
+    isMobile: PropTypes.bool.isRequired,
+    isFullScreen: PropTypes.bool.isRequired,
+    sidebarOpen: PropTypes.bool.isRequired,
+    setSidebarOpen: PropTypes.func.isRequired,
+    toggleFullScreen: PropTypes.func.isRequired
+}
+
+function RoomSidebar({
+    isMobile, isLandscape, sidebarTab, setSidebarTab, unreadChatCount, setUnreadChatCount,
+    raisedHandsCount, waitingStudents, setWaitingStudents, videoId, isOrganizer, chatLocked,
+    setChatLocked, channelInstance, allParticipants, raisedHands, lowerHand, lowerAllHands,
+    removeParticipant, announcementText, setAnnouncementText, room, micLocked, setMicLocked,
+    videoLocked, setVideoLocked, screenShareLocked, setScreenShareLocked, handsLocked,
+    setHandsLocked, reactionsDisabled, setReactionsDisabled, setSidebarOpen, videoTitle
+}) {
+    const handleTouchStart = (e) => {
+        e.currentTarget.dataset.startY = e.touches[0].clientY
+    }
+
+    const handleTouchEnd = (e) => {
+        const startY = Number(e.currentTarget.dataset.startY || 0)
+        if (e.changedTouches[0].clientY - startY > 50 && isMobile && !isLandscape) {
+            setSidebarOpen(false)
+        }
+    }
+
+    const getSidebarTabs = () => {
+        const tabs = [
+            { id: 'chat', icon: MessageSquare, label: unreadChatCount > 0 ? `Chat (${unreadChatCount})` : 'Chat' },
+            { id: 'notes', icon: Edit3, label: 'Notes' },
+            { id: 'polls', icon: BarChart2, label: 'Polls' }
+        ]
+        if (isOrganizer) {
+            tabs.push(
+                { id: 'attendance', icon: Users, label: 'Att.' },
+                { id: 'waiting', icon: UserPlus, label: `Wait (${waitingStudents?.length || 0})` },
+                { id: 'hands', icon: Hand, label: `✋ (${raisedHandsCount})` },
+                { id: 'host', icon: ShieldCheck, label: 'Host' }
+            )
+        }
+        return tabs
+    }
+
+    const sidebarTabs = getSidebarTabs()
+
+    const sidebarStyle = {
+        width: (isMobile && !isLandscape) ? '100%' : ((isMobile && isLandscape) ? '280px' : '360px'),
+        height: (isMobile && !isLandscape) ? '60%' : '100%',
+        minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
+        maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
+        position: (isMobile && !isLandscape) ? 'absolute' : 'relative',
+        bottom: (isMobile && !isLandscape) ? 0 : 'auto',
+        background: 'rgba(15,23,42,0.98)',
+        borderLeft: (isMobile && !isLandscape) ? 'none' : '1px solid rgba(255,255,255,0.08)',
+        borderTop: (isMobile && !isLandscape) ? '1px solid rgba(255,255,255,0.08)' : 'none',
+        borderTopLeftRadius: (isMobile && !isLandscape) ? 16 : 0,
+        borderTopRightRadius: (isMobile && !isLandscape) ? 16 : 0,
+        display: 'flex',
+        flexDirection: 'column',
+        backdropFilter: 'blur(12px)',
+        zIndex: 20,
+        boxShadow: (isMobile && !isLandscape) ? '0 -10px 40px rgba(0,0,0,0.5)' : 'none'
+    }
+
+    return (
+        <div 
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            style={sidebarStyle}
+        >
+            {/* Drag Handle for Mobile */}
+            {isMobile && !isLandscape && (
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '8px 0', cursor: 'grab' }}>
+                    <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+                </div>
+            )}
+            <div style={{
+                display: 'flex', padding: '0.5rem', gap: '0.4rem',
+                borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto'
+            }}>
+                {sidebarTabs.map(tab => (
+                    <button key={tab.id} onClick={() => setSidebarTab(tab.id)} style={{
+                        flex: 1, padding: '0.5rem',
+                        background: sidebarTab === tab.id ? '#6366f1' : 'transparent',
+                        color: sidebarTab === tab.id ? 'white' : 'var(--text-muted)',
+                        border: 'none', borderRadius: '6px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        gap: '0.3rem', fontSize: '0.85rem', minWidth: '50px'
+                    }}>
+                        <tab.icon size={14} /> {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: sidebarTab === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'column', height: '100%' }}>
+                    <LiveChat videoId={videoId} isOrganizer={isOrganizer} chatLocked={chatLocked} channel={channelInstance} onNewMessage={() => {
+                        if (sidebarTab !== 'chat') setUnreadChatCount(c => c + 1)
+                    }} />
+                </div>
+                {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
+                {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
+                {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoTitle} />}
+                {sidebarTab === 'waiting' && isOrganizer && <WaitingRoomTab waitingStudents={waitingStudents} setWaitingStudents={setWaitingStudents} channel={channelInstance} />}
+                {sidebarTab === 'hands' && isOrganizer && <RaisedHandsPanel participants={allParticipants} raisedHandsFromDataChannel={raisedHands} onLowerHand={lowerHand} onLowerAll={lowerAllHands} />}
+                {sidebarTab === 'host' && isOrganizer && (
+                    <HostControlsTab
+                        room={room}
+                        participants={allParticipants}
+                        chatLocked={chatLocked}
+                        setChatLocked={setChatLocked}
+                        micLocked={micLocked}
+                        setMicLocked={setMicLocked}
+                        videoLocked={videoLocked}
+                        setVideoLocked={setVideoLocked}
+                        screenShareLocked={screenShareLocked}
+                        setScreenShareLocked={setScreenShareLocked}
+                        handsLocked={handsLocked}
+                        setHandsLocked={setHandsLocked}
+                        reactionsDisabled={reactionsDisabled}
+                        setReactionsDisabled={setReactionsDisabled}
+                        onLowerAllHands={lowerAllHands}
+                        onRemoveParticipant={removeParticipant}
+                        announcementText={announcementText}
+                        setAnnouncementText={setAnnouncementText}
+                    />
+                )}
+            </div>
+        </div>
+    )
+}
+
+RoomSidebar.propTypes = {
+    isMobile: PropTypes.bool.isRequired,
+    isLandscape: PropTypes.bool.isRequired,
+    sidebarTab: PropTypes.string.isRequired,
+    setSidebarTab: PropTypes.func.isRequired,
+    unreadChatCount: PropTypes.number.isRequired,
+    setUnreadChatCount: PropTypes.func.isRequired,
+    raisedHandsCount: PropTypes.number.isRequired,
+    waitingStudents: PropTypes.array,
+    setWaitingStudents: PropTypes.func,
+    videoId: PropTypes.string,
+    isOrganizer: PropTypes.bool.isRequired,
+    chatLocked: PropTypes.bool.isRequired,
+    setChatLocked: PropTypes.func.isRequired,
+    channelInstance: PropTypes.object,
+    allParticipants: PropTypes.array,
+    raisedHands: PropTypes.object,
+    lowerHand: PropTypes.func,
+    lowerAllHands: PropTypes.func,
+    removeParticipant: PropTypes.func,
+    announcementText: PropTypes.string,
+    setAnnouncementText: PropTypes.func,
+    room: PropTypes.object,
+    micLocked: PropTypes.bool.isRequired,
+    setMicLocked: PropTypes.func.isRequired,
+    videoLocked: PropTypes.bool.isRequired,
+    setVideoLocked: PropTypes.func.isRequired,
+    screenShareLocked: PropTypes.bool.isRequired,
+    setScreenShareLocked: PropTypes.func.isRequired,
+    handsLocked: PropTypes.bool.isRequired,
+    setHandsLocked: PropTypes.func.isRequired,
+    reactionsDisabled: PropTypes.bool.isRequired,
+    setReactionsDisabled: PropTypes.func.isRequired,
+    setSidebarOpen: PropTypes.func.isRequired,
+    videoTitle: PropTypes.string
+}
+
+function QuickAdmitToasts({ isOrganizer, waitingStudents, setWaitingStudents, channelInstance }) {
+    if (!isOrganizer || !waitingStudents || waitingStudents.length === 0) return null
+
+    const visibleWaiting = waitingStudents.slice(-3)
+    const extraCount = waitingStudents.length - 3
+
+    return (
+        <div style={{ position: 'fixed', bottom: 100, left: 24, zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {visibleWaiting.map(s => (
+                <div key={s.id} style={{
+                    background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12,
+                    padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)', width: 280, backdropFilter: 'blur(8px)',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ background: 'rgba(99,102,241,0.2)', padding: 8, borderRadius: '50%' }}><UserPlus size={18} color="#818cf8"/></div>
+                        <div>
+                            <p style={{ margin: 0, color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>Join Request</p>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }}>{s.name} wants to join.</p>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button onClick={() => {
+                            channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: s.id, admitted: true } })
+                            setWaitingStudents(prev => prev.filter(x => x.id !== s.id))
+                        }} style={{ flex: 1, background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Admit</button>
+                        <button onClick={() => {
+                            channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: s.id, admitted: false } })
+                            setWaitingStudents(prev => prev.filter(x => x.id !== s.id))
+                        }} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Deny</button>
+                    </div>
+                </div>
+            ))}
+            {extraCount > 0 && (
+                <div style={{ background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.8rem', padding: '0.5rem', borderRadius: 8, textAlign: 'center', width: 280 }}>
+                    + {extraCount} more waiting
+                </div>
+            )}
+        </div>
+    )
+}
+
+QuickAdmitToasts.propTypes = {
+    isOrganizer: PropTypes.bool.isRequired,
+    waitingStudents: PropTypes.array,
+    setWaitingStudents: PropTypes.func,
+    channelInstance: PropTypes.object
+}
+
+function LeaveConfirmModal({ isOpen, onConfirmEnd, onConfirmLeave, onClose }) {
+    if (!isOpen) return null
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)' }}>
+            <div style={{ background: '#1e293b', padding: '2rem', borderRadius: 16, width: 400, maxWidth: '90%', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <h3 style={{ margin: '0 0 1rem', color: 'white', fontSize: '1.25rem' }}>Leave Meeting</h3>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Do you want to just leave the meeting, or end it for everyone?</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    <button onClick={onConfirmEnd} style={{ padding: '0.85rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                        End Class for All & Clear Chat
+                    </button>
+                    <button onClick={onConfirmLeave} style={{ padding: '0.85rem', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                        Just Leave
+                    </button>
+                    <button onClick={onClose} style={{ padding: '0.85rem', background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+LeaveConfirmModal.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onConfirmEnd: PropTypes.func.isRequired,
+    onConfirmLeave: PropTypes.func.isRequired,
+    onClose: PropTypes.func.isRequired
+}
+
+function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, onMinimize, refreshStats, toast, waitingStudents, setWaitingStudents }) {
+    const { isMobile, isLandscape } = useDeviceOrientation()
+    const room = useRoomContext()
+    const remoteParticipants = useRemoteParticipants()
+    const { localParticipant } = useLocalParticipant()
+    const joinTimeRef = useRef(null)
+    const attendanceMarkedRef = useRef(false)
+    const containerRef = useRef(null)
+    useEffect(() => {
+        if (joinTimeRef.current === null) {
+            joinTimeRef.current = Date.now()
+        }
+    }, [])
+    const [isFullScreen, setIsFullScreen] = useState(false)
+
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+    const [unreadChatCount, setUnreadChatCount] = useState(0)
+
+    useEffect(() => {
+        if (sidebarTab === 'chat' && sidebarOpen) {
+            setTimeout(() => setUnreadChatCount(0), 0)
+        }
+    }, [sidebarTab, sidebarOpen])
+
+
+    // ── New Feature State ──
+    const [reactions, setReactions] = useState([])
+    const [handRaised, setHandRaised] = useState(false)
+    const [micLocked, setMicLocked] = useState(false)
+    const [videoLocked, setVideoLocked] = useState(false)
+    const [screenShareLocked, setScreenShareLocked] = useState(false)
+    const [handsLocked, setHandsLocked] = useState(false)
+    const [reactionsDisabled, setReactionsDisabled] = useState(false)
+    const [chatLocked, setChatLocked] = useState(false)
+    const [announcementText, setAnnouncementText] = useState('')
+    const [raisedHands, setRaisedHands] = useState({}) // { identity: { name, raisedAt } } — data channel fallback
+
+    // System Messages for Join/Leave
+    useParticipantSystemMessages(room, isOrganizer, videoData?.id, profile?.id)
+
+    // Data Channel Dispatcher
+    useRoomDataChannel(room, isOrganizer, toast, onLeave, {
+        setReactions,
+        setRaisedHands,
+        setMicLocked,
+        setVideoLocked,
+        setScreenShareLocked,
+        setChatLocked,
+        setHandsLocked,
+        setHandRaised,
+        setReactionsDisabled
+    })
+
+    const lastReactionTime = useRef(0)
+    const reactionIdCounter = useRef(0)
+
+    // All participants list for host controls
+    const allParticipants = useMemo(() => {
+        if (!localParticipant) return remoteParticipants
+        return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)]
+    }, [localParticipant, remoteParticipants])
+
+    // Count raised hands (merge metadata + data channel sources)
+    const raisedHandsCount = useMemo(() => {
+        const fromMetadata = new Set()
+        allParticipants.forEach(p => {
+            try {
+                const meta = JSON.parse(p.metadata || '{}')
+                if (meta.handRaised) {
+                    fromMetadata.add(p.identity)
+                }
+            } catch (e) {
+                console.error("Caught exception:", e)
+            }
+        })
+        const fromDataChannel = new Set(Object.keys(raisedHands))
+        return new Set([...fromMetadata, ...fromDataChannel]).size
+    }, [allParticipants, raisedHands])
+
+    useEffect(() => {
+        const handleFullscreenChange = () => setIsFullScreen(!!document.fullscreenElement)
+        document.addEventListener('fullscreenchange', handleFullscreenChange)
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }, [])
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement && containerRef.current) {
+            containerRef.current.requestFullscreen().catch(err => console.log(err))
+        } else if (document.fullscreenElement) {
+            document.exitFullscreen()
+        }
+    }
 
     // ── Send Reaction ──
     const sendReaction = useCallback((emoji) => {
         if (!room || reactionsDisabled) return
         const now = Date.now()
-        if (now - lastReactionTime.current < 2000) return // 2-second cooldown
+        if (now - lastReactionTime.current < 2000) return
         lastReactionTime.current = now
 
         let meta = {}
-        try { meta = JSON.parse(room.localParticipant.metadata || '{}') } catch (e) { console.error("Caught exception:", e); }
+        try {
+            meta = JSON.parse(room.localParticipant.metadata || '{}')
+        } catch (e) {
+            console.error("Caught exception:", e)
+        }
         const senderName = room.localParticipant.name || meta.name || room.localParticipant.identity
 
         const msg = JSON.stringify({ type: 'reaction', emoji, senderName, timestamp: now })
@@ -1955,21 +2574,22 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         const newRaised = !handRaised
         const now = Date.now()
 
-        // Try metadata first (survives reconnects)
         try {
             let meta = {}
-            try { meta = JSON.parse(lp.metadata || '{}') } catch (e) { console.error("Caught exception:", e); }
+            try {
+                meta = JSON.parse(lp.metadata || '{}')
+            } catch (e) {
+                console.error("Caught exception:", e)
+            }
             await lp.setMetadata(JSON.stringify({
                 ...meta,
                 handRaised: newRaised,
                 handRaisedAt: newRaised ? now : null,
             }))
         } catch (error) {
-            // Permission denied — metadata not available, that's OK
             console.warn('Metadata update not permitted, using data channel only', error)
         }
 
-        // Always broadcast via data channel for immediate visibility
         const senderName = lp.name || lp.identity
         const msg = JSON.stringify({ type: 'hand_raise', raised: newRaised, identity: lp.identity, name: senderName, timestamp: now })
         const encoder = new TextEncoder()
@@ -1984,12 +2604,13 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         const msg = JSON.stringify({ type: 'host_command', command: 'lower_hand', identity })
         const encoder = new TextEncoder()
         room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
-        // Also update locally for the instructor's own hand
         if (identity === room.localParticipant.identity) {
             try {
                 const meta = JSON.parse(room.localParticipant.metadata || '{}')
                 room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-            } catch (e) { console.error("Caught exception:", e); }
+            } catch (e) {
+                console.error("Caught exception:", e)
+            }
             setHandRaised(false)
         }
     }, [room])
@@ -2000,13 +2621,14 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         const msg = JSON.stringify({ type: 'host_command', command: 'lower_all_hands' })
         const encoder = new TextEncoder()
         room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
-        // Also lower own hand
         try {
             const meta = JSON.parse(room.localParticipant.metadata || '{}')
             if (meta.handRaised) {
                 room.localParticipant.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
             }
-        } catch (e) { console.error("Caught exception:", e); }
+        } catch (e) {
+            console.error("Caught exception:", e)
+        }
         setHandRaised(false)
     }, [room])
 
@@ -2020,36 +2642,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     }, [room, toast])
 
     // ── Attendance Tracking (Supabase Realtime) ──
-    useEffect(() => {
-        if (isOrganizer || !profile?.id || !videoData) return
-
-        joinTimeRef.current = Date.now()
-
-        // Listen to changes on live_attendance table for THIS student and THIS video
-        const attendanceChannel = supabase.channel(`attendance-${profile.id}-${videoData.id}`)
-            .on('postgres_changes', { 
-                event: 'UPDATE', 
-                schema: 'public', 
-                table: 'live_attendance',
-                filter: `student_id=eq.${profile.id}`
-            }, (payload) => {
-                if (payload.new.video_id === videoData.id) {
-                    // Check if xp_awarded changed from false to true
-                    if (payload.new.xp_awarded && !payload.old.xp_awarded) {
-                        if (!attendanceMarkedRef.current) {
-                            attendanceMarkedRef.current = true
-                            toast.success('🎉 Attendance Marked! +50 XP earned')
-                            refreshStats()
-                        }
-                    }
-                }
-            })
-            .subscribe()
-
-        return () => {
-            supabase.removeChannel(attendanceChannel)
-        }
-    }, [videoData, profile?.id, isOrganizer, refreshStats, toast])
+    useAttendanceTracking(isOrganizer, profile?.id, videoData?.id, refreshStats, toast, joinTimeRef, attendanceMarkedRef)
 
     const handleLeave = useCallback(() => {
         if (isOrganizer) {
@@ -2075,11 +2668,15 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                 user_id: profile.id,
                 message: '📢 This class has ended.',
                 message_type: 'system'
-            });
-            const cleanupAt = new Date();
-            cleanupAt.setHours(cleanupAt.getHours() + 24);
-            await supabase.from('live_class_sessions').upsert({ video_id: videoData.id, status: 'ended', ended_at: new Date().toISOString(), chat_cleanup_at: cleanupAt.toISOString() })
-            
+            })
+            const cleanupAt = new Date()
+            cleanupAt.setHours(cleanupAt.getHours() + 24)
+            await supabase.from('live_class_sessions').upsert({
+                video_id: videoData.id,
+                status: 'ended',
+                ended_at: new Date().toISOString(),
+                chat_cleanup_at: cleanupAt.toISOString()
+            })
             
             const msg = JSON.stringify({ type: 'host_command', command: 'end_class' })
             const encoder = new TextEncoder()
@@ -2104,53 +2701,15 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
             paddingLeft: 'env(safe-area-inset-left)',
             paddingRight: 'env(safe-area-inset-right)'
         }}>
-            {/* Top Bar */}
-            <div style={{
-                padding: '0.85rem 1.5rem',
-                background: 'rgba(15, 23, 42, 0.95)',
-                borderBottom: '1px solid rgba(255,255,255,0.05)',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10,
-                backdropFilter: 'blur(12px)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <div style={{
-                        width: 32, height: 32, borderRadius: 8,
-                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>
-                        <Video size={16} color="white" />
-                    </div>
-                    <div>
-                        <h1 style={{ color: 'white', fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>
-                            {videoData?.title}
-                        </h1>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', margin: 0 }}>
-                            Learnova Meet • {isOrganizer ? 'Instructor' : 'Student'}
-                        </p>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <ParticipantCount />
-                    {!isMobile && (
-                        <button onClick={toggleFullScreen} style={{
-                            background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)',
-                            border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.85rem',
-                            borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: '0.3rem'
-                        }}>
-                            {isFullScreen ? <><Minimize size={14} /> Exit</> : <><Maximize size={14} /> Full</>}
-                        </button>
-                    )}
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
-                        background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
-                        color: sidebarOpen ? '#818cf8' : 'var(--text-muted)',
-                        border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.85rem',
-                        borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer'
-                    }}>
-                        {sidebarOpen ? 'Close Panel' : 'Open Panel'}
-                    </button>
-                </div>
-            </div>
+            <RoomTopBar
+                videoTitle={videoData?.title}
+                isOrganizer={isOrganizer}
+                isMobile={isMobile}
+                isFullScreen={isFullScreen}
+                sidebarOpen={sidebarOpen}
+                setSidebarOpen={setSidebarOpen}
+                toggleFullScreen={toggleFullScreen}
+            />
 
             {/* Connection Banner */}
             <ConnectionBanner />
@@ -2165,158 +2724,59 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
 
                 {/* Sidebar */}
                 {sidebarOpen && channelInstance && (
-                    <div 
-                        onTouchStart={(e) => { e.currentTarget.dataset.startY = e.touches[0].clientY }}
-                        onTouchEnd={(e) => { 
-                            const startY = Number(e.currentTarget.dataset.startY || 0)
-                            if (e.changedTouches[0].clientY - startY > 50 && isMobile && !isLandscape) {
-                                setSidebarOpen(false)
-                            }
-                        }}
-                        style={{
-                            width: (isMobile && !isLandscape) ? '100%' : ((isMobile && isLandscape) ? '280px' : '360px'),
-                            height: (isMobile && !isLandscape) ? '60%' : '100%',
-                            minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
-                            maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
-                            position: (isMobile && !isLandscape) ? 'absolute' : 'relative',
-                            bottom: (isMobile && !isLandscape) ? 0 : 'auto',
-                            background: 'rgba(15,23,42,0.98)',
-                            borderLeft: (isMobile && !isLandscape) ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                            borderTop: (isMobile && !isLandscape) ? '1px solid rgba(255,255,255,0.08)' : 'none',
-                            borderTopLeftRadius: (isMobile && !isLandscape) ? 16 : 0,
-                            borderTopRightRadius: (isMobile && !isLandscape) ? 16 : 0,
-                            display: 'flex', flexDirection: 'column',
-                            backdropFilter: 'blur(12px)',
-                            zIndex: 20,
-                            boxShadow: (isMobile && !isLandscape) ? '0 -10px 40px rgba(0,0,0,0.5)' : 'none'
-                        }}>
-                        {/* Drag Handle for Mobile */}
-                        {isMobile && !isLandscape && (
-                            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '8px 0', cursor: 'grab' }}>
-                                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
-                            </div>
-                        )}
-                        <div style={{
-                            display: 'flex', padding: '0.5rem', gap: '0.4rem',
-                            borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto'
-                        }}>
-                            {[
-                                { id: 'chat', icon: MessageSquare, label: unreadChatCount > 0 ? `Chat (${unreadChatCount})` : 'Chat' },
-                                { id: 'notes', icon: Edit3, label: 'Notes' },
-                                { id: 'polls', icon: BarChart2, label: 'Polls' },
-                                ...(isOrganizer ? [
-                                    { id: 'attendance', icon: Users, label: 'Att.' },
-                                    { id: 'waiting', icon: UserPlus, label: `Wait (${waitingStudents?.length || 0})` },
-                                    { id: 'hands', icon: Hand, label: `✋ (${raisedHandsCount})` },
-                                    { id: 'host', icon: ShieldCheck, label: 'Host' },
-                                ] : []),
-                            ].map(tab => (
-                                <button key={tab.id} onClick={() => setSidebarTab(tab.id)} style={{
-                                    flex: 1, padding: '0.5rem',
-                                    background: sidebarTab === tab.id ? '#6366f1' : 'transparent',
-                                    color: sidebarTab === tab.id ? 'white' : 'var(--text-muted)',
-                                    border: 'none', borderRadius: '6px', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    gap: '0.3rem', fontSize: '0.85rem', minWidth: '50px'
-                                }}>
-                                    <tab.icon size={14} /> {tab.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ display: sidebarTab === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'column', height: '100%' }}>
-                                <LiveChat videoId={videoId} isOrganizer={isOrganizer} chatLocked={chatLocked} channel={channelInstance} onNewMessage={() => {
-                                    if (sidebarTab !== 'chat' || !sidebarOpen) setUnreadChatCount(c => c + 1)
-                                }} />
-                            </div>
-                            {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
-                            {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
-                            {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoData?.title} />}
-                            {sidebarTab === 'waiting' && isOrganizer && <WaitingRoomTab waitingStudents={waitingStudents} setWaitingStudents={setWaitingStudents} channel={channelInstance} />}
-                            {sidebarTab === 'hands' && isOrganizer && <RaisedHandsPanel participants={allParticipants} raisedHandsFromDataChannel={raisedHands} onLowerHand={lowerHand} onLowerAll={lowerAllHands} />}
-                            {sidebarTab === 'host' && isOrganizer && (
-                                <HostControlsTab
-                                    room={room}
-                                    participants={allParticipants}
-                                    chatLocked={chatLocked}
-                                    setChatLocked={setChatLocked}
-                                    micLocked={micLocked}
-                                    setMicLocked={setMicLocked}
-                                    videoLocked={videoLocked}
-                                    setVideoLocked={setVideoLocked}
-                                    screenShareLocked={screenShareLocked}
-                                    setScreenShareLocked={setScreenShareLocked}
-                                    handsLocked={handsLocked}
-                                    setHandsLocked={setHandsLocked}
-                                    reactionsDisabled={reactionsDisabled}
-                                    setReactionsDisabled={setReactionsDisabled}
-                                    onLowerAllHands={lowerAllHands}
-                                    onRemoveParticipant={removeParticipant}
-                                    announcementText={announcementText}
-                                    setAnnouncementText={setAnnouncementText}
-                                />
-                            )}
-                        </div>
-                    </div>
+                    <RoomSidebar
+                        isMobile={isMobile}
+                        isLandscape={isLandscape}
+                        sidebarTab={sidebarTab}
+                        setSidebarTab={setSidebarTab}
+                        unreadChatCount={unreadChatCount}
+                        setUnreadChatCount={setUnreadChatCount}
+                        raisedHandsCount={raisedHandsCount}
+                        waitingStudents={waitingStudents}
+                        setWaitingStudents={setWaitingStudents}
+                        videoId={videoId}
+                        isOrganizer={isOrganizer}
+                        chatLocked={chatLocked}
+                        setChatLocked={setChatLocked}
+                        channelInstance={channelInstance}
+                        allParticipants={allParticipants}
+                        raisedHands={raisedHands}
+                        lowerHand={lowerHand}
+                        lowerAllHands={lowerAllHands}
+                        removeParticipant={removeParticipant}
+                        announcementText={announcementText}
+                        setAnnouncementText={setAnnouncementText}
+                        room={room}
+                        micLocked={micLocked}
+                        setMicLocked={setMicLocked}
+                        videoLocked={videoLocked}
+                        setVideoLocked={setVideoLocked}
+                        screenShareLocked={screenShareLocked}
+                        setScreenShareLocked={setScreenShareLocked}
+                        handsLocked={handsLocked}
+                        setHandsLocked={setHandsLocked}
+                        reactionsDisabled={reactionsDisabled}
+                        setReactionsDisabled={setReactionsDisabled}
+                        setSidebarOpen={setSidebarOpen}
+                        videoTitle={videoData?.title}
+                    />
                 )}
             </div>
 
             {/* Quick Admit Floating Toasts for Organizer */}
-            {isOrganizer && waitingStudents?.length > 0 && (
-                <div style={{ position: 'fixed', bottom: 100, left: 24, zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {waitingStudents.slice(-3).map(s => (
-                        <div key={s.id} style={{
-                            background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12,
-                            padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem',
-                            boxShadow: '0 10px 25px rgba(0,0,0,0.5)', width: 280, backdropFilter: 'blur(8px)',
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ background: 'rgba(99,102,241,0.2)', padding: 8, borderRadius: '50%' }}><UserPlus size={18} color="#818cf8"/></div>
-                                <div>
-                                    <p style={{ margin: 0, color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>Join Request</p>
-                                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }}>{s.name} wants to join.</p>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <button onClick={() => {
-                                    channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: s.id, admitted: true } })
-                                    setWaitingStudents(prev => prev.filter(x => x.id !== s.id))
-                                }} style={{ flex: 1, background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Admit</button>
-                                <button onClick={() => {
-                                    channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: s.id, admitted: false } })
-                                    setWaitingStudents(prev => prev.filter(x => x.id !== s.id))
-                                }} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Deny</button>
-                            </div>
-                        </div>
-                    ))}
-                    {waitingStudents.length > 3 && (
-                        <div style={{ background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.8rem', padding: '0.5rem', borderRadius: 8, textAlign: 'center', width: 280 }}>
-                            + {waitingStudents.length - 3} more waiting
-                        </div>
-                    )}
-                </div>
-            )}
+            <QuickAdmitToasts
+                isOrganizer={isOrganizer}
+                waitingStudents={waitingStudents}
+                setWaitingStudents={setWaitingStudents}
+                channelInstance={channelInstance}
+            />
 
-            {showLeaveConfirm && isOrganizer && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)' }}>
-                    <div style={{ background: '#1e293b', padding: '2rem', borderRadius: 16, width: 400, maxWidth: '90%', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <h3 style={{ margin: '0 0 1rem', color: 'white', fontSize: '1.25rem' }}>Leave Meeting</h3>
-                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Do you want to just leave the meeting, or end it for everyone?</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                            <button onClick={confirmEndClass} style={{ padding: '0.85rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
-                                End Class for All & Clear Chat
-                            </button>
-                            <button onClick={confirmJustLeave} style={{ padding: '0.85rem', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
-                                Just Leave
-                            </button>
-                            <button onClick={() => setShowLeaveConfirm(false)} style={{ padding: '0.85rem', background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <LeaveConfirmModal
+                isOpen={showLeaveConfirm && isOrganizer}
+                onConfirmEnd={confirmEndClass}
+                onConfirmLeave={confirmJustLeave}
+                onClose={() => setShowLeaveConfirm(false)}
+            />
 
             {/* Control Bar */}
             <MeetControlBar
@@ -2401,7 +2861,7 @@ export default function LiveClassroom() {
     const [tokenError, setTokenError] = useState(null)
     const [instructorPresent, setInstructorPresent] = useState(false)
     const [sidebarTab, setSidebarTab] = useState('notes')
-    const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768)
+    const [sidebarOpen, setSidebarOpen] = useState(() => globalThis.innerWidth > 768)
     const [channelInstance, setChannelInstance] = useState(null)
     const [waitingStudents, setWaitingStudents] = useState([])
     const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
