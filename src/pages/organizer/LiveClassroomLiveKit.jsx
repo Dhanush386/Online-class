@@ -88,7 +88,7 @@ CustomAudioTrack.propTypes = {
 
 // ─── Hook: get tracks for a single participant via direct events (no LiveKit hooks) ──
 function useManualParticipantTracks(participant) {
-    const [_tick, setTick] = useState(0)
+    const [, setTick] = useState(0)
     useEffect(() => {
         if (!participant) return
         const bump = () => setTick(n => n + 1)
@@ -142,7 +142,7 @@ function ZoomControls({ scale, onZoomOut, onResetZoom, onZoomIn, isSpeaking }) {
     return (
         <div style={{
             position: 'absolute', top: 8, right: isSpeaking ? 24 : 8,
-            display: 'flex', alignItems: 'center', gap: 4, 
+            display: 'flex', alignItems: 'center', gap: 4,
             background: 'rgba(15,23,42,0.8)', padding: '4px 8px', borderRadius: 8, zIndex: 10,
             border: '1px solid rgba(255,255,255,0.1)'
         }}>
@@ -154,8 +154,8 @@ function ZoomControls({ scale, onZoomOut, onResetZoom, onZoomIn, isSpeaking }) {
 }
 
 function getZoomContainerStyle(scale) {
-    return { 
-        width: '100%', height: '100%', 
+    return {
+        width: '100%', height: '100%',
         overflow: 'hidden',
         touchAction: scale > 1 ? 'none' : 'auto'
     };
@@ -228,7 +228,7 @@ function ZoomableVideo({ track, isScreenShareDisplay, isSpotlight, isSpeaking })
 
     return (
         <>
-            <div 
+            <div
                 onWheel={handleWheel}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
@@ -244,12 +244,12 @@ function ZoomableVideo({ track, isScreenShareDisplay, isSpotlight, isSpeaking })
                 </div>
             </div>
             {isScreenShareDisplay && isSpotlight && (
-                <ZoomControls 
-                    scale={scale} 
-                    onZoomOut={handleZoomOut} 
-                    onResetZoom={handleResetZoom} 
-                    onZoomIn={handleZoomIn} 
-                    isSpeaking={isSpeaking} 
+                <ZoomControls
+                    scale={scale}
+                    onZoomOut={handleZoomOut}
+                    onResetZoom={handleResetZoom}
+                    onZoomIn={handleZoomIn}
+                    isSpeaking={isSpeaking}
                 />
             )}
         </>
@@ -292,9 +292,9 @@ function ParticipantAvatar({ initials }) {
 
 ParticipantAvatar.propTypes = { initials: PropTypes.string };
 
-function ParticipantOverlayInfo({ 
-    name, isLocal, isMuted, isPinned, onPin, participantIdentity, 
-    isSpeaking, hasScreenShare, isSpotlight, handRaised 
+function ParticipantOverlayInfo({
+    name, isLocal, isMuted, isPinned, onPin, participantIdentity,
+    isSpeaking, hasScreenShare, isSpotlight, handRaised
 }) {
     let pinButtonRightOffset;
     if (hasScreenShare && isSpotlight) {
@@ -401,8 +401,8 @@ ParticipantOverlayInfo.propTypes = {
 };
 
 function parseParticipantMetadata(participant) {
-    try { 
-        return JSON.parse(participant.metadata || '{}'); 
+    try {
+        return JSON.parse(participant.metadata || '{}');
     } catch {
         return {};
     }
@@ -418,7 +418,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
 
     const isMuted = !participant.isMicrophoneEnabled;
     const isCameraOff = !participant.isCameraEnabled;
-    
+
     const displayTrack = screenTrack || cameraTrack;
     const isScreenShareDisplay = !!screenTrack;
     const shouldShowVideo = !!displayTrack && (isScreenShareDisplay || !isCameraOff);
@@ -436,7 +436,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
 
             {/* Video or Avatar */}
             {shouldShowVideo ? (
-                <ZoomableVideo 
+                <ZoomableVideo
                     track={displayTrack}
                     isScreenShareDisplay={isScreenShareDisplay}
                     isSpotlight={isSpotlight}
@@ -446,7 +446,7 @@ function ParticipantTile({ participant, isLocal, isSpotlight = false, onPin, isP
                 <ParticipantAvatar initials={initials} />
             )}
 
-            <ParticipantOverlayInfo 
+            <ParticipantOverlayInfo
                 name={name}
                 isLocal={isLocal}
                 isMuted={isMuted}
@@ -577,7 +577,7 @@ function getFilmstripItemStyle(isMobilePortrait, isMobile) {
             flexShrink: 0,
         };
     }
-    
+
     return {
         ...baseStyle,
         width: '100%',
@@ -669,7 +669,7 @@ function VideoGrid() {
     const remoteParticipants = useRemoteParticipants();
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
-    const [_tick, setTick] = useState(0);
+    const [, setTick] = useState(0);
     const [pinnedIdentity, setPinnedIdentity] = useState(null);
 
     // Listen for screen-share track events at the Room level to detect layout changes
@@ -726,13 +726,13 @@ function VideoGrid() {
     const isMobilePortrait = isMobile && !isLandscape;
 
     const pinnedParticipant = pinnedIdentity ? allParticipants.find(p => p.identity === pinnedIdentity) : null;
-    
+
     if (pinnedParticipant) {
         return (
-            <PinnedParticipantView 
-                pinnedParticipant={pinnedParticipant} 
-                localParticipant={localParticipant} 
-                handlePin={handlePin} 
+            <PinnedParticipantView
+                pinnedParticipant={pinnedParticipant}
+                localParticipant={localParticipant}
+                handlePin={handlePin}
             />
         );
     }
@@ -744,11 +744,11 @@ function VideoGrid() {
 
     return (
         <div style={getVideoGridLayoutStyle(hasScreenShare, isMobilePortrait, cols, count, layoutTransition)}>
-            <ScreenShareSpotlight 
-                screenSharer={screenSharer} 
-                localParticipant={localParticipant} 
-                handlePin={handlePin} 
-                presenterName={presenterName} 
+            <ScreenShareSpotlight
+                screenSharer={screenSharer}
+                localParticipant={localParticipant}
+                handlePin={handlePin}
+                presenterName={presenterName}
             />
 
             {hasScreenShare ? (
@@ -863,7 +863,7 @@ function ReactionPicker({ onSelect, onClose }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 0.15s ease',
                 }} onMouseEnter={e => { e.target.style.background = 'rgba(255,255,255,0.1)'; e.target.style.transform = 'scale(1.3)' }}
-                   onMouseLeave={e => { e.target.style.background = 'transparent'; e.target.style.transform = 'scale(1)' }}>
+                    onMouseLeave={e => { e.target.style.background = 'transparent'; e.target.style.transform = 'scale(1)' }}>
                     {emoji}
                 </button>
             ))}
@@ -881,7 +881,7 @@ ReactionPicker.propTypes = {
 function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLowerHand, onLowerAll }) {
     // Merge metadata-based and data-channel-based hand raises
     const handsMap = new Map()
-    
+
     // From participant metadata
     participants.forEach(p => {
         try {
@@ -891,7 +891,7 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
             }
         } catch (e) { console.error("Caught exception:", e); }
     })
-    
+
     // From data channel (fallback)
     Object.entries(raisedHandsFromDataChannel).forEach(([identity, data]) => {
         if (!handsMap.has(identity)) {
@@ -969,7 +969,7 @@ function HostToggleButton({ isLocked, onToggle, IconLocked, IconUnlocked, labelL
     const background = isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)';
     const border = isLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)';
     const iconColor = isLocked ? '#ef4444' : '#22c55e';
-    
+
     return (
         <button onClick={onToggle} style={{ ...controlBtnStyle(), marginTop: '0.5rem', background, border }}>
             {isLocked ? <IconLocked size={16} color={iconColor} /> : <IconUnlocked size={16} color={iconColor} />}
@@ -987,58 +987,58 @@ HostToggleButton.propTypes = {
     labelUnlocked: PropTypes.string.isRequired
 };
 
-function HostLocksSection({ 
-    micLocked, handleToggleMicLock, 
-    chatLocked, handleToggleChatLock, 
-    videoLocked, handleToggleVideoLock, 
-    screenShareLocked, handleToggleScreenShareLock, 
-    handsLocked, handleToggleHandsLock, 
-    reactionsDisabled, handleToggleReactions 
+function HostLocksSection({
+    micLocked, handleToggleMicLock,
+    chatLocked, handleToggleChatLock,
+    videoLocked, handleToggleVideoLock,
+    screenShareLocked, handleToggleScreenShareLock,
+    handsLocked, handleToggleHandsLock,
+    reactionsDisabled, handleToggleReactions
 }) {
     return (
         <div style={{ marginTop: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Locks</p>
-            
-            <HostToggleButton 
-                isLocked={micLocked} onToggle={handleToggleMicLock} 
-                IconLocked={Lock} IconUnlocked={Unlock} 
-                labelLocked="Mic Locked — Students Cannot Unmute" 
-                labelUnlocked="Mic Unlocked — Students Can Unmute" 
-            />
-            
-            <HostToggleButton 
-                isLocked={chatLocked} onToggle={handleToggleChatLock} 
-                IconLocked={Lock} IconUnlocked={Unlock} 
-                labelLocked="Chat Locked — Students Cannot Send Messages" 
-                labelUnlocked="Chat Unlocked — Students Can Send Messages" 
-            />
-            
-            <HostToggleButton 
-                isLocked={videoLocked} onToggle={handleToggleVideoLock} 
-                IconLocked={Lock} IconUnlocked={Unlock} 
-                labelLocked="Video Locked — Students Cannot Enable Camera" 
-                labelUnlocked="Video Unlocked — Students Can Enable Camera" 
-            />
-            
-            <HostToggleButton 
-                isLocked={screenShareLocked} onToggle={handleToggleScreenShareLock} 
-                IconLocked={Lock} IconUnlocked={Unlock} 
-                labelLocked="Screen Share Locked — Students Cannot Share" 
-                labelUnlocked="Screen Share Unlocked — Students Can Share" 
-            />
-            
-            <HostToggleButton 
-                isLocked={handsLocked} onToggle={handleToggleHandsLock} 
-                IconLocked={Lock} IconUnlocked={Unlock} 
-                labelLocked="Hands Locked — Students Cannot Raise Hand" 
-                labelUnlocked="Hands Unlocked — Students Can Raise Hand" 
+
+            <HostToggleButton
+                isLocked={micLocked} onToggle={handleToggleMicLock}
+                IconLocked={Lock} IconUnlocked={Unlock}
+                labelLocked="Mic Locked — Students Cannot Unmute"
+                labelUnlocked="Mic Unlocked — Students Can Unmute"
             />
 
-            <HostToggleButton 
-                isLocked={reactionsDisabled} onToggle={handleToggleReactions} 
-                IconLocked={Smile} IconUnlocked={Smile} 
-                labelLocked="Reactions Disabled" 
-                labelUnlocked="Reactions Enabled" 
+            <HostToggleButton
+                isLocked={chatLocked} onToggle={handleToggleChatLock}
+                IconLocked={Lock} IconUnlocked={Unlock}
+                labelLocked="Chat Locked — Students Cannot Send Messages"
+                labelUnlocked="Chat Unlocked — Students Can Send Messages"
+            />
+
+            <HostToggleButton
+                isLocked={videoLocked} onToggle={handleToggleVideoLock}
+                IconLocked={Lock} IconUnlocked={Unlock}
+                labelLocked="Video Locked — Students Cannot Enable Camera"
+                labelUnlocked="Video Unlocked — Students Can Enable Camera"
+            />
+
+            <HostToggleButton
+                isLocked={screenShareLocked} onToggle={handleToggleScreenShareLock}
+                IconLocked={Lock} IconUnlocked={Unlock}
+                labelLocked="Screen Share Locked — Students Cannot Share"
+                labelUnlocked="Screen Share Unlocked — Students Can Share"
+            />
+
+            <HostToggleButton
+                isLocked={handsLocked} onToggle={handleToggleHandsLock}
+                IconLocked={Lock} IconUnlocked={Unlock}
+                labelLocked="Hands Locked — Students Cannot Raise Hand"
+                labelUnlocked="Hands Unlocked — Students Can Raise Hand"
+            />
+
+            <HostToggleButton
+                isLocked={reactionsDisabled} onToggle={handleToggleReactions}
+                IconLocked={Smile} IconUnlocked={Smile}
+                labelLocked="Reactions Disabled"
+                labelUnlocked="Reactions Enabled"
             />
         </div>
     );
@@ -1066,10 +1066,10 @@ function HostParticipantList({ remoteParticipants, sendHostCommand, onRemovePart
         <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Participants</p>
             {remoteParticipants.map(p => {
-                let meta = {}; 
+                let meta = {};
                 try { meta = JSON.parse(p.metadata || '{}'); } catch (e) { console.error("Caught exception:", e); }
                 const pName = p.name || meta.name || p.identity;
-                
+
                 return (
                     <div key={p.identity} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1109,11 +1109,11 @@ function HostAnnouncement({ announcementText, setAnnouncementText, onSendAnnounc
         <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructor Announcement</p>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input 
-                    type="text" 
-                    value={announcementText} 
-                    onChange={e => setAnnouncementText(e.target.value)} 
-                    placeholder="Enter announcement..." 
+                <input
+                    type="text"
+                    value={announcementText}
+                    onChange={e => setAnnouncementText(e.target.value)}
+                    placeholder="Enter announcement..."
                     style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '0.5rem', borderRadius: 8, fontSize: '0.8rem' }}
                 />
                 <button onClick={onSendAnnouncement} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Send</button>
@@ -1138,7 +1138,7 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
 
     const handleMuteAll = () => sendHostCommand('mute_all');
     const handleRequestCameraOffAll = () => sendHostCommand('request_camera_off_all');
-    
+
     const handleToggleMicLock = () => {
         const newVal = !micLocked;
         setMicLocked(newVal);
@@ -1205,9 +1205,9 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
                 <ArrowDown size={16} color="#f59e0b" /> Lower All Hands
             </button>
 
-            <HostAnnouncement 
-                announcementText={announcementText} 
-                setAnnouncementText={setAnnouncementText} 
+            <HostAnnouncement
+                announcementText={announcementText}
+                setAnnouncementText={setAnnouncementText}
                 onSendAnnouncement={async () => {
                     if (!announcementText.trim()) return;
                     try {
@@ -1220,10 +1220,10 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
                         });
                         setAnnouncementText('');
                     } catch (e) { console.error("Caught exception:", e); }
-                }} 
+                }}
             />
 
-            <HostLocksSection 
+            <HostLocksSection
                 micLocked={micLocked} handleToggleMicLock={handleToggleMicLock}
                 chatLocked={chatLocked} handleToggleChatLock={handleToggleChatLock}
                 videoLocked={videoLocked} handleToggleVideoLock={handleToggleVideoLock}
@@ -1232,10 +1232,10 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
                 reactionsDisabled={reactionsDisabled} handleToggleReactions={handleToggleReactions}
             />
 
-            <HostParticipantList 
-                remoteParticipants={remoteParticipants} 
-                sendHostCommand={sendHostCommand} 
-                onRemoveParticipant={onRemoveParticipant} 
+            <HostParticipantList
+                remoteParticipants={remoteParticipants}
+                sendHostCommand={sendHostCommand}
+                onRemoveParticipant={onRemoveParticipant}
             />
         </div>
     );
@@ -1305,7 +1305,7 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
                     <MoreVertical size={14} color="white" />
                 </button>
                 {showControls && (
-                    <div role="button" tabIndex={0} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} style={{
+                    <div onClick={(e) => e.stopPropagation()} style={{
                         position: 'absolute', bottom: 40, left: 8, right: 8, zIndex: 20,
                         background: 'rgba(15,23,42,0.95)', borderRadius: 12, padding: 8,
                         border: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 6, justifyContent: 'center',
@@ -1336,8 +1336,8 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
             transition: 'opacity 0.2s ease', display: 'flex',
             alignItems: 'center', justifyContent: 'center', gap: 8,
         }}
-        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
             <button onClick={() => sendHostCommand('mute_participant')} style={buttonStyle}><MicOff size={12} /> Mute</button>
             <button onClick={() => sendHostCommand('request_camera_off')} style={buttonStyle}><VideoOff size={12} /> Cam Off</button>
             <button onClick={() => sendHostCommand('remove_participant')} style={{
@@ -1363,16 +1363,16 @@ ParticipantControlOverlay.propTypes = {
 
 // ─── Recording Controls (Organizer Only) ─────────────────────────────────────
 function RecordingControls({ isOrganizer, isMobile }) {
-    const { 
-        isRecording, 
-        isRecordingPaused, 
-        isUploading, 
-        gToken, 
-        loginToDrive, 
-        startRecording, 
-        pauseRecording, 
-        resumeRecording, 
-        stopAndUploadRecording 
+    const {
+        isRecording,
+        isRecordingPaused,
+        isUploading,
+        gToken,
+        loginToDrive,
+        startRecording,
+        pauseRecording,
+        resumeRecording,
+        stopAndUploadRecording
     } = useMeeting()
 
     const [recordingDuration, setRecordingDuration] = useState(0)
@@ -1464,7 +1464,7 @@ RecordingControls.propTypes = {
 // ─── Mic Button ─────────────────────────────────────────────────────────────
 function MicButton({ isOrganizer, micLocked, isMicOn, toggleMic, btnStyle }) {
     const isMicBlocked = !isOrganizer && micLocked && !isMicOn
-    
+
     let icon = <MicOff size={20} />
     if (isMicBlocked) {
         icon = <Lock size={20} />
@@ -1472,11 +1472,18 @@ function MicButton({ isOrganizer, micLocked, isMicOn, toggleMic, btnStyle }) {
         icon = <Mic size={20} />
     }
 
+    let title = 'Unmute'
+    if (isMicBlocked) {
+        title = 'Mic locked by instructor'
+    } else if (isMicOn) {
+        title = 'Mute'
+    }
+
     return (
         <button onClick={toggleMic} style={{
             ...btnStyle(isMicOn),
             ...(isMicBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
-        }} title={isMicBlocked ? 'Mic locked by instructor' : isMicOn ? 'Mute' : 'Unmute'}>
+        }} title={title}>
             {icon}
         </button>
     )
@@ -1493,7 +1500,7 @@ MicButton.propTypes = {
 // ─── Camera Button ──────────────────────────────────────────────────────────
 function CameraButton({ isOrganizer, videoLocked, isCamOn, toggleCam, btnStyle }) {
     const isCamBlocked = !isOrganizer && videoLocked && !isCamOn
-    
+
     let icon = <VideoOff size={20} />
     if (isCamBlocked) {
         icon = <Lock size={20} />
@@ -1501,11 +1508,18 @@ function CameraButton({ isOrganizer, videoLocked, isCamOn, toggleCam, btnStyle }
         icon = <Video size={20} />
     }
 
+    let title = 'Camera On'
+    if (isCamBlocked) {
+        title = 'Video locked by instructor'
+    } else if (isCamOn) {
+        title = 'Camera Off'
+    }
+
     return (
         <button onClick={toggleCam} style={{
             ...btnStyle(isCamOn),
             ...(isCamBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
-        }} title={isCamBlocked ? 'Video locked by instructor' : isCamOn ? 'Camera Off' : 'Camera On'}>
+        }} title={title}>
             {icon}
         </button>
     )
@@ -1575,7 +1589,7 @@ ReactionsButton.propTypes = {
 // ─── Hand Raise Button ──────────────────────────────────────────────────────
 function HandRaiseButton({ isOrganizer, handsLocked, handRaised, onToggleHand, raisedHandsCount, btnStyle }) {
     const isHandBlocked = !isOrganizer && handsLocked && !handRaised
-    
+
     let title = 'Raise Hand'
     if (isHandBlocked) {
         title = 'Hands locked by instructor'
@@ -1708,39 +1722,39 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
             <RecordingControls isOrganizer={isOrganizer} isMobile={isMobile} />
 
             {/* Mic */}
-            <MicButton 
-                isOrganizer={isOrganizer} 
-                micLocked={micLocked} 
-                isMicOn={isMicOn} 
-                toggleMic={toggleMic} 
-                btnStyle={btnStyle} 
+            <MicButton
+                isOrganizer={isOrganizer}
+                micLocked={micLocked}
+                isMicOn={isMicOn}
+                toggleMic={toggleMic}
+                btnStyle={btnStyle}
             />
 
             {/* Camera */}
-            <CameraButton 
-                isOrganizer={isOrganizer} 
-                videoLocked={videoLocked} 
-                isCamOn={isCamOn} 
-                toggleCam={toggleCam} 
-                btnStyle={btnStyle} 
+            <CameraButton
+                isOrganizer={isOrganizer}
+                videoLocked={videoLocked}
+                isCamOn={isCamOn}
+                toggleCam={toggleCam}
+                btnStyle={btnStyle}
             />
 
             {/* Screen Share (if supported by browser) */}
-            <ScreenShareButton 
-                isOrganizer={isOrganizer} 
-                screenShareLocked={screenShareLocked} 
-                isScreenSharing={isScreenSharing} 
-                toggleScreen={toggleScreen} 
-                btnStyle={btnStyle} 
+            <ScreenShareButton
+                isOrganizer={isOrganizer}
+                screenShareLocked={screenShareLocked}
+                isScreenSharing={isScreenSharing}
+                toggleScreen={toggleScreen}
+                btnStyle={btnStyle}
             />
 
             {/* Reactions */}
-            <ReactionsButton 
-                reactionsDisabled={reactionsDisabled} 
-                showReactionPicker={showReactionPicker} 
-                setShowReactionPicker={setShowReactionPicker} 
-                onSendReaction={onSendReaction} 
-                btnStyle={btnStyle} 
+            <ReactionsButton
+                reactionsDisabled={reactionsDisabled}
+                showReactionPicker={showReactionPicker}
+                setShowReactionPicker={setShowReactionPicker}
+                onSendReaction={onSendReaction}
+                btnStyle={btnStyle}
             />
 
             {/* Minimize */}
@@ -1749,13 +1763,13 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
             </button>
 
             {/* Hand Raise */}
-            <HandRaiseButton 
-                isOrganizer={isOrganizer} 
-                handsLocked={handsLocked} 
-                handRaised={handRaised} 
-                onToggleHand={onToggleHand} 
-                raisedHandsCount={raisedHandsCount} 
-                btnStyle={btnStyle} 
+            <HandRaiseButton
+                isOrganizer={isOrganizer}
+                handsLocked={handsLocked}
+                handRaised={handRaised}
+                onToggleHand={onToggleHand}
+                raisedHandsCount={raisedHandsCount}
+                btnStyle={btnStyle}
             />
 
             {/* Leave */}
@@ -1812,23 +1826,23 @@ const playNotificationSound = () => {
         const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext
         if (!AudioContext) return
         const ctx = new AudioContext()
-        
+
         const playTone = (freq, startTime, duration) => {
             const osc = ctx.createOscillator()
             const gain = ctx.createGain()
             osc.type = 'sine'
             osc.frequency.value = freq
-            
+
             gain.gain.setValueAtTime(0, startTime)
             gain.gain.linearRampToValueAtTime(0.3, startTime + 0.02)
             gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
-            
+
             osc.connect(gain)
             gain.connect(ctx.destination)
             osc.start(startTime)
             osc.stop(startTime + duration)
         }
-        
+
         playTone(659.25, ctx.currentTime, 0.4) // E5
         playTone(880, ctx.currentTime + 0.1, 0.6) // A5
     } catch (e) {
@@ -1897,158 +1911,199 @@ WaitingRoomTab.propTypes = {
     })
 };
 
-function useRoomDataChannel(room, isOrganizer, toast, onLeave, {
-    setReactions,
-    setRaisedHands,
-    setMicLocked,
-    setVideoLocked,
-    setScreenShareLocked,
-    setChatLocked,
-    setHandsLocked,
-    setHandRaised,
-    setReactionsDisabled
-}) {
+// ─── Room Data Channel Message Helpers ───────────────────────────────────────
+function processReaction(msg, setReactions) {
+    const id = `reaction-${Date.now()}-${Math.random()}`
+    const x = 10 + (globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80
+    setReactions(prev => [...prev, { id, emoji: msg.emoji, senderName: msg.senderName, x }])
+    setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
+}
+
+function processHandRaise(msg, room, setRaisedHands) {
+    if (msg.raised) {
+        setRaisedHands(prev => ({ ...prev, [msg.identity]: { name: msg.name, raisedAt: msg.timestamp } }))
+        if (msg.identity !== room.localParticipant.identity) {
+            playNotificationSound()
+        }
+    } else {
+        setRaisedHands(prev => {
+            const n = { ...prev }
+            delete n[msg.identity]
+            return n
+        })
+    }
+}
+
+function processHostCommand(msg, room, toast, onLeave, setters) {
+    const lp = room.localParticipant
+    const {
+        setMicLocked,
+        setVideoLocked,
+        setScreenShareLocked,
+        setChatLocked,
+        setHandsLocked,
+        setHandRaised,
+        setReactionsDisabled,
+        setRaisedHands
+    } = setters
+
+    switch (msg.command) {
+        case 'end_class':
+            toast.info('The instructor has ended the class.')
+            room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
+            onLeave()
+            break
+        case 'mute_all':
+            lp.setMicrophoneEnabled(false)
+            toast.info('🔇 Instructor muted all participants')
+            break
+        case 'mute_participant':
+            if (msg.identity === lp.identity) {
+                lp.setMicrophoneEnabled(false)
+                toast.info('🔇 Instructor muted your microphone')
+            }
+            break
+        case 'request_camera_off_all':
+            lp.setCameraEnabled(false)
+            toast.info('📷 Instructor requested cameras off')
+            break
+        case 'request_camera_off':
+            if (msg.identity === lp.identity) {
+                lp.setCameraEnabled(false)
+                toast.info('📷 Instructor requested your camera off')
+            }
+            break
+        case 'mic_lock':
+            setMicLocked(msg.enabled)
+            if (msg.enabled) {
+                lp.setMicrophoneEnabled(false)
+                toast.warning('🔒 Instructor locked microphones')
+            } else {
+                toast.success('🔓 Microphones unlocked')
+            }
+            break
+        case 'video_lock':
+            setVideoLocked(msg.enabled)
+            if (msg.enabled) {
+                lp.setCameraEnabled(false)
+                toast.warning('🔒 Instructor locked cameras')
+            } else {
+                toast.success('🔓 Cameras unlocked')
+            }
+            break
+        case 'screen_share_lock':
+            setScreenShareLocked(msg.enabled)
+            if (msg.enabled) {
+                if (lp.isScreenShareEnabled) {
+                    lp.setScreenShareEnabled(false)
+                }
+                toast.warning('🔒 Instructor locked screen sharing')
+            } else {
+                toast.success('🔓 Screen sharing unlocked')
+            }
+            break
+        case 'chat_lock':
+            setChatLocked(msg.enabled)
+            if (msg.enabled) {
+                toast.warning('🔒 Instructor locked the chat')
+            } else {
+                toast.success('🔓 Chat unlocked')
+            }
+            break
+        case 'hands_lock':
+            setHandsLocked(msg.enabled)
+            if (msg.enabled) {
+                try {
+                    const meta = JSON.parse(lp.metadata || '{}')
+                    if (meta.handRaised) {
+                        lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+                    }
+                } catch (e) { console.error("Caught exception:", e); }
+                setHandRaised(false)
+                toast.warning('🔒 Instructor locked hand raising')
+            } else {
+                toast.success('🔓 Hand raising unlocked')
+            }
+            break
+        case 'reactions_disabled':
+            setReactionsDisabled(msg.value)
+            toast.info(msg.value ? '😶 Reactions disabled by instructor' : '😀 Reactions enabled')
+            break
+        case 'lower_hand':
+            if (msg.identity === lp.identity) {
+                try {
+                    const meta = JSON.parse(lp.metadata || '{}')
+                    lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+                } catch (e) { console.error("Caught exception:", e); }
+                setHandRaised(false)
+                setRaisedHands(prev => {
+                    const n = { ...prev }
+                    delete n[lp.identity]
+                    return n
+                })
+                toast.info('✋ Instructor lowered your hand')
+            }
+            break
+        case 'lower_all_hands': {
+            try {
+                const meta = JSON.parse(lp.metadata || '{}')
+                if (meta.handRaised) {
+                    lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+                }
+            } catch (e) { console.error("Caught exception:", e); }
+            setHandRaised(false)
+            setRaisedHands({})
+            toast.info('✋ Instructor lowered all hands')
+            break
+        }
+        case 'remove_participant':
+            if (msg.identity === lp.identity) {
+                toast.error('🚫 You have been removed from this meeting')
+                setTimeout(() => {
+                    room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
+                    onLeave()
+                }, 1500)
+            }
+            break
+    }
+}
+
+function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters) {
+    const {
+        setReactions,
+        setRaisedHands,
+        setMicLocked,
+        setVideoLocked,
+        setScreenShareLocked,
+        setChatLocked,
+        setHandsLocked,
+        setHandRaised,
+        setReactionsDisabled
+    } = setters
+
     useEffect(() => {
         if (!room) return
         const decoder = new TextDecoder()
-        let reactionIdCounter = 0
 
         const handleDataReceived = (payload) => {
             try {
                 const msg = JSON.parse(decoder.decode(payload))
 
                 if (msg.type === 'reaction') {
-                    const id = `reaction-${Date.now()}-${reactionIdCounter++}`
-                    const x = 10 + (globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80
-                    setReactions(prev => [...prev, { id, emoji: msg.emoji, senderName: msg.senderName, x }])
-                    setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
-                }
-
-                if (msg.type === 'hand_raise') {
-                    if (msg.raised) {
-                        setRaisedHands(prev => ({ ...prev, [msg.identity]: { name: msg.name, raisedAt: msg.timestamp } }))
-                        if (msg.identity !== room.localParticipant.identity) {
-                            playNotificationSound()
-                        }
-                    } else {
-                        setRaisedHands(prev => { const n = { ...prev }; delete n[msg.identity]; return n })
-                    }
-                }
-
-                if (msg.type === 'host_command' && !isOrganizer) {
-                    const lp = room.localParticipant
-                    switch (msg.command) {
-                        case 'end_class':
-                            toast.info('The instructor has ended the class.')
-                            room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
-                            onLeave()
-                            break
-                        case 'mute_all':
-                            lp.setMicrophoneEnabled(false)
-                            toast.info('🔇 Instructor muted all participants')
-                            break
-                        case 'mute_participant':
-                            if (msg.identity === lp.identity) {
-                                lp.setMicrophoneEnabled(false)
-                                toast.info('🔇 Instructor muted your microphone')
-                            }
-                            break
-                        case 'request_camera_off_all':
-                            lp.setCameraEnabled(false)
-                            toast.info('📷 Instructor requested cameras off')
-                            break
-                        case 'request_camera_off':
-                            if (msg.identity === lp.identity) {
-                                lp.setCameraEnabled(false)
-                                toast.info('📷 Instructor requested your camera off')
-                            }
-                            break
-                        case 'mic_lock':
-                            setMicLocked(msg.enabled)
-                            if (msg.enabled) {
-                                lp.setMicrophoneEnabled(false)
-                                toast.warning('🔒 Instructor locked microphones')
-                            } else {
-                                toast.success('🔓 Microphones unlocked')
-                            }
-                            break
-                        case 'video_lock':
-                            setVideoLocked(msg.enabled)
-                            if (msg.enabled) {
-                                lp.setCameraEnabled(false)
-                                toast.warning('🔒 Instructor locked cameras')
-                            } else {
-                                toast.success('🔓 Cameras unlocked')
-                            }
-                            break
-                        case 'screen_share_lock':
-                            setScreenShareLocked(msg.enabled)
-                            if (msg.enabled) {
-                                if (lp.isScreenShareEnabled) {
-                                    lp.setScreenShareEnabled(false)
-                                }
-                                toast.warning('🔒 Instructor locked screen sharing')
-                            } else {
-                                toast.success('🔓 Screen sharing unlocked')
-                            }
-                            break
-                        case 'chat_lock':
-                            setChatLocked(msg.enabled)
-                            if (msg.enabled) {
-                                toast.warning('🔒 Instructor locked the chat')
-                            } else {
-                                toast.success('🔓 Chat unlocked')
-                            }
-                            break
-                        case 'hands_lock':
-                            setHandsLocked(msg.enabled)
-                            if (msg.enabled) {
-                                try {
-                                    const meta = JSON.parse(lp.metadata || '{}')
-                                    if (meta.handRaised) {
-                                        lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-                                    }
-                                } catch (e) { console.error("Caught exception:", e); }
-                                setHandRaised(false)
-                                toast.warning('🔒 Instructor locked hand raising')
-                            } else {
-                                toast.success('🔓 Hand raising unlocked')
-                            }
-                            break
-                        case 'reactions_disabled':
-                            setReactionsDisabled(msg.value)
-                            toast.info(msg.value ? '😶 Reactions disabled by instructor' : '😀 Reactions enabled')
-                            break
-                        case 'lower_hand':
-                            if (msg.identity === lp.identity) {
-                                try {
-                                    const meta = JSON.parse(lp.metadata || '{}')
-                                    lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-                                } catch (e) { console.error("Caught exception:", e); }
-                                setHandRaised(false)
-                                setRaisedHands(prev => { const n = { ...prev }; delete n[lp.identity]; return n })
-                                toast.info('✋ Instructor lowered your hand')
-                            }
-                            break
-                        case 'lower_all_hands': {
-                            try {
-                                const meta = JSON.parse(lp.metadata || '{}')
-                                if (meta.handRaised) {
-                                    lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-                                }
-                            } catch (e) { console.error("Caught exception:", e); }
-                            setHandRaised(false)
-                            setRaisedHands({})
-                            toast.info('✋ Instructor lowered all hands')
-                            break
-                        }
-                        case 'remove_participant':
-                            if (msg.identity === lp.identity) {
-                                toast.error('🚫 You have been removed from this meeting')
-                                setTimeout(() => { room.forceDisconnect ? room.forceDisconnect() : room.disconnect(); onLeave() }, 1500)
-                            }
-                            break
-                    }
+                    processReaction(msg, setReactions)
+                } else if (msg.type === 'hand_raise') {
+                    processHandRaise(msg, room, setRaisedHands)
+                } else if (msg.type === 'host_command' && !isOrganizer) {
+                    processHostCommand(msg, room, toast, onLeave, {
+                        setMicLocked,
+                        setVideoLocked,
+                        setScreenShareLocked,
+                        setChatLocked,
+                        setHandsLocked,
+                        setHandRaised,
+                        setReactionsDisabled,
+                        setRaisedHands
+                    })
                 }
             } catch (error) {
                 console.error("Caught exception processing data:", error)
@@ -2070,7 +2125,7 @@ function useParticipantSystemMessages(room, isOrganizer, videoDataId, profileId)
         if (!room || !isOrganizer) return;
         const timers = {};
         const joinedSet = new Set();
-        
+
         const onParticipantConnected = (p) => {
             timers[p.identity] = setTimeout(async () => {
                 joinedSet.add(p.identity);
@@ -2084,7 +2139,7 @@ function useParticipantSystemMessages(room, isOrganizer, videoDataId, profileId)
                 } catch (e) { console.error("Caught exception:", e); }
             }, 10000);
         };
-        
+
         const onParticipantDisconnected = async (p) => {
             if (timers[p.identity]) {
                 clearTimeout(timers[p.identity]);
@@ -2102,10 +2157,10 @@ function useParticipantSystemMessages(room, isOrganizer, videoDataId, profileId)
                 } catch (e) { console.error("Caught exception:", e); }
             }
         };
-        
+
         room.on(RoomEvent.ParticipantConnected, onParticipantConnected);
         room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
-        
+
         return () => {
             room.off(RoomEvent.ParticipantConnected, onParticipantConnected);
             room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
@@ -2121,9 +2176,9 @@ function useAttendanceTracking(isOrganizer, profileId, videoDataId, refreshStats
         joinTimeRef.current = Date.now()
 
         const attendanceChannel = supabase.channel(`attendance-${profileId}-${videoDataId}`)
-            .on('postgres_changes', { 
-                event: 'UPDATE', 
-                schema: 'public', 
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
                 table: 'live_attendance',
                 filter: `student_id=eq.${profileId}`
             }, (payload) => {
@@ -2206,6 +2261,144 @@ RoomTopBar.propTypes = {
     toggleFullScreen: PropTypes.func.isRequired
 }
 
+// ─── Sidebar Helpers ─────────────────────────────────────────────────────────
+function getSidebarLayout(isMobile, isLandscape) {
+    const isMobilePortrait = isMobile && !isLandscape;
+    const isMobileLandscape = isMobile && isLandscape;
+
+    if (isMobilePortrait) {
+        return {
+            width: '100%',
+            height: '60%',
+            minHeight: '50%',
+            maxHeight: '85%',
+            position: 'absolute',
+            bottom: 0,
+            background: 'rgba(15,23,42,0.98)',
+            borderLeft: 'none',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            backdropFilter: 'blur(12px)',
+            zIndex: 20,
+            boxShadow: '0 -10px 40px rgba(0,0,0,0.5)'
+        }
+    }
+
+    return {
+        width: isMobileLandscape ? '280px' : '360px',
+        height: '100%',
+        minHeight: 'auto',
+        maxHeight: 'none',
+        position: 'relative',
+        bottom: 'auto',
+        background: 'rgba(15,23,42,0.98)',
+        borderLeft: '1px solid rgba(255,255,255,0.08)',
+        borderTop: 'none',
+        borderTopLeftRadius: 0,
+        borderTopRightRadius: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        backdropFilter: 'blur(12px)',
+        zIndex: 20,
+        boxShadow: 'none'
+    }
+}
+
+function getSidebarTabs(isOrganizer, unreadChatCount, waitingStudentsCount, raisedHandsCount) {
+    const tabs = [
+        { id: 'chat', icon: MessageSquare, label: unreadChatCount > 0 ? `Chat (${unreadChatCount})` : 'Chat' },
+        { id: 'notes', icon: Edit3, label: 'Notes' },
+        { id: 'polls', icon: BarChart2, label: 'Polls' }
+    ]
+    if (isOrganizer) {
+        tabs.push(
+            { id: 'attendance', icon: Users, label: 'Att.' },
+            { id: 'waiting', icon: UserPlus, label: `Wait (${waitingStudentsCount})` },
+            { id: 'hands', icon: Hand, label: `✋ (${raisedHandsCount})` },
+            { id: 'host', icon: ShieldCheck, label: 'Host' }
+        )
+    }
+    return tabs
+}
+
+function SidebarContent({
+    sidebarTab, videoId, isOrganizer, chatLocked, setChatLocked, channelInstance, setUnreadChatCount,
+    videoTitle, waitingStudents, setWaitingStudents, allParticipants, raisedHands,
+    lowerHand, lowerAllHands, room, micLocked, setMicLocked, videoLocked, setVideoLocked,
+    screenShareLocked, setScreenShareLocked, handsLocked, setHandsLocked,
+    reactionsDisabled, setReactionsDisabled, removeParticipant, announcementText, setAnnouncementText
+}) {
+    return (
+        <>
+            <div style={{ display: sidebarTab === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'column', height: '100%' }}>
+                <LiveChat videoId={videoId} isOrganizer={isOrganizer} chatLocked={chatLocked} channel={channelInstance} onNewMessage={() => {
+                    if (sidebarTab !== 'chat') setUnreadChatCount(c => c + 1)
+                }} />
+            </div>
+            {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
+            {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
+            {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoTitle} />}
+            {sidebarTab === 'waiting' && isOrganizer && <WaitingRoomTab waitingStudents={waitingStudents} setWaitingStudents={setWaitingStudents} channel={channelInstance} />}
+            {sidebarTab === 'hands' && isOrganizer && <RaisedHandsPanel participants={allParticipants} raisedHandsFromDataChannel={raisedHands} onLowerHand={lowerHand} onLowerAll={lowerAllHands} />}
+            {sidebarTab === 'host' && isOrganizer && (
+                <HostControlsTab
+                    room={room}
+                    participants={allParticipants}
+                    chatLocked={chatLocked}
+                    setChatLocked={setChatLocked}
+                    micLocked={micLocked}
+                    setMicLocked={setMicLocked}
+                    videoLocked={videoLocked}
+                    setVideoLocked={setVideoLocked}
+                    screenShareLocked={screenShareLocked}
+                    setScreenShareLocked={setScreenShareLocked}
+                    handsLocked={handsLocked}
+                    setHandsLocked={setHandsLocked}
+                    reactionsDisabled={reactionsDisabled}
+                    setReactionsDisabled={setReactionsDisabled}
+                    onLowerAllHands={lowerAllHands}
+                    onRemoveParticipant={removeParticipant}
+                    announcementText={announcementText}
+                    setAnnouncementText={setAnnouncementText}
+                />
+            )}
+        </>
+    )
+}
+
+SidebarContent.propTypes = {
+    sidebarTab: PropTypes.string.isRequired,
+    videoId: PropTypes.string,
+    isOrganizer: PropTypes.bool.isRequired,
+    chatLocked: PropTypes.bool.isRequired,
+    channelInstance: PropTypes.object,
+    setUnreadChatCount: PropTypes.func.isRequired,
+    videoTitle: PropTypes.string,
+    waitingStudents: PropTypes.array,
+    setWaitingStudents: PropTypes.func,
+    allParticipants: PropTypes.array,
+    raisedHands: PropTypes.object,
+    lowerHand: PropTypes.func,
+    lowerAllHands: PropTypes.func,
+    room: PropTypes.object,
+    micLocked: PropTypes.bool.isRequired,
+    setMicLocked: PropTypes.func.isRequired,
+    videoLocked: PropTypes.bool.isRequired,
+    setVideoLocked: PropTypes.func.isRequired,
+    screenShareLocked: PropTypes.bool.isRequired,
+    setScreenShareLocked: PropTypes.func.isRequired,
+    handsLocked: PropTypes.bool.isRequired,
+    setHandsLocked: PropTypes.func.isRequired,
+    reactionsDisabled: PropTypes.bool.isRequired,
+    setReactionsDisabled: PropTypes.func.isRequired,
+    removeParticipant: PropTypes.func,
+    announcementText: PropTypes.string,
+    setAnnouncementText: PropTypes.func
+}
+
 function RoomSidebar({
     isMobile, isLandscape, sidebarTab, setSidebarTab, unreadChatCount, setUnreadChatCount,
     raisedHandsCount, waitingStudents, setWaitingStudents, videoId, isOrganizer, chatLocked,
@@ -2225,46 +2418,11 @@ function RoomSidebar({
         }
     }
 
-    const getSidebarTabs = () => {
-        const tabs = [
-            { id: 'chat', icon: MessageSquare, label: unreadChatCount > 0 ? `Chat (${unreadChatCount})` : 'Chat' },
-            { id: 'notes', icon: Edit3, label: 'Notes' },
-            { id: 'polls', icon: BarChart2, label: 'Polls' }
-        ]
-        if (isOrganizer) {
-            tabs.push(
-                { id: 'attendance', icon: Users, label: 'Att.' },
-                { id: 'waiting', icon: UserPlus, label: `Wait (${waitingStudents?.length || 0})` },
-                { id: 'hands', icon: Hand, label: `✋ (${raisedHandsCount})` },
-                { id: 'host', icon: ShieldCheck, label: 'Host' }
-            )
-        }
-        return tabs
-    }
-
-    const sidebarTabs = getSidebarTabs()
-
-    const sidebarStyle = {
-        width: (isMobile && !isLandscape) ? '100%' : ((isMobile && isLandscape) ? '280px' : '360px'),
-        height: (isMobile && !isLandscape) ? '60%' : '100%',
-        minHeight: (isMobile && !isLandscape) ? '50%' : 'auto',
-        maxHeight: (isMobile && !isLandscape) ? '85%' : 'none',
-        position: (isMobile && !isLandscape) ? 'absolute' : 'relative',
-        bottom: (isMobile && !isLandscape) ? 0 : 'auto',
-        background: 'rgba(15,23,42,0.98)',
-        borderLeft: (isMobile && !isLandscape) ? 'none' : '1px solid rgba(255,255,255,0.08)',
-        borderTop: (isMobile && !isLandscape) ? '1px solid rgba(255,255,255,0.08)' : 'none',
-        borderTopLeftRadius: (isMobile && !isLandscape) ? 16 : 0,
-        borderTopRightRadius: (isMobile && !isLandscape) ? 16 : 0,
-        display: 'flex',
-        flexDirection: 'column',
-        backdropFilter: 'blur(12px)',
-        zIndex: 20,
-        boxShadow: (isMobile && !isLandscape) ? '0 -10px 40px rgba(0,0,0,0.5)' : 'none'
-    }
+    const sidebarTabs = getSidebarTabs(isOrganizer, unreadChatCount, waitingStudents?.length || 0, raisedHandsCount)
+    const sidebarStyle = getSidebarLayout(isMobile, isLandscape)
 
     return (
-        <div 
+        <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             style={sidebarStyle}
@@ -2294,38 +2452,36 @@ function RoomSidebar({
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: sidebarTab === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'column', height: '100%' }}>
-                    <LiveChat videoId={videoId} isOrganizer={isOrganizer} chatLocked={chatLocked} channel={channelInstance} onNewMessage={() => {
-                        if (sidebarTab !== 'chat') setUnreadChatCount(c => c + 1)
-                    }} />
-                </div>
-                {sidebarTab === 'notes' && <LiveNotes videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
-                {sidebarTab === 'polls' && <LivePolls videoId={videoId} isOrganizer={isOrganizer} channel={channelInstance} />}
-                {sidebarTab === 'attendance' && isOrganizer && <LiveAttendance videoId={videoId} isOrganizer={isOrganizer} videoTitle={videoTitle} />}
-                {sidebarTab === 'waiting' && isOrganizer && <WaitingRoomTab waitingStudents={waitingStudents} setWaitingStudents={setWaitingStudents} channel={channelInstance} />}
-                {sidebarTab === 'hands' && isOrganizer && <RaisedHandsPanel participants={allParticipants} raisedHandsFromDataChannel={raisedHands} onLowerHand={lowerHand} onLowerAll={lowerAllHands} />}
-                {sidebarTab === 'host' && isOrganizer && (
-                    <HostControlsTab
-                        room={room}
-                        participants={allParticipants}
-                        chatLocked={chatLocked}
-                        setChatLocked={setChatLocked}
-                        micLocked={micLocked}
-                        setMicLocked={setMicLocked}
-                        videoLocked={videoLocked}
-                        setVideoLocked={setVideoLocked}
-                        screenShareLocked={screenShareLocked}
-                        setScreenShareLocked={setScreenShareLocked}
-                        handsLocked={handsLocked}
-                        setHandsLocked={setHandsLocked}
-                        reactionsDisabled={reactionsDisabled}
-                        setReactionsDisabled={setReactionsDisabled}
-                        onLowerAllHands={lowerAllHands}
-                        onRemoveParticipant={removeParticipant}
-                        announcementText={announcementText}
-                        setAnnouncementText={setAnnouncementText}
-                    />
-                )}
+                <SidebarContent
+                    sidebarTab={sidebarTab}
+                    videoId={videoId}
+                    isOrganizer={isOrganizer}
+                    chatLocked={chatLocked}
+                    setChatLocked={setChatLocked}
+                    channelInstance={channelInstance}
+                    setUnreadChatCount={setUnreadChatCount}
+                    videoTitle={videoTitle}
+                    waitingStudents={waitingStudents}
+                    setWaitingStudents={setWaitingStudents}
+                    allParticipants={allParticipants}
+                    raisedHands={raisedHands}
+                    lowerHand={lowerHand}
+                    lowerAllHands={lowerAllHands}
+                    room={room}
+                    micLocked={micLocked}
+                    setMicLocked={setMicLocked}
+                    videoLocked={videoLocked}
+                    setVideoLocked={setVideoLocked}
+                    screenShareLocked={screenShareLocked}
+                    setScreenShareLocked={setScreenShareLocked}
+                    handsLocked={handsLocked}
+                    setHandsLocked={setHandsLocked}
+                    reactionsDisabled={reactionsDisabled}
+                    setReactionsDisabled={setReactionsDisabled}
+                    removeParticipant={removeParticipant}
+                    announcementText={announcementText}
+                    setAnnouncementText={setAnnouncementText}
+                />
             </div>
         </div>
     )
@@ -2368,6 +2524,47 @@ RoomSidebar.propTypes = {
     videoTitle: PropTypes.string
 }
 
+function WaitingStudentToast({ student, channelInstance, setWaitingStudents }) {
+    const handleAdmit = () => {
+        channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: student.id, admitted: true } })
+        setWaitingStudents(prev => prev.filter(x => x.id !== student.id))
+    }
+
+    const handleDeny = () => {
+        channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: student.id, admitted: false } })
+        setWaitingStudents(prev => prev.filter(x => x.id !== student.id))
+    }
+
+    return (
+        <div style={{
+            background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12,
+            padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)', width: 280, backdropFilter: 'blur(8px)',
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ background: 'rgba(99,102,241,0.2)', padding: 8, borderRadius: '50%' }}><UserPlus size={18} color="#818cf8" /></div>
+                <div>
+                    <p style={{ margin: 0, color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>Join Request</p>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }}>{student.name} wants to join.</p>
+                </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={handleAdmit} style={{ flex: 1, background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Admit</button>
+                <button onClick={handleDeny} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Deny</button>
+            </div>
+        </div>
+    )
+}
+
+WaitingStudentToast.propTypes = {
+    student: PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired
+    }).isRequired,
+    channelInstance: PropTypes.object,
+    setWaitingStudents: PropTypes.func
+}
+
 function QuickAdmitToasts({ isOrganizer, waitingStudents, setWaitingStudents, channelInstance }) {
     if (!isOrganizer || !waitingStudents || waitingStudents.length === 0) return null
 
@@ -2377,29 +2574,12 @@ function QuickAdmitToasts({ isOrganizer, waitingStudents, setWaitingStudents, ch
     return (
         <div style={{ position: 'fixed', bottom: 100, left: 24, zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {visibleWaiting.map(s => (
-                <div key={s.id} style={{
-                    background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12,
-                    padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)', width: 280, backdropFilter: 'blur(8px)',
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ background: 'rgba(99,102,241,0.2)', padding: 8, borderRadius: '50%' }}><UserPlus size={18} color="#818cf8"/></div>
-                        <div>
-                            <p style={{ margin: 0, color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>Join Request</p>
-                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }}>{s.name} wants to join.</p>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button onClick={() => {
-                            channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: s.id, admitted: true } })
-                            setWaitingStudents(prev => prev.filter(x => x.id !== s.id))
-                        }} style={{ flex: 1, background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Admit</button>
-                        <button onClick={() => {
-                            channelInstance.send({ type: 'broadcast', event: 'join_response', payload: { studentId: s.id, admitted: false } })
-                            setWaitingStudents(prev => prev.filter(x => x.id !== s.id))
-                        }} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Deny</button>
-                    </div>
-                </div>
+                <WaitingStudentToast
+                    key={s.id}
+                    student={s}
+                    channelInstance={channelInstance}
+                    setWaitingStudents={setWaitingStudents}
+                />
             ))}
             {extraCount > 0 && (
                 <div style={{ background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.8rem', padding: '0.5rem', borderRadius: 8, textAlign: 'center', width: 280 }}>
@@ -2446,6 +2626,10 @@ LeaveConfirmModal.propTypes = {
     onConfirmEnd: PropTypes.func.isRequired,
     onConfirmLeave: PropTypes.func.isRequired,
     onClose: PropTypes.func.isRequired
+}
+
+function removeReaction(id, setReactions) {
+    setReactions(prev => prev.filter(r => r.id !== id))
 }
 
 function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, onMinimize, refreshStats, toast, waitingStudents, setWaitingStudents }) {
@@ -2564,7 +2748,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         const id = `reaction-${now}-${reactionIdCounter.current++}`
         const x = 10 + (globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80
         setReactions(prev => [...prev, { id, emoji, senderName, x }])
-        setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
+        setTimeout(() => removeReaction(id, setReactions), 2800)
     }, [room, reactionsDisabled])
 
     // ── Toggle Hand Raise (hybrid: metadata + data channel fallback) ──
@@ -2677,7 +2861,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
                 ended_at: new Date().toISOString(),
                 chat_cleanup_at: cleanupAt.toISOString()
             })
-            
+
             const msg = JSON.stringify({ type: 'host_command', command: 'end_class' })
             const encoder = new TextEncoder()
             await room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
@@ -2694,7 +2878,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     }
 
     return (
-        <div ref={containerRef} style={{ 
+        <div ref={containerRef} style={{
             height: '100%', flex: 1, display: 'flex', flexDirection: 'column', background: '#020617',
             paddingTop: 'env(safe-area-inset-top)',
             paddingBottom: 'env(safe-area-inset-bottom)',
@@ -2847,6 +3031,19 @@ function ParticipantCount() {
     )
 }
 
+function startLobbyInterval(channel, isOrganizer) {
+    if (isOrganizer) {
+        channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
+        return setInterval(() => {
+            channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
+        }, 15000)
+    }
+    channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
+    return setInterval(() => {
+        channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
+    }, 15000)
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function LiveClassroom() {
     const { videoId } = useParams()
@@ -2882,6 +3079,41 @@ export default function LiveClassroom() {
         return 'idle' // idle, requesting, timeout, admitted_animating, admitted, denied
     })
 
+    const handleJoinRequest = useCallback((p) => {
+        if (isOrganizerRef.current) {
+            setWaitingStudents(prev => {
+                if (prev.some(s => s.id === p.payload.studentId)) return prev
+                return [...prev, {
+                    id: p.payload.studentId,
+                    name: p.payload.studentName,
+                    timestamp: Date.now()
+                }]
+            })
+        }
+    }, [])
+
+    const handleJoinCancelled = useCallback((p) => {
+        if (isOrganizerRef.current) {
+            setWaitingStudents(prev => prev.filter(s => s.id !== p.payload.studentId))
+        }
+    }, [])
+
+    const handleJoinResponse = useCallback((p) => {
+        if (!isOrganizerRef.current && p.payload.studentId === profile?.id) {
+            if (p.payload.admitted) {
+                setJoinStatus('admitted_animating')
+                setTimeout(() => setJoinStatus('admitted'), 1500)
+                try {
+                    const admitted = JSON.parse(sessionStorage.getItem('admitted_classes') || '{}')
+                    admitted[videoId] = Date.now()
+                    sessionStorage.setItem('admitted_classes', JSON.stringify(admitted))
+                } catch (e) { console.error("Caught exception:", e); }
+            } else {
+                setJoinStatus('denied')
+            }
+        }
+    }, [videoId, profile?.id])
+
     // ── Fetch Video Data & Setup Real-time Channel ──
     useEffect(() => {
         let intervalId = null
@@ -2911,53 +3143,12 @@ export default function LiveClassroom() {
                         // so newly joining students also get presence confirmation
                     }
                 })
-                .on('broadcast', { event: 'join_request' }, (p) => {
-                    if (isOrganizerRef.current) {
-                        setWaitingStudents(prev => {
-                            if (prev.some(s => s.id === p.payload.studentId)) return prev
-                            return [...prev, {
-                                id: p.payload.studentId,
-                                name: p.payload.studentName,
-                                timestamp: Date.now()
-                            }]
-                        })
-                    }
-                })
-                .on('broadcast', { event: 'join_cancelled' }, (p) => {
-                    if (isOrganizerRef.current) {
-                        setWaitingStudents(prev => prev.filter(s => s.id !== p.payload.studentId))
-                    }
-                })
-                .on('broadcast', { event: 'join_response' }, (p) => {
-                    if (!isOrganizerRef.current && p.payload.studentId === profile?.id) {
-                        if (p.payload.admitted) {
-                            setJoinStatus('admitted_animating')
-                            setTimeout(() => setJoinStatus('admitted'), 1500)
-                            try {
-                                const admitted = JSON.parse(sessionStorage.getItem('admitted_classes') || '{}')
-                                admitted[videoId] = Date.now()
-                                sessionStorage.setItem('admitted_classes', JSON.stringify(admitted))
-                            } catch (e) { console.error("Caught exception:", e); }
-                        } else {
-                            setJoinStatus('denied')
-                        }
-                    }
-                })
+                .on('broadcast', { event: 'join_request' }, handleJoinRequest)
+                .on('broadcast', { event: 'join_cancelled' }, handleJoinCancelled)
+                .on('broadcast', { event: 'join_response' }, handleJoinResponse)
                 .subscribe((status) => {
                     if (status === 'SUBSCRIBED') {
-                        if (isOrganizerRef.current) {
-                            // Broadcast presence immediately and keep pinging every 15s
-                            // so any student who joins later also gets notified
-                            channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
-                            intervalId = setInterval(() => {
-                                channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
-                            }, 15000)
-                        } else {
-                            channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
-                            intervalId = setInterval(() => {
-                                channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
-                            }, 15000)
-                        }
+                        intervalId = startLobbyInterval(channel, isOrganizerRef.current)
                     }
                 })
         }
@@ -2967,7 +3158,7 @@ export default function LiveClassroom() {
             if (intervalId) clearInterval(intervalId)
             if (localChannel) supabase.removeChannel(localChannel)
         }
-    }, [videoId, isOrganizer, navigate, profile?.id, profile?.role])
+    }, [videoId, isOrganizer, navigate, profile?.id, profile?.role, handleJoinRequest, handleJoinCancelled, handleJoinResponse])
 
     // ── Fetch LiveKit Token ──
     useEffect(() => {
