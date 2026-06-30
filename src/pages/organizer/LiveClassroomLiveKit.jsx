@@ -1305,7 +1305,7 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
                     <MoreVertical size={14} color="white" />
                 </button>
                 {showControls && (
-                    <div onClick={(e) => e.stopPropagation()} style={{
+                    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} style={{
                         position: 'absolute', bottom: 40, left: 8, right: 8, zIndex: 20,
                         background: 'rgba(15,23,42,0.95)', borderRadius: 12, padding: 8,
                         border: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 6, justifyContent: 'center',
