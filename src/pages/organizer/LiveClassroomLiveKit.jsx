@@ -1913,7 +1913,8 @@ WaitingRoomTab.propTypes = {
 
 // ─── Room Data Channel Message Helpers ───────────────────────────────────────
 function processReaction(msg, setReactions) {
-    const id = `reaction-${Date.now()}-${Math.random()}`
+    const randomIdVal = globalThis.crypto.getRandomValues(new Uint32Array(1))[0]
+    const id = `reaction-${Date.now()}-${randomIdVal}`
     const x = 10 + (globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * 80
     setReactions(prev => [...prev, { id, emoji: msg.emoji, senderName: msg.senderName, x }])
     setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 2800)
