@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 const { execSync } = require('child_process');
 
 let code = fs.readFileSync('src/pages/organizer/LiveClassroomLiveKit.jsx', 'utf8');

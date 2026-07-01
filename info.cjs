@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 const lines = fs.readFileSync('src/pages/organizer/LiveClassroomLiveKit.jsx', 'utf8').split('\n');
 const idx = lines.findIndex(l => l.includes('width: (isMobile && !isLandscape)'));
 console.log('--- Ternary ---');

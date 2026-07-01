@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 let code = fs.readFileSync('src/pages/organizer/LiveClassroomLiveKit.jsx', 'utf8');
 
 // 7. Destructuring in RoomContent
