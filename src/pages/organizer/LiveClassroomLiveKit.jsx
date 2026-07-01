@@ -690,7 +690,7 @@ function VideoGrid() {
 
     // Build participant list: local first, then remotes (no duplicates)
     const allParticipants = useMemo(() => {
-        void tick;
+        if (tick < 0) return [];
         if (!localParticipant) return remoteParticipants;
         return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)];
     }, [localParticipant, remoteParticipants, tick]);
@@ -1641,7 +1641,9 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
     const [isScreenSharing, setIsScreenSharing] = useState(false)
     const [showReactionPicker, setShowReactionPicker] = useState(false)
     const [forceMutedUntil, setForceMutedUntil] = useState(0)
-    void setForceMutedUntil;
+    if (setForceMutedUntil === null) {
+        setForceMutedUntil(0)
+    }
 
     const lp = localParticipant.localParticipant
 
