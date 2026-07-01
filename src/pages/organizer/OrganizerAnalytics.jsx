@@ -191,12 +191,6 @@ export default function OrganizerAnalytics() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  useEffect(() => {
-    if (profile?.id) {
-      loadDashboardData()
-    }
-  }, [profile, loadDashboardData])
-
   const loadDashboardData = useCallback(async () => {
     setLoading(true)
     try {
@@ -253,6 +247,12 @@ export default function OrganizerAnalytics() {
       setLoading(false)
     }
   }, [profile])
+
+  useEffect(() => {
+    if (profile?.id) {
+      loadDashboardData()
+    }
+  }, [profile, loadDashboardData])
 
   const downloadAnalyticsPDF = async () => {
     setExporting(true)
