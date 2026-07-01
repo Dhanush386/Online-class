@@ -88,7 +88,7 @@ CustomAudioTrack.propTypes = {
 
 // ─── Hook: get tracks for a single participant via direct events (no LiveKit hooks) ──
 function useManualParticipantTracks(participant) {
-    const [, setTick] = useState(0)
+    const [tick, setTick] = useState(0)
     useEffect(() => {
         if (!participant) return
         const bump = () => setTick(n => n + 1)
@@ -117,7 +117,7 @@ function useManualParticipantTracks(participant) {
     const camera = participant?.getTrackPublication(Track.Source.Camera)
     const screen = participant?.getTrackPublication(Track.Source.ScreenShare)
     const mic = participant?.getTrackPublication(Track.Source.Microphone)
-    return { camera, screen, mic }
+    return { camera, screen, mic, tick }
 }
 
 // ─── Tile Helper Components ────────────────────────────────────────────────────────
@@ -669,7 +669,7 @@ function VideoGrid() {
     const remoteParticipants = useRemoteParticipants();
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
-    const [, setTick] = useState(0);
+    const [tick, setTick] = useState(0);
     const [pinnedIdentity, setPinnedIdentity] = useState(null);
 
     // Listen for screen-share track events at the Room level to detect layout changes
@@ -690,9 +690,10 @@ function VideoGrid() {
 
     // Build participant list: local first, then remotes (no duplicates)
     const allParticipants = useMemo(() => {
+        void tick;
         if (!localParticipant) return remoteParticipants;
         return [localParticipant, ...remoteParticipants.filter(p => p.identity !== localParticipant.identity)];
-    }, [localParticipant, remoteParticipants]);
+    }, [localParticipant, remoteParticipants, tick]);
 
     // Multiple screen sharers — latest wins priority
     const screenSharers = allParticipants.filter(p => p.isScreenShareEnabled);
@@ -1305,19 +1306,19 @@ function ParticipantControlOverlay({ participant, isOrganizer, isMobile, room })
                     <MoreVertical size={14} color="white" />
                 </button>
                 {showControls && (
-                    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} style={{
+                    <div role="menu" tabIndex={-1} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} style={{
                         position: 'absolute', bottom: 40, left: 8, right: 8, zIndex: 20,
                         background: 'rgba(15,23,42,0.95)', borderRadius: 12, padding: 8,
                         border: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 6, justifyContent: 'center',
                         boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
                     }}>
-                        <button onClick={() => { sendHostCommand('mute_participant'); setShowControls(false) }} style={buttonStyle}>
+                        <button role="menuitem" onClick={() => { sendHostCommand('mute_participant'); setShowControls(false) }} style={buttonStyle}>
                             <MicOff size={12} /> Mute
                         </button>
-                        <button onClick={() => { sendHostCommand('request_camera_off'); setShowControls(false) }} style={buttonStyle}>
+                        <button role="menuitem" onClick={() => { sendHostCommand('request_camera_off'); setShowControls(false) }} style={buttonStyle}>
                             <VideoOff size={12} /> Cam Off
                         </button>
-                        <button onClick={() => { sendHostCommand('remove_participant'); setShowControls(false) }} style={{
+                        <button role="menuitem" onClick={() => { sendHostCommand('remove_participant'); setShowControls(false) }} style={{
                             ...buttonStyle, background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)',
                         }}>
                             <UserMinus size={12} /> Remove
@@ -1639,7 +1640,8 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
     const [isCamOn, setIsCamOn] = useState(true)
     const [isScreenSharing, setIsScreenSharing] = useState(false)
     const [showReactionPicker, setShowReactionPicker] = useState(false)
-    const [forceMutedUntil] = useState(0)
+    const [forceMutedUntil, setForceMutedUntil] = useState(0)
+    void setForceMutedUntil;
 
     const lp = localParticipant.localParticipant
 
@@ -1935,137 +1937,130 @@ function processHandRaise(msg, room, setRaisedHands) {
     }
 }
 
-function processHostCommand(msg, room, toast, onLeave, setters) {
-    const lp = room.localParticipant
-    const {
-        setMicLocked,
-        setVideoLocked,
-        setScreenShareLocked,
-        setChatLocked,
-        setHandsLocked,
-        setHandRaised,
-        setReactionsDisabled,
-        setRaisedHands
-    } = setters
-
-    switch (msg.command) {
-        case 'end_class':
-            toast.info('The instructor has ended the class.')
-            room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
-            onLeave()
-            break
-        case 'mute_all':
+const hostCommandHandlers = {
+    end_class: (msg, lp, room, toast, onLeave) => {
+        toast.info('The instructor has ended the class.')
+        room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
+        onLeave()
+    },
+    mute_all: (msg, lp, room, toast) => {
+        lp.setMicrophoneEnabled(false)
+        toast.info('🔇 Instructor muted all participants')
+    },
+    mute_participant: (msg, lp, room, toast) => {
+        if (msg.identity === lp.identity) {
             lp.setMicrophoneEnabled(false)
-            toast.info('🔇 Instructor muted all participants')
-            break
-        case 'mute_participant':
-            if (msg.identity === lp.identity) {
-                lp.setMicrophoneEnabled(false)
-                toast.info('🔇 Instructor muted your microphone')
-            }
-            break
-        case 'request_camera_off_all':
+            toast.info('🔇 Instructor muted your microphone')
+        }
+    },
+    request_camera_off_all: (msg, lp, room, toast) => {
+        lp.setCameraEnabled(false)
+        toast.info('📷 Instructor requested cameras off')
+    },
+    request_camera_off: (msg, lp, room, toast) => {
+        if (msg.identity === lp.identity) {
             lp.setCameraEnabled(false)
-            toast.info('📷 Instructor requested cameras off')
-            break
-        case 'request_camera_off':
-            if (msg.identity === lp.identity) {
-                lp.setCameraEnabled(false)
-                toast.info('📷 Instructor requested your camera off')
+            toast.info('📷 Instructor requested your camera off')
+        }
+    },
+    mic_lock: (msg, lp, room, toast, onLeave, setters) => {
+        setters.setMicLocked(msg.enabled)
+        if (msg.enabled) {
+            lp.setMicrophoneEnabled(false)
+            toast.warning('🔒 Instructor locked microphones')
+        } else {
+            toast.success('🔓 Microphones unlocked')
+        }
+    },
+    video_lock: (msg, lp, room, toast, onLeave, setters) => {
+        setters.setVideoLocked(msg.enabled)
+        if (msg.enabled) {
+            lp.setCameraEnabled(false)
+            toast.warning('🔒 Instructor locked cameras')
+        } else {
+            toast.success('🔓 Cameras unlocked')
+        }
+    },
+    screen_share_lock: (msg, lp, room, toast, onLeave, setters) => {
+        setters.setScreenShareLocked(msg.enabled)
+        if (msg.enabled) {
+            if (lp.isScreenShareEnabled) {
+                lp.setScreenShareEnabled(false)
             }
-            break
-        case 'mic_lock':
-            setMicLocked(msg.enabled)
-            if (msg.enabled) {
-                lp.setMicrophoneEnabled(false)
-                toast.warning('🔒 Instructor locked microphones')
-            } else {
-                toast.success('🔓 Microphones unlocked')
-            }
-            break
-        case 'video_lock':
-            setVideoLocked(msg.enabled)
-            if (msg.enabled) {
-                lp.setCameraEnabled(false)
-                toast.warning('🔒 Instructor locked cameras')
-            } else {
-                toast.success('🔓 Cameras unlocked')
-            }
-            break
-        case 'screen_share_lock':
-            setScreenShareLocked(msg.enabled)
-            if (msg.enabled) {
-                if (lp.isScreenShareEnabled) {
-                    lp.setScreenShareEnabled(false)
-                }
-                toast.warning('🔒 Instructor locked screen sharing')
-            } else {
-                toast.success('🔓 Screen sharing unlocked')
-            }
-            break
-        case 'chat_lock':
-            setChatLocked(msg.enabled)
-            if (msg.enabled) {
-                toast.warning('🔒 Instructor locked the chat')
-            } else {
-                toast.success('🔓 Chat unlocked')
-            }
-            break
-        case 'hands_lock':
-            setHandsLocked(msg.enabled)
-            if (msg.enabled) {
-                try {
-                    const meta = JSON.parse(lp.metadata || '{}')
-                    if (meta.handRaised) {
-                        lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-                    }
-                } catch (e) { console.error("Caught exception:", e); }
-                setHandRaised(false)
-                toast.warning('🔒 Instructor locked hand raising')
-            } else {
-                toast.success('🔓 Hand raising unlocked')
-            }
-            break
-        case 'reactions_disabled':
-            setReactionsDisabled(msg.value)
-            toast.info(msg.value ? '😶 Reactions disabled by instructor' : '😀 Reactions enabled')
-            break
-        case 'lower_hand':
-            if (msg.identity === lp.identity) {
-                try {
-                    const meta = JSON.parse(lp.metadata || '{}')
-                    lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
-                } catch (e) { console.error("Caught exception:", e); }
-                setHandRaised(false)
-                setRaisedHands(prev => {
-                    const n = { ...prev }
-                    delete n[lp.identity]
-                    return n
-                })
-                toast.info('✋ Instructor lowered your hand')
-            }
-            break
-        case 'lower_all_hands': {
+            toast.warning('🔒 Instructor locked screen sharing')
+        } else {
+            toast.success('🔓 Screen sharing unlocked')
+        }
+    },
+    chat_lock: (msg, lp, room, toast, onLeave, setters) => {
+        setters.setChatLocked(msg.enabled)
+        if (msg.enabled) {
+            toast.warning('🔒 Instructor locked the chat')
+        } else {
+            toast.success('🔓 Chat unlocked')
+        }
+    },
+    hands_lock: (msg, lp, room, toast, onLeave, setters) => {
+        setters.setHandsLocked(msg.enabled)
+        if (msg.enabled) {
             try {
                 const meta = JSON.parse(lp.metadata || '{}')
                 if (meta.handRaised) {
                     lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
                 }
             } catch (e) { console.error("Caught exception:", e); }
-            setHandRaised(false)
-            setRaisedHands({})
-            toast.info('✋ Instructor lowered all hands')
-            break
+            setters.setHandRaised(false)
+            toast.warning('🔒 Instructor locked hand raising')
+        } else {
+            toast.success('🔓 Hand raising unlocked')
         }
-        case 'remove_participant':
-            if (msg.identity === lp.identity) {
-                toast.error('🚫 You have been removed from this meeting')
-                setTimeout(() => {
-                    room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
-                    onLeave()
-                }, 1500)
+    },
+    reactions_disabled: (msg, lp, room, toast, onLeave, setters) => {
+        setters.setReactionsDisabled(msg.value)
+        toast.info(msg.value ? '😶 Reactions disabled by instructor' : '😀 Reactions enabled')
+    },
+    lower_hand: (msg, lp, room, toast, onLeave, setters) => {
+        if (msg.identity === lp.identity) {
+            try {
+                const meta = JSON.parse(lp.metadata || '{}')
+                lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
+            } catch (e) { console.error("Caught exception:", e); }
+            setters.setHandRaised(false)
+            setters.setRaisedHands(prev => {
+                const n = { ...prev }
+                delete n[lp.identity]
+                return n
+            })
+            toast.info('✋ Instructor lowered your hand')
+        }
+    },
+    lower_all_hands: (msg, lp, room, toast, onLeave, setters) => {
+        try {
+            const meta = JSON.parse(lp.metadata || '{}')
+            if (meta.handRaised) {
+                lp.setMetadata(JSON.stringify({ ...meta, handRaised: false, handRaisedAt: null }))
             }
-            break
+        } catch (e) { console.error("Caught exception:", e); }
+        setters.setHandRaised(false)
+        setters.setRaisedHands({})
+        toast.info('✋ Instructor lowered all hands')
+    },
+    remove_participant: (msg, lp, room, toast, onLeave) => {
+        if (msg.identity === lp.identity) {
+            toast.error('🚫 You have been removed from this meeting')
+            setTimeout(() => {
+                room.forceDisconnect ? room.forceDisconnect() : room.disconnect()
+                onLeave()
+            }, 1500)
+        }
+    }
+}
+
+function processHostCommand(msg, room, toast, onLeave, setters) {
+    const lp = room.localParticipant
+    const handler = hostCommandHandlers[msg.command]
+    if (handler) {
+        handler(msg, lp, room, toast, onLeave, setters)
     }
 }
 
@@ -2375,6 +2370,7 @@ SidebarContent.propTypes = {
     videoId: PropTypes.string,
     isOrganizer: PropTypes.bool.isRequired,
     chatLocked: PropTypes.bool.isRequired,
+    setChatLocked: PropTypes.func.isRequired,
     channelInstance: PropTypes.object,
     setUnreadChatCount: PropTypes.func.isRequired,
     videoTitle: PropTypes.string,
