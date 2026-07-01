@@ -23,10 +23,10 @@ roomContentCode = roomContentCode.replaceAll('profile.id', 'profileId');
 roomContentCode = roomContentCode.replaceAll('profile?.id', 'profileId');
 
 // 2. Fix nested ternary
-roomContentCode = roomContentCode.replace(
-    /width: \(isMobile && !isLandscape\) \? '100%' : \(isMobile && isLandscape \? '280px' : '360px'\),/g,
-    "width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape) ? '280px' : '360px', // Original ternary\\n" +
-    "        // wait, let's just refactor this:\\n"
+roomContentCode = roomContentCode.replaceAll(
+    "width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape ? '280px' : '360px'),",
+    "width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape) ? '280px' : '360px', // Original ternary\n" +
+    "        // wait, let's just refactor this:\n"
 );
 // Actually, I'll do a string replacement for the exact lines
 roomContentCode = roomContentCode.replace(
