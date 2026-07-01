@@ -13,7 +13,7 @@ const formatSlideUrl = (url) => {
     }
     
     if (lowerUrl.includes('.ppt') || lowerUrl.includes('.pptx')) {
-        return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;
+        return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
     }
     
     if (url.includes('drive.google.com/file/d/')) {
@@ -27,7 +27,7 @@ const formatSlideUrl = (url) => {
 };
 
 export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onClose, onEnded, loadingVideo }) {
-    const [splitRatio, setSplitRatio] = useState(35); // 35% slides, 65% video
+    const [splitRatio, setSplitRatio] = useState(35); // 35% video, 65% slides
     const [isDragging, setIsDragging] = useState(false);
     const [isMobile, setIsMobile] = useState(globalThis.innerWidth < 768);
     const containerRef = useRef(null);
@@ -37,7 +37,7 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
         globalThis.addEventListener('resize', handleResize);
         
         // Load preference
-        const savedRatio = localStorage.getItem('learnova_split_ratio');
+        const savedRatio = localStorage.getItem('learnova_split_ratio_v2');
         if (savedRatio) {
             setSplitRatio(Number(savedRatio));
         }
@@ -77,7 +77,7 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
     const handleMouseMove = (e) => {
         if (!isDragging || !containerRef.current) return;
         const containerRect = containerRef.current.getBoundingClientRect();
-        const newRatio = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+        const newRatio = ((e.clientY - containerRect.top) / containerRect.height) * 100;
         
         // Constrain between 20% and 80%
         if (newRatio >= 20 && newRatio <= 80) {
@@ -88,7 +88,7 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
     const handleMouseUp = () => {
         if (isDragging) {
             setIsDragging(false);
-            localStorage.setItem('learnova_split_ratio', splitRatio);
+            localStorage.setItem('learnova_split_ratio_v2', splitRatio);
         }
     };
 
@@ -147,11 +147,11 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                 style={{ 
                     flex: 1, 
                     display: 'flex', 
-                    flexDirection: isMobile ? 'column' : 'row',
+                    flexDirection: 'column',
                     overflow: 'hidden'
                 }}
             >
-                {/* 1. Mobile: Video on top. Desktop: Slides on left. */}
+                {/* 1. Mobile: Fixed Video on top. Desktop: Resizable Video on top, Slides on bottom. */}
                 {isMobile ? (
                     // MOBILE: Video First
                     <>
@@ -177,42 +177,10 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                         </div>
                     </>
                 ) : (
-                    // DESKTOP: Side by Side (Slides | Video)
+                    // DESKTOP: Top/Bottom Split (Video | Slides)
                     <>
-                        {/* Slides Area */}
-                        <div style={{ width: `${splitRatio}%`, position: 'relative', background: 'white' }}>
-                            <SlideViewer url={formattedSlideUrl} title={title} />
-                        </div>
-
-                        {/* Resize Handle */}
-                        <div 
-                            role="slider"
-                            tabIndex={0}
-                            aria-valuemin={20}
-                            aria-valuemax={80}
-                            aria-valuenow={splitRatio}
-                            aria-label="Resize panels"
-                            onMouseDown={() => setIsDragging(true)}
-                            style={{ 
-                                width: '8px', 
-                                background: isDragging ? '#6366f1' : 'rgba(255,255,255,0.05)', 
-                                cursor: 'col-resize',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'background 0.2s',
-                                zIndex: 10
-                            }}
-                            onMouseEnter={(e) => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
-                            onMouseLeave={(e) => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                        >
-                            <div style={{ width: 2, height: 20, background: 'rgba(255,255,255,0.3)', borderRadius: 2, margin: '2px 0' }} />
-                            <div style={{ width: 2, height: 20, background: 'rgba(255,255,255,0.3)', borderRadius: 2, margin: '2px 0' }} />
-                        </div>
-
                         {/* Video Area */}
-                        <div style={{ width: `calc(${100 - splitRatio}% - 8px)`, position: 'relative', background: '#000', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ height: `${splitRatio}%`, position: 'relative', background: '#000', display: 'flex', flexDirection: 'column' }}>
                             {/* We wrap ReactPlayer in a container that allows it to grow. */}
                             <div style={{ flex: 1, position: 'relative' }}>
                                 {loadingVideo ? (
@@ -230,12 +198,44 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                                 )}
                             </div>
                         </div>
+
+                        {/* Resize Handle */}
+                        <div 
+                            role="slider"
+                            tabIndex={0}
+                            aria-valuemin={20}
+                            aria-valuemax={80}
+                            aria-valuenow={splitRatio}
+                            aria-label="Resize panels"
+                            onMouseDown={() => setIsDragging(true)}
+                            style={{ 
+                                height: '8px', 
+                                background: isDragging ? '#6366f1' : 'rgba(255,255,255,0.05)', 
+                                cursor: 'row-resize',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'background 0.2s',
+                                zIndex: 10
+                            }}
+                            onMouseEnter={(e) => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
+                            onMouseLeave={(e) => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                        >
+                            <div style={{ width: 20, height: 2, background: 'rgba(255,255,255,0.3)', borderRadius: 2, margin: '0 2px' }} />
+                            <div style={{ width: 20, height: 2, background: 'rgba(255,255,255,0.3)', borderRadius: 2, margin: '0 2px' }} />
+                        </div>
+
+                        {/* Slides Area */}
+                        <div style={{ height: `calc(${100 - splitRatio}% - 8px)`, position: 'relative', background: 'white' }}>
+                            <SlideViewer url={formattedSlideUrl} title={title} />
+                        </div>
                     </>
                 )}
             </div>
 
             {isDragging && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, cursor: 'col-resize' }} />
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, cursor: 'row-resize' }} />
             )}
 
             <style>{`

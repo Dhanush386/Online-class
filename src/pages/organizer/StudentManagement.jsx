@@ -560,6 +560,549 @@ export default function StudentManagement() {
         return Math.round(enrollments.reduce((sum, e) => sum + e.completion, 0) / enrollments.length)
     }
 
+        const renderTeamTab = () => (
+            (
+                    <div className="animate-fade-in">
+                        <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Invite New Organizer</h3>
+                            <form onSubmit={handleInviteOrganizer} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.85rem' }}>
+                                <div style={{ position: 'relative' }}>
+                                    <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                    <input
+                                        id="invite-email"
+                                        name="invite-email"
+                                        type="email"
+                                        className="form-input"
+                                        placeholder="organizer@example.com"
+                                        value={inviteEmail}
+                                        onChange={e => setInviteEmail(e.target.value)}
+                                        style={{ paddingLeft: '2.5rem' }}
+                                        required
+                                    />
+                                </div>
+                                <select 
+                                    id="invite-role"
+                                    name="invite-role"
+                                    className="form-input"
+                                    value={inviteRole}
+                                    onChange={e => setInviteRole(e.target.value)}
+                                    style={{ width: 'auto' }}
+                                >
+                                    <option value="organizer">Organizer</option>
+                                    <option value="sub_admin">Sub Admin</option>
+                                    <option value="main_admin">Main Admin</option>
+                                </select>
+                                <button type="submit" className="btn-primary" disabled={saving} style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                                    {saving ? 'Inviting...' : 'Invite'}
+                                </button>
+                            </form>
+                            {error && <p style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.5rem' }}>{error}</p>}
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div>
+                                <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Users size={16} /> Current Organizers ({organizers.length})
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                                    {organizers.map(org => (
+                                        <div key={org.id} className="glass-card" style={{ padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{ width: 32, height: 32, background: 'var(--card-border)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>
+                                                {org.name?.[0]?.toUpperCase()}
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{org.name} {org.id === profile.id && '(You)'}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{org.email}</div>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {profile?.role === 'main_admin' ? (
+                                                    <>
+                                                        <select 
+                                                            value={org.role} 
+                                                            onChange={(e) => handleUpdateRole(org.id, e.target.value)}
+                                                            className="form-input"
+                                                            style={{ width: 'auto', fontSize: '0.85rem', padding: '0.2rem 0.5rem' }}
+                                                            disabled={org.id === profile.id}
+                                                        >
+                                                            <option value="organizer">Organizer</option>
+                                                            <option value="sub_admin">Sub Admin</option>
+                                                            <option value="main_admin">Main Admin</option>
+                                                        </select>
+                                                        {org.id !== profile.id && (
+                                                            <button 
+                                                                onClick={() => handleDeleteStudent(org.id)} 
+                                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7, padding: '0.2rem' }}
+                                                                title="Permanently Delete User"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{org.role?.replace('_', ' ')}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Clock size={16} /> Pending Invites ({invites.length})
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                                    {invites.length === 0 ? (
+                                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                            No pending invitations
+                                        </div>
+                                    ) : (
+                                        invites.map(invite => (
+                                            <div key={invite.email} className="glass-card" style={{ padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{invite.email}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                        Invited {new Date(invite.created_at).toLocaleDateString()}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleRemoveInvite(invite.email)}
+                                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7 }}
+                                                    title="Revoke Invite"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+        );
+
+        const renderGroupsTab = () => (
+            (
+                    <div className="animate-fade-in">
+                        <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Create New Batch/Group</h3>
+                            <form onSubmit={handleCreateGroup} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '1rem' }}>
+                                <input
+                                    id="new-group-name"
+                                    name="name"
+                                    className="form-input"
+                                    placeholder="Group Name (e.g. Batch A)"
+                                    value={newGroupName}
+                                    onChange={e => setNewGroupName(e.target.value)}
+                                    required
+                                />
+                                <select
+                                    id="group-course-select"
+                                    name="course_id"
+                                    className="form-input"
+                                    value={groupCourseId}
+                                    onChange={e => setGroupCourseId(e.target.value)}
+                                    required
+                                >
+                                    <option value="">Select Course</option>
+                                    {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                                </select>
+                                <button type="submit" className="btn-primary" disabled={saving}>
+                                    {saving ? 'Creating...' : 'Create Group'}
+                                </button>
+                            </form>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+                            {groups.map(g => {
+                                const membersCount = groupMembers.filter(m => m.group_id === g.id).length
+                                return (
+                                    <div key={g.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{g.name}</h3>
+                                            <button onClick={() => handleDeleteGroup(g.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                            {g.courses?.title} • {membersCount} Students
+                                        </p>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                onClick={() => setManagingGroup(g)}
+                                                className="btn-secondary"
+                                                style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
+                                            >
+                                                Members
+                                            </button>
+                                            <button
+                                                onClick={() => loadDayAccess(g)}
+                                                className="btn-secondary"
+                                                style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                            >
+                                                <Calendar size={14} style={{ marginRight: '0.3rem' }} /> Day Schedule
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )
+        );
+
+        const renderEmptyState = () => (
+            (
+                    <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
+                        <Users size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+                        <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No students found</p>
+                    </div>
+                )
+        );
+
+        const renderStudentsList = () => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        {error && (
+                            <div style={{ padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <AlertCircle size={16} flexShrink={0} /> {error}
+                            </div>
+                        )}
+                        {filtered.map(student => {
+                            const avg = avgCompletion(student.enrollments)
+                            const isOpen = expanded === student.id
+                            return (
+                                <div key={student.id} className="glass-card" style={{ overflow: 'hidden' }}>
+                                    <div
+                                        className="stack-mobile"
+                                        style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', cursor: 'pointer' }}
+                                        onClick={() => setExpanded(isOpen ? null : student.id)}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, width: '100%' }}>
+                                            <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
+                                                {student.name?.[0]?.toUpperCase() || '?'}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    {student.name}
+                                                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                                        {groupMembers.filter(m => m.student_id === student.id).map(m => {
+                                                            const g = groups.find(gr => gr.id === m.group_id)
+                                                            return g ? <span key={g.id} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: '#dcfce7', color: '#166534', borderRadius: 4, fontWeight: 700 }}>{g.name}</span> : null
+                                                        })}
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{student.email}</div>
+                                            </div>
+                                        </div>
+
+                                        {tab === 'pending' ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto' }}>
+                                                <button
+                                                    className="btn-secondary"
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                                    onClick={(e) => { e.stopPropagation(); setViewingProfileId(student.id); }}
+                                                >
+                                                    <Info size={14} /> View Profile
+                                                </button>
+                                                <button
+                                                    className="btn-primary"
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', background: 'linear-gradient(135deg,#10b981,#059669)' }}
+                                                    onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'approved'); }}
+                                                >
+                                                    <CheckCircle2 size={14} /> Approve
+                                                </button>
+                                                <button
+                                                    className="btn-secondary"
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
+                                                    onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'rejected'); }}
+                                                >
+                                                    <XCircle size={14} /> Reject
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', width: window.innerWidth <= 768 ? '100%' : 'auto', justifyContent: 'space-between' }}>
+                                                <div style={{ display: 'flex', gap: '1.5rem' }}>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{student.enrollments?.length || 0}</div>
+                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Courses</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center', minWidth: 60 }}>
+                                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: avg > 70 ? '#10b981' : avg > 40 ? '#f59e0b' : '#f87171' }}>{avg}%</div>
+                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Progress</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center', minWidth: 70 }}>
+                                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: student.assessAvg > 70 ? '#10b981' : student.assessAvg > 40 ? '#f59e0b' : '#f87171' }}>
+                                                            {student.assessAvg}%
+                                                        </div>
+                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Assignments</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center', minWidth: 60 }}>
+                                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: '#6366f1' }}>
+                                                            {student.codingTotal}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Coding</div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ width: 80 }} className="hide-mobile">
+                                                    <div className="progress-bar-track">
+                                                        <div className="progress-bar-fill" style={{ width: `${avg}%`, background: avg > 70 ? 'linear-gradient(90deg,#10b981,#059669)' : avg > 40 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)' }} />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                                    <button
+                                                        className="btn-secondary"
+                                                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setViewingProfileId(student.id);
+                                                        }}
+                                                    >
+                                                        <Info size={14} /> Profile
+                                                    </button>
+                                                    <button
+                                                        className="btn-secondary"
+                                                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem' }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setAssigningTo(student);
+                                                            setError('');
+                                                        }}
+                                                    >
+                                                        <Plus size={14} /> Assign
+                                                    </button>
+                                                    <button
+                                                        className="btn-secondary"
+                                                        style={{ padding: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteStudent(student.id);
+                                                        }}
+                                                        title="Remove Student"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                    {isOpen ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {isOpen && (
+                                        <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--card-border)' }}>
+                                            <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                                                <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 10, border: '1px solid #fed7aa', gridColumn: '1 / -1', marginBottom: '0.5rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <Clock size={16} color="#f97316" />
+                                                            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#9a3412' }}>Access Control</span>
+                                                        </div>
+                                                        <ExpiryControl
+                                                            studentId={student.id}
+                                                            currentExpiry={student.access_expires_at}
+                                                            onUpdate={handleUpdateExpiry}
+                                                            saving={saving}
+                                                        />
+                                                    </div>
+                                                    {student.access_expires_at && new Date(student.access_expires_at) < new Date() && (
+                                                        <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                            <AlertCircle size={12} /> Access has expired
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                {student.enrollments?.length > 0 ? (
+                                                    student.enrollments.map((en, i) => (
+                                                        <div key={i} style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.85rem' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                    <BookOpen size={14} color="#818cf8" />
+                                                                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{en.course}</span>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => handleRemoveCourse(student.id, en.id)}
+                                                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center' }}
+                                                                    title="Remove Course Assignment"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            </div>
+                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+                                                                <span style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}><TrendingUp size={11} /> {en.completion}%</span>
+                                                                <span style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}><Clock size={11} /> {en.time} min</span>
+                                                            </div>
+                                                            <div className="progress-bar-track">
+                                                                <div className="progress-bar-fill" style={{ width: `${en.completion}%` }} />
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                                                        This student is not yet enrolled in any of your courses.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+        );
+
+        const renderStudentModal = () => (
+            <>
+                {assigningTo && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                        <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 400, padding: '2rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>Assign Course</h3>
+                                <button onClick={() => setAssigningTo(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem' }}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Student</div>
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{assigningTo.name}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{assigningTo.email}</div>
+                            </div>
+                            <form onSubmit={handleAssignCourse}>
+                                <div className="form-group" style={{ marginBottom: '2rem' }}>
+                                    <label htmlFor="course-assign-select" className="form-label" style={{ marginBottom: '0.85rem' }}>Select Course</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <BookOpen size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                        <select
+                                            id="course-assign-select"
+                                            name="course_id"
+                                            className="form-input"
+                                            value={selectedCourse}
+                                            onChange={(e) => setSelectedCourse(e.target.value)}
+                                            required
+                                            style={{ paddingLeft: '2.5rem', appearance: 'none' }}
+                                        >
+                                            <option value="">-- Choose a course --</option>
+                                            {courses.map(c => (
+                                                <option key={c.id} value={c.id}>{c.title}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'flex-end' }}>
+                                    <button type="button" className="btn-secondary" onClick={() => setAssigningTo(null)} disabled={saving}>Cancel</button>
+                                    <button type="submit" className="btn-primary" disabled={saving || !selectedCourse}>
+                                        {saving ? 'Assigning...' : 'Assign'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}\n            {managingGroup && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                        <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 500, maxHeight: '80vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
+                            <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Manage Members: {managingGroup.name}</h3>
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Only showing students enrolled in {managingGroup.courses?.title}</p>
+                                </div>
+                                <button onClick={() => setManagingGroup(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+                                {students
+                                    .filter(s => s.enrollments.some(e => e.id === managingGroup.course_id))
+                                    .map(s => {
+                                        const isMember = groupMembers.some(m => m.group_id === managingGroup.id && m.student_id === s.id)
+                                        return (
+                                            <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem', borderBottom: '1px solid #f1f5f9' }}>
+                                                <div>
+                                                    <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{s.name}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{s.email}</div>
+                                                </div>
+                                                <button
+                                                    onClick={() => toggleMembership(managingGroup.id, s.id)}
+                                                    disabled={togglingMember === s.id}
+                                                    className={isMember ? "btn-secondary" : "btn-primary"}
+                                                    style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', opacity: togglingMember === s.id ? 0.7 : 1 }}
+                                                >
+                                                    {togglingMember === s.id ? '...' : (isMember ? 'Remove' : 'Add')}
+                                                </button>
+                                            </div>
+                                        )
+                                    })
+                                }
+                            </div>
+                        </div>
+                    </div>
+                )}\n            {schedulingGroup && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
+                        <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 700, maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
+                            <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Day Schedule: {schedulingGroup.name}</h3>
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Set timing and locking for each day in {schedulingGroup.courses?.title}</p>
+                                </div>
+                                <button onClick={() => setSchedulingGroup(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {Array.from({ length: maxDay }, (_, i) => i + 1).map(day => {
+                                        const defaultTime = getDefaultUnlockTimeForDay(schedulingGroup.courses?.start_date, day)
+                                        const access = dayAccess.find(a => a.day_number === day) || { is_locked: false, open_time: defaultTime, close_time: '' }
+                                        return (
+                                            <div key={day} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 100px', gap: '1rem', alignItems: 'center', padding: '1rem', background: access.is_locked ? 'rgba(239, 68, 68, 0.1)' : 'var(--card-bg)', borderRadius: 12, border: `1px solid ${access.is_locked ? 'rgba(239, 68, 68, 0.3)' : 'var(--card-border)'}` }}>
+                                                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Day {day}</div>
+                                                <div>
+                                                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>OPEN TIME</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        className="form-input"
+                                                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
+                                                        value={access.open_time ? toLocalISO(access.open_time) : ''}
+                                                        onChange={e => handleUpdateDayAccess(day, 'open_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>CLOSE TIME</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        className="form-input"
+                                                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
+                                                        value={access.close_time ? toLocalISO(access.close_time) : ''}
+                                                        onChange={e => handleUpdateDayAccess(day, 'close_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                                    />
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <button
+                                                        onClick={() => handleUpdateDayAccess(day, 'is_locked', !access.is_locked)}
+                                                        className={access.is_locked ? "btn-primary" : "btn-secondary"}
+                                                        style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', background: access.is_locked ? '#ef4444' : 'transparent', width: '100%', color: access.is_locked ? 'white' : 'var(--text-primary)' }}
+                                                    >
+                                                        {access.is_locked ? 'Unlock' : 'Lock'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                            <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+                                <button onClick={() => setSchedulingGroup(null)} className="btn-secondary">Done</button>
+                            </div>
+                        </div>
+                    </div>
+                )}\n            {viewingProfileId && (
+                    <StudentProfileModal 
+                        studentId={viewingProfileId} 
+                        onClose={() => setViewingProfileId(null)} 
+                        studentName={students.find(s => s.id === viewingProfileId)?.name}
+                    />
+                )}
+            </>
+        );
+
+
     return (
         <div className="animate-fade-in">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -645,541 +1188,28 @@ export default function StudentManagement() {
             </div>
 
             {loading ? (
-                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                    <p style={{ color: 'var(--text-muted)' }}>Loading data...</p>
-                </div>
-            ) : tab === 'team' ? (
-                <div className="animate-fade-in">
-                    <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Invite New Organizer</h3>
-                        <form onSubmit={handleInviteOrganizer} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.85rem' }}>
-                            <div style={{ position: 'relative' }}>
-                                <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input
-                                    id="invite-email"
-                                    name="invite-email"
-                                    type="email"
-                                    className="form-input"
-                                    placeholder="organizer@example.com"
-                                    value={inviteEmail}
-                                    onChange={e => setInviteEmail(e.target.value)}
-                                    style={{ paddingLeft: '2.5rem' }}
-                                    required
-                                />
+                            <div style={{ textAlign: 'center', padding: '4rem' }}>
+                                <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                                <p style={{ color: 'var(--text-muted)' }}>Loading data...</p>
                             </div>
-                            <select 
-                                id="invite-role"
-                                name="invite-role"
-                                className="form-input"
-                                value={inviteRole}
-                                onChange={e => setInviteRole(e.target.value)}
-                                style={{ width: 'auto' }}
-                            >
-                                <option value="organizer">Organizer</option>
-                                <option value="sub_admin">Sub Admin</option>
-                                <option value="main_admin">Main Admin</option>
-                            </select>
-                            <button type="submit" className="btn-primary" disabled={saving} style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-                                {saving ? 'Inviting...' : 'Invite'}
-                            </button>
-                        </form>
-                        {error && <p style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.5rem' }}>{error}</p>}
-                    </div>
+                        ) : tab === 'team' ? (
+                            renderTeamTab()
+                        ) : tab === 'groups' ? (
+                            renderGroupsTab()
+                        ) : filtered.length === 0 ? (
+                            renderEmptyState()
+                        ) : (
+                            renderStudentsList()
+                        )}
+                        {renderStudentModal()}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                        <div>
-                            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Users size={16} /> Current Organizers ({organizers.length})
-                            </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                                {organizers.map(org => (
-                                    <div key={org.id} className="glass-card" style={{ padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <div style={{ width: 32, height: 32, background: 'var(--card-border)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>
-                                            {org.name?.[0]?.toUpperCase()}
-                                        </div>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{org.name} {org.id === profile.id && '(You)'}</div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{org.email}</div>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            {profile?.role === 'main_admin' ? (
-                                                <>
-                                                    <select 
-                                                        value={org.role} 
-                                                        onChange={(e) => handleUpdateRole(org.id, e.target.value)}
-                                                        className="form-input"
-                                                        style={{ width: 'auto', fontSize: '0.85rem', padding: '0.2rem 0.5rem' }}
-                                                        disabled={org.id === profile.id}
-                                                    >
-                                                        <option value="organizer">Organizer</option>
-                                                        <option value="sub_admin">Sub Admin</option>
-                                                        <option value="main_admin">Main Admin</option>
-                                                    </select>
-                                                    {org.id !== profile.id && (
-                                                        <button 
-                                                            onClick={() => handleDeleteStudent(org.id)} 
-                                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7, padding: '0.2rem' }}
-                                                            title="Permanently Delete User"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{org.role?.replace('_', ' ')}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Clock size={16} /> Pending Invites ({invites.length})
-                            </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                                {invites.length === 0 ? (
-                                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                        No pending invitations
-                                    </div>
-                                ) : (
-                                    invites.map(invite => (
-                                        <div key={invite.email} className="glass-card" style={{ padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{invite.email}</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                                    Invited {new Date(invite.created_at).toLocaleDateString()}
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleRemoveInvite(invite.email)}
-                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7 }}
-                                                title="Revoke Invite"
-                                            >
-                                                <X size={16} />
-                                            </button>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : tab === 'groups' ? (
-                <div className="animate-fade-in">
-                    <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Create New Batch/Group</h3>
-                        <form onSubmit={handleCreateGroup} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '1rem' }}>
-                            <input
-                                id="new-group-name"
-                                name="name"
-                                className="form-input"
-                                placeholder="Group Name (e.g. Batch A)"
-                                value={newGroupName}
-                                onChange={e => setNewGroupName(e.target.value)}
-                                required
-                            />
-                            <select
-                                id="group-course-select"
-                                name="course_id"
-                                className="form-input"
-                                value={groupCourseId}
-                                onChange={e => setGroupCourseId(e.target.value)}
-                                required
-                            >
-                                <option value="">Select Course</option>
-                                {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                            </select>
-                            <button type="submit" className="btn-primary" disabled={saving}>
-                                {saving ? 'Creating...' : 'Create Group'}
-                            </button>
-                        </form>
-                    </div>
+            
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
-                        {groups.map(g => {
-                            const membersCount = groupMembers.filter(m => m.group_id === g.id).length
-                            return (
-                                <div key={g.id} className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{g.name}</h3>
-                                        <button onClick={() => handleDeleteGroup(g.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                                        {g.courses?.title} • {membersCount} Students
-                                    </p>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button
-                                            onClick={() => setManagingGroup(g)}
-                                            className="btn-secondary"
-                                            style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
-                                        >
-                                            Members
-                                        </button>
-                                        <button
-                                            onClick={() => loadDayAccess(g)}
-                                            className="btn-secondary"
-                                            style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                        >
-                                            <Calendar size={14} style={{ marginRight: '0.3rem' }} /> Day Schedule
-                                        </button>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
-            ) : filtered.length === 0 ? (
-                <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
-                    <Users size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
-                    <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No students found</p>
-                </div>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                    {error && (
-                        <div style={{ padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <AlertCircle size={16} flexShrink={0} /> {error}
-                        </div>
-                    )}
-                    {filtered.map(student => {
-                        const avg = avgCompletion(student.enrollments)
-                        const isOpen = expanded === student.id
-                        return (
-                            <div key={student.id} className="glass-card" style={{ overflow: 'hidden' }}>
-                                <div
-                                    className="stack-mobile"
-                                    style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', cursor: 'pointer' }}
-                                    onClick={() => setExpanded(isOpen ? null : student.id)}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, width: '100%' }}>
-                                        <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
-                                            {student.name?.[0]?.toUpperCase() || '?'}
-                                        </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                {student.name}
-                                                <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                                    {groupMembers.filter(m => m.student_id === student.id).map(m => {
-                                                        const g = groups.find(gr => gr.id === m.group_id)
-                                                        return g ? <span key={g.id} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: '#dcfce7', color: '#166534', borderRadius: 4, fontWeight: 700 }}>{g.name}</span> : null
-                                                    })}
-                                                </div>
-                                            </div>
-                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{student.email}</div>
-                                        </div>
-                                    </div>
+            
 
-                                    {tab === 'pending' ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto' }}>
-                                            <button
-                                                className="btn-secondary"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                                onClick={(e) => { e.stopPropagation(); setViewingProfileId(student.id); }}
-                                            >
-                                                <Info size={14} /> View Profile
-                                            </button>
-                                            <button
-                                                className="btn-primary"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', background: 'linear-gradient(135deg,#10b981,#059669)' }}
-                                                onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'approved'); }}
-                                            >
-                                                <CheckCircle2 size={14} /> Approve
-                                            </button>
-                                            <button
-                                                className="btn-secondary"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
-                                                onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'rejected'); }}
-                                            >
-                                                <XCircle size={14} /> Reject
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', width: window.innerWidth <= 768 ? '100%' : 'auto', justifyContent: 'space-between' }}>
-                                            <div style={{ display: 'flex', gap: '1.5rem' }}>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{student.enrollments?.length || 0}</div>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Courses</div>
-                                                </div>
-                                                <div style={{ textAlign: 'center', minWidth: 60 }}>
-                                                    <div style={{ fontSize: '1rem', fontWeight: 700, color: avg > 70 ? '#10b981' : avg > 40 ? '#f59e0b' : '#f87171' }}>{avg}%</div>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Progress</div>
-                                                </div>
-                                                <div style={{ textAlign: 'center', minWidth: 70 }}>
-                                                    <div style={{ fontSize: '1rem', fontWeight: 700, color: student.assessAvg > 70 ? '#10b981' : student.assessAvg > 40 ? '#f59e0b' : '#f87171' }}>
-                                                        {student.assessAvg}%
-                                                    </div>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Assignments</div>
-                                                </div>
-                                                <div style={{ textAlign: 'center', minWidth: 60 }}>
-                                                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#6366f1' }}>
-                                                        {student.codingTotal}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Coding</div>
-                                                </div>
-                                            </div>
-                                            <div style={{ width: 80 }} className="hide-mobile">
-                                                <div className="progress-bar-track">
-                                                    <div className="progress-bar-fill" style={{ width: `${avg}%`, background: avg > 70 ? 'linear-gradient(90deg,#10b981,#059669)' : avg > 40 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)' }} />
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                                <button
-                                                    className="btn-secondary"
-                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setViewingProfileId(student.id);
-                                                    }}
-                                                >
-                                                    <Info size={14} /> Profile
-                                                </button>
-                                                <button
-                                                    className="btn-secondary"
-                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem' }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setAssigningTo(student);
-                                                        setError('');
-                                                    }}
-                                                >
-                                                    <Plus size={14} /> Assign
-                                                </button>
-                                                <button
-                                                    className="btn-secondary"
-                                                    style={{ padding: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteStudent(student.id);
-                                                    }}
-                                                    title="Remove Student"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                                {isOpen ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+            
 
-                                {isOpen && (
-                                    <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--card-border)' }}>
-                                        <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.85rem' }}>
-                                            <div style={{ padding: '1rem', background: '#fff7ed', borderRadius: 10, border: '1px solid #fed7aa', gridColumn: '1 / -1', marginBottom: '0.5rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <Clock size={16} color="#f97316" />
-                                                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#9a3412' }}>Access Control</span>
-                                                    </div>
-                                                    <ExpiryControl
-                                                        studentId={student.id}
-                                                        currentExpiry={student.access_expires_at}
-                                                        onUpdate={handleUpdateExpiry}
-                                                        saving={saving}
-                                                    />
-                                                </div>
-                                                {student.access_expires_at && new Date(student.access_expires_at) < new Date() && (
-                                                    <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                        <AlertCircle size={12} /> Access has expired
-                                                    </p>
-                                                )}
-                                            </div>
-                                            {student.enrollments?.length > 0 ? (
-                                                student.enrollments.map((en, i) => (
-                                                    <div key={i} style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.85rem' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <BookOpen size={14} color="#818cf8" />
-                                                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{en.course}</span>
-                                                            </div>
-                                                            <button 
-                                                                onClick={() => handleRemoveCourse(student.id, en.id)}
-                                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center' }}
-                                                                title="Remove Course Assignment"
-                                                            >
-                                                                <Trash2 size={12} />
-                                                            </button>
-                                                        </div>
-                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
-                                                            <span style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}><TrendingUp size={11} /> {en.completion}%</span>
-                                                            <span style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}><Clock size={11} /> {en.time} min</span>
-                                                        </div>
-                                                        <div className="progress-bar-track">
-                                                            <div className="progress-bar-fill" style={{ width: `${en.completion}%` }} />
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                                                    This student is not yet enrolled in any of your courses.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })}
-                </div>
-            )}
-
-            {assigningTo && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
-                    <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 400, padding: '2rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>Assign Course</h3>
-                            <button onClick={() => setAssigningTo(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem' }}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Student</div>
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{assigningTo.name}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{assigningTo.email}</div>
-                        </div>
-                        <form onSubmit={handleAssignCourse}>
-                            <div className="form-group" style={{ marginBottom: '2rem' }}>
-                                <label htmlFor="course-assign-select" className="form-label" style={{ marginBottom: '0.85rem' }}>Select Course</label>
-                                <div style={{ position: 'relative' }}>
-                                    <BookOpen size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                    <select
-                                        id="course-assign-select"
-                                        name="course_id"
-                                        className="form-input"
-                                        value={selectedCourse}
-                                        onChange={(e) => setSelectedCourse(e.target.value)}
-                                        required
-                                        style={{ paddingLeft: '2.5rem', appearance: 'none' }}
-                                    >
-                                        <option value="">-- Choose a course --</option>
-                                        {courses.map(c => (
-                                            <option key={c.id} value={c.id}>{c.title}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'flex-end' }}>
-                                <button type="button" className="btn-secondary" onClick={() => setAssigningTo(null)} disabled={saving}>Cancel</button>
-                                <button type="submit" className="btn-primary" disabled={saving || !selectedCourse}>
-                                    {saving ? 'Assigning...' : 'Assign'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {managingGroup && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
-                    <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 500, maxHeight: '80vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
-                        <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Manage Members: {managingGroup.name}</h3>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Only showing students enrolled in {managingGroup.courses?.title}</p>
-                            </div>
-                            <button onClick={() => setManagingGroup(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
-                            {students
-                                .filter(s => s.enrollments.some(e => e.id === managingGroup.course_id))
-                                .map(s => {
-                                    const isMember = groupMembers.some(m => m.group_id === managingGroup.id && m.student_id === s.id)
-                                    return (
-                                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem', borderBottom: '1px solid #f1f5f9' }}>
-                                            <div>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{s.name}</div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{s.email}</div>
-                                            </div>
-                                            <button
-                                                onClick={() => toggleMembership(managingGroup.id, s.id)}
-                                                disabled={togglingMember === s.id}
-                                                className={isMember ? "btn-secondary" : "btn-primary"}
-                                                style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', opacity: togglingMember === s.id ? 0.7 : 1 }}
-                                            >
-                                                {togglingMember === s.id ? '...' : (isMember ? 'Remove' : 'Add')}
-                                            </button>
-                                        </div>
-                                    )
-                                })
-                            }
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {schedulingGroup && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
-                    <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 700, maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
-                        <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Day Schedule: {schedulingGroup.name}</h3>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Set timing and locking for each day in {schedulingGroup.courses?.title}</p>
-                            </div>
-                            <button onClick={() => setSchedulingGroup(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {Array.from({ length: maxDay }, (_, i) => i + 1).map(day => {
-                                    const defaultTime = getDefaultUnlockTimeForDay(schedulingGroup.courses?.start_date, day)
-                                    const access = dayAccess.find(a => a.day_number === day) || { is_locked: false, open_time: defaultTime, close_time: '' }
-                                    return (
-                                        <div key={day} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 100px', gap: '1rem', alignItems: 'center', padding: '1rem', background: access.is_locked ? 'rgba(239, 68, 68, 0.1)' : 'var(--card-bg)', borderRadius: 12, border: `1px solid ${access.is_locked ? 'rgba(239, 68, 68, 0.3)' : 'var(--card-border)'}` }}>
-                                            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Day {day}</div>
-                                            <div>
-                                                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>OPEN TIME</label>
-                                                <input
-                                                    type="datetime-local"
-                                                    className="form-input"
-                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
-                                                    value={access.open_time ? toLocalISO(access.open_time) : ''}
-                                                    onChange={e => handleUpdateDayAccess(day, 'open_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>CLOSE TIME</label>
-                                                <input
-                                                    type="datetime-local"
-                                                    className="form-input"
-                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
-                                                    value={access.close_time ? toLocalISO(access.close_time) : ''}
-                                                    onChange={e => handleUpdateDayAccess(day, 'close_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
-                                                />
-                                            </div>
-                                            <div style={{ textAlign: 'right' }}>
-                                                <button
-                                                    onClick={() => handleUpdateDayAccess(day, 'is_locked', !access.is_locked)}
-                                                    className={access.is_locked ? "btn-primary" : "btn-secondary"}
-                                                    style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', background: access.is_locked ? '#ef4444' : 'transparent', width: '100%', color: access.is_locked ? 'white' : 'var(--text-primary)' }}
-                                                >
-                                                    {access.is_locked ? 'Unlock' : 'Lock'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                        <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
-                            <button onClick={() => setSchedulingGroup(null)} className="btn-secondary">Done</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {viewingProfileId && (
-                <StudentProfileModal 
-                    studentId={viewingProfileId} 
-                    onClose={() => setViewingProfileId(null)} 
-                    studentName={students.find(s => s.id === viewingProfileId)?.name}
-                />
-            )}
+            
         </div>
     )
 }
