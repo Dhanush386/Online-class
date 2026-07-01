@@ -1,14 +1,14 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import PropTypes from 'prop-types'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLiveKitViewer } from '../../hooks/useLiveKitViewer'
-import { ShieldAlert, VideoOff, ChevronLeft, Search, AlertTriangle, CheckCircle2, PlayCircle, Bell } from 'lucide-react'
+import { ShieldAlert, VideoOff, ChevronLeft, Search, AlertTriangle, PlayCircle, Bell } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 import { useToast } from '../../components/Toast'
 import { useDeviceType } from '../../hooks/useDeviceType'
-import MobileBlocker from '../../components/MobileBlocker'
 import ProctoringReportModal from '../../components/organizer/ProctoringReportModal'
 
 
@@ -30,11 +30,16 @@ const StreamVideo = ({ stream }) => {
             ref={videoRef} 
             autoPlay 
             playsInline 
-            webkit-playsinline="true"
+            webkitPlaysInline="true"
             onClick={(e) => e.target.play()}
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
-        />
+        >
+            <track kind="captions" />
+        </video>
     )
+};
+StreamVideo.propTypes = {
+    stream: PropTypes.object
 };
 
 const PUBLIC_VAPID_KEY = 'BNjRJsIQS8GspSp6F0wLITvpxMtEYMbkwqETiGDVuBiW065JF75laB-jdKyGN09gDSrvbBrlbKsTxka6-Wk9ftc';
@@ -61,21 +66,184 @@ function StudentLiveKitStream({ assessmentId, studentId, onStop }) {
         </div>
     );
 }
+StudentLiveKitStream.propTypes = {
+    assessmentId: PropTypes.string.isRequired,
+    studentId: PropTypes.string.isRequired,
+    onStop: PropTypes.func.isRequired
+};
+
+const triggerOnlineNotification = (data, toast, fetchViolations) => {
+    toast.info(`${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`);
+    fetchViolations(data.studentId);
+    if ('Notification' in globalThis && Notification.permission === 'granted') {
+        try {
+            new Notification('New Student Online', {
+                body: `${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`,
+                icon: '/vite.svg'
+            });
+        } catch (err) {
+            console.warn('Failed to show notification (Android Chrome requires Service Worker):', err);
+        }
+    }
+};
+
+const cleanupStaleStudents = (now, setActiveStudents, setWatchingLive) => {
+    setActiveStudents(prev => {
+        const next = { ...prev };
+        let changed = false;
+        const ids = Object.keys(next);
+        for (let i = 0; i < ids.length; i++) {
+            const id = ids[i];
+            if (now - next[id].lastSeen > 45000) {
+                delete next[id];
+                changed = true;
+                setWatchingLive(w => {
+                    const newW = { ...w };
+                    delete newW[id];
+                    return newW;
+                });
+            }
+        }
+        return changed ? next : prev;
+    });
+};
+
+const enableNativePush = async (profile, toast) => {
+    let permStatus = await PushNotifications.checkPermissions();
+    if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+    }
+    if (permStatus.receive !== 'granted') {
+        toast.error('Native Push Notification permission denied');
+        return;
+    }
+    
+    await PushNotifications.register();
+    toast.success('Registering device for Native Push...');
+    
+    PushNotifications.addListener('registration', async (token) => {
+        console.log('FCM Token:', token.value);
+        const { error } = await supabase.from('push_subscriptions').upsert({
+            organizer_id: profile.id,
+            subscription: { type: 'fcm', token: token.value }
+        }, { onConflict: 'organizer_id' });
+        
+        if (error) console.error("Error saving FCM token", error);
+        else toast.success("Native Notifications enabled!");
+    });
+    
+    PushNotifications.addListener('registrationError', (error) => {
+        toast.error('Failed to register for push notifications');
+        console.error(error);
+    });
+};
+
+const enableWebPush = async (profile, toast) => {
+    if (PUBLIC_VAPID_KEY === 'REPLACE_WITH_YOUR_PUBLIC_VAPID_KEY') {
+        toast.error("Please configure the VAPID keys in LiveProctoring.jsx first.");
+        return;
+    }
+    if (!('Notification' in globalThis)) {
+        toast.error("Web Push Notifications are not supported in this browser");
+        return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+        toast.error("Notification permission denied");
+        return;
+    }
+    
+    const registration = await navigator.serviceWorker.ready;
+    
+    let subscription = await registration.pushManager.getSubscription();
+    if (subscription) {
+        await subscription.unsubscribe();
+    }
+
+    subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: PUBLIC_VAPID_KEY
+    });
+    
+    const { error } = await supabase.from('push_subscriptions').upsert({
+        organizer_id: profile.id,
+        subscription: { type: 'web', data: subscription }
+    }, { onConflict: 'organizer_id' });
+
+    if (error) throw error;
+    toast.success("Background Web Notifications enabled!");
+};
+
+const getAlertStyle = (riskScore) => {
+    if (riskScore >= 200) {
+        return {
+            background: '#fef2f2',
+            color: '#dc2626',
+            borderColor: '#fee2e2'
+        };
+    }
+    if (riskScore >= 150) {
+        return {
+            background: '#fff5f5',
+            color: '#e11d48',
+            borderColor: '#ffe4e6'
+        };
+    }
+    return {
+        background: '#fffbeb',
+        color: '#d97706',
+        borderColor: '#fef3c7'
+    };
+};
+
+const renderRiskAlert = (riskScore) => {
+    const alertStyle = getAlertStyle(riskScore);
+    let alertContent = '⚠ HIGH RISK ALERT';
+    if (riskScore >= 200) {
+        alertContent = '⛔ FLAG SUBMISSION (Faculty Review Required)';
+    } else if (riskScore >= 150) {
+        alertContent = '🚨 CRITICAL ALERT (Suspicious Behavior)';
+    }
+
+    return (
+        <div style={{
+            padding: '0.5rem',
+            background: alertStyle.background,
+            color: alertStyle.color,
+            borderBottom: '1px solid',
+            borderColor: alertStyle.borderColor,
+            textAlign: 'center',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px',
+            animation: riskScore >= 150 ? 'pulse 2s infinite' : 'none'
+        }}>
+            {alertContent}
+        </div>
+    );
+};
+
+const getViolationBorderColor = (increment) => {
+    if (increment >= 40) return '#ef4444';
+    if (increment >= 30) return '#f97316';
+    return '#eab308';
+};
 
 export default function LiveProctoring() {
     const { profile } = useAuth()
     const toast = useToast()
-    const { isMobile, isTablet, isDesktop } = useDeviceType()
+    const { isMobile } = useDeviceType()
     const [activeStudents, setActiveStudents] = useState({})
     const [watchingLive, setWatchingLive] = useState({}) // { studentId: challengeId }
     const [search, setSearch] = useState('')
     const [expandedTimeline, setExpandedTimeline] = useState({})
     const [reportSession, setReportSession] = useState(null)
     const channelRef = useRef(null)
-    const peerConnections = useRef({})
-    const iceCandidateBuffer = useRef({})
 
-    const fetchViolations = async (studentId) => {
+    const fetchViolations = useCallback(async (studentId) => {
         try {
             const { data: session } = await supabase
                 .from('proctoring_sessions')
@@ -89,7 +257,7 @@ export default function LiveProctoring() {
             if (session) {
                 const { data: violations } = await supabase
                     .from('proctoring_violations')
-                    .select('violation_type, timestamp, risk_score_increment, evidence_url')
+                    .select('id, violation_type, timestamp, risk_score_increment, evidence_url')
                     .eq('session_id', session.id)
                     .order('timestamp', { ascending: false });
 
@@ -102,6 +270,7 @@ export default function LiveProctoring() {
                             riskScore: session.final_risk_score,
                             violationCount: session.total_violations,
                             violations: (violations || []).map(v => ({
+                                id: v.id,
                                 type: v.violation_type,
                                 time: new Date(v.timestamp).toLocaleTimeString(),
                                 increment: v.risk_score_increment,
@@ -114,7 +283,7 @@ export default function LiveProctoring() {
         } catch (err) {
             console.error('Error syncing proctoring data:', err);
         }
-    };
+    }, []);
 
     const getRiskStatus = (score) => {
         if (score >= 100) return { label: 'CRITICAL', color: '#ef4444', bg: '#fef2f2', border: '#fecaca' };
@@ -172,20 +341,7 @@ export default function LiveProctoring() {
                     const isNew = !prev[data.studentId];
                     if (isNew) {
                         // Defer toast and notification side effects to prevent rendering issues in React
-                        setTimeout(() => {
-                            toast.info(`${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`);
-                            fetchViolations(data.studentId);
-                            if ('Notification' in window && Notification.permission === 'granted') {
-                                try {
-                                    new Notification('New Student Online', {
-                                        body: `${data.name} has started ${data.type === 'assessment' ? 'an Assessment' : 'a Coding Challenge'}`,
-                                        icon: '/vite.svg'
-                                    });
-                                } catch (err) {
-                                    console.warn('Failed to show notification (Android Chrome requires Service Worker):', err);
-                                }
-                            }
-                        }, 0);
+                        setTimeout(triggerOnlineNotification, 0, data, toast, fetchViolations);
                     }
                     return {
                         ...prev,
@@ -201,32 +357,14 @@ export default function LiveProctoring() {
 
         // Cleanup disconnected students every 15 seconds (if no ping for > 45 seconds)
         const cleanupInterval = setInterval(() => {
-            const now = Date.now()
-            setActiveStudents(prev => {
-                const next = { ...prev }
-                let changed = false
-                Object.keys(next).forEach(id => {
-                    if (now - next[id].lastSeen > 45000) {
-                        delete next[id]
-                        changed = true
-                        
-                        // Stop watching if they disconnected
-                        setWatchingLive(w => {
-                            const newW = { ...w };
-                            delete newW[id];
-                            return newW;
-                        });
-                    }
-                })
-                return changed ? next : prev
-            })
+            cleanupStaleStudents(Date.now(), setActiveStudents, setWatchingLive);
         }, 15000)
 
         return () => {
             channel.unsubscribe()
             clearInterval(cleanupInterval)
         }
-    }, [profile])
+    }, [toast, fetchViolations])
 
     const startLiveStream = (studentId, challengeId) => {
         setWatchingLive(prev => ({ ...prev, [studentId]: challengeId }));
@@ -243,72 +381,9 @@ export default function LiveProctoring() {
     const enablePushNotifications = async () => {
         try {
             if (Capacitor.isNativePlatform()) {
-                let permStatus = await PushNotifications.checkPermissions();
-                if (permStatus.receive === 'prompt') {
-                    permStatus = await PushNotifications.requestPermissions();
-                }
-                if (permStatus.receive !== 'granted') {
-                    toast.error('Native Push Notification permission denied');
-                    return;
-                }
-                
-                await PushNotifications.register();
-                toast.success('Registering device for Native Push...');
-                
-                // Note: The actual token is captured via a listener we should register once.
-                // We'll set it up right here to store the token when it arrives.
-                PushNotifications.addListener('registration', async (token) => {
-                    console.log('FCM Token:', token.value);
-                    const { error } = await supabase.from('push_subscriptions').upsert({
-                        organizer_id: profile.id,
-                        subscription: { type: 'fcm', token: token.value }
-                    }, { onConflict: 'organizer_id' });
-                    
-                    if (error) console.error("Error saving FCM token", error);
-                    else toast.success("Native Notifications enabled!");
-                });
-                
-                PushNotifications.addListener('registrationError', (error) => {
-                    toast.error('Failed to register for push notifications');
-                    console.error(error);
-                });
-                
+                await enableNativePush(profile, toast);
             } else {
-                // Web Push
-                if (PUBLIC_VAPID_KEY === 'REPLACE_WITH_YOUR_PUBLIC_VAPID_KEY') {
-                    toast.error("Please configure the VAPID keys in LiveProctoring.jsx first.");
-                    return;
-                }
-                if (!('Notification' in window)) {
-                    toast.error("Web Push Notifications are not supported in this browser");
-                    return;
-                }
-                const permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    toast.error("Notification permission denied");
-                    return;
-                }
-                
-                const registration = await navigator.serviceWorker.ready;
-                
-                // Clear any old subscriptions attached to different VAPID keys
-                let subscription = await registration.pushManager.getSubscription();
-                if (subscription) {
-                    await subscription.unsubscribe();
-                }
-
-                subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: PUBLIC_VAPID_KEY
-                });
-                
-                const { error } = await supabase.from('push_subscriptions').upsert({
-                    organizer_id: profile.id,
-                    subscription: { type: 'web', data: subscription }
-                }, { onConflict: 'organizer_id' });
-
-                if (error) throw error;
-                toast.success("Background Web Notifications enabled!");
+                await enableWebPush(profile, toast);
             }
         } catch (error) {
             console.error('Error enabling notifications:', error);
@@ -319,7 +394,7 @@ export default function LiveProctoring() {
     const sendWarning = async (studentId, studentName) => {
         if (!channelRef.current) return
         
-        const message = window.prompt(`Enter warning message for ${studentName}:`, "Please ensure your face is clearly visible.");
+        const message = globalThis.prompt(`Enter warning message for ${studentName}:`, "Please ensure your face is clearly visible.");
         if (!message) return;
 
         try {
@@ -430,31 +505,7 @@ export default function LiveProctoring() {
                         const id = student.studentId;
                         return (
                         <div key={id} style={{ background: 'white', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-                            {student.riskScore >= 100 && (
-                                <div style={{
-                                    padding: '0.5rem',
-                                    background: student.riskScore >= 200 ? '#fef2f2' : student.riskScore >= 150 ? '#fff5f5' : '#fffbeb',
-                                    color: student.riskScore >= 200 ? '#dc2626' : student.riskScore >= 150 ? '#e11d48' : '#d97706',
-                                    borderBottom: '1px solid',
-                                    borderColor: student.riskScore >= 200 ? '#fee2e2' : student.riskScore >= 150 ? '#ffe4e6' : '#fef3c7',
-                                    textAlign: 'center',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 700,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '4px',
-                                    animation: student.riskScore >= 150 ? 'pulse 2s infinite' : 'none'
-                                }}>
-                                    {student.riskScore >= 200 ? (
-                                        <>⛔ FLAG SUBMISSION (Faculty Review Required)</>
-                                    ) : student.riskScore >= 150 ? (
-                                        <>🚨 CRITICAL ALERT (Suspicious Behavior)</>
-                                    ) : (
-                                        <>⚠ HIGH RISK ALERT</>
-                                    )}
-                                </div>
-                            )}
+                            {student.riskScore >= 100 && renderRiskAlert(student.riskScore)}
                             <div style={{ position: 'relative', width: '100%', paddingBottom: '75%', background: '#000' }}>
                                 {watchingLive[id] && (
                                     <StudentLiveKitStream 
@@ -514,6 +565,8 @@ export default function LiveProctoring() {
                                             style={{ flex: 1, padding: '0.6rem', background: '#f8fafc', border: '1px solid #cbd5e1', color: 'var(--card-border)', borderRadius: 6, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s' }}
                                             onMouseOver={(e) => e.target.style.background = '#f1f5f9'}
                                             onMouseOut={(e) => e.target.style.background = '#f8fafc'}
+                                            onFocus={(e) => e.target.style.background = '#f1f5f9'}
+                                            onBlur={(e) => e.target.style.background = '#f8fafc'}
                                         >
                                             <PlayCircle size={16} /> Watch Live
                                         </button>
@@ -523,6 +576,8 @@ export default function LiveProctoring() {
                                         style={{ flex: watchingLive[id] ? '1 1 100%' : 1, padding: '0.6rem', background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 6, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s' }}
                                         onMouseOver={(e) => e.target.style.background = '#fee2e2'}
                                         onMouseOut={(e) => e.target.style.background = '#fef2f2'}
+                                        onFocus={(e) => e.target.style.background = '#fee2e2'}
+                                        onBlur={(e) => e.target.style.background = '#fef2f2'}
                                     >
                                         <AlertTriangle size={16} /> Send Warning
                                     </button>
@@ -531,6 +586,8 @@ export default function LiveProctoring() {
                                         style={{ flex: '1 1 100%', marginTop: '0.5rem', padding: '0.6rem', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af', borderRadius: 6, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s' }}
                                         onMouseOver={(e) => e.target.style.background = '#dbeafe'}
                                         onMouseOut={(e) => e.target.style.background = '#eff6ff'}
+                                        onFocus={(e) => e.target.style.background = '#dbeafe'}
+                                        onBlur={(e) => e.target.style.background = '#eff6ff'}
                                     >
                                         <ShieldAlert size={16} /> Review Report
                                     </button>
@@ -551,8 +608,8 @@ export default function LiveProctoring() {
                                         {(!student.violations || student.violations.length === 0) ? (
                                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem' }}>No violations recorded.</div>
                                         ) : (
-                                            student.violations.map((v, i) => (
-                                                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.6rem', background: '#f8fafc', borderRadius: 6, borderLeft: `4px solid ${v.increment >= 40 ? '#ef4444' : v.increment >= 30 ? '#f97316' : '#eab308'}`, border: '1px solid #e2e8f0' }}>
+                                            student.violations.map((v) => (
+                                                <div key={v.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.6rem', background: '#f8fafc', borderRadius: 6, borderLeft: `4px solid ${getViolationBorderColor(v.increment)}`, border: '1px solid #e2e8f0' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                         <div>
                                                             <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>

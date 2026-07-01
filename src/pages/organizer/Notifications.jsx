@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
-    Bell, Send, Trash2, Users, Info, AlertTriangle, CheckCircle, 
-    MessageSquare, History, Plus, Filter, Search, Clock, X, Globe
+    Bell, Send, Trash2, Info, AlertTriangle, CheckCircle, 
+    History, Plus, Clock, X, Globe
 } from 'lucide-react'
 import { subscribeToPush, checkPushSubscription } from '../../utils/pushService'
 
@@ -127,6 +127,84 @@ export default function Notifications() {
         }
     }
 
+    const renderNotificationsHistory = () => {
+        if (loading) {
+            return (
+                <div style={{ padding: '4rem', textAlign: 'center' }}>
+                    <div className="spinner"></div>
+                </div>
+            );
+        }
+        if (notifications.length === 0) {
+            return (
+                <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <Bell size={48} style={{ margin: '0 auto 1rem', opacity: 0.2 }} />
+                    <p>No notifications sent yet.</p>
+                </div>
+            );
+        }
+        return (
+            <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
+                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>NOTIFICATION</th>
+                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>TARGET</th>
+                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>SENT ON</th>
+                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody style={{ fontSize: '0.9rem' }}>
+                        {notifications.map(n => {
+                            const target = getTargetLabel(n.target)
+                            return (
+                                <tr key={n.id} style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
+                                    <td style={{ padding: '1rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+                                            <div style={{ marginTop: '0.2rem' }}>{getTypeIcon(n.type)}</div>
+                                            <div>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.message}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <span style={{ 
+                                            fontSize: '0.85rem', 
+                                            fontWeight: 600, 
+                                            padding: '0.25rem 0.6rem', 
+                                            borderRadius: 20, 
+                                            background: target.bg, 
+                                            color: target.color 
+                                        }}>
+                                            {target.label}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
+                                            <Clock size={14} />
+                                            {new Date(n.created_at).toLocaleDateString()}
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <button 
+                                            onClick={() => handleDelete(n.id)}
+                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: 8 }}
+                                            className="nav-item-hover"
+                                            title="Delete History"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        );
+    };
+
     return (
         <div className="animate-fade-in" style={{ maxWidth: '1000px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -168,73 +246,7 @@ export default function Notifications() {
                             <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Broadcasting History</h2>
                         </div>
                         
-                        {loading ? (
-                            <div style={{ padding: '4rem', textAlign: 'center' }}><div className="spinner"></div></div>
-                        ) : notifications.length === 0 ? (
-                            <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                <Bell size={48} style={{ margin: '0 auto 1rem', opacity: 0.2 }} />
-                                <p>No notifications sent yet.</p>
-                            </div>
-                        ) : (
-                            <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
-                                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>NOTIFICATION</th>
-                                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>TARGET</th>
-                                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>SENT ON</th>
-                                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>ACTIONS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody style={{ fontSize: '0.9rem' }}>
-                                        {notifications.map(n => {
-                                            const target = getTargetLabel(n.target)
-                                            return (
-                                                <tr key={n.id} style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
-                                                    <td style={{ padding: '1rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
-                                                            <div style={{ marginTop: '0.2rem' }}>{getTypeIcon(n.type)}</div>
-                                                            <div>
-                                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
-                                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.message}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ padding: '1rem' }}>
-                                                        <span style={{ 
-                                                            fontSize: '0.85rem', 
-                                                            fontWeight: 600, 
-                                                            padding: '0.25rem 0.6rem', 
-                                                            borderRadius: 20, 
-                                                            background: target.bg, 
-                                                            color: target.color 
-                                                        }}>
-                                                            {target.label}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
-                                                            <Clock size={14} />
-                                                            {new Date(n.created_at).toLocaleDateString()}
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ padding: '1rem' }}>
-                                                        <button 
-                                                            onClick={() => handleDelete(n.id)}
-                                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: 8 }}
-                                                            className="nav-item-hover"
-                                                            title="Delete History"
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                        {renderNotificationsHistory()}
                     </div>
                 </div>
             </div>
@@ -259,53 +271,61 @@ export default function Notifications() {
                         <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Broadcast Title</label>
-                                    <input 
-                                        type="text"
-                                        required
-                                        placeholder="e.g. Schedule Update for Tomorrow"
-                                        value={formData.title}
-                                        onChange={e => setFormData({...formData, title: e.target.value})}
-                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem' }}
-                                    />
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                        Broadcast Title
+                                        <input 
+                                            type="text"
+                                            required
+                                            placeholder="e.g. Schedule Update for Tomorrow"
+                                            value={formData.title}
+                                            onChange={e => setFormData({...formData, title: e.target.value})}
+                                            style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }}
+                                        />
+                                    </label>
                                 </div>
 
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Message Content</label>
-                                    <textarea 
-                                        required
-                                        rows={4}
-                                        placeholder="Write your announcement here..."
-                                        value={formData.message}
-                                        onChange={e => setFormData({...formData, message: e.target.value})}
-                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', resize: 'vertical' }}
-                                    />
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                        Message Content
+                                        <textarea 
+                                            required
+                                            rows={4}
+                                            placeholder="Write your announcement here..."
+                                            value={formData.message}
+                                            onChange={e => setFormData({...formData, message: e.target.value})}
+                                            style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', resize: 'vertical', boxSizing: 'border-box' }}
+                                        />
+                                    </label>
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Type</label>
-                                        <select 
-                                            value={formData.type}
-                                            onChange={e => setFormData({...formData, type: e.target.value})}
-                                            style={{ width: '100%', padding: '0.8rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', background: 'white' }}
-                                        >
-                                            <option value="info">Information</option>
-                                            <option value="warning">Important Alert</option>
-                                            <option value="success">Success / Celebration</option>
-                                        </select>
+                                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                            Type
+                                            <select 
+                                                value={formData.type}
+                                                onChange={e => setFormData({...formData, type: e.target.value})}
+                                                style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', background: 'white', boxSizing: 'border-box' }}
+                                            >
+                                                <option value="info">Information</option>
+                                                <option value="warning">Important Alert</option>
+                                                <option value="success">Success / Celebration</option>
+                                            </select>
+                                        </label>
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Target Audience</label>
-                                        <select 
-                                            value={formData.target}
-                                            onChange={e => setFormData({...formData, target: e.target.value})}
-                                            style={{ width: '100%', padding: '0.8rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', background: 'white' }}
-                                        >
-                                            <option value="all">Everyone</option>
-                                            <option value="students">Students Only</option>
-                                            <option value="organizers">Organizers Only</option>
-                                        </select>
+                                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                            Target Audience
+                                            <select 
+                                                value={formData.target}
+                                                onChange={e => setFormData({...formData, target: e.target.value})}
+                                                style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', background: 'white', boxSizing: 'border-box' }}
+                                            >
+                                                <option value="all">Everyone</option>
+                                                <option value="students">Students Only</option>
+                                                <option value="organizers">Organizers Only</option>
+                                            </select>
+                                        </label>
                                     </div>
                                 </div>
                             </div>

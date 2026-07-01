@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { 
-  Users, Video, Clock, BookOpen, AlertTriangle, ShieldAlert, 
-  FileDown, RefreshCw, Eye, ArrowUpRight, Play, Award, HelpCircle 
+  ShieldAlert, FileDown, RefreshCw, ArrowUpRight 
 } from 'lucide-react'
 import { 
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+  ResponsiveContainer, XAxis, YAxis, CartesianGrid, 
   Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend, LineChart, Line 
 } from 'recharts'
 import { jsPDF } from 'jspdf'
@@ -19,6 +19,141 @@ const RISK_COLORS = {
   warning: '#eab308',
   highRisk: '#f97316',
   critical: '#ef4444'
+}
+
+const calculateRiskDistribution = (pSessions) => {
+  let safeCount = 0
+  let warningCount = 0
+  let highRiskCount = 0
+  let criticalCount = 0
+
+  if (pSessions) {
+    pSessions.forEach(s => {
+      const score = s.final_risk_score || 0
+      if (score >= 150) criticalCount++
+      else if (score >= 70) highRiskCount++
+      else if (score >= 30) warningCount++
+      else safeCount++
+    })
+  }
+
+  const totalSessions = pSessions?.length || 0
+  if (totalSessions === 0) {
+    return [
+      { name: 'NO DATA', value: 1, percentage: 0, color: '#334155' }
+    ]
+  }
+
+  return [
+    { name: 'Safe', value: safeCount, percentage: Math.round((safeCount / totalSessions) * 100), color: RISK_COLORS.safe },
+    { name: 'Warning', value: warningCount, percentage: Math.round((warningCount / totalSessions) * 100), color: RISK_COLORS.warning },
+    { name: 'High Risk', value: highRiskCount, percentage: Math.round((highRiskCount / totalSessions) * 100), color: RISK_COLORS.highRisk },
+    { name: 'Critical', value: criticalCount, percentage: Math.round((criticalCount / totalSessions) * 100), color: RISK_COLORS.critical }
+  ]
+}
+
+const calculateCoreStatsAndTopCourses = (courseAnalytics) => {
+  let tStudents = 0
+  let tLiveHours = 0
+  let activeCs = courseAnalytics?.length || 0
+  let sumPassRate = 0
+  let sumCompletion = 0
+  let sumAttendance = 0
+  let totalHighRisk = 0
+
+  const cMetrics = (courseAnalytics || []).map(c => {
+    tStudents += (c.student_count || 0)
+    tLiveHours += (c.total_hours || 0)
+    sumPassRate += (c.avg_score_percentage || 0)
+    sumCompletion += (c.avg_completion_percentage || 0)
+    sumAttendance += (c.avg_attendance_percentage || 0)
+    totalHighRisk += (c.high_risk_student_count || 0)
+
+    return {
+      name: c.course_title.length > 18 ? c.course_title.substring(0, 15) + '...' : c.course_title,
+      'Average Score': Math.round(c.avg_score_percentage || 0),
+      'Completion %': Math.round(c.avg_completion_percentage || 0),
+      'Attendance %': Math.round(c.avg_attendance_percentage || 0),
+      originalScore: c.avg_score_percentage || 0
+    }
+  })
+
+  const sortedCourses = [...cMetrics].sort((a, b) => b.originalScore - a.originalScore).slice(0, 5)
+  const avgPass = activeCs > 0 ? Math.round(sumPassRate / activeCs) : 0
+  const avgComp = activeCs > 0 ? Math.round(sumCompletion / activeCs) : 0
+  const avgAtt = activeCs > 0 ? Math.round(sumAttendance / activeCs) : 0
+
+  return {
+    cMetrics,
+    sortedCourses,
+    stats: {
+      totalStudents: tStudents,
+      activeCourses: activeCs,
+      avgPassRate: avgPass,
+      activeRiskAlerts: totalHighRisk,
+      totalLiveHours: Math.round(tLiveHours),
+      avgCompletion: avgComp,
+      avgAttendance: avgAtt
+    }
+  }
+}
+
+const calculateWeeklyCompletion = (weekProg) => {
+  const compByWeek = { 1: [], 2: [], 3: [], 4: [] }
+  if (weekProg && weekProg.length > 0) {
+    weekProg.forEach(wp => {
+      if (compByWeek[wp.week_number]) {
+        compByWeek[wp.week_number].push(wp.completion_percentage || 0)
+      }
+    })
+  }
+
+  const getWeekAvg = (weekNum) => {
+    const arr = compByWeek[weekNum]
+    return arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0
+  }
+
+  return [
+    { week: 'Week 1', completion: getWeekAvg(1) },
+    { week: 'Week 2', completion: getWeekAvg(2) },
+    { week: 'Week 3', completion: getWeekAvg(3) },
+    { week: 'Week 4', completion: getWeekAvg(4) }
+  ]
+}
+
+const calculateHealthScoreDistribution = (healthHist) => {
+  let healthDist = { '90-100': 0, '70-89': 0, '50-69': 0, '<50': 0 }
+  if (healthHist && healthHist.length > 0) {
+    healthHist.forEach(h => {
+      const s = h.health_score || 0
+      if (s >= 90) healthDist['90-100']++
+      else if (s >= 70) healthDist['70-89']++
+      else if (s >= 50) healthDist['50-69']++
+      else healthDist['<50']++
+    })
+  }
+
+  return [
+    { range: '90-100 (Excellent)', count: healthDist['90-100'], color: '#22c55e' },
+    { range: '70-89 (Good)', count: healthDist['70-89'], color: '#3b82f6' },
+    { range: '50-69 (Average)', count: healthDist['50-69'], color: '#f59e0b' },
+    { range: '<50 (At Risk)', count: healthDist['<50'], color: '#ef4444' }
+  ]
+}
+
+const calculateXpBreakdown = (xpEvts) => {
+  const xpSums = {}
+  if (xpEvts && xpEvts.length > 0) {
+    xpEvts.forEach(e => {
+      xpSums[e.event_type] = (xpSums[e.event_type] || 0) + (e.xp_amount || 0)
+    })
+  }
+
+  return Object.entries(xpSums).length > 0
+    ? Object.entries(xpSums).map(([k, v]) => ({ name: k.replaceAll('_', ' ').toUpperCase(), value: v }))
+    : [
+        { name: 'NO DATA', value: 1, color: '#334155' }
+      ]
 }
 
 export default function OrganizerAnalytics() {
@@ -41,9 +176,7 @@ export default function OrganizerAnalytics() {
   const [riskData, setRiskData] = useState([])
   const [courseData, setCourseData] = useState([])
   const [topCourses, setTopCourses] = useState([])
-  const [recentAlerts, setRecentAlerts] = useState([])
   const [atRiskStudents, setAtRiskStudents] = useState([])
-  const [attendanceData, setAttendanceData] = useState([])
   
   // V3 Analytics States
   const [weeklyCompletionData, setWeeklyCompletionData] = useState([])
@@ -62,9 +195,9 @@ export default function OrganizerAnalytics() {
     if (profile?.id) {
       loadDashboardData()
     }
-  }, [profile])
+  }, [profile, loadDashboardData])
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     setLoading(true)
     try {
       // 1. Fetch Course Analytics (View)
@@ -91,198 +224,35 @@ export default function OrganizerAnalytics() {
       const { data: pSessions } = await supabase
         .from('proctoring_sessions')
         .select('final_risk_score')
-        // In a real scenario we'd filter by course IDs belonging to organizer
-        // For now, assuming they are accessible via RLS or fetching all visible
         
-      let safeCount = 0
-      let warningCount = 0
-      let highRiskCount = 0
-      let criticalCount = 0
+      setRiskData(calculateRiskDistribution(pSessions))
 
-      if (pSessions) {
-        pSessions.forEach(s => {
-          const score = s.final_risk_score || 0
-          if (score >= 150) criticalCount++
-          else if (score >= 70) highRiskCount++
-          else if (score >= 30) warningCount++
-          else safeCount++
-        })
-      }
-
-      const totalSessions = pSessions?.length || 0
-      let riskDistribution = []
-      if (totalSessions === 0) {
-        riskDistribution = [
-          { name: 'NO DATA', value: 1, percentage: 0, color: '#334155' }
-        ]
-      } else {
-        riskDistribution = [
-          { name: 'Safe', value: safeCount, percentage: Math.round((safeCount / totalSessions) * 100), color: RISK_COLORS.safe },
-          { name: 'Warning', value: warningCount, percentage: Math.round((warningCount / totalSessions) * 100), color: RISK_COLORS.warning },
-          { name: 'High Risk', value: highRiskCount, percentage: Math.round((highRiskCount / totalSessions) * 100), color: RISK_COLORS.highRisk },
-          { name: 'Critical', value: criticalCount, percentage: Math.round((criticalCount / totalSessions) * 100), color: RISK_COLORS.critical }
-        ]
-      }
-      setRiskData(riskDistribution)
-
-      // Calculate Stats & Top Courses
-      let tStudents = 0
-      let tLiveHours = 0
-      let activeCs = courseAnalytics?.length || 0
-      let sumPassRate = 0
-      let sumCompletion = 0
-      let sumAttendance = 0
-      let totalHighRisk = 0
-      
-      const cMetrics = (courseAnalytics || []).map(c => {
-          tStudents += (c.student_count || 0)
-          tLiveHours += (c.total_hours || 0)
-          sumPassRate += (c.avg_score_percentage || 0)
-          sumCompletion += (c.avg_completion_percentage || 0)
-          sumAttendance += (c.avg_attendance_percentage || 0)
-          totalHighRisk += (c.high_risk_student_count || 0)
-          
-          return {
-              name: c.course_title.length > 18 ? c.course_title.substring(0, 15) + '...' : c.course_title,
-              'Average Score': Math.round(c.avg_score_percentage || 0),
-              'Completion %': Math.round(c.avg_completion_percentage || 0),
-              'Attendance %': Math.round(c.avg_attendance_percentage || 0),
-              originalScore: c.avg_score_percentage || 0
-          }
-      })
-      
+      // 4. Calculate Stats & Top Courses
+      const { cMetrics, sortedCourses, stats: calculatedStats } = calculateCoreStatsAndTopCourses(courseAnalytics)
       setCourseData(cMetrics)
-      
-      // Sort for Top 5 Courses table
-      const sortedCourses = [...cMetrics].sort((a, b) => b.originalScore - a.originalScore).slice(0, 5)
       setTopCourses(sortedCourses)
+      setStats(calculatedStats)
 
-      const avgPass = activeCs > 0 ? Math.round(sumPassRate / activeCs) : 0
-      const avgComp = activeCs > 0 ? Math.round(sumCompletion / activeCs) : 0
-      const avgAtt = activeCs > 0 ? Math.round(sumAttendance / activeCs) : 0
 
-      setStats({
-        totalStudents: tStudents,
-        activeCourses: activeCs,
-        avgPassRate: avgPass,
-        activeRiskAlerts: totalHighRisk,
-        totalLiveHours: Math.round(tLiveHours),
-        avgCompletion: avgComp,
-        avgAttendance: avgAtt
-      })
 
-      // Fetch actual Attendance Trend by Week
-      const fourWeeksAgo = new Date()
-      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
-      
-      const { data: attRows } = await supabase
-        .from('live_attendance')
-        .select('joined_at, attendance_status, courses!inner(organizer_id)')
-        .eq('courses.organizer_id', profile.id)
-        .gte('joined_at', fourWeeksAgo.toISOString())
-
-      let weeklyData = [
-        { date: 'Week 1', total: 0, present: 0, pct: 0 },
-        { date: 'Week 2', total: 0, present: 0, pct: 0 },
-        { date: 'Week 3', total: 0, present: 0, pct: 0 },
-        { date: 'Week 4', total: 0, present: 0, pct: 0 }
-      ]
-
-      if (attRows && attRows.length > 0) {
-          const now = new Date()
-          attRows.forEach(row => {
-              const rowDate = new Date(row.joined_at)
-              const diffDays = Math.floor((now - rowDate) / (1000 * 60 * 60 * 24))
-              
-              let weekIndex = 3 // Week 4 (Current)
-              if (diffDays >= 21) weekIndex = 0
-              else if (diffDays >= 14) weekIndex = 1
-              else if (diffDays >= 7) weekIndex = 2
-              
-              weeklyData[weekIndex].total++
-              if (row.attendance_status === 'present') weeklyData[weekIndex].present++
-          })
-          
-          weeklyData = weeklyData.map(w => ({
-              date: w.date,
-              'Attendance %': w.total > 0 ? Math.round((w.present / w.total) * 100) : 0
-          }))
-          
-          // If no data at all, provide a baseline from the global average to make chart look good
-          if (weeklyData.every(w => w['Attendance %'] === 0)) {
-              weeklyData = weeklyData.map(w => ({ date: w.date, 'Attendance %': avgAtt || 0 }))
-          }
-      } else {
-          // Fallback if no records
-          weeklyData = [
-              { date: 'Week 1', 'Attendance %': 0 },
-              { date: 'Week 2', 'Attendance %': 0 },
-              { date: 'Week 3', 'Attendance %': 0 },
-              { date: 'Week 4', 'Attendance %': 0 }
-          ]
-      }
-
-      setAttendanceData(weeklyData)
-
-      // V3: Weekly Completion Data (Mocked for now since table might be empty)
+      // 6. Fetch Weekly Completion Data (Mocked for now since table might be empty)
       const { data: weekProg } = await supabase.from('student_week_progress').select('week_number, completion_percentage')
-      let compByWeek = { 1: [], 2: [], 3: [], 4: [] }
-      if (weekProg && weekProg.length > 0) {
-        weekProg.forEach(wp => {
-            if (compByWeek[wp.week_number]) {
-                compByWeek[wp.week_number].push(wp.completion_percentage || 0)
-            }
-        })
-      }
-      setWeeklyCompletionData([
-        { week: 'Week 1', completion: compByWeek[1].length ? Math.round(compByWeek[1].reduce((a,b)=>a+b,0)/compByWeek[1].length) : 0 },
-        { week: 'Week 2', completion: compByWeek[2].length ? Math.round(compByWeek[2].reduce((a,b)=>a+b,0)/compByWeek[2].length) : 0 },
-        { week: 'Week 3', completion: compByWeek[3].length ? Math.round(compByWeek[3].reduce((a,b)=>a+b,0)/compByWeek[3].length) : 0 },
-        { week: 'Week 4', completion: compByWeek[4].length ? Math.round(compByWeek[4].reduce((a,b)=>a+b,0)/compByWeek[4].length) : 0 }
-      ])
+      setWeeklyCompletionData(calculateWeeklyCompletion(weekProg))
 
-      // V3: Health Score Distribution
+      // 7. Fetch Health Score Distribution
       const { data: healthHist } = await supabase.from('learning_health_history').select('health_score').order('recorded_date', { ascending: false }).limit(100)
-      let healthDist = { '90-100': 0, '70-89': 0, '50-69': 0, '<50': 0 }
-      if (healthHist && healthHist.length > 0) {
-          healthHist.forEach(h => {
-              const s = h.health_score || 0
-              if (s >= 90) healthDist['90-100']++
-              else if (s >= 70) healthDist['70-89']++
-              else if (s >= 50) healthDist['50-69']++
-              else healthDist['<50']++
-          })
-      } else {
-          healthDist = { '90-100': 0, '70-89': 0, '50-69': 0, '<50': 0 }
-      }
-      setHealthScoreData([
-          { range: '90-100 (Excellent)', count: healthDist['90-100'], color: '#22c55e' },
-          { range: '70-89 (Good)', count: healthDist['70-89'], color: '#3b82f6' },
-          { range: '50-69 (Average)', count: healthDist['50-69'], color: '#f59e0b' },
-          { range: '<50 (At Risk)', count: healthDist['<50'], color: '#ef4444' }
-      ])
+      setHealthScoreData(calculateHealthScoreDistribution(healthHist))
 
-      // V3: XP Source Breakdown
+      // 8. Fetch XP Source Breakdown
       const { data: xpEvts } = await supabase.from('xp_events').select('event_type, xp_amount')
-      const xpSums = {}
-      if (xpEvts && xpEvts.length > 0) {
-          xpEvts.forEach(e => {
-              xpSums[e.event_type] = (xpSums[e.event_type] || 0) + (e.xp_amount || 0)
-          })
-      }
-      const xpChartData = Object.entries(xpSums).length > 0 
-        ? Object.entries(xpSums).map(([k, v]) => ({ name: k.replace(/_/g, ' ').toUpperCase(), value: v }))
-        : [
-            { name: 'NO DATA', value: 1, color: '#334155' }
-        ]
-      setXpBreakdownData(xpChartData)
+      setXpBreakdownData(calculateXpBreakdown(xpEvts))
 
     } catch (err) {
       console.error('Error loading analytics:', err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [profile])
 
   const downloadAnalyticsPDF = async () => {
     setExporting(true)
@@ -418,15 +388,16 @@ export default function OrganizerAnalytics() {
         <KPIAnalyticsCard icon="🏆" title="Course Completion %" value={`${stats.avgCompletion}%`} color="#6366f1" />
         <KPIAnalyticsCard icon="⏱️" title="Live Class Hours" value={`${stats.totalLiveHours}h`} color="#f59e0b" />
         <button 
+          disabled={exporting}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') downloadAnalyticsPDF() }}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', cursor: 'pointer', background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '16px', width: '100%', textAlign: 'left' }} 
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', cursor: exporting ? 'not-allowed' : 'pointer', background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '16px', width: '100%', textAlign: 'left', opacity: exporting ? 0.6 : 1 }} 
           onClick={downloadAnalyticsPDF}
         >
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <FileDown size={32} color="#06b6d4" />
                 <div>
-                    <h4 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>Export PDF</h4>
-                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem' }}>Generate report</p>
+                    <h4 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{exporting ? 'Exporting...' : 'Export PDF'}</h4>
+                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem' }}>{exporting ? 'Please wait...' : 'Generate report'}</p>
                 </div>
             </div>
             <ArrowUpRight size={20} color="#06b6d4" />
@@ -466,8 +437,8 @@ export default function OrganizerAnalytics() {
             <ResponsiveContainer width="99%" height={160}>
               <PieChart>
                 <Pie data={riskData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">
-                  {riskData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {riskData.map((entry) => (
+                    <Cell key={`cell-risk-${entry.name}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} formatter={(value, name) => [`${value} Sessions`, name]} />
@@ -507,8 +478,8 @@ export default function OrganizerAnalytics() {
                 </tr>
               </thead>
               <tbody>
-                {topCourses.map((c, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem' }}>
+                {topCourses.map((c) => (
+                  <tr key={c.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem' }}>
                     <td style={{ padding: '1rem 0', fontWeight: 600 }}>{c.name}</td>
                     <td style={{ padding: '1rem 0', color: '#8b5cf6', fontWeight: 700 }}>{c['Average Score']}%</td>
                     <td style={{ padding: '1rem 0' }}>{c['Completion %']}%</td>
@@ -535,13 +506,13 @@ export default function OrganizerAnalytics() {
                 No active security infractions. Everything is clean.
               </div>
             ) : (
-              atRiskStudents.map((v, i) => {
+              atRiskStudents.map((v) => {
                 const isCritical = v.final_risk_score >= 150;
                 const studentName = v.student_name || 'Student';
                 
                 return (
                   <button 
-                    key={v.session_id || i} 
+                    key={v.session_id || `${studentName}-${v.course_title}`} 
                     onClick={() => navigate(`/organizer/proctoring`)}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.2s', width: '100%' }}
                     onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
@@ -608,8 +579,8 @@ export default function OrganizerAnalytics() {
                 <YAxis dataKey="range" type="category" stroke="#94a3b8" fontSize={10} tickLine={false} width={80} />
                 <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                  {healthScoreData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {healthScoreData.map((entry) => (
+                    <Cell key={`cell-health-${entry.range}`} fill={entry.color} />
                   ))}
                 </Bar>
               </BarChart>
@@ -627,7 +598,7 @@ export default function OrganizerAnalytics() {
               <PieChart>
                 <Pie data={xpBreakdownData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value">
                   {xpBreakdownData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color || ['#ec4899', '#8b5cf6', '#06b6d4', '#f59e0b', '#22c55e'][index % 5]} />
+                    <Cell key={`cell-xp-${entry.name}`} fill={entry.color || ['#ec4899', '#8b5cf6', '#06b6d4', '#f59e0b', '#22c55e'][index % 5]} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
@@ -643,7 +614,17 @@ export default function OrganizerAnalytics() {
   )
 }
 
+const KPI_RGBA_MAP = {
+  '#06b6d4': '6,182,212',
+  '#8b5cf6': '139,92,246',
+  '#22c55e': '34,197,94',
+  '#f59e0b': '245,158,11',
+  '#10b981': '16,185,129',
+  '#6366f1': '99,102,241'
+}
+
 function KPIAnalyticsCard({ icon, title, value, color, alert }) {
+  const rgbaVal = KPI_RGBA_MAP[color] || '239,68,68'
   return (
     <GlassCard
       tilt3d={true}
@@ -662,7 +643,7 @@ function KPIAnalyticsCard({ icon, title, value, color, alert }) {
         width: 48, 
         height: 48, 
         borderRadius: 12, 
-        background: `rgba(${color === '#06b6d4' ? '6,182,212' : color === '#8b5cf6' ? '139,92,246' : color === '#22c55e' ? '34,197,94' : color === '#f59e0b' ? '245,158,11' : color === '#10b981' ? '16,185,129' : color === '#6366f1' ? '99,102,241' : '239,68,68'}, 0.1)`, 
+        background: `rgba(${rgbaVal}, 0.1)`, 
         color: color, 
         display: 'flex', 
         alignItems: 'center', 
@@ -674,4 +655,12 @@ function KPIAnalyticsCard({ icon, title, value, color, alert }) {
       </div>
     </GlassCard>
   )
+}
+
+KPIAnalyticsCard.propTypes = {
+  icon: PropTypes.oneOfType([PropTypes.string, PropTypes.node]).isRequired,
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  color: PropTypes.string.isRequired,
+  alert: PropTypes.bool
 }
