@@ -30,7 +30,7 @@ const applyFixes = () => {
     }
     
     // 4. Global window.crypto
-    lines = lines.map(l => l.replace(/window\.crypto/g, 'globalThis.crypto'));
+    lines = lines.map(l => l.replaceAll('window.crypto', 'globalThis.crypto'));
     
     // 5. Unused participant
     const partLine = lines.findIndex(l => l.includes('participant && ('));

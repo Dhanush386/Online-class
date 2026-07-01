@@ -11,16 +11,16 @@ roomContentCode = roomContentCode.replace(
     'const { isMobile, isLandscape } = useDeviceOrientation()\n    const { id: videoDataId, title: videoDataTitle } = videoData || {};\n    const { id: profileId } = profile || {};\n    const { info: toastInfo, success: toastSuccess, warning: toastWarning, error: toastError } = toast || {};'
 );
 
-roomContentCode = roomContentCode.replace(/toast\.info/g, 'toastInfo');
-roomContentCode = roomContentCode.replace(/toast\.success/g, 'toastSuccess');
-roomContentCode = roomContentCode.replace(/toast\.warning/g, 'toastWarning');
-roomContentCode = roomContentCode.replace(/toast\.error/g, 'toastError');
-roomContentCode = roomContentCode.replace(/videoData\.id/g, 'videoDataId');
-roomContentCode = roomContentCode.replace(/videoData\?\.id/g, 'videoDataId');
-roomContentCode = roomContentCode.replace(/videoData\.title/g, 'videoDataTitle');
-roomContentCode = roomContentCode.replace(/videoData\?\.title/g, 'videoDataTitle');
-roomContentCode = roomContentCode.replace(/profile\.id/g, 'profileId');
-roomContentCode = roomContentCode.replace(/profile\?\.id/g, 'profileId');
+roomContentCode = roomContentCode.replaceAll('toast.info', 'toastInfo');
+roomContentCode = roomContentCode.replaceAll('toast.success', 'toastSuccess');
+roomContentCode = roomContentCode.replaceAll('toast.warning', 'toastWarning');
+roomContentCode = roomContentCode.replaceAll('toast.error', 'toastError');
+roomContentCode = roomContentCode.replaceAll('videoData.id', 'videoDataId');
+roomContentCode = roomContentCode.replaceAll('videoData?.id', 'videoDataId');
+roomContentCode = roomContentCode.replaceAll('videoData.title', 'videoDataTitle');
+roomContentCode = roomContentCode.replaceAll('videoData?.title', 'videoDataTitle');
+roomContentCode = roomContentCode.replaceAll('profile.id', 'profileId');
+roomContentCode = roomContentCode.replaceAll('profile?.id', 'profileId');
 
 code = code.slice(0, startIdx) + roomContentCode + code.slice(endIdx);
 
@@ -33,7 +33,7 @@ sidebarCode = sidebarCode.replace(
     'announcementText, setAnnouncementText, videoData',
     'announcementText, setAnnouncementText, videoData: { title: videoDataTitle } = {}'
 );
-sidebarCode = sidebarCode.replace(/videoData\?\.title/g, 'videoDataTitle');
+sidebarCode = sidebarCode.replaceAll('videoData?.title', 'videoDataTitle');
 
 // 9. Nested Ternary in RoomSidebar
 sidebarCode = sidebarCode.replace(
@@ -52,7 +52,7 @@ headerCode = headerCode.replace(
     'function RoomHeader({ videoData,',
     'function RoomHeader({ videoData: { title: videoDataTitle } = {},'
 );
-headerCode = headerCode.replace(/videoData\?\.title/g, 'videoDataTitle');
+headerCode = headerCode.replaceAll('videoData?.title', 'videoDataTitle');
 
 code = code.slice(0, startIdx) + headerCode + code.slice(endIdx);
 

@@ -11,16 +11,16 @@ roomContentCode = roomContentCode.replace(
     'const { isMobile, isLandscape } = useDeviceOrientation()\n    const { id: videoDataId, title: videoDataTitle } = videoData || {};\n    const { id: profileId } = profile || {};\n    const { info: toastInfo, success: toastSuccess, warning: toastWarning, error: toastError } = toast || {};'
 );
 
-roomContentCode = roomContentCode.replace(/toast\.info/g, 'toastInfo');
-roomContentCode = roomContentCode.replace(/toast\.success/g, 'toastSuccess');
-roomContentCode = roomContentCode.replace(/toast\.warning/g, 'toastWarning');
-roomContentCode = roomContentCode.replace(/toast\.error/g, 'toastError');
-roomContentCode = roomContentCode.replace(/videoData\.id/g, 'videoDataId');
-roomContentCode = roomContentCode.replace(/videoData\?\.id/g, 'videoDataId');
-roomContentCode = roomContentCode.replace(/videoData\.title/g, 'videoDataTitle');
-roomContentCode = roomContentCode.replace(/videoData\?\.title/g, 'videoDataTitle');
-roomContentCode = roomContentCode.replace(/profile\.id/g, 'profileId');
-roomContentCode = roomContentCode.replace(/profile\?\.id/g, 'profileId');
+roomContentCode = roomContentCode.replaceAll('toast.info', 'toastInfo');
+roomContentCode = roomContentCode.replaceAll('toast.success', 'toastSuccess');
+roomContentCode = roomContentCode.replaceAll('toast.warning', 'toastWarning');
+roomContentCode = roomContentCode.replaceAll('toast.error', 'toastError');
+roomContentCode = roomContentCode.replaceAll('videoData.id', 'videoDataId');
+roomContentCode = roomContentCode.replaceAll('videoData?.id', 'videoDataId');
+roomContentCode = roomContentCode.replaceAll('videoData.title', 'videoDataTitle');
+roomContentCode = roomContentCode.replaceAll('videoData?.title', 'videoDataTitle');
+roomContentCode = roomContentCode.replaceAll('profile.id', 'profileId');
+roomContentCode = roomContentCode.replaceAll('profile?.id', 'profileId');
 
 // 2. Fix nested ternary
 roomContentCode = roomContentCode.replace(
@@ -42,8 +42,8 @@ roomContentCode = roomContentCode.replace(
 
 // 4. toggleHandRaise catch
 roomContentCode = roomContentCode.replace(
-    /} catch \(e\) \{\n\s+\/\/ Permission denied — metadata not available, that's OK\n\s+console\.warn\('Metadata update not permitted, using data channel only'\)/,
-    "} catch (e) {\n            // Permission denied — metadata not available, that's OK\n            console.warn('Metadata update not permitted, using data channel only:', e)"
+    /} catch \(e\) \{\n\s+\/\/ Permission denied ï¿½ metadata not available, that's OK\n\s+console\.warn\('Metadata update not permitted, using data channel only'\)/,
+    "} catch (e) {\n            // Permission denied ï¿½ metadata not available, that's OK\n            console.warn('Metadata update not permitted, using data channel only:', e)"
 );
 
 // 5. Date.now() purity
@@ -53,7 +53,7 @@ roomContentCode = roomContentCode.replace(
 );
 
 // 6. removeReaction helper and sendReaction timeout
-if (roomContentCode.indexOf('const removeReaction') === -1) {
+if (!roomContentCode.includes('const removeReaction')) {
     roomContentCode = roomContentCode.replace(
         'const sendReaction = useCallback((emoji) => {',
         'const removeReaction = useCallback((idToRemove) => {\n        setReactions(prev => prev.filter(r => r.id !== idToRemove))\n    }, [])\n\n    const sendReaction = useCallback((emoji) => {'

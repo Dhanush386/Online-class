@@ -14,18 +14,18 @@ let endIdx = code.indexOf('RoomContent.propTypes =');
 let rcCode = code.slice(startIdx, endIdx);
 
 // Inside rcCode, replace toast methods and optional chaining:
-rcCode = rcCode.replace(/toast\.info/g, 'toastInfo');
-rcCode = rcCode.replace(/toast\.success/g, 'toastSuccess');
-rcCode = rcCode.replace(/toast\.warning/g, 'toastWarning');
-rcCode = rcCode.replace(/toast\.error/g, 'toastError');
+rcCode = rcCode.replaceAll('toast.info', 'toastInfo');
+rcCode = rcCode.replaceAll('toast.success', 'toastSuccess');
+rcCode = rcCode.replaceAll('toast.warning', 'toastWarning');
+rcCode = rcCode.replaceAll('toast.error', 'toastError');
 
-rcCode = rcCode.replace(/videoData\?\.id/g, 'videoDataId');
-rcCode = rcCode.replace(/videoData\.id/g, 'videoDataId');
-rcCode = rcCode.replace(/videoData\?\.title/g, 'videoDataTitle');
-rcCode = rcCode.replace(/videoData\.title/g, 'videoDataTitle');
+rcCode = rcCode.replaceAll('videoData?.id', 'videoDataId');
+rcCode = rcCode.replaceAll('videoData.id', 'videoDataId');
+rcCode = rcCode.replaceAll('videoData?.title', 'videoDataTitle');
+rcCode = rcCode.replaceAll('videoData.title', 'videoDataTitle');
 
-rcCode = rcCode.replace(/profile\?\.id/g, 'profileId');
-rcCode = rcCode.replace(/profile\.id/g, 'profileId');
+rcCode = rcCode.replaceAll('profile?.id', 'profileId');
+rcCode = rcCode.replaceAll('profile.id', 'profileId');
 
 // Nested Ternary Extract
 rcCode = rcCode.replace(
@@ -61,7 +61,7 @@ rcCode = rcCode.replace(
 );
 
 // Extract emoveReaction inside sendReaction
-if (rcCode.indexOf('const removeReaction') === -1) {
+if (!rcCode.includes('const removeReaction')) {
     rcCode = rcCode.replace(
         'const sendReaction = useCallback((emoji) => {',
         'const removeReaction = useCallback((idToRemove) => {\\n        setReactions(prev => prev.filter(r => r.id !== idToRemove))\\n    }, [])\\n\\n    const sendReaction = useCallback((emoji) => {'
