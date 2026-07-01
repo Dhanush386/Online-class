@@ -272,7 +272,7 @@ export default function Notifications() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                                        Broadcast Title
+                                        Broadcast Title{/* */}
                                         <input 
                                             type="text"
                                             required
@@ -286,7 +286,7 @@ export default function Notifications() {
 
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                                        Message Content
+                                        Message Content{/* */}
                                         <textarea 
                                             required
                                             rows={4}
@@ -301,7 +301,7 @@ export default function Notifications() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                     <div>
                                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                                            Type
+                                            Type{/* */}
                                             <select 
                                                 value={formData.type}
                                                 onChange={e => setFormData({...formData, type: e.target.value})}
@@ -315,7 +315,7 @@ export default function Notifications() {
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                                            Target Audience
+                                            Target Audience{/* */}
                                             <select 
                                                 value={formData.target}
                                                 onChange={e => setFormData({...formData, target: e.target.value})}

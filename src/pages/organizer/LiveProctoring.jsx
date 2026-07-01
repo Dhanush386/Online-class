@@ -91,8 +91,7 @@ const cleanupStaleStudents = (now, setActiveStudents, setWatchingLive) => {
         const next = { ...prev };
         let changed = false;
         const ids = Object.keys(next);
-        for (let i = 0; i < ids.length; i++) {
-            const id = ids[i];
+        for (const id of ids) {
             if (now - next[id].lastSeen > 45000) {
                 delete next[id];
                 changed = true;

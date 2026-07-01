@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, BookOpen, ChevronRight, Clock, Eye, BarChart3, Download, CheckCircle2, XCircle, Search, Users, ShieldAlert } from 'lucide-react'
+import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, BookOpen, ChevronRight, Clock, Eye, BarChart3, CheckCircle2, XCircle, Search, Users, ShieldAlert } from 'lucide-react'
 import ProctoringReportModal from '../../components/organizer/ProctoringReportModal'
 import { getDefaultUnlockTime, toISOWithOffset, toLocalInput } from '../../lib/dateUtils'
 
@@ -151,10 +151,10 @@ export default function OrganizerAssessments() {
     async function handleDelete(id) {
         if (!confirm('Are you sure you want to delete this assessment? All associated questions will also be removed.')) return
         const { error } = await supabase.from('assessments').delete().eq('id', id)
-        if (!error) {
-            setAssessments(assessments.filter(a => a.id !== id))
-        } else {
+        if (error) {
             alert('Error deleting: ' + error.message)
+        } else {
+            setAssessments(assessments.filter(a => a.id !== id))
         }
     }
 
@@ -234,7 +234,7 @@ export default function OrganizerAssessments() {
             
             if (error) throw error
 
-            if (data && data.length === 0) {
+            if (data?.length === 0) {
                 throw new Error("No rows were deleted. This is likely due to a missing Supabase RLS Policy for organizers to delete assessment submissions.")
             }
 
@@ -254,6 +254,225 @@ export default function OrganizerAssessments() {
         total: marksData.length,
         avgScore: marksData.length > 0 ? Math.round(marksData.reduce((sum, m) => sum + (m.total_questions > 0 ? (m.score / m.total_questions) * 100 : 0), 0) / marksData.length) : 0,
         passed: marksData.filter(m => m.total_questions > 0 && (m.score / m.total_questions) >= 0.5).length,
+    }
+
+    function getTypeBadgeClass(type) {
+        if (type === 'final') return 'badge-success'
+        if (type === 'weekly') return 'badge-warning'
+        return 'badge-info'
+    }
+
+    function renderSubmitLabel() {
+        if (saving) return 'Saving...'
+        if (editingId) return <><Save size={18} /> Save Changes</>
+        return <><Plus size={18} /> Create</>
+    }
+
+    function getEmptyMarksMessage() {
+        if (marksData.length === 0) return 'No students have submitted this assessment yet.'
+        return 'No results match your search.'
+    }
+
+    function renderAssessmentList() {
+        if (loading) {
+            return (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ color: 'var(--text-muted)' }}>Loading assessments...</p>
+                </div>
+            )
+        }
+        if (assessments.length === 0) {
+            return (
+                <div className="glass-card" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
+                    <div style={{ width: 64, height: 64, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                        <ClipboardList size={32} color="var(--text-muted)" />
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Assessments Found</h3>
+                    <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 1.5rem' }}>Start by creating an assessment header, then add questions to it.</p>
+                    <button onClick={() => setShowModal(true)} className="btn-secondary">
+                        <Plus size={18} /> Create Your First Assessment
+                    </button>
+                </div>
+            )
+        }
+        return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+                {assessments.map(a => (
+                    <div key={a.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ padding: '1.5rem', flex: 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <span className={`badge ${getTypeBadgeClass(a.type)}`}>
+                                    {a.type.toUpperCase()}
+                                </span>
+                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                    <button onClick={() => setLockingResource(a)} title="Access Control" style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: '0.4rem' }}>
+                                        <Clock size={16} />
+                                    </button>
+                                    <button onClick={() => openEdit(a)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button onClick={() => handleDelete(a.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {resourceAccess.some(acc => acc.resource_id === a.id && acc.is_locked) && <Clock size={16} color="#ef4444" />}
+                                {a.title}
+                            </h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                <BookOpen size={14} /> {a.courses?.title || 'Unknown Course'}
+                            </div>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+                                {a.description || 'No description provided.'}
+                            </p>
+
+                            <Link
+                                to={`/organizer/assessments/${a.id}/questions`}
+                                className="btn-secondary"
+                                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
+                            >
+                                Manage Questions <ChevronRight size={16} />
+                            </Link>
+                            <button
+                                onClick={() => loadMarks(a)}
+                                className="btn-primary"
+                                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem', marginTop: '0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                            >
+                                <Eye size={16} /> View Student Marks
+                            </button>
+                        </div>
+                        <div style={{ padding: '0.85rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <Calendar size={12} /> {a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No due date'}
+                            </span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6366f1' }}>Quiz</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
+    function getRiskStyle(score) {
+        if (score >= 100) return { bg: '#fef2f2', color: '#ef4444', border: '#fecaca' }
+        if (score >= 60)  return { bg: '#fff7ed', color: '#f97316', border: '#ffedd5' }
+        return { bg: '#ecfdf5', color: '#10b981', border: '#a7f3d0' }
+    }
+
+    function renderProctoringCell(sub, pSession) {
+        if (!pSession) {
+            return <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>None</span>
+        }
+        const { bg, color, border } = getRiskStyle(pSession.final_risk_score)
+        return (
+            <button
+                onClick={() => setViewingReportSession({ studentId: sub.student_id, assessmentId: sub.assessment_id })}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '0.25rem 0.5rem', borderRadius: 6, background: bg, color, border: `1px solid ${border}`, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+            >
+                🛡️ {pSession.final_risk_score} Risk
+            </button>
+        )
+    }
+
+    function getPctStyle(pct) {
+        if (pct >= 80) return { bg: '#ecfdf5', color: '#059669' }
+        if (pct >= 50) return { bg: '#fffbeb', color: '#d97706' }
+        return { bg: '#fef2f2', color: '#dc2626' }
+    }
+
+    function renderStudentRow(sub, idx) {
+        const pct = sub.total_questions > 0 ? Math.round((sub.score / sub.total_questions) * 100) : 0
+        const passed = pct >= 50
+        const pSession = proctorSessionsMap?.[sub.student_id]
+        const { bg: pctBg, color: pctColor } = getPctStyle(pct)
+        const avatarBg    = passed ? '#ecfdf5' : '#fef2f2'
+        const avatarColor = passed ? '#059669' : '#dc2626'
+        return (
+            <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr 0.5fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
+                onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: avatarColor, flexShrink: 0 }}>
+                        {sub.users?.name?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{sub.users?.name || 'Unknown'}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{sub.users?.email}</div>
+                    </div>
+                </div>
+                <div style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {sub.score} / {sub.total_questions}
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.6rem', borderRadius: 6, background: pctBg, color: pctColor, fontSize: '0.8rem', fontWeight: 700 }}>
+                        {pct}%
+                    </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                    {passed ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#059669' }}>
+                            <CheckCircle2 size={14} /> Passed
+                        </span>
+                    ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#dc2626' }}>
+                            <XCircle size={14} /> Failed
+                        </span>
+                    )}
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                    {renderProctoringCell(sub, pSession)}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                    <button
+                        onClick={() => handleDeleteSubmission(sub.student_id, sub.assessment_id)}
+                        title="Delete submission and allow retake"
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem', opacity: 0.7, transition: 'opacity 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    function renderMarksList() {
+        if (marksLoading) {
+            return (
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading submissions...</p>
+                </div>
+            )
+        }
+        if (filteredMarks.length === 0) {
+            return (
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                    <Users size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{getEmptyMarksMessage()}</p>
+                </div>
+            )
+        }
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {/* Table Header */}
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 0.5fr', gap: '1rem', padding: '0.5rem 0.85rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
+                    <span>Student</span>
+                    <span style={{ textAlign: 'center' }}>Score</span>
+                    <span style={{ textAlign: 'center' }}>Percentage</span>
+                    <span style={{ textAlign: 'center' }}>Status</span>
+                    <span style={{ textAlign: 'center' }}>Proctoring</span>
+                    <span style={{ textAlign: 'right' }}>Actions</span>
+                </div>
+                {filteredMarks
+                    .sort((a, b) => b.score - a.score)
+                    .map((sub, idx) => renderStudentRow(sub, idx))}
+            </div>
+        )
     }
 
     return (
@@ -281,79 +500,7 @@ export default function OrganizerAssessments() {
                 </div>
             </div>
 
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                    <p style={{ color: 'var(--text-muted)' }}>Loading assessments...</p>
-                </div>
-            ) : assessments.length === 0 ? (
-                <div className="glass-card" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
-                    <div style={{ width: 64, height: 64, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                        <ClipboardList size={32} color="var(--text-muted)" />
-                    </div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Assessments Found</h3>
-                    <p style={{ color: 'var(--text-secondary)', maxWidth: 400, margin: '0 auto 1.5rem' }}>Start by creating an assessment header, then add questions to it.</p>
-                    <button onClick={() => setShowModal(true)} className="btn-secondary">
-                        <Plus size={18} /> Create Your First Assessment
-                    </button>
-                </div>
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
-                    {assessments.map(a => (
-                        <div key={a.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ padding: '1.5rem', flex: 1 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                    <span className={`badge ${a.type === 'final' ? 'badge-success' : a.type === 'weekly' ? 'badge-warning' : 'badge-info'}`}>
-                                        {a.type.toUpperCase()}
-                                    </span>
-                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                        <button onClick={() => setLockingResource(a)} title="Access Control" style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: '0.4rem' }}>
-                                            <Clock size={16} />
-                                        </button>
-                                        <button onClick={() => openEdit(a)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem' }}>
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(a.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem' }}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    {resourceAccess.some(acc => acc.resource_id === a.id && acc.is_locked) && <Clock size={16} color="#ef4444" />}
-                                    {a.title}
-                                </h3>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                                    <BookOpen size={14} /> {a.courses?.title || 'Unknown Course'}
-                                </div>
-                                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-                                    {a.description || 'No description provided.'}
-                                </p>
-
-                                <Link
-                                    to={`/organizer/assessments/${a.id}/questions`}
-                                    className="btn-secondary"
-                                    style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
-                                >
-                                    Manage Questions <ChevronRight size={16} />
-                                </Link>
-                                <button
-                                    onClick={() => loadMarks(a)}
-                                    className="btn-primary"
-                                    style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem', marginTop: '0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
-                                >
-                                    <Eye size={16} /> View Student Marks
-                                </button>
-                            </div>
-                            <div style={{ padding: '0.85rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <Calendar size={12} /> {a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No due date'}
-                                </span>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6366f1' }}>Quiz</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            {renderAssessmentList()}
 
             {/* Access Control Modal */}
             {lockingResource && (
@@ -575,7 +722,7 @@ export default function OrganizerAssessments() {
                                     Cancel
                                 </button>
                                 <button type="submit" className="btn-primary" disabled={saving} style={{ padding: '0.6rem 1.5rem', gap: '0.5rem' }}>
-                                    {saving ? 'Saving...' : (editingId ? <><Save size={18} /> Save Changes</> : <><Plus size={18} /> Create</>)}
+                                    {renderSubmitLabel()}
                                 </button>
                             </div>
                         </form>
@@ -633,106 +780,7 @@ export default function OrganizerAssessments() {
 
                         {/* Student List */}
                         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.5rem' }}>
-                            {marksLoading ? (
-                                <div style={{ textAlign: 'center', padding: '3rem' }}>
-                                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading submissions...</p>
-                                </div>
-                            ) : filteredMarks.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '3rem' }}>
-                                    <Users size={40} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{marksData.length === 0 ? 'No students have submitted this assessment yet.' : 'No results match your search.'}</p>
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                    {/* Table Header */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 0.5fr', gap: '1rem', padding: '0.5rem 0.85rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--card-border)' }}>
-                                        <span>Student</span>
-                                        <span style={{ textAlign: 'center' }}>Score</span>
-                                        <span style={{ textAlign: 'center' }}>Percentage</span>
-                                        <span style={{ textAlign: 'center' }}>Status</span>
-                                        <span style={{ textAlign: 'center' }}>Proctoring</span>
-                                        <span style={{ textAlign: 'right' }}>Actions</span>
-                                    </div>
-                                    {filteredMarks
-                                        .sort((a, b) => b.score - a.score)
-                                        .map((sub, idx) => {
-                                            const pct = sub.total_questions > 0 ? Math.round((sub.score / sub.total_questions) * 100) : 0
-                                            const passed = pct >= 50
-                                            const pSession = proctorSessionsMap?.[sub.student_id]
-                                            return (
-                                                <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr 0.5fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
-                                                    onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
-                                                    onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
-                                                >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: passed ? '#ecfdf5' : '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: passed ? '#059669' : '#dc2626', flexShrink: 0 }}>
-                                                            {sub.users?.name?.[0]?.toUpperCase() || '?'}
-                                                        </div>
-                                                        <div>
-                                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{sub.users?.name || 'Unknown'}</div>
-                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{sub.users?.email}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                                        {sub.score} / {sub.total_questions}
-                                                    </div>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.6rem', borderRadius: 6, background: pct >= 80 ? '#ecfdf5' : pct >= 50 ? '#fffbeb' : '#fef2f2', color: pct >= 80 ? '#059669' : pct >= 50 ? '#d97706' : '#dc2626', fontSize: '0.8rem', fontWeight: 700 }}>
-                                                            {pct}%
-                                                        </div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        {passed ? (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#059669' }}>
-                                                                <CheckCircle2 size={14} /> Passed
-                                                            </span>
-                                                        ) : (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: '#dc2626' }}>
-                                                                <XCircle size={14} /> Failed
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        {pSession ? (
-                                                            <button
-                                                                onClick={() => setViewingReportSession({ studentId: sub.student_id, assessmentId: sub.assessment_id })}
-                                                                style={{
-                                                                    display: 'inline-flex',
-                                                                    alignItems: 'center',
-                                                                    gap: '4px',
-                                                                    padding: '0.25rem 0.5rem',
-                                                                    borderRadius: 6,
-                                                                    background: pSession.final_risk_score >= 100 ? '#fef2f2' : pSession.final_risk_score >= 60 ? '#fff7ed' : '#ecfdf5',
-                                                                    color: pSession.final_risk_score >= 100 ? '#ef4444' : pSession.final_risk_score >= 60 ? '#f97316' : '#10b981',
-                                                                    border: `1px solid ${pSession.final_risk_score >= 100 ? '#fecaca' : pSession.final_risk_score >= 60 ? '#ffedd5' : '#a7f3d0'}`,
-                                                                    fontSize: '0.85rem',
-                                                                    fontWeight: 700,
-                                                                    cursor: 'pointer'
-                                                                }}
-                                                            >
-                                                                🛡️ {pSession.final_risk_score} Risk
-                                                            </button>
-                                                        ) : (
-                                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>None</span>
-                                                        )}
-                                                    </div>
-                                                    <div style={{ textAlign: 'right' }}>
-                                                        <button 
-                                                            onClick={() => handleDeleteSubmission(sub.student_id, sub.assessment_id)} 
-                                                            title="Delete submission and allow retake" 
-                                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem', opacity: 0.7, transition: 'opacity 0.2s' }}
-                                                            onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                                                            onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                </div>
-                            )}
+                            {renderMarksList()}
                         </div>
 
                         {/* Footer */}
