@@ -30,7 +30,6 @@ const StreamVideo = ({ stream }) => {
             ref={videoRef} 
             autoPlay 
             playsInline 
-            webkitPlaysInline="true"
             onClick={(e) => e.target.play()}
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
         >
