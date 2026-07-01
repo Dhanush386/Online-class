@@ -238,14 +238,8 @@ export default function LiveClassroom() {
                 updateData.streak_awarded = true;
                 attendanceMarked = true;
                 
-                toast.success('🎉 Attendance Marked! +20 XP earned');
-                
-                // Award XP
-                const { data: userProfile } = await supabase.from('users').select('xp').eq('id', profile.id).single();
-                if (userProfile) {
-                    await supabase.from('users').update({ xp: (userProfile.xp || 0) + 20 }).eq('id', profile.id);
-                    refreshStats(); // Update streak and XP context
-                }
+                toast.success('🎉 Attendance Marked!');
+                refreshStats(); // Update streak and XP context
             } else if (!attendanceMarked) {
                  updateData.attendance_status = 'insufficient_time';
             }

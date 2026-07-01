@@ -8,12 +8,14 @@ import 'jspdf-autotable';
 const getStatusBackground = (status) => {
     if (status === 'present') return 'rgba(16, 185, 129, 0.2)';
     if (status === 'absent') return 'rgba(239, 68, 68, 0.2)';
+    if (status === 'recovered') return 'rgba(99, 102, 241, 0.2)';
     return 'rgba(245, 158, 11, 0.2)';
 };
 
 const getStatusColor = (status) => {
     if (status === 'present') return '#10b981';
     if (status === 'absent') return '#ef4444';
+    if (status === 'recovered') return '#6366f1';
     return '#f59e0b';
 };
 
@@ -179,6 +181,7 @@ export default function LiveAttendance({ videoId, isOrganizer, videoTitle }) {
                             >
                                 <option value="present">Present</option>
                                 <option value="absent">Absent</option>
+                                <option value="recovered">Recovered</option>
                                 <option value="insufficient_time">Insufficient</option>
                             </select>
                         </div>

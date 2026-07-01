@@ -2,9 +2,16 @@ import React, { useState } from 'react'
 import PropTypes from 'prop-types'
 import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot, Lock } from 'lucide-react'
 
+const STATUS_ORDER = {
+    'current': 0,
+    'available': 1,
+    'upcoming': 2,
+    'locked': 3,
+    'completed': 4
+};
+
 function CourseJourneyItem({ item, onModuleAction }) {
-    const isActive = item.active || false
-    const isLocked = item.isLocked
+    const isLocked = item.status === 'locked'
     
     const handleAction = () => {
         if (isLocked) return
@@ -23,53 +30,86 @@ function CourseJourneyItem({ item, onModuleAction }) {
         default: icon = <BookOpen size={20} />; typeColor = '#10b981'; typeLabel = 'Lesson'; break
     }
     
-    const iconColor = item.type === 'live' ? '#ef4444' : '#10b981'
+    const iconColor = item.type === 'live' ? '#ef4444' : (item.status === 'completed' ? '#10b981' : '#6366f1')
+
+    let containerStyle = {
+        position: 'relative', 
+        width: '100%',
+        border: '1px solid #e2e8f0',
+        textAlign: 'left',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '1.1rem 1.5rem',
+        borderRadius: '12px',
+        transition: 'all 0.25s ease',
+        cursor: isLocked ? 'not-allowed' : 'pointer',
+        background: 'white',
+        marginBottom: '0.5rem'
+    };
+
+    let statusBadge = null;
+    let circleBorderColor = '#cbd5e1';
+    let circleBg = 'white';
+
+    if (item.status === 'current') {
+        containerStyle.background = 'rgba(99, 102, 241, 0.04)';
+        containerStyle.borderColor = '#6366f1';
+        containerStyle.boxShadow = '0 4px 20px rgba(99,102,241,0.06)';
+        circleBorderColor = '#6366f1';
+        statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: '#6366f1', color: 'white', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}><CircleDot size={10} className="animate-pulse" /> Active Focus</span>;
+    } else if (item.status === 'completed') {
+        containerStyle.background = 'rgba(16, 185, 129, 0.02)';
+        containerStyle.borderColor = 'rgba(16, 185, 129, 0.2)';
+        circleBorderColor = '#10b981';
+        circleBg = '#10b981';
+        statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Completed</span>;
+    } else if (item.status === 'upcoming') {
+        containerStyle.background = 'rgba(245, 158, 11, 0.01)';
+        containerStyle.borderColor = 'rgba(245, 158, 11, 0.3)';
+        circleBorderColor = '#f59e0b';
+        statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Upcoming</span>;
+    } else if (item.status === 'locked') {
+        containerStyle.opacity = 0.5;
+        circleBorderColor = '#cbd5e1';
+        statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: '#f1f5f9', color: '#64748b', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Locked</span>;
+    } else {
+        // available
+        containerStyle.boxShadow = '0 2px 8px rgba(0,0,0,0.01)';
+        circleBorderColor = '#94a3b8';
+        statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: '#f8fafc', color: '#475569', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Available</span>;
+    }
 
     return (
-        <button onClick={handleAction} style={{ 
-            position: 'relative', 
-            width: '100%',
-            border: 'none',
-            textAlign: 'left',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '1rem 1.5rem',
-            background: isActive ? '#f3e8ff' : 'transparent',
-            borderRadius: '12px',
-            transition: 'all 0.2s',
-            cursor: isLocked ? 'not-allowed' : 'pointer',
-            opacity: isLocked ? 0.6 : 1
-        }}>
-            {/* Small Green Circle on the line */}
+        <button onClick={handleAction} style={containerStyle}>
+            {/* Custom Dot Indicator */}
             <div style={{ 
                 position: 'absolute', left: '-27px', top: '50%', transform: 'translateY(-50%)',
                 width: '16px', height: '16px', borderRadius: '50%', 
-                background: 'white', border: '2px solid #10b981',
+                background: circleBg, border: `2px solid ${circleBorderColor}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 1 
+                zIndex: 2,
+                boxShadow: item.status === 'current' ? '0 0 8px rgba(99,102,241,0.4)' : 'none'
             }}>
-                {item.completed && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />}
+                {item.status === 'completed' && <Check size={10} color="white" strokeWidth={4} />}
             </div>
 
             {/* Left Content */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-                <div style={{ marginTop: '2px', color: iconColor }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ color: iconColor, display: 'flex', alignItems: 'center' }}>
                     {icon}
                 </div>
                 <div>
-                    <div style={{ fontSize: '1rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.3rem' }}>
                         {item.title}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', fontWeight: 600 }}>
                         <span style={{ color: '#64748b' }}>{item.duration} Mins</span>
                         <span style={{ color: '#cbd5e1' }}>•</span>
-                        <span style={{ color: typeColor }}>
-                            {typeLabel}
-                        </span>
+                        <span style={{ color: typeColor }}>{typeLabel}</span>
                         {item.xp && (
                             <>
                                 <span style={{ color: '#cbd5e1' }}>•</span>
                                 <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, background: '#fef3c7', borderRadius: '50%', color: '#d97706', fontSize: '0.6rem' }}>xp</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, background: '#fef3c7', borderRadius: '50%', color: '#d97706', fontSize: '0.6rem', fontWeight: 800 }}>xp</span>
                                     {item.xp}
                                 </span>
                             </>
@@ -78,9 +118,12 @@ function CourseJourneyItem({ item, onModuleAction }) {
                 </div>
             </div>
 
-            {/* Right Icon */}
-            <div style={{ color: '#64748b' }}>
-                {isLocked ? <Lock size={18} /> : <ChevronRight size={20} />}
+            {/* Right Status Badge & Icon */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {statusBadge}
+                <div style={{ color: '#94a3b8' }}>
+                    {isLocked ? <Lock size={15} /> : <ChevronRight size={18} />}
+                </div>
             </div>
         </button>
     )
@@ -90,10 +133,8 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
     const [expandedWeek, setExpandedWeek] = useState(1)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     
-    // Total weeks (fallback to 12 if not set in course)
     const totalWeeks = course?.duration_weeks || 12
 
-    // Flat map assessments
     const flatAssessments = [
         ...(assessments?.daily || []),
         ...(assessments?.weekly || []),
@@ -101,8 +142,14 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
     ]
 
     const isTaskCompleted = (type, id) => {
-        if (type === 'video') {
+        if (type === 'video' || type === 'watch') {
             return progress?.video_progress?.some(vp => vp.video_id === id) || false
+        }
+        if (type === 'coding') {
+            return progress?.coding_submissions?.some(cs => cs.challenge_id === id && cs.status === 'accepted') || false
+        }
+        if (type === 'assessment') {
+            return progress?.assessment_submissions?.some(asub => asub.assessment_id === id) || false
         }
         return false
     }
@@ -110,7 +157,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
     const organizeWeekData = (weekNum) => {
         const topicsMap = {}
         
-        const addToTopic = (item, type, defaultTopic = 'Introduction') => {
+        const addToTopic = (item, type, defaultTopic = 'Core Curriculum') => {
             const topic = item.topic || defaultTopic
             if (!topicsMap[topic]) topicsMap[topic] = []
             
@@ -138,8 +185,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                 type: actualType, 
                 xp, 
                 duration,
-                isLocked,
-                completed: isTaskCompleted(type, item.id)
+                isLocked
             })
         }
         
@@ -154,13 +200,41 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
         const safeChallenges = challenges || [];
         safeChallenges.filter(c => (c.week_number || 1) === weekNum).forEach(c => addToTopic(c, 'coding'));
 
+        // Apply Status Sorting per Topic
+        Object.keys(topicsMap).forEach(topic => {
+            let hasCurrent = false;
+            topicsMap[topic] = topicsMap[topic].map(item => {
+                const completed = isTaskCompleted(item.type, item.id);
+                let status = 'available';
+
+                if (completed) {
+                    status = 'completed';
+                } else if (item.isLocked) {
+                    const itemTime = item.open_time || item.scheduled_time || item.start_time;
+                    if (itemTime) {
+                        const diffMs = new Date(itemTime) - new Date();
+                        if (diffMs > 0 && diffMs <= 172800000) {
+                            status = 'upcoming'; // Scheduled within 2 days
+                        } else {
+                            status = 'locked';
+                        }
+                    } else {
+                        status = 'locked';
+                    }
+                } else if (!hasCurrent) {
+                    status = 'current';
+                    hasCurrent = true;
+                }
+                return { ...item, status };
+            }).sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+        });
+
         return topicsMap
     }
 
     const topicsMap = organizeWeekData(expandedWeek)
     const topicKeys = Object.keys(topicsMap)
 
-    // Calculate dates for the expanded week
     let dateLabel = "Dates TBD"
     if (getScheduleDate) {
         const start = getScheduleDate(expandedWeek, 1)
@@ -170,8 +244,6 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
             dateLabel = `${start.toLocaleDateString('en-GB', formatOptions)} - ${end.toLocaleDateString('en-GB', formatOptions)}`
         }
     }
-
-    // We don't early return here anymore so the header and dropdown stay visible!
     
     return (
         <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '2rem' }}>
@@ -312,44 +384,46 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                                 }} />
 
                                 {topicKeys.map((topic, topicIdx) => {
-                            const items = topicsMap[topic] || []
-                            const totalItems = items.length
-                            const completedItems = items.filter(i => i.completed).length
+                                    const items = topicsMap[topic] || []
+                                    const totalItems = items.length
+                                    const completedItems = items.filter(i => i.status === 'completed').length
 
-                            return (
-                                <div key={topic} style={{ marginBottom: '2.5rem' }}>
-                                    
-                                    {/* Topic Header Node */}
-                                    <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                                        <div style={{ 
-                                            position: 'absolute', left: '-32px', top: '2px', 
-                                            width: '26px', height: '26px', borderRadius: '50%', 
-                                            background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            zIndex: 1 
-                                        }}>
-                                            <Check size={16} color="white" strokeWidth={3} />
-                                        </div>
-                                        
-                                        <div style={{ paddingLeft: '0.5rem' }}>
-                                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
-                                                TOPIC
+                                    return (
+                                        <div key={topic} style={{ marginBottom: '2.5rem' }}>
+                                            
+                                            {/* Topic Header Node */}
+                                            <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                                                <div style={{ 
+                                                    position: 'absolute', left: '-32px', top: '2px', 
+                                                    width: '26px', height: '26px', borderRadius: '50%', 
+                                                    background: completedItems === totalItems ? '#10b981' : '#6366f1', 
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    zIndex: 1,
+                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                                }}>
+                                                    {completedItems === totalItems ? <Check size={14} color="white" strokeWidth={3} /> : <CircleDot size={14} color="white" />}
+                                                </div>
+                                                
+                                                <div style={{ paddingLeft: '0.5rem' }}>
+                                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+                                                        TOPIC
+                                                    </div>
+                                                    <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#334155' }}>
+                                                        {topic} <span style={{ color: '#94a3b8', fontWeight: 500 }}>({completedItems}/{totalItems})</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#334155' }}>
-                                                {topic} <span style={{ color: '#94a3b8', fontWeight: 500 }}>({completedItems}/{totalItems})</span>
+
+                                            {/* Topic Items */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                {items.map((item, idx) => (
+                                                    <CourseJourneyItem key={item.id || idx} item={item} onModuleAction={onModuleAction} />
+                                                ))}
                                             </div>
+
                                         </div>
-                                    </div>
-
-                                    {/* Topic Items */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        {items.map((item, idx) => (
-                                            <CourseJourneyItem key={item.id || idx} item={item} onModuleAction={onModuleAction} />
-                                        ))}
-                                    </div>
-
-                                </div>
-                            )
-                        })}
+                                    )
+                                })}
                             </>
                         )}
 
@@ -364,13 +438,11 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
 CourseJourneyItem.propTypes = {
     item: PropTypes.shape({
         id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-        active: PropTypes.bool,
-        isLocked: PropTypes.bool,
+        status: PropTypes.string,
         type: PropTypes.string,
         title: PropTypes.string,
         duration: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         xp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-        completed: PropTypes.bool,
     }).isRequired,
     onModuleAction: PropTypes.func
 }

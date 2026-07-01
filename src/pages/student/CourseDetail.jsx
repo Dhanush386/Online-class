@@ -38,6 +38,7 @@ export default function CourseDetail() {
     const [assessments, setAssessments] = useState({ daily: [], weekly: [], final: [] })
     const [submissions, setSubmissions] = useState({}) // { assessmentId: [sub, ...] }
     const [progress, setProgress] = useState(null)
+    const [codingSubmissions, setCodingSubmissions] = useState([])
     const [courseResources, setCourseResources] = useState([])
     const [dayAccess, setDayAccess] = useState([])
     const [selectedDay, setSelectedDay] = useState(1)
@@ -80,7 +81,8 @@ export default function CourseDetail() {
                 { data: locks },
                 { data: resData },
                 { data: vpData },
-                { data: initialNotes }
+                { data: initialNotes },
+                { data: codingSubsData }
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
                 supabase.from('videos').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }),
@@ -93,7 +95,8 @@ export default function CourseDetail() {
                 supabase.from('resource_access').select('*').eq('is_locked', true),
                 supabase.from('course_resources').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }),
                 supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
-                supabase.from('student_notes').select('*').eq('student_id', profile.id).eq('course_id', courseId).order('created_at', { ascending: false })
+                supabase.from('student_notes').select('*').eq('student_id', profile.id).eq('course_id', courseId).order('created_at', { ascending: false }),
+                supabase.from('coding_submissions').select('*').eq('student_id', profile.id)
             ])
 
             // No need for setMaxDay state if we just use it to build the day list, but let's see
@@ -126,6 +129,7 @@ export default function CourseDetail() {
             setSessions((vids || []).map(v => ({ ...v, isLocked: getIsItemLocked(v, 'video') })))
             setProgress({ ...(prog || {}), video_progress: vpData || [] })
             setChallenges((chls || []).map(c => ({ ...c, isLocked: getIsItemLocked(c, 'coding') })))
+            setCodingSubmissions(codingSubsData || [])
             setCourseResources((resData || []).map(r => ({ ...r, isLocked: getIsItemLocked(r, 'resource') })))
 
             const grouped = { daily: [], weekly: [], final: [] }
@@ -146,6 +150,54 @@ export default function CourseDetail() {
             setLoading(false)
         }
         load()
+    }, [courseId, profile])
+
+    useEffect(() => {
+        if (!profile?.id || !courseId) return;
+
+        const channel = supabase
+            .channel('week-progress-changes')
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'student_week_progress',
+                filter: `student_id=eq.${profile.id}`
+            }, (payload) => {
+                if (payload.new.course_id === courseId && payload.new.completion_percentage === 100) {
+                    setCompletedWeekInfo({
+                        weekNumber: payload.new.week_number,
+                        xpEarned: payload.new.xp_earned,
+                        coinsEarned: payload.new.coins_earned,
+                        grade: payload.new.grade,
+                        nextWeekNumber: payload.new.week_number + 1,
+                        aiSummary: payload.new.ai_summary
+                    });
+                    setShowWeeklyModal(true);
+                }
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'student_week_progress',
+                filter: `student_id=eq.${profile.id}`
+            }, (payload) => {
+                if (payload.new.course_id === courseId && payload.new.completion_percentage === 100 && (payload.old.completion_percentage < 100 || !payload.old.completion_percentage)) {
+                    setCompletedWeekInfo({
+                        weekNumber: payload.new.week_number,
+                        xpEarned: payload.new.xp_earned,
+                        coinsEarned: payload.new.coins_earned,
+                        grade: payload.new.grade,
+                        nextWeekNumber: payload.new.week_number + 1,
+                        aiSummary: payload.new.ai_summary
+                    });
+                    setShowWeeklyModal(true);
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [courseId, profile])
 
     async function updateOverallProgress() {
@@ -269,11 +321,15 @@ export default function CourseDetail() {
     }
 
     async function markComplete(sessionId) {
-        // ... (existing code)
+        if (!profile?.id || !courseId) return
+        
         const { error } = await supabase.from('video_progress').upsert({
             student_id: profile.id,
             course_id: courseId,
-            video_id: sessionId
+            video_id: sessionId,
+            completed: true,
+            watched_percentage: 100,
+            completed_from: 'RECORDED_VIDEO'
         }, { onConflict: 'student_id,video_id' })
 
         if (!error || error.code === '23505') {
@@ -533,7 +589,12 @@ export default function CourseDetail() {
                         challenges={challenges}
                         courseResources={courseResources}
                         assessments={assessments}
-                        progress={progress}
+                        progress={{
+                            ...progress,
+                            video_progress: progress?.video_progress || [],
+                            assessment_submissions: Object.values(submissions).flat(),
+                            coding_submissions: codingSubmissions
+                        }}
                         getScheduleDate={getScheduleDate}
                         onModuleAction={(type, module) => {
                             const content = module._content;
@@ -564,6 +625,11 @@ export default function CourseDetail() {
                     coinsEarned={completedWeekInfo.coinsEarned}
                     grade={completedWeekInfo.grade}
                     nextWeekNumber={completedWeekInfo.nextWeekNumber}
+                    aiSummary={completedWeekInfo.aiSummary}
+                    attendancePercentage={completedWeekInfo.attendancePercentage}
+                    videoPercentage={completedWeekInfo.videoPercentage}
+                    codingPercentage={completedWeekInfo.codingPercentage}
+                    quizPercentage={completedWeekInfo.quizPercentage}
                     onClose={() => setShowWeeklyModal(false)}
                     onContinue={() => {
                         setShowWeeklyModal(false)

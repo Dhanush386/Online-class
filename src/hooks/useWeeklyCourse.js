@@ -241,13 +241,25 @@ export default function useWeeklyCourse(courseId) {
     loadCourse()
   }, [loadCourse])
 
-  // Determine current week based on course start_date
+  // Determine current week based on start date and completed progress (highest completed + 1)
   const currentWeek = (() => {
-    if (!courseSettings.start_date) return 1
-    const start = new Date(courseSettings.start_date)
-    const now = new Date()
-    const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24))
-    return Math.max(1, Math.ceil((diffDays + 1) / 7))
+    let dateWeek = 1
+    if (courseSettings.start_date) {
+      const start = new Date(courseSettings.start_date)
+      const now = new Date()
+      const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24))
+      dateWeek = Math.max(1, Math.ceil((diffDays + 1) / 7))
+    }
+
+    let highestCompleted = 0
+    Object.entries(weekProgress).forEach(([wkStr, p]) => {
+      const wkNum = Number(wkStr)
+      if (p && p.completion_percentage >= 100) {
+        highestCompleted = Math.max(highestCompleted, wkNum)
+      }
+    })
+
+    return Math.max(dateWeek, highestCompleted + 1)
   })()
 
   // Check if a week is locked (adaptive unlock: ≥70% avg required)
