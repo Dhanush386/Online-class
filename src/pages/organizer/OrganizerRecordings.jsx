@@ -240,23 +240,7 @@ export default function OrganizerRecordings() {
                                             </div>
                                         </td>
                                         <td style={{ padding: '1rem' }}>
-                                            {rec.recording_status === 'uploading' ? (
-                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#e0e7ff', color: '#4f46e5', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
-                                                    <Loader className="animate-spin" size={12} /> Uploading
-                                                </span>
-                                            ) : rec.recording_status === 'completed' || rec.drive_file_id ? (
-                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#dcfce7', color: '#16a34a', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
-                                                    <CheckCircle size={12} /> Completed
-                                                </span>
-                                            ) : rec.recording_status === 'failed' ? (
-                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#fee2e2', color: '#dc2626', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
-                                                    <AlertCircle size={12} /> Failed
-                                                </span>
-                                            ) : (
-                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#fef3c7', color: '#d97706', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
-                                                    <Video size={12} /> Recording
-                                                </span>
-                                            )}
+                                            {getRecordingStatusBadge(rec)}
                                         </td>
                                         <td style={{ padding: '1rem', textAlign: 'right' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>

@@ -149,19 +149,6 @@ export default function ScheduleManager() {
         }
     }
 
-    function formatTime(t) {
-        if (!t) return 'Not scheduled'
-        try { return format(parseISO(t), 'MMM d, yyyy • h:mm a') } catch { return t }
-    }
-
-    function isLive(t, duration) {
-        if (!t) return false
-        const now = new Date()
-        const s = parseISO(t)
-        const durationMs = (duration || 60) * 60000
-        return now >= s && (now - s) < durationMs
-    }
-
     return (
         <div className="animate-fade-in">
             <div style={{ marginBottom: '2rem' }}>
@@ -211,13 +198,7 @@ export default function ScheduleManager() {
                                         </div>
                                     </td>
                                     <td>
-                                        {isLive(v.scheduled_time, v.duration_minutes) ? (
-                                            <span className="badge badge-danger" style={{ animation: 'pulse 2s infinite' }}>🔴 LIVE</span>
-                                        ) : v.scheduled_time && new Date(v.scheduled_time) > new Date() ? (
-                                            <span className="badge badge-warning">Upcoming</span>
-                                        ) : (
-                                            <span className="badge badge-success">Completed</span>
-                                        )}
+                                        {getStatusBadge(v)}
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>

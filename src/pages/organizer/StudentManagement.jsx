@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Users, User, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink, Info } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { getDefaultUnlockTime, getDefaultUnlockTimeForDay } from '../../lib/dateUtils'
+import { getDefaultUnlockTimeForDay } from '../../lib/dateUtils'
+import PropTypes from 'prop-types'
 
 const toLocalISO = (date) => {
     if (!date) return ''
@@ -52,6 +53,13 @@ const ExpiryControl = ({ studentId, currentExpiry, onUpdate, saving }) => {
             )}
         </div>
     )
+}
+
+ExpiryControl.propTypes = {
+    studentId: PropTypes.string.isRequired,
+    currentExpiry: PropTypes.string,
+    onUpdate: PropTypes.func.isRequired,
+    saving: PropTypes.bool.isRequired
 }
 
 export default function StudentManagement() {
