@@ -14,7 +14,7 @@ code = code.replace(
 
 // We need to inject sidebarWidth computation right before the eturn statement.
 // Wait, this is inside RoomContent's massive return statement.
-const returnIdx = code.indexOf('return (\\n        <div');
+const returnIdx = code.indexOf(String.raw`return (\n        <div`);
 if (returnIdx !== -1) {
     const sidebarWidthCode = "let sidebarWidth;\n    if (isMobile && !isLandscape) {\n        sidebarWidth = '100%';\n    } else {\n        sidebarWidth = (isMobile && isLandscape) ? '280px' : '360px';\n    }\n\n    ";
     code = code.slice(0, returnIdx) + sidebarWidthCode + code.slice(returnIdx);

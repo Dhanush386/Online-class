@@ -6,7 +6,7 @@ let lines = code.split('\n');
 
 const applyFixes = () => {
     // 1. Nested Ternary
-    const ternaryLine = lines.findIndex(l => l.includes('width: (isMobile && !isLandscape) ? \\'100%\\' : (isMobile && isLandscape ? \\'280px\\' : \\'360px\\')'));
+    const ternaryLine = lines.findIndex(l => l.includes(String.raw`width: (isMobile && !isLandscape) ? \'100%\' : (isMobile && isLandscape ? \'280px\' : \'360px\')`));
     if (ternaryLine !== -1) {
         lines[ternaryLine] = lines[ternaryLine].replace(
             "width: (isMobile && !isLandscape) ? '100%' : (isMobile && isLandscape ? '280px' : '360px'),",

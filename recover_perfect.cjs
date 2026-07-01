@@ -3,8 +3,8 @@ let code = fs.readFileSync('src/pages/organizer/LiveClassroomLiveKit.jsx', 'utf8
 
 // Fix props validation in RoomContent by destructuring
 code = code.replace(
-    'function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, onMinimize, refreshStats, toast, waitingStudents, setWaitingStudents }) {\\n    const { isMobile, isLandscape } = useDeviceOrientation()\\n    const room = useRoomContext()',
-    'function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, onMinimize, refreshStats, toast, waitingStudents, setWaitingStudents }) {\\n    const { isMobile, isLandscape } = useDeviceOrientation()\\n    const { id: videoDataId, title: videoDataTitle } = videoData || {};\\n    const { id: profileId } = profile || {};\\n    const { info: toastInfo, success: toastSuccess, warning: toastWarning, error: toastError } = toast || {};\\n    const room = useRoomContext()'
+    String.raw`function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, onMinimize, refreshStats, toast, waitingStudents, setWaitingStudents }) {\n    const { isMobile, isLandscape } = useDeviceOrientation()\n    const room = useRoomContext()`,
+    String.raw`function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance, sidebarOpen, setSidebarOpen, sidebarTab, setSidebarTab, onLeave, onMinimize, refreshStats, toast, waitingStudents, setWaitingStudents }) {\n    const { isMobile, isLandscape } = useDeviceOrientation()\n    const { id: videoDataId, title: videoDataTitle } = videoData || {};\n    const { id: profileId } = profile || {};\n    const { info: toastInfo, success: toastSuccess, warning: toastWarning, error: toastError } = toast || {};\n    const room = useRoomContext()`
 );
 
 // We must also replace the occurrences inside RoomContent. We can use a targeted replace for this.
@@ -64,11 +64,11 @@ rcCode = rcCode.replace(
 if (!rcCode.includes('const removeReaction')) {
     rcCode = rcCode.replace(
         'const sendReaction = useCallback((emoji) => {',
-        'const removeReaction = useCallback((idToRemove) => {\\n        setReactions(prev => prev.filter(r => r.id !== idToRemove))\\n    }, [])\\n\\n    const sendReaction = useCallback((emoji) => {'
+        String.raw`const removeReaction = useCallback((idToRemove) => {\n        setReactions(prev => prev.filter(r => r.id !== idToRemove))\n    }, [])\n\n    const sendReaction = useCallback((emoji) => {`
     );
     rcCode = rcCode.replace(
         /setTimeout\(\(\) => setReactions\(prev => prev\.filter\(r => r\.id !== id\)\), 2800\)\\n\s+\}, \[room, reactionsDisabled\]\)/,
-        "setTimeout(() => removeReaction(id), 2800)\\n    }, [room, reactionsDisabled, removeReaction])"
+        String.raw`setTimeout(() => removeReaction(id), 2800)\n    }, [room, reactionsDisabled, removeReaction])`
     );
 }
 
