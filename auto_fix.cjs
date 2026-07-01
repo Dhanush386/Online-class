@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const { execSync } = require('child_process');
+const { execSync } = require('node:child_process');
 
 let code = fs.readFileSync('src/pages/organizer/LiveClassroomLiveKit.jsx', 'utf8');
 let lines = code.split('\n');
