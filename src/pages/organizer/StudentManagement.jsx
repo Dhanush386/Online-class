@@ -499,7 +499,6 @@ export default function StudentManagement() {
     }
 
     async function handleUpdateDayAccess(day, field, value) {
-        const existing = dayAccess.find(a => a.day_number === day)
         const payload = {
             course_id: schedulingGroup.course_id,
             group_id: schedulingGroup.id,
@@ -555,13 +554,183 @@ export default function StudentManagement() {
         }
     }
 
-    function avgCompletion(enrollments) {
-        if (!enrollments?.length) return 0
-        return Math.round(enrollments.reduce((sum, e) => sum + e.completion, 0) / enrollments.length)
+    async function handleUpdateRole(userId, newRole) {
+        setSaving(true)
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ role: newRole })
+                .eq('id', userId)
+
+            if (error) throw error
+            loadData(true)
+        } catch (err) {
+            console.error('Error updating role:', err)
+            setError(err.message || 'Failed to update user role')
+        } finally {
+            setSaving(false)
+        }
     }
 
-        const renderTeamTab = () => (
-            (
+    return (
+        <div className="animate-fade-in">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Student Management</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                        {students.length} registered student{students.length !== 1 ? 's' : ''}
+                    </p>
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                        <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input
+                            id="student-search"
+                            name="student-search"
+                            type="text"
+                            placeholder="Search students by name or email..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="form-input"
+                            style={{ paddingLeft: '2.5rem' }}
+                        />
+                    </div>
+                    {(profile?.role === 'main_admin' || profile?.role === 'organizer') && (
+                        <button
+                            onClick={handleDeleteAllStudents}
+                            disabled={saving}
+                            className="btn-secondary"
+                            style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)', padding: '0.6rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        >
+                            <Trash2 size={16} /> {saving ? 'Purging...' : 'Delete All Students'}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--card-border)' }}>
+                <button
+                    className={`nav-btn ${tab === 'active' ? 'active' : ''}`}
+                    onClick={() => setTab('active')}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'active' ? '2px solid #6366f1' : '2px solid transparent', color: tab === 'active' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
+                >
+                    Active Students
+                </button>
+                <button
+                    className={`nav-btn ${tab === 'pending' ? 'active' : ''}`}
+                    onClick={() => setTab('pending')}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'pending' ? '2px solid #f59e0b' : '2px solid transparent', color: tab === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                >
+                    Pending Approval
+                    {students.filter(s => s.status === 'pending').length > 0 && (
+                        <span style={{ background: '#f59e0b', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontSize: '0.7rem' }}>
+                            {students.filter(s => s.status === 'pending').length}
+                        </span>
+                    )}
+                </button>
+
+                {tab === 'pending' && (
+                    <button
+                        onClick={handleSyncStudents}
+                        disabled={saving}
+                        className="btn-secondary"
+                        style={{ marginLeft: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                        title="Search for missing student profiles in the authentication system"
+                    >
+                        <Users size={14} /> {saving ? 'Syncing...' : 'Sync Students'}
+                    </button>
+                )}
+                <button
+                    className={`nav-btn ${tab === 'team' ? 'active' : ''}`}
+                    onClick={() => setTab('team')}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'team' ? '2px solid #8b5cf6' : '2px solid transparent', color: tab === 'team' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
+                >
+                    Organizer Team
+                </button>
+                <button
+                    className={`nav-btn ${tab === 'groups' ? 'active' : ''}`}
+                    onClick={() => setTab('groups')}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'groups' ? '2px solid #10b981' : '2px solid transparent', color: tab === 'groups' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                >
+                    Batches & Groups
+                </button>
+            </div>
+
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ color: 'var(--text-muted)' }}>Loading data...</p>
+                </div>
+            ) : tab === 'team' ? (
+                <TeamTab
+                    inviteEmail={inviteEmail} setInviteEmail={setInviteEmail}
+                    inviteRole={inviteRole} setInviteRole={setInviteRole}
+                    handleInviteOrganizer={handleInviteOrganizer} saving={saving} error={error}
+                    organizers={organizers} invites={invites} profile={profile}
+                    handleUpdateRole={handleUpdateRole} handleDeleteStudent={handleDeleteStudent}
+                    handleRemoveInvite={handleRemoveInvite}
+                />
+            ) : tab === 'groups' ? (
+                <GroupsTab
+                    newGroupName={newGroupName} setNewGroupName={setNewGroupName}
+                    groupCourseId={groupCourseId} setGroupCourseId={setGroupCourseId}
+                    handleCreateGroup={handleCreateGroup} saving={saving}
+                    courses={courses} groups={groups} groupMembers={groupMembers}
+                    handleDeleteGroup={handleDeleteGroup} setManagingGroup={setManagingGroup}
+                    loadDayAccess={loadDayAccess}
+                />
+            ) : filtered.length === 0 ? (
+                <EmptyState />
+            ) : (
+                <StudentsList
+                    error={error} filtered={filtered} tab={tab}
+                    groupMembers={groupMembers} groups={groups}
+                    expanded={expanded} setExpanded={setExpanded}
+                    setViewingProfileId={setViewingProfileId}
+                    handleUpdateStatus={handleUpdateStatus}
+                    handleDeleteStudent={handleDeleteStudent}
+                    setAssigningTo={setAssigningTo} setError={setError}
+                    handleUpdateExpiry={handleUpdateExpiry}
+                    handleRemoveCourse={handleRemoveCourse} saving={saving}
+                />
+            )}
+            <StudentModals
+                assigningTo={assigningTo} setAssigningTo={setAssigningTo}
+                courses={courses} selectedCourse={selectedCourse}
+                setSelectedCourse={setSelectedCourse} saving={saving}
+                handleAssignCourse={handleAssignCourse}
+                managingGroup={managingGroup} setManagingGroup={setManagingGroup}
+                students={students} groupMembers={groupMembers}
+                togglingMember={togglingMember} toggleMembership={toggleMembership}
+                schedulingGroup={schedulingGroup} setSchedulingGroup={setSchedulingGroup}
+                maxDay={maxDay} dayAccess={dayAccess}
+                handleUpdateDayAccess={handleUpdateDayAccess}
+                viewingProfileId={viewingProfileId} setViewingProfileId={setViewingProfileId}
+                error={error}
+            />
+        </div>
+    )
+}
+
+
+
+function avgCompletion(enrollments) {
+    if (!enrollments?.length) return 0
+    return Math.round(enrollments.reduce((sum, e) => sum + e.completion, 0) / enrollments.length)
+}
+
+const EmptyState = () => (
+    <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
+        <Users size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+        <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No students found</p>
+    </div>
+)
+
+function TeamTab({
+    inviteEmail, setInviteEmail, inviteRole, setInviteRole, handleInviteOrganizer, saving, error,
+    organizers, invites, profile, handleUpdateRole, handleDeleteStudent, handleRemoveInvite
+}) {
+    return (
                     <div className="animate-fade-in">
                         <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Invite New Organizer</h3>
@@ -678,11 +847,30 @@ export default function StudentManagement() {
                             </div>
                         </div>
                     </div>
-                )
-        );
+    )
+}
 
-        const renderGroupsTab = () => (
-            (
+TeamTab.propTypes = {
+    inviteEmail: PropTypes.string.isRequired,
+    setInviteEmail: PropTypes.func.isRequired,
+    inviteRole: PropTypes.string.isRequired,
+    setInviteRole: PropTypes.func.isRequired,
+    handleInviteOrganizer: PropTypes.func.isRequired,
+    saving: PropTypes.bool.isRequired,
+    error: PropTypes.string,
+    organizers: PropTypes.array.isRequired,
+    invites: PropTypes.array.isRequired,
+    profile: PropTypes.object,
+    handleUpdateRole: PropTypes.func.isRequired,
+    handleDeleteStudent: PropTypes.func.isRequired,
+    handleRemoveInvite: PropTypes.func.isRequired
+}
+
+function GroupsTab({
+    newGroupName, setNewGroupName, groupCourseId, setGroupCourseId, handleCreateGroup, saving,
+    courses, groups, groupMembers, handleDeleteGroup, setManagingGroup, loadDayAccess
+}) {
+    return (
                     <div className="animate-fade-in">
                         <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
                             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Create New Batch/Group</h3>
@@ -748,19 +936,30 @@ export default function StudentManagement() {
                             })}
                         </div>
                     </div>
-                )
-        );
+    )
+}
 
-        const renderEmptyState = () => (
-            (
-                    <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
-                        <Users size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
-                        <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No students found</p>
-                    </div>
-                )
-        );
+GroupsTab.propTypes = {
+    newGroupName: PropTypes.string.isRequired,
+    setNewGroupName: PropTypes.func.isRequired,
+    groupCourseId: PropTypes.string.isRequired,
+    setGroupCourseId: PropTypes.func.isRequired,
+    handleCreateGroup: PropTypes.func.isRequired,
+    saving: PropTypes.bool.isRequired,
+    courses: PropTypes.array.isRequired,
+    groups: PropTypes.array.isRequired,
+    groupMembers: PropTypes.array.isRequired,
+    handleDeleteGroup: PropTypes.func.isRequired,
+    setManagingGroup: PropTypes.func.isRequired,
+    loadDayAccess: PropTypes.func.isRequired
+}
 
-        const renderStudentsList = () => (
+function StudentsList({
+    error, filtered, tab, groupMembers, groups, expanded, setExpanded, setViewingProfileId,
+    handleUpdateStatus, handleDeleteStudent, setAssigningTo, setError, handleUpdateExpiry,
+    handleRemoveCourse, saving
+}) {
+    return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                         {error && (
                             <div style={{ padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -946,9 +1145,34 @@ export default function StudentManagement() {
                             )
                         })}
                     </div>
-        );
+    )
+}
 
-        const renderStudentModal = () => (
+StudentsList.propTypes = {
+    error: PropTypes.string,
+    filtered: PropTypes.array.isRequired,
+    tab: PropTypes.string.isRequired,
+    groupMembers: PropTypes.array.isRequired,
+    groups: PropTypes.array.isRequired,
+    expanded: PropTypes.string,
+    setExpanded: PropTypes.func.isRequired,
+    setViewingProfileId: PropTypes.func.isRequired,
+    handleUpdateStatus: PropTypes.func.isRequired,
+    handleDeleteStudent: PropTypes.func.isRequired,
+    setAssigningTo: PropTypes.func.isRequired,
+    setError: PropTypes.func.isRequired,
+    handleUpdateExpiry: PropTypes.func.isRequired,
+    handleRemoveCourse: PropTypes.func.isRequired,
+    saving: PropTypes.bool.isRequired
+}
+
+function StudentModals({
+    assigningTo, setAssigningTo, courses, selectedCourse, setSelectedCourse, saving, handleAssignCourse,
+    managingGroup, setManagingGroup, students, groupMembers, togglingMember, toggleMembership,
+    schedulingGroup, setSchedulingGroup, maxDay, dayAccess, handleUpdateDayAccess,
+    viewingProfileId, setViewingProfileId, error
+}) {
+    return (
             <>
                 {assigningTo && (
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
@@ -1100,119 +1324,35 @@ export default function StudentManagement() {
                     />
                 )}
             </>
-        );
-
-
-    return (
-        <div className="animate-fade-in">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Student Management</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                        {students.length} registered student{students.length !== 1 ? 's' : ''}
-                    </p>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                        <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input
-                            id="student-search"
-                            name="student-search"
-                            type="text"
-                            placeholder="Search students by name or email..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="form-input"
-                            style={{ paddingLeft: '2.5rem' }}
-                        />
-                    </div>
-                    {(profile?.role === 'main_admin' || profile?.role === 'organizer') && (
-                        <button
-                            onClick={handleDeleteAllStudents}
-                            disabled={saving}
-                            className="btn-secondary"
-                            style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)', padding: '0.6rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                        >
-                            <Trash2 size={16} /> {saving ? 'Purging...' : 'Delete All Students'}
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--card-border)' }}>
-                <button
-                    className={`nav-btn ${tab === 'active' ? 'active' : ''}`}
-                    onClick={() => setTab('active')}
-                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'active' ? '2px solid #6366f1' : '2px solid transparent', color: tab === 'active' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
-                >
-                    Active Students
-                </button>
-                <button
-                    className={`nav-btn ${tab === 'pending' ? 'active' : ''}`}
-                    onClick={() => setTab('pending')}
-                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'pending' ? '2px solid #f59e0b' : '2px solid transparent', color: tab === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
-                >
-                    Pending Approval
-                    {students.filter(s => s.status === 'pending').length > 0 && (
-                        <span style={{ background: '#f59e0b', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontSize: '0.7rem' }}>
-                            {students.filter(s => s.status === 'pending').length}
-                        </span>
-                    )}
-                </button>
-
-                {tab === 'pending' && (
-                    <button
-                        onClick={handleSyncStudents}
-                        disabled={saving}
-                        className="btn-secondary"
-                        style={{ marginLeft: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                        title="Search for missing student profiles in the authentication system"
-                    >
-                        <Users size={14} /> {saving ? 'Syncing...' : 'Sync Students'}
-                    </button>
-                )}
-                <button
-                    className={`nav-btn ${tab === 'team' ? 'active' : ''}`}
-                    onClick={() => setTab('team')}
-                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'team' ? '2px solid #8b5cf6' : '2px solid transparent', color: tab === 'team' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
-                >
-                    Organizer Team
-                </button>
-                <button
-                    className={`nav-btn ${tab === 'groups' ? 'active' : ''}`}
-                    onClick={() => setTab('groups')}
-                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'groups' ? '2px solid #10b981' : '2px solid transparent', color: tab === 'groups' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
-                >
-                    Batches & Groups
-                </button>
-            </div>
-
-            {loading ? (
-                            <div style={{ textAlign: 'center', padding: '4rem' }}>
-                                <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                                <p style={{ color: 'var(--text-muted)' }}>Loading data...</p>
-                            </div>
-                        ) : tab === 'team' ? (
-                            renderTeamTab()
-                        ) : tab === 'groups' ? (
-                            renderGroupsTab()
-                        ) : filtered.length === 0 ? (
-                            renderEmptyState()
-                        ) : (
-                            renderStudentsList()
-                        )}
-                        {renderStudentModal()}
-
-            
-
-            
-
-            
-
-            
-        </div>
     )
 }
+
+StudentModals.propTypes = {
+    assigningTo: PropTypes.object,
+    setAssigningTo: PropTypes.func.isRequired,
+    courses: PropTypes.array.isRequired,
+    selectedCourse: PropTypes.string.isRequired,
+    setSelectedCourse: PropTypes.func.isRequired,
+    saving: PropTypes.bool.isRequired,
+    handleAssignCourse: PropTypes.func.isRequired,
+    managingGroup: PropTypes.object,
+    setManagingGroup: PropTypes.func.isRequired,
+    students: PropTypes.array.isRequired,
+    groupMembers: PropTypes.array.isRequired,
+    togglingMember: PropTypes.string,
+    toggleMembership: PropTypes.func.isRequired,
+    schedulingGroup: PropTypes.object,
+    setSchedulingGroup: PropTypes.func.isRequired,
+    maxDay: PropTypes.number.isRequired,
+    dayAccess: PropTypes.array.isRequired,
+    handleUpdateDayAccess: PropTypes.func.isRequired,
+    viewingProfileId: PropTypes.string,
+    setViewingProfileId: PropTypes.func.isRequired,
+    error: PropTypes.string
+}
+
+
+
 
 function StudentProfileModal({ studentId, onClose, studentName }) {
     const [profile, setProfile] = useState(null)

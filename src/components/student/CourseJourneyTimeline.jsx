@@ -30,7 +30,12 @@ function CourseJourneyItem({ item, onModuleAction }) {
         default: icon = <BookOpen size={20} />; typeColor = '#10b981'; typeLabel = 'Lesson'; break
     }
     
-    const iconColor = item.type === 'live' ? '#ef4444' : (item.status === 'completed' ? '#10b981' : '#6366f1')
+    let iconColor = '#6366f1'
+    if (item.type === 'live') {
+        iconColor = '#ef4444'
+    } else if (item.status === 'completed') {
+        iconColor = '#10b981'
+    }
 
     let containerStyle = {
         position: 'relative', 
@@ -69,7 +74,6 @@ function CourseJourneyItem({ item, onModuleAction }) {
         statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Upcoming</span>;
     } else if (item.status === 'locked') {
         containerStyle.opacity = 0.5;
-        circleBorderColor = '#cbd5e1';
         statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: '#f1f5f9', color: '#64748b', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Locked</span>;
     } else {
         // available
@@ -212,7 +216,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                 } else if (item.isLocked) {
                     const itemTime = item.open_time || item.scheduled_time || item.start_time;
                     if (itemTime) {
-                        const diffMs = new Date(itemTime) - new Date();
+                        const diffMs = new Date(itemTime) - Date.now();
                         if (diffMs > 0 && diffMs <= 172800000) {
                             status = 'upcoming'; // Scheduled within 2 days
                         } else {
