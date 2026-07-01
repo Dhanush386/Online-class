@@ -2,9 +2,15 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { 
     CheckCircle2, XCircle, Clock, Search, 
-    Filter, RefreshCw, User, CreditCard, 
-    ExternalLink, AlertCircle, Loader2
+    RefreshCw, User, CreditCard, 
+    Loader2
 } from 'lucide-react'
+
+function getStatusBadgeClass(status) {
+    if (status === 'pending') return 'warning'
+    if (status === 'approved') return 'success'
+    return 'danger'
+}
 
 export default function RenewalManagement() {
     const [requests, setRequests] = useState([])
@@ -140,21 +146,23 @@ export default function RenewalManagement() {
                         </tr>
                     </thead>
                     <tbody>
-                        {loading ? (
+                        {loading && (
                             <tr>
                                 <td colSpan="5" style={{ textAlign: 'center', padding: '4rem' }}>
                                     <Loader2 className="animate-spin" size={32} style={{ color: 'var(--accent)', margin: '0 auto' }} />
                                     <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>Loading requests...</p>
                                 </td>
                             </tr>
-                        ) : filteredRequests.length === 0 ? (
+                        )}
+                        {!loading && filteredRequests.length === 0 && (
                             <tr>
                                 <td colSpan="5" style={{ textAlign: 'center', padding: '4rem' }}>
                                     <Clock size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
-                                    <p style={{ color: 'var(--text-secondary)' }}>No {filter !== 'all' ? filter : ''} requests found.</p>
+                                    <p style={{ color: 'var(--text-secondary)' }}>No {filter === 'all' ? '' : filter} requests found.</p>
                                 </td>
                             </tr>
-                        ) : (
+                        )}
+                        {!loading && filteredRequests.length > 0 && (
                             filteredRequests.map((req) => (
                                 <tr key={req.id}>
                                     <td>
@@ -180,7 +188,7 @@ export default function RenewalManagement() {
                                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                                     </td>
                                     <td>
-                                        <span className={`badge badge-${req.status === 'pending' ? 'warning' : req.status === 'approved' ? 'success' : 'danger'}`}>
+                                        <span className={`badge badge-${getStatusBadgeClass(req.status)}`}>
                                             {req.status}
                                         </span>
                                     </td>

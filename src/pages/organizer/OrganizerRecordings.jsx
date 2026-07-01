@@ -4,6 +4,35 @@ import { supabase } from '../../lib/supabase'
 import { Video, Search, Calendar, Clock, Database, PlayCircle, Copy, CheckCircle, AlertCircle, RefreshCw, FolderOpen, Loader, Trash2, RefreshCcw, FileText, Upload, Link, X } from 'lucide-react'
 import { useMeeting } from '../../contexts/MeetingContext'
 
+function getRecordingStatusBadge(rec) {
+    if (rec.recording_status === 'uploading') {
+        return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#e0e7ff', color: '#4f46e5', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
+                <Loader className="animate-spin" size={12} /> Uploading
+            </span>
+        )
+    }
+    if (rec.recording_status === 'completed' || rec.drive_file_id) {
+        return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#dcfce7', color: '#16a34a', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
+                <CheckCircle size={12} /> Completed
+            </span>
+        )
+    }
+    if (rec.recording_status === 'failed') {
+        return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#fee2e2', color: '#dc2626', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
+                <AlertCircle size={12} /> Failed
+            </span>
+        )
+    }
+    return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.6rem', background: '#fef3c7', color: '#d97706', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600 }}>
+            <Video size={12} /> Recording
+        </span>
+    )
+}
+
 export default function OrganizerRecordings() {
     const { profile } = useAuth()
     const { retryUpload, deleteFailedUpload, failedUploads, deleteRecordingFromDrive, loginToDrive, gToken } = useMeeting()
@@ -174,21 +203,23 @@ export default function OrganizerRecordings() {
                             </tr>
                         </thead>
                         <tbody>
-                            {loading ? (
+                            {loading && (
                                 <tr>
                                     <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                                         <Loader className="animate-spin" size={24} style={{ margin: '0 auto 1rem' }} />
                                         Loading recordings...
                                     </td>
                                 </tr>
-                            ) : filteredRecordings.length === 0 ? (
+                            )}
+                            {!loading && filteredRecordings.length === 0 && (
                                 <tr>
                                     <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                                         <Video size={32} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
                                         No recordings found matching your filters.
                                     </td>
                                 </tr>
-                            ) : (
+                            )}
+                            {!loading && filteredRecordings.length > 0 && (
                                 filteredRecordings.map(rec => (
                                     <tr key={rec.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
                                         <td style={{ padding: '1rem' }}>
@@ -291,7 +322,7 @@ export default function OrganizerRecordings() {
                                                                     loginToDrive()
                                                                     return
                                                                 }
-                                                                if (window.confirm('Are you sure you want to completely delete this recording from Google Drive?')) {
+                                                                if (globalThis.confirm('Are you sure you want to completely delete this recording from Google Drive?')) {
                                                                     const ok = await deleteRecordingFromDrive(rec.id, rec.drive_file_id)
                                                                     if (ok) loadData()
                                                                 }

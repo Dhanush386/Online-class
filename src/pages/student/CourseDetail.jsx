@@ -326,7 +326,7 @@ export default function CourseDetail() {
     }
 
     async function handleDeleteNote(noteId) {
-        if (!window.confirm('Are you sure you want to delete this note?')) return
+        if (!globalThis.confirm('Are you sure you want to delete this note?')) return
         try {
             const { error } = await supabase
                 .from('student_notes')

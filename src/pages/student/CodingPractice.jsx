@@ -8,6 +8,13 @@ import {
 } from 'lucide-react'
 import { useNavigate, Link } from 'react-router-dom'
 
+
+function getDifficultyColor(difficulty) {
+    if (difficulty === 'easy') return '#10b981'
+    if (difficulty === 'medium') return '#f59e0b'
+    return '#ef4444'
+}
+
 export default function CodingPractice() {
     const { profile } = useAuth()
     const navigate = useNavigate()
@@ -216,7 +223,7 @@ export default function CodingPractice() {
                                     <span style={{
                                         fontSize: '0.8rem',
                                         fontWeight: 600,
-                                        color: c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444'
+                                        color: getDifficultyColor(c.difficulty)
                                     }}>
                                         {c.difficulty ? c.difficulty.charAt(0).toUpperCase() + c.difficulty.slice(1) : 'Easy'}
                                     </span>

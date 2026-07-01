@@ -4,13 +4,25 @@ import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-    Users, Video, BookOpen, TrendingUp, Play, Clock, Code, Key,
-    RefreshCw, ArrowRight, Radio, Calendar, ChevronRight, Zap, Plus
+    Users, Video, BookOpen, TrendingUp, Play, Clock, Code,
+    Radio, ChevronRight, Plus
 } from 'lucide-react'
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import { StatCard, GlassCard } from '../../design-system'
+
+function getLanguageEmoji(language) {
+    if (language === 'python') return '🐍'
+    if (language === 'java') return '☕'
+    return '💻'
+}
+
+function getDifficultyColor(difficulty) {
+    if (difficulty === 'easy') return '#10b981'
+    if (difficulty === 'medium') return '#f59e0b'
+    return '#ef4444'
+}
 
 export default function OrganizerDashboard() {
     const { profile } = useAuth()
@@ -246,13 +258,13 @@ export default function OrganizerDashboard() {
                                             border: '1px solid rgba(245,158,11,0.1)',
                                         }}>
                                             <div style={{ width: 34, height: 34, background: 'rgba(245,158,11,0.12)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.9rem' }}>
-                                                {c.language === 'python' ? '🐍' : c.language === 'java' ? '☕' : '💻'}
+                                                {getLanguageEmoji(c.language)}
                                             </div>
                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</div>
                                                 <div style={{ fontSize: '0.7rem', marginTop: 2 }}>
                                                     <span style={{
-                                                        color: c.difficulty === 'easy' ? '#10b981' : c.difficulty === 'medium' ? '#f59e0b' : '#ef4444',
+                                                        color: getDifficultyColor(c.difficulty),
                                                         fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.04em',
                                                     }}>{c.difficulty}</span>
                                                 </div>

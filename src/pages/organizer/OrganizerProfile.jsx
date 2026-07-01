@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import {
-    User, Mail, Phone, MapPin, Briefcase, GraduationCap,
-    Linkedin, Github, Globe, Camera, Upload, X, Save,
+    User, Mail, Briefcase,
+    Linkedin, Github, Globe, Camera, X, Save,
     CheckCircle2, AlertCircle, Loader2, BookOpen, Users,
-    ClipboardList, Code, Calendar, Shield, Award
+    ClipboardList, Code, Shield
 } from 'lucide-react'
 
 export default function OrganizerProfile() {
@@ -110,10 +110,12 @@ export default function OrganizerProfile() {
                 })
                 .eq('id', profile.id)
 
-            if (error) throw error
+            if (error) {
+                throw error
+            }
             
-             // 2. Sync with Auth Metadata (Source of truth for Supabase)
-             await supabase.auth.updateUser({
+            // 2. Sync with Auth Metadata (Source of truth for Supabase)
+            await supabase.auth.updateUser({
                 data: { name: formData.name }
             })
 
@@ -268,23 +270,23 @@ export default function OrganizerProfile() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         <div>
-                            <label className="form-label">Full Name</label>
-                            <input name="name" value={formData.name} onChange={handleChange} className="form-input" placeholder="Your full name" />
+                            <label htmlFor="profile-name" className="form-label">Full Name</label>
+                            <input id="profile-name" name="name" value={formData.name} onChange={handleChange} className="form-input" placeholder="Your full name" />
                         </div>
                         <div>
-                            <label className="form-label">Email</label>
-                            <input value={formData.email} disabled className="form-input" style={{ background: '#f8fafc', color: 'var(--text-muted)' }} />
+                            <label htmlFor="profile-email" className="form-label">Email</label>
+                            <input id="profile-email" value={formData.email} disabled className="form-input" style={{ background: '#f8fafc', color: 'var(--text-muted)' }} />
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#10b981', fontSize: '0.85rem', marginTop: '0.4rem', fontWeight: 600 }}>
                                 <CheckCircle2 size={12} /> Verified
                             </div>
                         </div>
                         <div>
-                            <label className="form-label">Phone Number</label>
-                            <input name="phone" value={formData.phone} onChange={handleChange} className="form-input" placeholder="+91 XXXXX XXXXX" />
+                            <label htmlFor="profile-phone" className="form-label">Phone Number</label>
+                            <input id="profile-phone" name="phone" value={formData.phone} onChange={handleChange} className="form-input" placeholder="+91 XXXXX XXXXX" />
                         </div>
                         <div>
-                            <label className="form-label">Bio / About</label>
-                            <textarea name="bio" value={formData.bio} onChange={handleChange} className="form-input" rows={3} placeholder="A short description about yourself..." style={{ resize: 'none' }} />
+                            <label htmlFor="profile-bio" className="form-label">Bio / About</label>
+                            <textarea id="profile-bio" name="bio" value={formData.bio} onChange={handleChange} className="form-input" rows={3} placeholder="A short description about yourself..." style={{ resize: 'none' }} />
                         </div>
                     </div>
                 </div>
@@ -297,12 +299,12 @@ export default function OrganizerProfile() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         <div>
-                            <label className="form-label">Organization / Institute</label>
-                            <input name="organization" value={formData.organization} onChange={handleChange} className="form-input" placeholder="e.g. XYZ University" />
+                            <label htmlFor="profile-org" className="form-label">Organization / Institute</label>
+                            <input id="profile-org" name="organization" value={formData.organization} onChange={handleChange} className="form-input" placeholder="e.g. XYZ University" />
                         </div>
                         <div>
-                            <label className="form-label">Designation / Role</label>
-                            <input name="designation" value={formData.designation} onChange={handleChange} className="form-input" placeholder="e.g. Professor, HOD, Trainer" />
+                            <label htmlFor="profile-desig" className="form-label">Designation / Role</label>
+                            <input id="profile-desig" name="designation" value={formData.designation} onChange={handleChange} className="form-input" placeholder="e.g. Professor, HOD, Trainer" />
                         </div>
 
                         <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '1.25rem' }}>

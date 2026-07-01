@@ -6,6 +6,24 @@ import { Plus, ClipboardList, Trash2, Edit2, X, Save, AlertCircle, Calendar, Boo
 import ProctoringReportModal from '../../components/organizer/ProctoringReportModal'
 import { getDefaultUnlockTime, toISOWithOffset, toLocalInput } from '../../lib/dateUtils'
 
+function getTypeBadgeClass(type) {
+    if (type === 'final') return 'badge-success'
+    if (type === 'weekly') return 'badge-warning'
+    return 'badge-info'
+}
+
+function getRiskStyle(score) {
+    if (score >= 100) return { bg: '#fef2f2', color: '#ef4444', border: '#fecaca' }
+    if (score >= 60)  return { bg: '#fff7ed', color: '#f97316', border: '#ffedd5' }
+    return { bg: '#ecfdf5', color: '#10b981', border: '#a7f3d0' }
+}
+
+function getPctStyle(pct) {
+    if (pct >= 80) return { bg: '#ecfdf5', color: '#059669' }
+    if (pct >= 50) return { bg: '#fffbeb', color: '#d97706' }
+    return { bg: '#fef2f2', color: '#dc2626' }
+}
+
 export default function OrganizerAssessments() {
     const { profile } = useAuth()
     const location = useLocation()
@@ -256,11 +274,7 @@ export default function OrganizerAssessments() {
         passed: marksData.filter(m => m.total_questions > 0 && (m.score / m.total_questions) >= 0.5).length,
     }
 
-    function getTypeBadgeClass(type) {
-        if (type === 'final') return 'badge-success'
-        if (type === 'weekly') return 'badge-warning'
-        return 'badge-info'
-    }
+
 
     function renderSubmitLabel() {
         if (saving) return 'Saving...'
@@ -355,11 +369,7 @@ export default function OrganizerAssessments() {
         )
     }
 
-    function getRiskStyle(score) {
-        if (score >= 100) return { bg: '#fef2f2', color: '#ef4444', border: '#fecaca' }
-        if (score >= 60)  return { bg: '#fff7ed', color: '#f97316', border: '#ffedd5' }
-        return { bg: '#ecfdf5', color: '#10b981', border: '#a7f3d0' }
-    }
+
 
     function renderProctoringCell(sub, pSession) {
         if (!pSession) {
@@ -376,11 +386,7 @@ export default function OrganizerAssessments() {
         )
     }
 
-    function getPctStyle(pct) {
-        if (pct >= 80) return { bg: '#ecfdf5', color: '#059669' }
-        if (pct >= 50) return { bg: '#fffbeb', color: '#d97706' }
-        return { bg: '#fef2f2', color: '#dc2626' }
-    }
+
 
     function renderStudentRow(sub, idx) {
         const pct = sub.total_questions > 0 ? Math.round((sub.score / sub.total_questions) * 100) : 0

@@ -1,10 +1,45 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Calendar, Edit2, Trash2, Clock, X, Save, Plus, ExternalLink, Video, Users } from 'lucide-react'
+import { Calendar, Edit2, Trash2, X, Save, Video, Users } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { toLocalInput, toISOWithOffset } from '../../lib/dateUtils'
 
+
+function formatTime(t) {
+    if (!t) return 'Not scheduled'
+    try { return format(parseISO(t), 'MMM d, yyyy • h:mm a') } catch { return t }
+}
+
+function isLive(t, duration) {
+    if (!t) return false
+    const now = new Date()
+    const s = parseISO(t)
+    const durationMs = (duration || 60) * 60000
+    return now >= s && (now - s) < durationMs
+}
+
+function getStatusBadge(v) {
+    if (isLive(v.scheduled_time, v.duration_minutes)) {
+        return <span className="badge badge-danger" style={{ animation: 'pulse 2s infinite' }}>🔴 LIVE</span>;
+    }
+    if (v.scheduled_time && new Date(v.scheduled_time) > new Date()) {
+        return <span className="badge badge-warning">Upcoming</span>;
+    }
+    return <span className="badge badge-success">Completed</span>;
+}
+
+function getAttendanceBgColor(status) {
+    if (status === 'present') return '#ecfdf5';
+    if (status === 'absent') return '#fef2f2';
+    return '#f8fafc';
+}
+
+function getAttendanceTextColor(status) {
+    if (status === 'present') return '#059669';
+    if (status === 'absent') return '#dc2626';
+    return 'var(--text-muted)';
+}
 
 export default function ScheduleManager() {
     const [videos, setVideos] = useState([])
@@ -84,7 +119,7 @@ export default function ScheduleManager() {
 
         // Append any attendees who aren't explicitly enrolled
         attData?.forEach(record => {
-            if (!unifiedData.find(u => u.student_id === record.student_id)) {
+            if (!unifiedData.some(u => u.student_id === record.student_id)) {
                 unifiedData.push(record);
             }
         });
@@ -135,15 +170,17 @@ export default function ScheduleManager() {
             </div>
 
             <div className="glass-card" style={{ overflow: 'hidden' }}>
-                {loading ? (
+                {loading && (
                     <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading schedule...</div>
-                ) : videos.length === 0 ? (
+                )}
+                {!loading && videos.length === 0 && (
                     <div style={{ padding: '4rem', textAlign: 'center' }}>
                         <Calendar size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
                         <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No videos scheduled yet</p>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>Go to Upload Video to add your first class</p>
                     </div>
-                ) : (
+                )}
+                {!loading && videos.length > 0 && (
                     <table className="data-table">
                         <thead>
                             <tr>
@@ -343,7 +380,7 @@ export default function ScheduleManager() {
                                                     </thead>
                                                     <tbody>
                                                         {attendanceData.map((record, idx) => (
-                                                            <tr key={idx} style={{ borderBottom: idx === attendanceData.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
+                                                            <tr key={record.student_id} style={{ borderBottom: idx === attendanceData.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
                                                                 <td style={{ padding: '0.85rem 1rem' }}>
                                                                     <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{record.users?.name || 'Unknown'}</div>
                                                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{record.users?.email}</div>
@@ -367,8 +404,8 @@ export default function ScheduleManager() {
                                                                             fontSize: '0.85rem', 
                                                                             fontWeight: 600, 
                                                                             border: '1px solid #e2e8f0', 
-                                                                            background: record.attendance_status === 'present' ? '#ecfdf5' : record.attendance_status === 'absent' ? '#fef2f2' : '#f8fafc', 
-                                                                            color: record.attendance_status === 'present' ? '#059669' : record.attendance_status === 'absent' ? '#dc2626' : 'var(--text-muted)',
+                                                                            background: getAttendanceBgColor(record.attendance_status), 
+                                                                            color: getAttendanceTextColor(record.attendance_status),
                                                                             cursor: 'pointer',
                                                                             outline: 'none'
                                                                         }}
