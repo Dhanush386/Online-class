@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('node:fs');
 
 const path = 'src/pages/organizer/StudentManagement.jsx';
 let lines = fs.readFileSync(path, 'utf8').split('\n');

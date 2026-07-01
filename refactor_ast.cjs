@@ -1,6 +1,6 @@
 const { Project, SyntaxKind } = require('ts-morph');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const project = new Project({
     compilerOptions: {
@@ -93,9 +93,9 @@ const teamText = teamBranch.getText();
 const groupsText = groupsBranch.getText();
 const emptyText = emptyBranch.getText();
 const listText = listBranch.getText();
-const modalsText = modalsElements.map(m => m.getText()).join('\\n            ');
+const modalsText = modalsElements.map(m => m.getText()).join('\n            ');
 
-const helperFunctions = `
+const helperFunctions = String.raw`
     const renderTeamTab = () => (
         ${teamText}
     );

@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const filePath = path.join(__dirname, 'src', 'pages', 'organizer', 'StudentManagement.jsx');
-let content = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n');
+let content = fs.readFileSync(filePath, 'utf-8').replaceAll('\r\n', '\n');
 
 // Find the start of the return block
 const mainReturnRegex = /return \(\s*<div className="animate-fade-in">\s*<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>/;
@@ -55,7 +55,7 @@ const studentsListActualContent = content.substring(
 const modalsContent = content.substring(assignModalStart, fileEnd).trimEnd();
 
 
-const helpers = `
+const helpers = String.raw`
     const renderTeamTab = () => (
 ${teamContent}
     );
@@ -74,7 +74,7 @@ ${studentsListActualContent}
 
     const renderStudentModal = () => (
         <>
-${modalsContent.split('\\n').map(line => '        ' + line).join('\\n').replace(/^ {8}/gm, '')}
+${modalsContent.split('\n').map(line => '        ' + line).join('\n').replace(/^ {8}/gm, '')}
         </>
     );
 `;
