@@ -309,23 +309,32 @@ export default function CourseDetail() {
 
     async function markComplete(sessionId) {
         if (!profile?.id || !courseId) return
-        
-        const { error } = await supabase.from('video_progress').upsert({
-            student_id: profile.id,
-            course_id: courseId,
-            video_id: sessionId,
-            completed: true,
-            watched_percentage: 100,
-            completed_from: 'RECORDED_VIDEO'
-        }, { onConflict: 'student_id,video_id' })
 
-        if (!error || error.code === '23505') {
-            setProgress(prev => ({
-                ...(prev || {}),
-                video_progress: [...(prev?.video_progress || []), { video_id: sessionId }]
-            }))
-            updateOverallProgress()
+        // Try updating existing row first
+        const { data: updated, error: updateErr } = await supabase
+            .from('video_progress')
+            .update({ completed: true, watched_percentage: 100, completed_from: 'RECORDED_VIDEO' })
+            .eq('student_id', profile.id)
+            .eq('video_id', sessionId)
+            .select()
+
+        // If no existing row, insert a new one
+        if (!updateErr && (!updated || updated.length === 0)) {
+            await supabase.from('video_progress').insert({
+                student_id: profile.id,
+                course_id: courseId,
+                video_id: sessionId,
+                completed: true,
+                watched_percentage: 100,
+                completed_from: 'RECORDED_VIDEO'
+            })
         }
+
+        setProgress(prev => ({
+            ...(prev || {}),
+            video_progress: [...(prev?.video_progress || []), { video_id: sessionId }]
+        }))
+        updateOverallProgress()
     }
 
     async function handleSaveNote(noteData) {
