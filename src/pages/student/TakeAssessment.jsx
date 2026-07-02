@@ -895,7 +895,7 @@ export default function TakeAssessment() {
                                 </span>
                             </div>
                             <div style={{ background: '#0f172a', overflowX: 'auto' }}>
-                                <div style={{ minWidth: 'min-content' }}>
+                                <div style={{ minWidth: '100%', width: 'max-content' }}>
                                     <CodeEditor
                                         value={currentQ.code_snippet}
                                         language={currentQ.code_language}

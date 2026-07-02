@@ -144,7 +144,7 @@ export default function AssessmentReview() {
                                                 </span>
                                             </div>
                                             <div style={{ background: '#0f172a', overflowX: 'auto' }}>
-                                                <div style={{ minWidth: 'min-content' }}>
+                                                <div style={{ minWidth: '100%', width: 'max-content' }}>
                                                     <CodeEditor
                                                         value={q.code_snippet}
                                                         language={q.code_language}
