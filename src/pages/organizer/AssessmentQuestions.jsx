@@ -382,13 +382,13 @@ export default function AssessmentQuestions() {
                                     <div style={{ width: 28, height: 28, background: '#f1f5f9', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
                                         {idx + 1}
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, minWidth: 0 }}>
                                         <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{q.question_text}</h4>
                                         {q.image_url && (
                                             <img src={q.image_url} alt="Question reference" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid var(--card-border)', alignSelf: 'flex-start' }} />
                                         )}
                                         {q.question_type === 'code_mcq' && q.code_snippet && (
-                                            <div style={{ marginTop: '0.85rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)', maxWidth: 600 }}>
+                                            <div style={{ marginTop: '0.85rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
                                                 <div style={{ background: '#1e293b', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                         <CodeIcon size={14} color="#94a3b8" />
