@@ -378,7 +378,7 @@ export default function AssessmentQuestions() {
                     {questions.map((q, idx) => (
                         <div key={q.id} className="glass-card" style={{ padding: '1.5rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem' }}>
-                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                <div style={{ display: 'flex', gap: '1rem', flex: 1, minWidth: 0 }}>
                                     <div style={{ width: 28, height: 28, background: '#f1f5f9', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
                                         {idx + 1}
                                     </div>
