@@ -578,7 +578,7 @@ export default function StudentManagement() {
                 <div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Student Management</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                        {students.length} registered student{students.length !== 1 ? 's' : ''}
+                        {students.length} registered student{students.length === 1 ? '' : 's'}
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -622,11 +622,14 @@ export default function StudentManagement() {
                     style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'pending' ? '2px solid #f59e0b' : '2px solid transparent', color: tab === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
                 >
                     Pending Approval
-                    {students.filter(s => s.status === 'pending').length > 0 && (
-                        <span style={{ background: '#f59e0b', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontSize: '0.7rem' }}>
-                            {students.filter(s => s.status === 'pending').length}
-                        </span>
-                    )}
+                    {(() => {
+                        const pendingCount = students.filter(s => s.status === 'pending').length;
+                        return pendingCount > 0 && (
+                            <span style={{ background: '#f59e0b', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontSize: '0.7rem' }}>
+                                {pendingCount}
+                            </span>
+                        );
+                    })()}
                 </button>
 
                 {tab === 'pending' && (
@@ -656,44 +659,56 @@ export default function StudentManagement() {
                 </button>
             </div>
 
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                    <p style={{ color: 'var(--text-muted)' }}>Loading data...</p>
-                </div>
-            ) : tab === 'team' ? (
-                <TeamTab
-                    inviteEmail={inviteEmail} setInviteEmail={setInviteEmail}
-                    inviteRole={inviteRole} setInviteRole={setInviteRole}
-                    handleInviteOrganizer={handleInviteOrganizer} saving={saving} error={error}
-                    organizers={organizers} invites={invites} profile={profile}
-                    handleUpdateRole={handleUpdateRole} handleDeleteStudent={handleDeleteStudent}
-                    handleRemoveInvite={handleRemoveInvite}
-                />
-            ) : tab === 'groups' ? (
-                <GroupsTab
-                    newGroupName={newGroupName} setNewGroupName={setNewGroupName}
-                    groupCourseId={groupCourseId} setGroupCourseId={setGroupCourseId}
-                    handleCreateGroup={handleCreateGroup} saving={saving}
-                    courses={courses} groups={groups} groupMembers={groupMembers}
-                    handleDeleteGroup={handleDeleteGroup} setManagingGroup={setManagingGroup}
-                    loadDayAccess={loadDayAccess}
-                />
-            ) : filtered.length === 0 ? (
-                <EmptyState />
-            ) : (
-                <StudentsList
-                    error={error} filtered={filtered} tab={tab}
-                    groupMembers={groupMembers} groups={groups}
-                    expanded={expanded} setExpanded={setExpanded}
-                    setViewingProfileId={setViewingProfileId}
-                    handleUpdateStatus={handleUpdateStatus}
-                    handleDeleteStudent={handleDeleteStudent}
-                    setAssigningTo={setAssigningTo} setError={setError}
-                    handleUpdateExpiry={handleUpdateExpiry}
-                    handleRemoveCourse={handleRemoveCourse} saving={saving}
-                />
-            )}
+            {(() => {
+                if (loading) {
+                    return (
+                        <div style={{ textAlign: 'center', padding: '4rem' }}>
+                            <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                            <p style={{ color: 'var(--text-muted)' }}>Loading data...</p>
+                        </div>
+                    );
+                }
+                if (tab === 'team') {
+                    return (
+                        <TeamTab
+                            inviteEmail={inviteEmail} setInviteEmail={setInviteEmail}
+                            inviteRole={inviteRole} setInviteRole={setInviteRole}
+                            handleInviteOrganizer={handleInviteOrganizer} saving={saving} error={error}
+                            organizers={organizers} invites={invites} profile={profile}
+                            handleUpdateRole={handleUpdateRole} handleDeleteStudent={handleDeleteStudent}
+                            handleRemoveInvite={handleRemoveInvite}
+                        />
+                    );
+                }
+                if (tab === 'groups') {
+                    return (
+                        <GroupsTab
+                            newGroupName={newGroupName} setNewGroupName={setNewGroupName}
+                            groupCourseId={groupCourseId} setGroupCourseId={setGroupCourseId}
+                            handleCreateGroup={handleCreateGroup} saving={saving}
+                            courses={courses} groups={groups} groupMembers={groupMembers}
+                            handleDeleteGroup={handleDeleteGroup} setManagingGroup={setManagingGroup}
+                            loadDayAccess={loadDayAccess}
+                        />
+                    );
+                }
+                if (filtered.length === 0) {
+                    return <EmptyState />;
+                }
+                return (
+                    <StudentsList
+                        error={error} filtered={filtered} tab={tab}
+                        groupMembers={groupMembers} groups={groups}
+                        expanded={expanded} setExpanded={setExpanded}
+                        setViewingProfileId={setViewingProfileId}
+                        handleUpdateStatus={handleUpdateStatus}
+                        handleDeleteStudent={handleDeleteStudent}
+                        setAssigningTo={setAssigningTo} setError={setError}
+                        handleUpdateExpiry={handleUpdateExpiry}
+                        handleRemoveCourse={handleRemoveCourse} saving={saving}
+                    />
+                );
+            })()}
             <StudentModals
                 assigningTo={assigningTo} setAssigningTo={setAssigningTo}
                 courses={courses} selectedCourse={selectedCourse}
@@ -719,12 +734,30 @@ function avgCompletion(enrollments) {
     return Math.round(enrollments.reduce((sum, e) => sum + e.completion, 0) / enrollments.length)
 }
 
+function getScoreColor(score) {
+    if (score > 70) return '#10b981'
+    if (score > 40) return '#f59e0b'
+    return '#f87171'
+}
+
+function getScoreGradient(score) {
+    if (score > 70) return 'linear-gradient(90deg,#10b981,#059669)'
+    if (score > 40) return 'linear-gradient(90deg,#f59e0b,#d97706)'
+    return 'linear-gradient(90deg,#ef4444,#dc2626)'
+}
+
 const EmptyState = () => (
     <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
         <Users size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
         <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No students found</p>
     </div>
 )
+
+SectionHeader.propTypes = {
+    icon: PropTypes.oneOfType([PropTypes.func, PropTypes.object]).isRequired,
+    title: PropTypes.string.isRequired,
+    subtitle: PropTypes.string
+}
 
 function TeamTab({
     inviteEmail, setInviteEmail, inviteRole, setInviteRole, handleInviteOrganizer, saving, error,
@@ -954,138 +987,103 @@ GroupsTab.propTypes = {
     loadDayAccess: PropTypes.func.isRequired
 }
 
-function StudentsList({
-    error, filtered, tab, groupMembers, groups, expanded, setExpanded, setViewingProfileId,
+function StudentCard({
+    student, tab, groupMembers, groups, expanded, setExpanded, setViewingProfileId,
     handleUpdateStatus, handleDeleteStudent, setAssigningTo, setError, handleUpdateExpiry,
-    handleRemoveCourse, saving
+    handleRemoveCourse, saving, avg
 }) {
+    const isOpen = expanded === student.id;
     return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                        {error && (
-                            <div style={{ padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <AlertCircle size={16} flexShrink={0} /> {error}
-                            </div>
-                        )}
-                        {filtered.map(student => {
-                            const avg = avgCompletion(student.enrollments)
-                            const isOpen = expanded === student.id
-                            return (
-                                <div key={student.id} className="glass-card" style={{ overflow: 'hidden' }}>
-                                    <div
-                                        className="stack-mobile"
-                                        style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', cursor: 'pointer' }}
-                                        onClick={() => setExpanded(isOpen ? null : student.id)}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, width: '100%' }}>
-                                            <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
-                                                {student.name?.[0]?.toUpperCase() || '?'}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    {student.name}
-                                                    <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                                        {groupMembers.filter(m => m.student_id === student.id).map(m => {
-                                                            const g = groups.find(gr => gr.id === m.group_id)
-                                                            return g ? <span key={g.id} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: '#dcfce7', color: '#166534', borderRadius: 4, fontWeight: 700 }}>{g.name}</span> : null
-                                                        })}
-                                                    </div>
-                                                </div>
-                                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{student.email}</div>
-                                            </div>
-                                        </div>
-
-                                        {tab === 'pending' ? (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto' }}>
-                                                <button
-                                                    className="btn-secondary"
-                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                                    onClick={(e) => { e.stopPropagation(); setViewingProfileId(student.id); }}
-                                                >
-                                                    <Info size={14} /> View Profile
-                                                </button>
-                                                <button
-                                                    className="btn-primary"
-                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', background: 'linear-gradient(135deg,#10b981,#059669)' }}
-                                                    onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'approved'); }}
-                                                >
-                                                    <CheckCircle2 size={14} /> Approve
-                                                </button>
-                                                <button
-                                                    className="btn-secondary"
-                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
-                                                    onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'rejected'); }}
-                                                >
-                                                    <XCircle size={14} /> Reject
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', width: window.innerWidth <= 768 ? '100%' : 'auto', justifyContent: 'space-between' }}>
-                                                <div style={{ display: 'flex', gap: '1.5rem' }}>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{student.enrollments?.length || 0}</div>
-                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Courses</div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'center', minWidth: 60 }}>
-                                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: avg > 70 ? '#10b981' : avg > 40 ? '#f59e0b' : '#f87171' }}>{avg}%</div>
-                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Progress</div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'center', minWidth: 70 }}>
-                                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: student.assessAvg > 70 ? '#10b981' : student.assessAvg > 40 ? '#f59e0b' : '#f87171' }}>
-                                                            {student.assessAvg}%
-                                                        </div>
-                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Assignments</div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'center', minWidth: 60 }}>
-                                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: '#6366f1' }}>
-                                                            {student.codingTotal}
-                                                        </div>
-                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Coding</div>
-                                                    </div>
-                                                </div>
-                                                <div style={{ width: 80 }} className="hide-mobile">
-                                                    <div className="progress-bar-track">
-                                                        <div className="progress-bar-fill" style={{ width: `${avg}%`, background: avg > 70 ? 'linear-gradient(90deg,#10b981,#059669)' : avg > 40 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)' }} />
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                                    <button
-                                                        className="btn-secondary"
-                                                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setViewingProfileId(student.id);
-                                                        }}
-                                                    >
-                                                        <Info size={14} /> Profile
-                                                    </button>
-                                                    <button
-                                                        className="btn-secondary"
-                                                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem' }}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setAssigningTo(student);
-                                                            setError('');
-                                                        }}
-                                                    >
-                                                        <Plus size={14} /> Assign
-                                                    </button>
-                                                    <button
-                                                        className="btn-secondary"
-                                                        style={{ padding: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeleteStudent(student.id);
-                                                        }}
-                                                        title="Remove Student"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                    {isOpen ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
+<div key={student.id} className="glass-card" style={{ overflow: 'hidden' }}>
+    <div
+        role="button"
+        tabIndex={0}
+        className="stack-mobile"
+        style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', cursor: 'pointer' }}
+        onClick={() => setExpanded(isOpen ? null : student.id)}
+        onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setExpanded(isOpen ? null : student.id);
+            }
+        }}
+    >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, width: '100%' }}>
+            <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
+                {student.name?.[0]?.toUpperCase() || '?'}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {student.name}
+                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                        {groupMembers.filter(m => m.student_id === student.id).map(m => {
+                            const g = groups.find(gr => gr.id === m.group_id)
+                            return g ? <span key={g.id} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: '#dcfce7', color: '#166534', borderRadius: 4, fontWeight: 700 }}>{g.name}</span> : null
+                        })}
+                    </div>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{student.email}</div>
+            </div>
+        </div>
+        {tab === 'pending' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto' }}>
+                <button
+                    className="btn-secondary"
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
+                    onClick={(e) => { e.stopPropagation(); setViewingProfileId(student.id); }}
+                >
+                    <User size={14} /> Profile
+                </button>
+                <button className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem' }} onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'active') }}>
+                    <CheckCircle size={14} /> Approve
+                </button>
+                <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => { e.stopPropagation(); handleDeleteStudent(student.id) }}>
+                    <X size={14} /> Reject
+                </button>
+            </div>
+        ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginLeft: 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', paddingRight: '1.5rem', borderRight: '1px solid var(--card-border)' }} className="hide-mobile">
+                    <div style={{ textAlign: 'center', minWidth: 70 }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: '#10b981' }}>
+                            {avg}%
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Progress</div>
+                    </div>
+                    <div style={{ textAlign: 'center', minWidth: 70 }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: getScoreColor(student.assessAvg) }}>
+                            {student.assessAvg}%
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Assignments</div>
+                    </div>
+                    <div style={{ textAlign: 'center', minWidth: 60 }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: '#6366f1' }}>
+                            {student.codingTotal}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Coding</div>
+                    </div>
+                </div>
+                <div style={{ width: 80 }} className="hide-mobile">
+                    <div className="progress-bar-track">
+                        <div className="progress-bar-fill" style={{ width: `${avg}%`, background: getScoreGradient(avg) }} />
+                    </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }} onClick={(e) => { e.stopPropagation(); setViewingProfileId(student.id); }}>
+                        <User size={14} /> Profile
+                    </button>
+                    <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#10b981', borderColor: 'rgba(16,185,129,0.2)' }} onClick={(e) => { e.stopPropagation(); setAssigningTo(student); setError(''); }}>
+                        <Users size={14} /> Assign
+                    </button>
+                    <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => { e.stopPropagation(); if(window.confirm('Are you sure you want to remove this student?')) handleDeleteStudent(student.id) }}>
+                        <Trash2 size={14} /> Remove
+                    </button>
+                    {isOpen ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
+                </div>
+            </div>
+        )}
+    </div>
+    
                                     {isOpen && (
                                         <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--card-border)' }}>
                                             <div style={{ paddingTop: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.85rem' }}>
@@ -1109,8 +1107,8 @@ function StudentsList({
                                                     )}
                                                 </div>
                                                 {student.enrollments?.length > 0 ? (
-                                                    student.enrollments.map((en, i) => (
-                                                        <div key={i} style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                    student.enrollments.map(en => (
+                                                        <div key={en.id} style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.85rem' }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                                     <BookOpen size={14} color="#818cf8" />
@@ -1141,9 +1139,60 @@ function StudentsList({
                                             </div>
                                         </div>
                                     )}
-                                </div>
-                            )
-                        })}
+</div>
+    );
+}
+
+StudentCard.propTypes = {
+    student: PropTypes.object.isRequired,
+    tab: PropTypes.string.isRequired,
+    groupMembers: PropTypes.array.isRequired,
+    groups: PropTypes.array.isRequired,
+    expanded: PropTypes.string,
+    setExpanded: PropTypes.func.isRequired,
+    setViewingProfileId: PropTypes.func.isRequired,
+    handleUpdateStatus: PropTypes.func.isRequired,
+    handleDeleteStudent: PropTypes.func.isRequired,
+    setAssigningTo: PropTypes.func.isRequired,
+    setError: PropTypes.func.isRequired,
+    handleUpdateExpiry: PropTypes.func.isRequired,
+    handleRemoveCourse: PropTypes.func.isRequired,
+    saving: PropTypes.bool.isRequired,
+    avg: PropTypes.number.isRequired
+}
+
+function StudentsList({
+    error, filtered, tab, groupMembers, groups, expanded, setExpanded, setViewingProfileId,
+    handleUpdateStatus, handleDeleteStudent, setAssigningTo, setError, handleUpdateExpiry,
+    handleRemoveCourse, saving
+}) {
+    return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        {error && (
+                            <div style={{ padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <AlertCircle size={16} flexShrink={0} /> {error}
+                            </div>
+                        )}
+                        {filtered.map(student => (
+                            <StudentCard
+                                key={student.id}
+                                student={student}
+                                tab={tab}
+                                groupMembers={groupMembers}
+                                groups={groups}
+                                expanded={expanded}
+                                setExpanded={setExpanded}
+                                setViewingProfileId={setViewingProfileId}
+                                handleUpdateStatus={handleUpdateStatus}
+                                handleDeleteStudent={handleDeleteStudent}
+                                setAssigningTo={setAssigningTo}
+                                setError={setError}
+                                handleUpdateExpiry={handleUpdateExpiry}
+                                handleRemoveCourse={handleRemoveCourse}
+                                saving={saving}
+                                avg={avgCompletion(student.enrollments)}
+                            />
+                        ))}
                     </div>
     )
 }
@@ -1170,7 +1219,7 @@ function StudentModals({
     assigningTo, setAssigningTo, courses, selectedCourse, setSelectedCourse, saving, handleAssignCourse,
     managingGroup, setManagingGroup, students, groupMembers, togglingMember, toggleMembership,
     schedulingGroup, setSchedulingGroup, maxDay, dayAccess, handleUpdateDayAccess,
-    viewingProfileId, setViewingProfileId, error
+    viewingProfileId, setViewingProfileId
 }) {
     return (
             <>
@@ -1248,7 +1297,10 @@ function StudentModals({
                                                     className={isMember ? "btn-secondary" : "btn-primary"}
                                                     style={{ padding: '0.3rem 0.85rem', fontSize: '0.85rem', opacity: togglingMember === s.id ? 0.7 : 1 }}
                                                 >
-                                                    {togglingMember === s.id ? '...' : (isMember ? 'Remove' : 'Add')}
+                                                    {(() => {
+                                                        if (togglingMember === s.id) return '...';
+                                                        return isMember ? 'Remove' : 'Add';
+                                                    })()}
                                                 </button>
                                             </div>
                                         )
@@ -1278,24 +1330,28 @@ function StudentModals({
                                             <div key={day} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 100px', gap: '1rem', alignItems: 'center', padding: '1rem', background: access.is_locked ? 'rgba(239, 68, 68, 0.1)' : 'var(--card-bg)', borderRadius: 12, border: `1px solid ${access.is_locked ? 'rgba(239, 68, 68, 0.3)' : 'var(--card-border)'}` }}>
                                                 <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Day {day}</div>
                                                 <div>
-                                                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>OPEN TIME</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        className="form-input"
-                                                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
-                                                        value={access.open_time ? toLocalISO(access.open_time) : ''}
-                                                        onChange={e => handleUpdateDayAccess(day, 'open_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
-                                                    />
+                                                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                                        OPEN TIME
+                                                        <input
+                                                            type="datetime-local"
+                                                            className="form-input"
+                                                            style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', marginTop: '0.25rem', width: '100%', boxSizing: 'border-box' }}
+                                                            value={access.open_time ? toLocalISO(access.open_time) : ''}
+                                                            onChange={e => handleUpdateDayAccess(day, 'open_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                                        />
+                                                    </label>
                                                 </div>
                                                 <div>
-                                                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>CLOSE TIME</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        className="form-input"
-                                                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
-                                                        value={access.close_time ? toLocalISO(access.close_time) : ''}
-                                                        onChange={e => handleUpdateDayAccess(day, 'close_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
-                                                    />
+                                                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                                        CLOSE TIME
+                                                        <input
+                                                            type="datetime-local"
+                                                            className="form-input"
+                                                            style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', marginTop: '0.25rem', width: '100%', boxSizing: 'border-box' }}
+                                                            value={access.close_time ? toLocalISO(access.close_time) : ''}
+                                                            onChange={e => handleUpdateDayAccess(day, 'close_time', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                                        />
+                                                    </label>
                                                 </div>
                                                 <div style={{ textAlign: 'right' }}>
                                                     <button
@@ -1347,126 +1403,43 @@ StudentModals.propTypes = {
     dayAccess: PropTypes.array.isRequired,
     handleUpdateDayAccess: PropTypes.func.isRequired,
     viewingProfileId: PropTypes.string,
-    setViewingProfileId: PropTypes.func.isRequired,
-    error: PropTypes.string
+    setViewingProfileId: PropTypes.func.isRequired
 }
 
 
 
 
-function StudentProfileModal({ studentId, onClose, studentName }) {
-    const [profile, setProfile] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [activeTab, setActiveTab] = useState('basic')
-
-    useEffect(() => {
-        async function fetchProfile() {
-            setLoading(true)
-            try {
-                const { data, error } = await supabase
-                    .from('student_profiles')
-                    .select('*')
-                    .eq('student_id', studentId)
-                    .maybeSingle()
-                
-                if (error) throw error
-                setProfile(data)
-            } catch (err) {
-                console.error('Error fetching student profile:', err)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchProfile()
-    }, [studentId])
-
-    const SectionHeader = ({ icon: Icon, title, subtitle }) => (
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', mb: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(99,102,241,0.1)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon size={20} />
-            </div>
-            <div>
-                <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1.1rem' }}>{title}</h4>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{subtitle}</p>
-            </div>
+// eslint-disable-next-line no-unused-vars
+const SectionHeader = ({ icon: Icon, title, subtitle }) => (
+    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', mb: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(99,102,241,0.1)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon size={20} />
         </div>
-    )
-
-    const InfoItem = ({ label, value, icon: Icon }) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                {Icon && <Icon size={12} />} {label}
-            </span>
-            <span style={{ fontSize: '0.9rem', color: 'var(--card-border)', fontWeight: 500 }}>{value || 'Not provided'}</span>
+        <div>
+            <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1.1rem' }}>{title}</h4>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{subtitle}</p>
         </div>
-    )
+    </div>
+)
 
-    return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
-            <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 1000, height: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
-                {/* Header */}
-                <div style={{ padding: '1.5rem 2rem', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800 }}>
-                            {studentName?.[0]?.toUpperCase()}
-                        </div>
-                        <div>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{studentName}</h2>
-                            <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Comprehensive Student Profile View</p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', padding: '0.5rem', borderRadius: '50%', display: 'flex', transition: 'all 0.2s' }}>
-                        <X size={24} />
-                    </button>
-                </div>
+// eslint-disable-next-line no-unused-vars
+const InfoItem = ({ label, value, icon: Icon }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            {Icon && <Icon size={12} />} {label}
+        </span>
+        <span style={{ fontSize: '0.9rem', color: 'var(--card-border)', fontWeight: 500 }}>{value || 'Not provided'}</span>
+    </div>
+)
 
-                {loading ? (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
-                        <div className="spinner" />
-                        <p style={{ color: 'var(--text-muted)' }}>Fetching student data...</p>
-                    </div>
-                ) : !profile ? (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', padding: '4rem' }}>
-                        <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <AlertCircle size={40} />
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Profile Incomplete</h3>
-                            <p style={{ color: 'var(--text-muted)', maxWidth: 400 }}>This student has registered but hasn't filled out their profile details yet.</p>
-                        </div>
-                        <button onClick={onClose} className="btn-secondary">Close View</button>
-                    </div>
-                ) : (
-                    <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                        {/* Sidebar Tabs */}
-                        <div style={{ width: 240, borderRight: '1px solid #f1f5f9', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: '#f8fafc' }}>
-                            {[
-                                { id: 'basic', label: 'Basic Info', icon: User },
-                                { id: 'contact', label: 'Contact & Parents', icon: Phone },
-                                { id: 'edu_work', label: 'Education & Work', icon: GraduationCap },
-                                { id: 'skills', label: 'Technical Skills', icon: Briefcase },
-                                { id: 'projects', label: 'Projects', icon: Trophy }
-                            ].map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', borderRadius: 12, border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 600, fontSize: '0.9rem',
-                                        background: activeTab === tab.id ? '#6366f1' : 'transparent',
-                                        color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    <tab.icon size={18} /> {tab.label}
-                                </button>
-                            ))}
-                        </div>
+InfoItem.propTypes = {
+    label: PropTypes.string.isRequired,
+    value: PropTypes.node,
+    icon: PropTypes.oneOfType([PropTypes.func, PropTypes.object])
+}
 
-                        {/* Content Area */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white' }}>
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '2.5rem' }}>
-                                {activeTab === 'basic' && (
-                                    <div className="zoom-in">
+const ProfileBasicTab = ({ profile }) => (
+    <div className="zoom-in">
                                         <SectionHeader icon={User} title="Basic Information" subtitle="Personal details and platform preferences" />
                                         <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '2.5rem', alignItems: 'flex-start' }}>
                                             <div style={{ width: 150, height: 180, borderRadius: 16, overflow: 'hidden', border: '4px solid #f1f5f9' }}>
@@ -1490,10 +1463,14 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                             </div>
                                         </div>
                                     </div>
-                                )}
+)
 
-                                {activeTab === 'contact' && (
-                                    <div className="zoom-in">
+ProfileBasicTab.propTypes = {
+    profile: PropTypes.object.isRequired
+}
+
+const ProfileContactTab = ({ profile }) => (
+    <div className="zoom-in">
                                         <SectionHeader icon={Phone} title="Contact & Guardian Details" subtitle="Ways to reach the student and their parent" />
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem' }}>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -1522,15 +1499,19 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                             </div>
                                         </div>
                                     </div>
-                                )}
+)
 
-                                {activeTab === 'edu_work' && (
-                                    <div className="zoom-in">
+ProfileContactTab.propTypes = {
+    profile: PropTypes.object.isRequired
+}
+
+const ProfileEduWorkTab = ({ profile }) => (
+    <div className="zoom-in">
                                         <div style={{ marginBottom: '3rem' }}>
                                             <SectionHeader icon={GraduationCap} title="Education History" subtitle="Academic background and qualifications" />
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                                 {profile.education_details?.length > 0 ? profile.education_details.map((edu, idx) => (
-                                                    <div key={idx} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12, display: 'flex', justifyContent: 'space-between' }}>
+                                                    <div key={edu.id || `${edu.school}-${idx}`} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12, display: 'flex', justifyContent: 'space-between' }}>
                                                         <div>
                                                             <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{edu.school}</div>
                                                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{edu.degree}</div>
@@ -1546,7 +1527,7 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                             <SectionHeader icon={Briefcase} title="Work Experience" subtitle="Professional journey and internships" />
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                                 {profile.work_experience?.length > 0 ? profile.work_experience.map((work, idx) => (
-                                                    <div key={idx} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12 }}>
+                                                    <div key={work.id || `${work.company}-${idx}`} style={{ padding: '1.25rem', border: '1px solid #f1f5f9', borderRadius: 12 }}>
                                                         <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{work.company}</div>
                                                         <div style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: 600 }}>{work.role}</div>
                                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{work.duration}</div>
@@ -1555,14 +1536,18 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                             </div>
                                         </div>
                                     </div>
-                                )}
+)
 
-                                {activeTab === 'skills' && (
-                                    <div className="zoom-in">
+ProfileEduWorkTab.propTypes = {
+    profile: PropTypes.object.isRequired
+}
+
+const ProfileSkillsTab = ({ profile }) => (
+    <div className="zoom-in">
                                         <SectionHeader icon={Briefcase} title="Technical Expertise" subtitle="Searchable skills and technology stack" />
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
-                                            {profile.technical_skills?.length > 0 ? profile.technical_skills.map((skill, idx) => (
-                                                <span key={idx} style={{ padding: '0.6rem 1.2rem', background: '#f1f5f9', color: 'var(--text-secondary)', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600, border: '1px solid #e2e8f0' }}>
+                                            {profile.technical_skills?.length > 0 ? profile.technical_skills.map((skill) => (
+                                                <span key={skill} style={{ padding: '0.6rem 1.2rem', background: '#f1f5f9', color: 'var(--text-secondary)', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600, border: '1px solid #e2e8f0' }}>
                                                     {skill}
                                                 </span>
                                             )) : <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No technical skills listed</p>}
@@ -1584,14 +1569,18 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                             </div>
                                         )}
                                     </div>
-                                )}
+)
 
-                                {activeTab === 'projects' && (
-                                    <div className="zoom-in">
+ProfileSkillsTab.propTypes = {
+    profile: PropTypes.object.isRequired
+}
+
+const ProfileProjectsTab = ({ profile }) => (
+    <div className="zoom-in">
                                         <SectionHeader icon={Trophy} title="Projects & Achievements" subtitle="Key accomplishments and certifications" />
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
                                             {profile.projects_achievements?.length > 0 ? profile.projects_achievements.map((proj, idx) => (
-                                                <div key={idx} style={{ padding: '1.5rem', background: '#fbfcfe', border: '1px solid #eef2ff', borderRadius: 20 }}>
+                                                <div key={proj.id || `${proj.title}-${idx}`} style={{ padding: '1.5rem', background: '#fbfcfe', border: '1px solid #eef2ff', borderRadius: 20 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                                         <h6 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{proj.title}</h6>
                                                         <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.1)', padding: '0.3rem 0.8rem', borderRadius: 20 }}>
@@ -1608,7 +1597,118 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                                             )) : <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No projects or achievements listed</p>}
                                         </div>
                                     </div>
-                                )}
+)
+
+ProfileProjectsTab.propTypes = {
+    profile: PropTypes.object.isRequired
+}
+
+function StudentProfileModal({ studentId, onClose, studentName }) {
+    const [profile, setProfile] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [activeTab, setActiveTab] = useState('basic')
+
+    useEffect(() => {
+        async function fetchProfile() {
+            setLoading(true)
+            try {
+                const { data, error } = await supabase
+                    .from('student_profiles')
+                    .select('*')
+                    .eq('student_id', studentId)
+                    .maybeSingle()
+                
+                if (error) throw error
+                setProfile(data)
+            } catch (err) {
+                console.error('Error fetching student profile:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchProfile()
+    }, [studentId])
+
+
+
+
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
+            <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 1000, height: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
+                {/* Header */}
+                <div style={{ padding: '1.5rem 2rem', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800 }}>
+                            {studentName ? studentName.charAt(0).toUpperCase() : ''}
+                        </div>
+                        <div>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{studentName}</h2>
+                            <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Comprehensive Student Profile View</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', padding: '0.5rem', borderRadius: '50%', display: 'flex', transition: 'all 0.2s' }}>
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {(() => {
+                    if (loading) {
+                        return (
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+                                <div className="spinner" />
+                                <p style={{ color: 'var(--text-muted)' }}>Fetching student data...</p>
+                            </div>
+                        );
+                    }
+                    if (!profile) {
+                        return (
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', padding: '4rem' }}>
+                                <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <AlertCircle size={40} />
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Profile Incomplete</h3>
+                                    <p style={{ color: 'var(--text-muted)', maxWidth: 400 }}>This student has registered but hasn't filled out their profile details yet.</p>
+                                </div>
+                                <button onClick={onClose} className="btn-secondary">Close View</button>
+                            </div>
+                        );
+                    }
+                    return (
+                        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                        {/* Sidebar Tabs */}
+                        <div style={{ width: 240, borderRight: '1px solid #f1f5f9', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: '#f8fafc' }}>
+                            {[
+                                { id: 'basic', label: 'Basic Info', icon: User },
+                                { id: 'contact', label: 'Contact & Parents', icon: Phone },
+                                { id: 'edu_work', label: 'Education & Work', icon: GraduationCap },
+                                { id: 'skills', label: 'Technical Skills', icon: Briefcase },
+                                { id: 'projects', label: 'Projects', icon: Trophy }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', borderRadius: 12, border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 600, fontSize: '0.9rem',
+                                        background: activeTab === tab.id ? '#6366f1' : 'transparent',
+                                        color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <tab.icon size={18} /> {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Content Area */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white' }}>
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '2.5rem' }}>
+                                {activeTab === 'basic' && <ProfileBasicTab profile={profile} />}
+                                {activeTab === 'contact' && <ProfileContactTab profile={profile} />}
+                                {activeTab === 'edu_work' && <ProfileEduWorkTab profile={profile} />}
+                                {activeTab === 'skills' && <ProfileSkillsTab profile={profile} />}
+                                {activeTab === 'projects' && <ProfileProjectsTab profile={profile} />}
                             </div>
 
                             {/* Sticky Footer for current tab */}
@@ -1619,7 +1719,8 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
                             </div>
                         </div>
                     </div>
-                )}
+                    );
+                })()}
             </div>
             <style>{`
                 .zoom-in { animation: zoomIn 0.3s ease-out; }
@@ -1627,4 +1728,10 @@ function StudentProfileModal({ studentId, onClose, studentName }) {
             `}</style>
         </div>
     )
+}
+
+StudentProfileModal.propTypes = {
+    studentId: PropTypes.string.isRequired,
+    onClose: PropTypes.func.isRequired,
+    studentName: PropTypes.string
 }
