@@ -310,31 +310,48 @@ export default function CourseDetail() {
     async function markComplete(sessionId) {
         if (!profile?.id || !courseId) return
 
-        // Try updating existing row first
-        const { data: updated, error: updateErr } = await supabase
-            .from('video_progress')
-            .update({ completed: true, watched_percentage: 100, completed_from: 'RECORDED_VIDEO' })
-            .eq('student_id', profile.id)
-            .eq('video_id', sessionId)
-            .select()
+        try {
+            console.log('markComplete: Trying to update progress for', { student_id: profile.id, video_id: sessionId })
+            
+            // Try updating existing row first
+            const { data: updated, error: updateErr } = await supabase
+                .from('video_progress')
+                .update({ completed: true, watched_percentage: 100, completed_from: 'RECORDED_VIDEO' })
+                .eq('student_id', profile.id)
+                .eq('video_id', sessionId)
+                .select()
 
-        // If no existing row, insert a new one
-        if (!updateErr && (!updated || updated.length === 0)) {
-            await supabase.from('video_progress').insert({
-                student_id: profile.id,
-                course_id: courseId,
-                video_id: sessionId,
-                completed: true,
-                watched_percentage: 100,
-                completed_from: 'RECORDED_VIDEO'
-            })
+            if (updateErr) {
+                console.error('Update error:', updateErr)
+            }
+
+            // If no existing row, insert a new one
+            if (!updateErr && (!updated || updated.length === 0)) {
+                console.log('markComplete: No row found, trying to insert...')
+                const { error: insertErr } = await supabase.from('video_progress').insert({
+                    student_id: profile.id,
+                    course_id: courseId,
+                    video_id: sessionId,
+                    completed: true,
+                    watched_percentage: 100,
+                    completed_from: 'RECORDED_VIDEO'
+                })
+                
+                if (insertErr) {
+                    console.error('Insert error details:', insertErr)
+                    alert(`Failed to save progress: ${insertErr.message} (Code: ${insertErr.code})`)
+                    return
+                }
+            }
+
+            setProgress(prev => ({
+                ...(prev || {}),
+                video_progress: [...(prev?.video_progress || []), { video_id: sessionId }]
+            }))
+            updateOverallProgress()
+        } catch (err) {
+            console.error('Unexpected error in markComplete:', err)
         }
-
-        setProgress(prev => ({
-            ...(prev || {}),
-            video_progress: [...(prev?.video_progress || []), { video_id: sessionId }]
-        }))
-        updateOverallProgress()
     }
 
     async function handleSaveNote(noteData) {
