@@ -753,12 +753,6 @@ const EmptyState = () => (
     </div>
 )
 
-SectionHeader.propTypes = {
-    icon: PropTypes.oneOfType([PropTypes.func, PropTypes.object]).isRequired,
-    title: PropTypes.string.isRequired,
-    subtitle: PropTypes.string
-}
-
 function TeamTab({
     inviteEmail, setInviteEmail, inviteRole, setInviteRole, handleInviteOrganizer, saving, error,
     organizers, invites, profile, handleUpdateRole, handleDeleteStudent, handleRemoveInvite
@@ -1422,6 +1416,11 @@ const SectionHeader = ({ icon: Icon, title, subtitle }) => (
     </div>
 )
 
+SectionHeader.propTypes = {
+    icon: PropTypes.oneOfType([PropTypes.func, PropTypes.object]).isRequired,
+    title: PropTypes.string.isRequired,
+    subtitle: PropTypes.string
+}
  
 const InfoItem = ({ label, value, icon: Icon }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
