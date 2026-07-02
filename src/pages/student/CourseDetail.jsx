@@ -316,6 +316,7 @@ export default function CourseDetail() {
             video_id: sessionId,
             completed: true,
             watched_percentage: 100,
+            watched_at: new Date().toISOString(),
             completed_from: 'RECORDED_VIDEO'
         }, { onConflict: 'student_id,video_id' })
 

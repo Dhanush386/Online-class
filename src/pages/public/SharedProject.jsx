@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Code, Eye, ExternalLink, Calendar, GraduationCap } from 'lucide-react'
+import { Code, Eye, ExternalLink, Calendar } from 'lucide-react'
 
 export default function SharedProject() {
     const { projectId } = useParams()
@@ -50,7 +50,7 @@ export default function SharedProject() {
                         ${pData.html || ''}
                         <script>
                             ${pData.js || ''}
-                        <\/script>
+                        </script>
                     </body>
                     </html>
                 `
@@ -146,7 +146,7 @@ export default function SharedProject() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <button
                         onClick={() => {
-                            navigator.clipboard.writeText(window.location.href)
+                            navigator.clipboard.writeText(globalThis.location.href)
                             alert("Link copied to clipboard!")
                         }}
                         style={{

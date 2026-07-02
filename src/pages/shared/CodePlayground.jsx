@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-    Play, Eye, Code as CodeIcon, Database, Globe,
+    Play, Code as CodeIcon, Database, Globe,
     CheckCircle2, XCircle, Clock, Info, RotateCcw,
     Save, Folder, Trash2, X, Share2, Copy
 } from 'lucide-react'

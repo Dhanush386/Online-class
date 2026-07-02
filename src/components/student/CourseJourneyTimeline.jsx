@@ -230,7 +230,12 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                     hasCurrent = true;
                 }
                 return { ...item, status };
-            }).sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+            }).sort((a, b) => {
+                const dayA = a.day_of_week || a.day_number || a.day || 0;
+                const dayB = b.day_of_week || b.day_number || b.day || 0;
+                if (dayA !== dayB) return dayA - dayB;
+                return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+            });
         });
 
         return topicsMap

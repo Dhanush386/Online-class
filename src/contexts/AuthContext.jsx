@@ -202,10 +202,10 @@ export function AuthProvider({ children }) {
             }
 
             const activityDates = new Set([
-                ...(codingSubs?.map(s => s.created_at.split('T')[0]) || []),
-                ...(assessSubs?.map(s => s.created_at.split('T')[0]) || []),
-                ...(watchedProgs?.map(s => s.watched_at.split('T')[0]) || []),
-                ...(liveAtt?.map(s => s.joined_at.split('T')[0]) || [])
+                ...(codingSubs?.map(s => s.created_at?.split('T')[0]).filter(Boolean) || []),
+                ...(assessSubs?.map(s => s.created_at?.split('T')[0]).filter(Boolean) || []),
+                ...(watchedProgs?.map(s => s.watched_at?.split('T')[0]).filter(Boolean) || []),
+                ...(liveAtt?.map(s => s.joined_at?.split('T')[0]).filter(Boolean) || [])
             ])
 
             const sortedDates = Array.from(activityDates).sort((a, b) => a.localeCompare(b)).reverse()

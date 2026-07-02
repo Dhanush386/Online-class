@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, User, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, Plus, X, AlertCircle, Save, CheckCircle2, XCircle, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink, Info } from 'lucide-react'
+import { Users, User, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, X, AlertCircle, Save, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDefaultUnlockTimeForDay } from '../../lib/dateUtils'
 import PropTypes from 'prop-types'
@@ -421,12 +421,68 @@ export default function StudentManagement() {
         }
     }
 
-    const filtered = students.filter(s => {
-        const matchesSearch = s.name?.toLowerCase().includes(search.toLowerCase()) || s.email?.toLowerCase().includes(search.toLowerCase())
-        if (tab === 'active') return matchesSearch && s.status === 'approved'
-        if (tab === 'pending') return matchesSearch && s.status === 'pending'
-        return false // Tab 'groups' handled separately
-    })
+    const getFilteredStudents = () => {
+        return students.filter(s => {
+            const matchesSearch = s.name?.toLowerCase().includes(search.toLowerCase()) || s.email?.toLowerCase().includes(search.toLowerCase())
+            if (tab === 'active') return matchesSearch && s.status === 'approved'
+            if (tab === 'pending') return matchesSearch && s.status === 'pending'
+            return false // Tab 'groups' handled separately
+        })
+    }
+    const filtered = getFilteredStudents()
+
+    const pendingCount = students.filter(s => s.status === 'pending').length;
+
+    const renderContent = () => {
+        if (loading) {
+            return (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p style={{ color: 'var(--text-muted)' }}>Loading data...</p>
+                </div>
+            );
+        }
+        if (tab === 'team') {
+            return (
+                <TeamTab
+                    inviteEmail={inviteEmail} setInviteEmail={setInviteEmail}
+                    inviteRole={inviteRole} setInviteRole={setInviteRole}
+                    handleInviteOrganizer={handleInviteOrganizer} saving={saving} error={error}
+                    organizers={organizers} invites={invites} profile={profile}
+                    handleUpdateRole={handleUpdateRole} handleDeleteStudent={handleDeleteStudent}
+                    handleRemoveInvite={handleRemoveInvite}
+                />
+            );
+        }
+        if (tab === 'groups') {
+            return (
+                <GroupsTab
+                    newGroupName={newGroupName} setNewGroupName={setNewGroupName}
+                    groupCourseId={groupCourseId} setGroupCourseId={setGroupCourseId}
+                    handleCreateGroup={handleCreateGroup} saving={saving}
+                    courses={courses} groups={groups} groupMembers={groupMembers}
+                    handleDeleteGroup={handleDeleteGroup} setManagingGroup={setManagingGroup}
+                    loadDayAccess={loadDayAccess}
+                />
+            );
+        }
+        if (filtered.length === 0) {
+            return <EmptyState />;
+        }
+        return (
+            <StudentsList
+                error={error} filtered={filtered} tab={tab}
+                groupMembers={groupMembers} groups={groups}
+                expanded={expanded} setExpanded={setExpanded}
+                setViewingProfileId={setViewingProfileId}
+                handleUpdateStatus={handleUpdateStatus}
+                handleDeleteStudent={handleDeleteStudent}
+                setAssigningTo={setAssigningTo} setError={setError}
+                handleUpdateExpiry={handleUpdateExpiry}
+                handleRemoveCourse={handleRemoveCourse} saving={saving}
+            />
+        );
+    }
 
     async function handleCreateGroup(e) {
         e.preventDefault()
@@ -622,14 +678,11 @@ export default function StudentManagement() {
                     style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'pending' ? '2px solid #f59e0b' : '2px solid transparent', color: tab === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
                 >
                     Pending Approval
-                    {(() => {
-                        const pendingCount = students.filter(s => s.status === 'pending').length;
-                        return pendingCount > 0 && (
-                            <span style={{ background: '#f59e0b', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontSize: '0.7rem' }}>
-                                {pendingCount}
-                            </span>
-                        );
-                    })()}
+                    {pendingCount > 0 && (
+                        <span style={{ background: '#f59e0b', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontSize: '0.7rem' }}>
+                            {pendingCount}
+                        </span>
+                    )}
                 </button>
 
                 {tab === 'pending' && (
@@ -659,56 +712,7 @@ export default function StudentManagement() {
                 </button>
             </div>
 
-            {(() => {
-                if (loading) {
-                    return (
-                        <div style={{ textAlign: 'center', padding: '4rem' }}>
-                            <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                            <p style={{ color: 'var(--text-muted)' }}>Loading data...</p>
-                        </div>
-                    );
-                }
-                if (tab === 'team') {
-                    return (
-                        <TeamTab
-                            inviteEmail={inviteEmail} setInviteEmail={setInviteEmail}
-                            inviteRole={inviteRole} setInviteRole={setInviteRole}
-                            handleInviteOrganizer={handleInviteOrganizer} saving={saving} error={error}
-                            organizers={organizers} invites={invites} profile={profile}
-                            handleUpdateRole={handleUpdateRole} handleDeleteStudent={handleDeleteStudent}
-                            handleRemoveInvite={handleRemoveInvite}
-                        />
-                    );
-                }
-                if (tab === 'groups') {
-                    return (
-                        <GroupsTab
-                            newGroupName={newGroupName} setNewGroupName={setNewGroupName}
-                            groupCourseId={groupCourseId} setGroupCourseId={setGroupCourseId}
-                            handleCreateGroup={handleCreateGroup} saving={saving}
-                            courses={courses} groups={groups} groupMembers={groupMembers}
-                            handleDeleteGroup={handleDeleteGroup} setManagingGroup={setManagingGroup}
-                            loadDayAccess={loadDayAccess}
-                        />
-                    );
-                }
-                if (filtered.length === 0) {
-                    return <EmptyState />;
-                }
-                return (
-                    <StudentsList
-                        error={error} filtered={filtered} tab={tab}
-                        groupMembers={groupMembers} groups={groups}
-                        expanded={expanded} setExpanded={setExpanded}
-                        setViewingProfileId={setViewingProfileId}
-                        handleUpdateStatus={handleUpdateStatus}
-                        handleDeleteStudent={handleDeleteStudent}
-                        setAssigningTo={setAssigningTo} setError={setError}
-                        handleUpdateExpiry={handleUpdateExpiry}
-                        handleRemoveCourse={handleRemoveCourse} saving={saving}
-                    />
-                );
-            })()}
+            {renderContent()}
             <StudentModals
                 assigningTo={assigningTo} setAssigningTo={setAssigningTo}
                 courses={courses} selectedCourse={selectedCourse}
@@ -990,19 +994,13 @@ function StudentCard({
     return (
 <div key={student.id} className="glass-card" style={{ overflow: 'hidden' }}>
     <div
-        role="button"
-        tabIndex={0}
         className="stack-mobile"
-        style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem', cursor: 'pointer' }}
-        onClick={() => setExpanded(isOpen ? null : student.id)}
-        onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setExpanded(isOpen ? null : student.id);
-            }
-        }}
+        style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 1.5rem' }}
     >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, width: '100%' }}>
+        <button 
+            style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', color: 'inherit', outline: 'none' }}
+            onClick={() => setExpanded(isOpen ? null : student.id)}
+        >
             <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
                 {student.name?.[0]?.toUpperCase() || '?'}
             </div>
@@ -1018,7 +1016,7 @@ function StudentCard({
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{student.email}</div>
             </div>
-        </div>
+        </button>
         {tab === 'pending' ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto' }}>
                 <button
@@ -1072,7 +1070,14 @@ function StudentCard({
                     <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => { e.stopPropagation(); if(window.confirm('Are you sure you want to remove this student?')) handleDeleteStudent(student.id) }}>
                         <Trash2 size={14} /> Remove
                     </button>
-                    {isOpen ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
+                    <button 
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', outline: 'none' }}
+                        onClick={() => setExpanded(isOpen ? null : student.id)}
+                        aria-label={isOpen ? "Collapse" : "Expand"}
+                        aria-expanded={isOpen}
+                    >
+                        {isOpen ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
+                    </button>
                 </div>
             </div>
         )}
@@ -1325,7 +1330,7 @@ function StudentModals({
                                                 <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Day {day}</div>
                                                 <div>
                                                     <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
-                                                        OPEN TIME
+                                                        OPEN TIME{' '}
                                                         <input
                                                             type="datetime-local"
                                                             className="form-input"
@@ -1337,7 +1342,7 @@ function StudentModals({
                                                 </div>
                                                 <div>
                                                     <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
-                                                        CLOSE TIME
+                                                        CLOSE TIME{' '}
                                                         <input
                                                             type="datetime-local"
                                                             className="form-input"
