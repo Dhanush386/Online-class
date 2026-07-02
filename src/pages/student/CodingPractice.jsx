@@ -21,16 +21,12 @@ export default function CodingPractice() {
     const [challenges, setChallenges] = useState([])
     const [submissions, setSubmissions] = useState([])
     const [loading, setLoading] = useState(true)
-    const [search, setSearch] = useState('')
+    const [search] = useState('')
     const [groups, setGroups] = useState([])
     const [userGroupIds, setUserGroupIds] = useState([])
     const [memberships, setMemberships] = useState([])
-
-    useEffect(() => {
-        if (profile?.id) {
-            loadData()
-        }
-    }, [profile])
+    const [locksDay, setLocksDay] = useState([])
+    const [lockedCodingIds, setLockedCodingIds] = useState([])
 
     async function loadData() {
         setLoading(true)
@@ -55,7 +51,7 @@ export default function CodingPractice() {
             { data: submissionData },
             { data: memberships },
             { data: locks },
-            { data: locksDay },
+            { data: locksDayData },
             { data: groupsData }
         ] = await Promise.all([
             supabase.from('coding_challenges')
@@ -70,25 +66,36 @@ export default function CodingPractice() {
         ])
 
         const groupIds = memberships?.map(m => m.group_id) || []
-        const lockedCodingIds = locks?.filter(l => groupIds.includes(l.group_id)).map(l => l.resource_id) || []
-        const now = new Date()
+        const lockedIds = locks?.filter(l => groupIds.includes(l.group_id)).map(l => l.resource_id) || []
 
-        const isDayLocked = (courseId, dayNum) => {
-            if (!dayNum) return false
-            const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && groupIds.includes(a.group_id))
-            if (!access) return false
-            if (access.is_locked) return true
-            if (access.open_time && new Date(access.open_time) > now) return true
-            return false
-        }
+
+
 
         setMemberships(memberships || [])
         setUserGroupIds(groupIds)
         setGroups(groupsData || [])
+        setLocksDay(locksDayData || [])
+        setLockedCodingIds(lockedIds)
 
         setChallenges(challengeData || [])
         setSubmissions(submissionData || [])
         setLoading(false)
+    }
+
+    useEffect(() => {
+        if (profile?.id) {
+            setTimeout(loadData, 0)
+        }
+    }, [profile])
+
+    const isDayLocked = (courseId, dayNum) => {
+        if (!dayNum) return false
+        const now = new Date()
+        const access = (locksDay || []).find(a => a.course_id === courseId && a.day_number === dayNum && userGroupIds.includes(a.group_id))
+        if (!access) return false
+        if (access.is_locked) return true
+        if (access.open_time && new Date(access.open_time) > now) return true
+        return false
     }
 
     const checkIfLocked = (c) => {

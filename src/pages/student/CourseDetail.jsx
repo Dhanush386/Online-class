@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List, Trash2, Save, FileEdit, Map, LayoutList } from 'lucide-react'
@@ -21,17 +21,8 @@ export default function CourseDetail() {
     const { courseId } = useParams()
     const { profile } = useAuth()
     const navigate = useNavigate()
-    const location = useLocation()
 
     // Helper utilities
-    const isLive = (t) => t && Math.abs(new Date() - new Date(t)) < 3600000
-    const isUpcoming = (t) => t && new Date(t) > new Date() && !isLive(t)
-    const isRecorded = (vid) => vid && vid.video_url && (
-        vid.video_url.includes('supabase.co/storage') || 
-        vid.video_url.includes('drive.google.com') ||
-        !vid.video_url.startsWith('http')
-    )
-
     const [course, setCourse] = useState(null)
     const [sessions, setSessions] = useState([])
     const [challenges, setChallenges] = useState([])
@@ -40,11 +31,10 @@ export default function CourseDetail() {
     const [progress, setProgress] = useState(null)
     const [codingSubmissions, setCodingSubmissions] = useState([])
     const [courseResources, setCourseResources] = useState([])
-    const [dayAccess, setDayAccess] = useState([])
-    const [selectedDay, setSelectedDay] = useState(1)
+
+    const [selectedDay] = useState(1)
     const [loading, setLoading] = useState(true)
     const [activeVideo, setActiveVideo] = useState(null)
-    const [activeResource, setActiveResource] = useState(null)
     const [notes, setNotes] = useState([])
     const [isAddingNote, setIsAddingNote] = useState(false)
     const [activeNote, setActiveNote] = useState(null) // For editing
@@ -54,17 +44,14 @@ export default function CourseDetail() {
     const [videoType, setVideoType] = useState('native') // 'native' | 'drive'
 
     // Journey Engine state
-    const [viewMode, setViewMode] = useState('journey') // 'journey' | 'classic'
-    const [selectedJourneyDay, setSelectedJourneyDay] = useState(null)
     const [showWeeklyModal, setShowWeeklyModal] = useState(false)
     const [completedWeekInfo, setCompletedWeekInfo] = useState(null)
 
     // Journey Engine hooks
     const {
-        weeks, currentWeek, weekProgress, courseSettings, loading: weeklyLoading,
-        isWeekLocked, getDayModules, pendingForWeek, getWeekGrade, getScheduleDate, refreshProgress
+        weeks, getScheduleDate, refreshProgress
     } = useWeeklyCourse(courseId)
-    const { awardXp, todaysXp, xpTimeline, toastMessage } = useXpAward()
+    const { toastMessage } = useXpAward()
 
     useEffect(() => {
         async function load() {
@@ -103,7 +90,7 @@ export default function CourseDetail() {
 
             const userGroupIds = memberships?.map(m => m.group_id) || []
             const groupDayAccess = (dayAccessData || []).filter(da => userGroupIds.includes(da.group_id))
-            setDayAccess(groupDayAccess)
+
 
             const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding').map(l => l.resource_id) || []
             const lockedAssessIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'assessment').map(l => l.resource_id) || []
@@ -397,23 +384,6 @@ export default function CourseDetail() {
         } catch (err) {
             console.error('Error deleting note:', err)
         }
-    }
-
-    const getDayStatus = (dayNum) => {
-        const access = dayAccess.find(a => a.day_number === dayNum)
-        if (!access) return { locked: false, reason: '' } // Default to open if no specific batch rule? Or maybe default to locked?
-
-        if (access.is_locked) return { locked: true, reason: 'Locked by Instructor' }
-
-        if (access.open_time && new Date(access.open_time) > new Date()) {
-            return { locked: true, reason: `Opens at ${new Date(access.open_time).toLocaleString()}` }
-        }
-
-        if (access.close_time && new Date(access.close_time) < new Date()) {
-            return { locked: true, reason: 'Access Period Ended' }
-        }
-
-        return { locked: false, reason: '' }
     }
 
     const daysCount = Math.max(1, ...[

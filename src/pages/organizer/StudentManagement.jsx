@@ -1422,7 +1422,7 @@ const SectionHeader = ({ icon: Icon, title, subtitle }) => (
     </div>
 )
 
-// eslint-disable-next-line no-unused-vars
+ 
 const InfoItem = ({ label, value, icon: Icon }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
         <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

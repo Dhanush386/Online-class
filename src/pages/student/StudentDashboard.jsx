@@ -11,7 +11,7 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend, RadialBarChart, RadialBar
 } from 'recharts'
-import { motion } from 'framer-motion'
+
 import { GlassCard, Avatar } from '../../design-system'
 import XpTimeline from '../../components/student/XpTimeline'
 import DailyPlanner from '../../components/student/DailyPlanner'
@@ -39,8 +39,7 @@ export default function StudentDashboard() {
 
   const [weeklyActivity, setWeeklyActivity] = useState([])
   const [learningConsistency, setLearningConsistency] = useState([])
-  const [assessmentScores, setAssessmentScores] = useState([])
-  const [schedule, setSchedule] = useState([])
+
   const [topLeaderboard, setTopLeaderboard] = useState([])
 
   useEffect(() => {
@@ -90,7 +89,7 @@ export default function StudentDashboard() {
 
       const progress = progressRes.data || []
       const subs = submissionsRes.data || []
-      const scheduleData = upcomingVideosRes.data || []
+
       const pastClassesCount = pastVideosRes.data?.length || 0
       const attendedCount = attendedCountRes.count || 0
       const codingSubs = codingSubsRes.data || []
@@ -122,7 +121,6 @@ export default function StudentDashboard() {
         }
       })
       const avgAss = validAss > 0 ? Math.round(totalAssScore / validAss) : 0
-      setAssessmentScores(formattedScores.slice(-6))
 
       // Attendance %
       const avgAtt = pastClassesCount > 0 ? Math.round((attendedCount / pastClassesCount) * 100) : 100
@@ -144,8 +142,6 @@ export default function StudentDashboard() {
         rankName: rank_name,
         rankColor: rank_color
       })
-
-      setSchedule(scheduleData)
 
       // Weekly Activity & Consistency
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']

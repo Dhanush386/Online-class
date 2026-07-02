@@ -164,7 +164,7 @@ export default function TakeAssessment() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             setMediaStream(stream)
             setCameraEnabled(true)
-        } catch (_err) {
+        } catch {
             alert('Camera and microphone permissions are required to take this proctored assessment.')
         }
     }
@@ -626,7 +626,7 @@ export default function TakeAssessment() {
                 }
             })
 
-            const { data, error: sErr } = await supabase
+            const { error: sErr } = await supabase
                 .from('assessment_submissions')
                 .insert({
                     assessment_id: assessmentId,
@@ -786,7 +786,7 @@ export default function TakeAssessment() {
             try {
                 const arr = JSON.parse(q.correct_answer)
                 return Array.isArray(arr) && arr.length > 1
-            } catch (e) {
+            } catch {
                 return false
             }
         }
@@ -799,7 +799,7 @@ export default function TakeAssessment() {
                 return JSON.parse(q.correct_answer)
             }
             return [q.correct_answer]
-        } catch (e) {
+        } catch {
             return [q.correct_answer]
         }
     }

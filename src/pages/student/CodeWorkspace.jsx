@@ -42,7 +42,7 @@ export default function CodeWorkspace() {
     const { isMobile, isTablet, isDesktop } = useDeviceType()
     
     const [challenge, setChallenge] = useState(null)
-    const [code, setCode] = useState('')
+
     const [htmlCode, setHtmlCode] = useState('<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Document</title>\n  <link rel="stylesheet" href="style.css">\n</head>\n<body>\n  <div class="main">\n    <h1>Hello World</h1>\n  </div>\n</body>\n</html>')
     const [cssCode, setCssCode] = useState('/* Write your CSS here */\n.main {\n  text-align: center;\n  font-family: sans-serif;\n}')
     const [jsCode, setJsCode] = useState('// JavaScript here')
@@ -60,18 +60,18 @@ export default function CodeWorkspace() {
     const [submitting, setSubmitting] = useState(false)
     const [result, setResult] = useState(null)
     const [attemptCount, setAttemptCount] = useState(0)
-    const [allChallenges, setAllChallenges] = useState([])
+
     const [currentIndex, setCurrentIndex] = useState(-1)
     
     const iframeRef = useRef(null)
     const isReadOnly = attemptCount >= MAX_ATTEMPTS && !canBypass
-    const [timeStatus, setTimeStatus] = useState('open')
+
     const [isStarted, setIsStarted] = useState(false)
     const [violationCount, setViolationCount] = useState(0)
     const [requiresReentry, setRequiresReentry] = useState(false)
     const [securityAlert, setSecurityAlert] = useState(null)
     const [faceDetected, setFaceDetected] = useState(true)
-    const [isFullscreen, setIsFullscreen] = useState(false)
+
     const [cameraEnabled, setCameraEnabled] = useState(false)
     const [mediaStream, setMediaStream] = useState(null)
     const [aiModel, setAiModel] = useState(null)
@@ -170,7 +170,7 @@ export default function CodeWorkspace() {
                         expected: tc.value ? `${tc.property}: ${tc.value}` : `${tc.property} to be set`,
                         actual: actualVal || 'not set'
                     })
-                } catch (err) {
+                } catch {
                     results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, actual: 'evaluation error' })
                 }
             }
@@ -341,7 +341,7 @@ export default function CodeWorkspace() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             setMediaStream(stream)
             setCameraEnabled(true)
-        } catch (err) {
+        } catch {
             alert('Camera and microphone permissions are required to take this proctored challenge.')
         }
     }
@@ -670,7 +670,7 @@ export default function CodeWorkspace() {
                     if (parsed.html) setHtmlCode(parsed.html)
                     if (parsed.css) setCssCode(parsed.css)
                     if (parsed.js) setJsCode(parsed.js)
-                } catch (e) {
+                } catch {
                     setHtmlCode(data.starter_code)
                 }
             }
@@ -690,7 +690,7 @@ export default function CodeWorkspace() {
                         try {
                             const parsed = JSON.parse(sub.code);
                             if (parsed.isCombined && parsed.subId) solved.push(parsed.subId);
-                        } catch(e) {}
+                        } catch { /* empty */ }
                     }
                 });
                 setSolvedSubIds(solved);
@@ -717,7 +717,7 @@ export default function CodeWorkspace() {
                 </head>
                 <body>
                     ${htmlCode}
-                    <script>${jsCode}<\/script>
+                    <script>${jsCode}</script>
                 </body>
             </html>
         `
@@ -900,7 +900,7 @@ sys.stdin = StringIO(test_input)
                 // All web testcases passed — continue to XP award
                 setResult({ status: 'success', message: `✅ All ${tcResults.length} testcases passed!`, testResults: tcResults })
                 // Skip the visual comparison loop below for pure web-testcase challenges
-                if (overallPassed !== undefined) {}
+
                 // Award XP
                 let alreadySolved = false
                 const { data: previousSubs } = await supabase.from('coding_submissions')
@@ -1280,54 +1280,7 @@ sys.stdin = StringIO(test_input)
                                     </div>
                                 )}
 
-                                {/* ── Live Keyword Checklist (HTML challenges only) ── */}
-                                {(() => {
-                                    const kwStatus = getKeywordStatus()
-                                    if (!kwStatus) return null
-                                    const LANG_STYLES = {
-                                        html: { label: 'HTML', color: '#e34c26', bg: '#fff5f2', border: '#fca89a' },
-                                        css:  { label: 'CSS',  color: '#264de4', bg: '#eff4ff', border: '#bfdbfe' },
-                                        js:   { label: 'JS',   color: '#c9a800', bg: '#fffbeb', border: '#fde68a' }
-                                    }
-                                    const allPassed = Object.values(kwStatus).flat().every(k => k.pass)
-                                    return (
-                                        <div style={{ marginBottom: '2rem', border: `1px solid ${allPassed ? '#bbf7d0' : '#e9d5ff'}`, borderRadius: 10, overflow: 'hidden' }}>
-                                            <div style={{ padding: '0.6rem 0.9rem', background: allPassed ? '#f0fdf4' : 'linear-gradient(135deg, #fdf4ff, #fefce8)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <span style={{ fontSize: '0.8rem' }}>{allPassed ? '✅' : '🔑'}</span>
-                                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: allPassed ? '#15803d' : '#6d28d9' }}>Requirements Checklist</span>
-                                                {allPassed && <span style={{ marginLeft: 'auto', fontSize: '0.85rem', color: '#16a34a', fontWeight: 600 }}>All met ✓</span>}
-                                            </div>
-                                            <div style={{ padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'white' }}>
-                                                {Object.entries(kwStatus).map(([lang, items]) => {
-                                                    const st = LANG_STYLES[lang] || LANG_STYLES.html
-                                                    return (
-                                                        <div key={lang}>
-                                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: st.color, textTransform: 'uppercase', marginBottom: '0.3rem', letterSpacing: '0.05em' }}>{st.label}</div>
-                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                                                                {items.map(({ kw, pass }) => (
-                                                                    <span
-                                                                        key={kw}
-                                                                        style={{
-                                                                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-                                                                            fontSize: '0.7rem', fontWeight: 600,
-                                                                            padding: '0.2rem 0.5rem', borderRadius: 5,
-                                                                            background: pass ? '#dcfce7' : st.bg,
-                                                                            color: pass ? '#15803d' : st.color,
-                                                                            border: `1px solid ${pass ? '#bbf7d0' : st.border}`,
-                                                                            transition: 'all 0.2s ease'
-                                                                        }}
-                                                                    >
-                                                                        {pass ? '✓' : '×'} {kw}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                })}
-                                            </div>
-                                        </div>
-                                    )
-                                })()}
+
 
                                 {/* Testcases Section */}
                                 {(() => {
