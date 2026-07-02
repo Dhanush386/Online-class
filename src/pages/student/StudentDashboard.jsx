@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import {
   Clock, BookOpen, Trophy, Award, Code as CodeIcon, ChevronRight,
   Flame, Star, ArrowRight, Zap, CheckCircle, Calendar,
