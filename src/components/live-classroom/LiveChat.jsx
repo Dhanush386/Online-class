@@ -289,7 +289,7 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, onNewMessag
         async function fetchMessages() {
             const { data, error } = await supabase
                 .from('live_chat_messages')
-                .select('*, users:user_id(name, role, avatar_url), reactions:live_chat_reactions(id, emoji, user_id)')
+                .select('*, users(name, role, avatar_url), reactions:live_chat_reactions(id, emoji, user_id)')
                 .eq('video_id', videoId)
                 .order('created_at', { ascending: true });
 

@@ -1130,7 +1130,7 @@ HostAnnouncement.propTypes = {
 };
 
 // ─── Host Controls Tab ───────────────────────────────────────────────────────
-function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLocked, setMicLocked, videoLocked, setVideoLocked, screenShareLocked, setScreenShareLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant, announcementText, setAnnouncementText }) {
+function HostControlsTab({ room, videoId, participants, chatLocked, setChatLocked, micLocked, setMicLocked, videoLocked, setVideoLocked, screenShareLocked, setScreenShareLocked, handsLocked, setHandsLocked, reactionsDisabled, setReactionsDisabled, onLowerAllHands, onRemoveParticipant, announcementText, setAnnouncementText }) {
     const sendHostCommand = (command, extra = {}) => {
         const msg = JSON.stringify({ type: 'host_command', command, ...extra });
         const encoder = new TextEncoder();
@@ -1166,7 +1166,7 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
         sendHostCommand('chat_lock', { enabled: newVal });
         try {
             await supabase.from('live_chat_messages').insert({
-                video_id: room.name,
+                video_id: videoId,
                 user_id: participants.find(p => p.isLocal)?.identity, // organizer identity
                 message: newVal ? '📢 Chat has been locked by the instructor.' : '📢 Chat has been unlocked.',
                 message_type: 'system'
@@ -1213,7 +1213,7 @@ function HostControlsTab({ room, participants, chatLocked, setChatLocked, micLoc
                     if (!announcementText.trim()) return;
                     try {
                         await supabase.from('live_chat_messages').insert({
-                            video_id: room.name,
+                            video_id: videoId,
                             user_id: participants.find(p => p.isLocal)?.identity,
                             message: `📣 ${announcementText}`,
                             message_type: 'announcement',
@@ -1249,6 +1249,7 @@ HostControlsTab.propTypes = {
             publishData: PropTypes.func
         })
     }).isRequired,
+    videoId: PropTypes.string.isRequired,
     participants: PropTypes.arrayOf(
         PropTypes.shape({
             isLocal: PropTypes.bool,
@@ -2344,6 +2345,7 @@ function SidebarContent({
             {sidebarTab === 'host' && isOrganizer && (
                 <HostControlsTab
                     room={room}
+                    videoId={videoId}
                     participants={allParticipants}
                     chatLocked={chatLocked}
                     setChatLocked={setChatLocked}
