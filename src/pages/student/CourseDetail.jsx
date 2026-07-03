@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -66,7 +66,14 @@ export default function CourseDetail() {
     const [savingNote, setSavingNote] = useState(false)
     const [signedUrl, setSignedUrl] = useState(null)
     const [loadingVideo, setLoadingVideo] = useState(false)
-    const [videoType, setVideoType] = useState('native') // 'native' | 'drive'
+    const [videoType, setVideoType] = useState('native') // 'native' | 'drive' | 'fallback'
+    const completionTimerRef = useRef(null)
+
+    useEffect(() => {
+        return () => {
+            if (completionTimerRef.current) clearTimeout(completionTimerRef.current)
+        }
+    }, [])
 
     // Journey Engine state
     const [showWeeklyModal, setShowWeeklyModal] = useState(false)
@@ -266,13 +273,26 @@ export default function CourseDetail() {
                 const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`
                 setVideoType('drive-iframe')
                 setSignedUrl(previewUrl)
-                setTimeout(() => markComplete(video.id), 8000)
+                
+                if (completionTimerRef.current) clearTimeout(completionTimerRef.current)
+                const durationMs = (video.duration_minutes || 30) * 60 * 1000
+                completionTimerRef.current = setTimeout(() => {
+                    markComplete(video.id)
+                    completionTimerRef.current = null
+                }, durationMs)
                 return
             }
             
             // Fallback if no file ID could be extracted
             globalThis.open(video.video_url, '_blank')
-            markComplete(video.id)
+            setVideoType('fallback')
+            
+            if (completionTimerRef.current) clearTimeout(completionTimerRef.current)
+            const durationMs = (video.duration_minutes || 30) * 60 * 1000
+            completionTimerRef.current = setTimeout(() => {
+                markComplete(video.id)
+                completionTimerRef.current = null
+            }, durationMs)
             return
         }
 
@@ -430,6 +450,17 @@ export default function CourseDetail() {
                 </div>
             )
         }
+        if (videoType === 'fallback') {
+            return (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1.5rem', padding: '2rem', textAlign: 'center' }}>
+                    <ExternalLink size={48} color="#6366f1" />
+                    <div>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>Video opened in a new tab</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Please watch the video in the new tab. Once you are finished, return here to mark it as completed.</p>
+                    </div>
+                </div>
+            )
+        }
         if (!signedUrl) return null
         if (videoType === 'drive-iframe') {
             return (
@@ -476,7 +507,15 @@ export default function CourseDetail() {
                     slideUrl={activeVideo.slide_url}
                     videoType={videoType}
                     title={activeVideo.title}
-                    onClose={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }}
+                    onClose={() => { 
+                        setActiveVideo(null); 
+                        setSignedUrl(null); 
+                        setVideoType('native') 
+                        if (completionTimerRef.current) {
+                            clearTimeout(completionTimerRef.current)
+                            completionTimerRef.current = null
+                        }
+                    }}
                     onEnded={() => markComplete(activeVideo.id)}
                     loadingVideo={loadingVideo}
                 />
@@ -495,7 +534,15 @@ export default function CourseDetail() {
                             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
                             <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{activeVideo.title}</h2>
                         </div>
-                        <button onClick={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '0.6rem', cursor: 'pointer', color: 'white', display: 'flex' }}>
+                        <button onClick={() => { 
+                            setActiveVideo(null); 
+                            setSignedUrl(null); 
+                            setVideoType('native');
+                            if (completionTimerRef.current) {
+                                clearTimeout(completionTimerRef.current)
+                                completionTimerRef.current = null
+                            }
+                        }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '0.6rem', cursor: 'pointer', color: 'white', display: 'flex' }}>
                             <X size={20} />
                         </button>
                     </div>

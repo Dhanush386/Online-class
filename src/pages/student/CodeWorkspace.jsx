@@ -35,22 +35,64 @@ const runHtmlTestcases = (htmlTestcases, htmlCode) => {
     return results
 }
 
+const isValidCssValue = (val) => {
+    return val !== '' && val !== 'none' && val !== 'normal' && val !== '0px'
+}
+
+const evaluateCssTestCase = (tc, iframeRef) => {
+    const iDoc = iframeRef.current?.contentDocument
+    const iWin = iframeRef.current?.contentWindow
+    
+    if (!iDoc || !iWin) {
+        return { 
+            description: tc.description || tc.selector, 
+            passed: false, 
+            type: 'css', 
+            expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, 
+            actual: 'iframe not ready' 
+        }
+    }
+    
+    const el = iDoc.querySelector(tc.selector)
+    if (!el) {
+        return { 
+            description: tc.description || tc.selector, 
+            passed: false, 
+            type: 'css', 
+            expected: `"${tc.selector}" exists`, 
+            actual: 'element not found' 
+        }
+    }
+    
+    const style = iWin.getComputedStyle(el)
+    const camel = tc.property.replace(/-([a-z])/g, (_, l) => l.toUpperCase())
+    const actualVal = (style[camel] || style.getPropertyValue(tc.property) || '').trim()
+    const passed = tc.value 
+        ? actualVal.toLowerCase().includes(tc.value.toLowerCase()) 
+        : isValidCssValue(actualVal)
+    
+    return { 
+        description: tc.description || `${tc.selector} → ${tc.property}`, 
+        passed, 
+        type: 'css', 
+        expected: tc.value ? `${tc.property}: ${tc.value}` : `${tc.property} to be set`, 
+        actual: actualVal || 'not set' 
+    }
+}
+
 const runCssTestcases = (cssTestcases, iframeRef) => {
     const results = []
     for (const tc of (cssTestcases || [])) {
         try {
-            const iDoc = iframeRef.current?.contentDocument
-            const iWin = iframeRef.current?.contentWindow
-            if (!iDoc || !iWin) { results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, actual: 'iframe not ready' }); continue }
-            const el = iDoc.querySelector(tc.selector)
-            if (!el) { results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `"${tc.selector}" exists`, actual: 'element not found' }); continue }
-            const style = iWin.getComputedStyle(el)
-            const camel = tc.property.replace(/-([a-z])/g, (_, l) => l.toUpperCase())
-            const actualVal = (style[camel] || style.getPropertyValue(tc.property) || '').trim()
-            const passed = tc.value ? actualVal.toLowerCase().includes(tc.value.toLowerCase()) : (actualVal !== '' && actualVal !== 'none' && actualVal !== 'normal' && actualVal !== '0px')
-            results.push({ description: tc.description || `${tc.selector} → ${tc.property}`, passed, type: 'css', expected: tc.value ? `${tc.property}: ${tc.value}` : `${tc.property} to be set`, actual: actualVal || 'not set' })
+            results.push(evaluateCssTestCase(tc, iframeRef))
         } catch {
-            results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, actual: 'evaluation error' })
+            results.push({ 
+                description: tc.description || tc.selector, 
+                passed: false, 
+                type: 'css', 
+                expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, 
+                actual: 'evaluation error' 
+            })
         }
     }
     return results
