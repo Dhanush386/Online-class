@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -122,6 +123,23 @@ function AssessmentCard({ a, tab, submissions, navigate }) {
         </div>
     )
 }
+
+AssessmentCard.propTypes = {
+    a: PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        due_date: PropTypes.string,
+        title: PropTypes.string.isRequired,
+        description: PropTypes.string,
+        isLocked: PropTypes.bool,
+        lockReason: PropTypes.string,
+        courses: PropTypes.shape({
+            title: PropTypes.string,
+        }),
+    }).isRequired,
+    tab: PropTypes.string.isRequired,
+    submissions: PropTypes.object.isRequired,
+    navigate: PropTypes.func.isRequired,
+};
 
 export default function Assessments() {
     const { profile } = useAuth()

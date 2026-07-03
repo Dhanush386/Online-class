@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import PropTypes from 'prop-types'
 import { Send, User as UserIcon, Clock, CheckCheck, MessageSquare, Search, Paperclip, File, X, Image as ImageIcon } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -49,6 +50,13 @@ function TicketList({ filteredTickets, selectedTicket, setSelectedTicket, fetchM
         </div>
     );
 }
+
+TicketList.propTypes = {
+    filteredTickets: PropTypes.array.isRequired,
+    selectedTicket: PropTypes.object,
+    setSelectedTicket: PropTypes.func.isRequired,
+    fetchMessages: PropTypes.func.isRequired,
+};
 
 function MessageBubble({ msg, isOrganizer }) {
     const fromMe = isOrganizer ? !msg.is_from_student : msg.is_from_student
@@ -109,6 +117,19 @@ function MessageBubble({ msg, isOrganizer }) {
     )
 }
 
+MessageBubble.propTypes = {
+    msg: PropTypes.shape({
+        id: PropTypes.string,
+        is_from_student: PropTypes.bool,
+        attachment_url: PropTypes.string,
+        message: PropTypes.string,
+        attachment_name: PropTypes.string,
+        created_at: PropTypes.string.isRequired,
+        is_read: PropTypes.bool,
+    }).isRequired,
+    isOrganizer: PropTypes.bool,
+};
+
 function MessageList({ messages, isOrganizer, scrollRef }) {
     return (
         <div 
@@ -126,6 +147,12 @@ function MessageList({ messages, isOrganizer, scrollRef }) {
         </div>
     );
 }
+
+MessageList.propTypes = {
+    messages: PropTypes.array.isRequired,
+    isOrganizer: PropTypes.bool,
+    scrollRef: PropTypes.object.isRequired,
+};
 
 function MessageInput({ 
     selectedTicket, attachment, setAttachment, fileInputRef, handleFileChange, 
@@ -197,8 +224,8 @@ function MessageInput({
                         alignItems: 'center', 
                         justifyContent: 'center',
                         minWidth: 50,
-                        background: !disableSubmit ? 'var(--accent)' : '#e2e8f0',
-                        cursor: !disableSubmit ? 'pointer' : 'default',
+                        background: disableSubmit ? '#e2e8f0' : 'var(--accent)',
+                        cursor: disableSubmit ? 'default' : 'pointer',
                         border: 'none',
                         borderRadius: 8,
                         color: 'white',
@@ -216,6 +243,21 @@ function MessageInput({
         </form>
     );
 }
+
+MessageInput.propTypes = {
+    selectedTicket: PropTypes.shape({
+        status: PropTypes.string,
+    }).isRequired,
+    attachment: PropTypes.object,
+    setAttachment: PropTypes.func.isRequired,
+    fileInputRef: PropTypes.object.isRequired,
+    handleFileChange: PropTypes.func.isRequired,
+    newMessage: PropTypes.string.isRequired,
+    setNewMessage: PropTypes.func.isRequired,
+    sending: PropTypes.bool.isRequired,
+    uploading: PropTypes.bool.isRequired,
+    handleSendMessage: PropTypes.func.isRequired,
+};
 
 export default function Support() {
     const { profile } = useAuth()

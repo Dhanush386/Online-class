@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import PropTypes from 'prop-types'
 import { useSearchParams } from 'react-router-dom'
 import {
     Play, Code as CodeIcon, Database, Globe,
@@ -36,6 +37,14 @@ function WebTabButton({ activeTab, tabId, label, color, onClick }) {
     );
 }
 
+WebTabButton.propTypes = {
+    activeTab: PropTypes.string.isRequired,
+    tabId: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    color: PropTypes.string,
+    onClick: PropTypes.func.isRequired,
+};
+
 function OutputTabButton({ activeTab, tabId, label, onClick }) {
     const isActive = activeTab === tabId;
     return (
@@ -44,6 +53,13 @@ function OutputTabButton({ activeTab, tabId, label, onClick }) {
         </button>
     );
 }
+
+OutputTabButton.propTypes = {
+    activeTab: PropTypes.string.isRequired,
+    tabId: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    onClick: PropTypes.func.isRequired,
+};
 
 function ResultView({ result, language }) {
     if (!result) {
@@ -110,6 +126,18 @@ function ResultView({ result, language }) {
         </div>
     );
 }
+
+ResultView.propTypes = {
+    result: PropTypes.shape({
+        status: PropTypes.string.isRequired,
+        message: PropTypes.string,
+        time: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        memory: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        output: PropTypes.string,
+        compile_output: PropTypes.string,
+    }),
+    language: PropTypes.string,
+};
 
 export default function CodePlayground() {
     const [language, setLanguage] = useState('python')
