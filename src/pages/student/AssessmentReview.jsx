@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { ChevronLeft, CheckCircle2, XCircle, Clock, Code as CodeIcon } from 'lucide-react'
@@ -111,11 +111,22 @@ export default function AssessmentReview() {
                     const selected = answer?.selected_option || '' // Can be string or array
                     const isCorrect = answer?.is_correct === true
                     const wasAnswered = Array.isArray(selected) ? selected.length > 0 : !!selected
+                    let borderColor = 'var(--text-muted)'
+                    let statusIcon = <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Unanswered</span>
+                    if (wasAnswered) {
+                        if (isCorrect) {
+                            borderColor = '#10b981'
+                            statusIcon = <CheckCircle2 size={20} color="#10b981" />
+                        } else {
+                            borderColor = '#ef4444'
+                            statusIcon = <XCircle size={20} color="#ef4444" />
+                        }
+                    }
 
                     return (
                         <div key={q.id} className="glass-card" style={{
                             padding: '1.5rem',
-                            borderLeft: `3px solid ${!wasAnswered ? 'var(--text-muted)' : isCorrect ? '#10b981' : '#ef4444'}`
+                            borderLeft: `3px solid ${borderColor}`
                         }}>
                             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', alignItems: 'flex-start' }}>
                                 <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
@@ -158,12 +169,7 @@ export default function AssessmentReview() {
                                     )}
                                 </div>
                                 <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                                    {!wasAnswered
-                                        ? <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Unanswered</span>
-                                        : isCorrect
-                                            ? <CheckCircle2 size={20} color="#10b981" />
-                                            : <XCircle size={20} color="#ef4444" />
-                                    }
+                                    {statusIcon}
                                 </div>
                             </div>
 
@@ -177,6 +183,7 @@ export default function AssessmentReview() {
                                             isThisCorrect = opt === q.correct_answer
                                         }
                                     } catch (e) {
+                                        console.error('Error parsing correct_answer:', e)
                                         isThisCorrect = opt === q.correct_answer
                                     }
 
@@ -186,10 +193,20 @@ export default function AssessmentReview() {
                                     if (isThisCorrect) { bg = 'rgba(16, 185, 129, 0.1)'; border = 'rgba(16, 185, 129, 0.2)'; textColor = 'var(--success)' }
                                     else if (isThisSelected && !isThisCorrect) { bg = 'rgba(239, 68, 68, 0.1)'; border = 'rgba(239, 68, 68, 0.2)'; textColor = 'var(--danger)' }
 
+                                    let iconBg = '#cbd5e1'
+                                    let iconContent = String.fromCodePoint(65 + i)
+                                    if (isThisCorrect) {
+                                        iconBg = '#10b981'
+                                        iconContent = <CheckCircle2 size={12} />
+                                    } else if (isThisSelected) {
+                                        iconBg = '#ef4444'
+                                        iconContent = <XCircle size={12} />
+                                    }
+
                                     return (
-                                        <div key={i} style={{ padding: '0.85rem 1rem', borderRadius: 10, background: bg, border: `1px solid ${border}`, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.85rem', color: textColor }}>
-                                            <div style={{ width: 20, height: 20, background: isThisCorrect ? '#10b981' : isThisSelected ? '#ef4444' : '#cbd5e1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem', flexShrink: 0 }}>
-                                                {isThisCorrect ? <CheckCircle2 size={12} /> : isThisSelected ? <XCircle size={12} /> : String.fromCodePoint(65 + i)}
+                                        <div key={opt} style={{ padding: '0.85rem 1rem', borderRadius: 10, background: bg, border: `1px solid ${border}`, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.85rem', color: textColor }}>
+                                            <div style={{ width: 20, height: 20, background: iconBg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem', flexShrink: 0 }}>
+                                                {iconContent}
                                             </div>
                                             {opt}
                                             {isThisSelected && !isThisCorrect && <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Your answer</span>}

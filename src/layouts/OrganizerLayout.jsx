@@ -125,7 +125,7 @@ export default function OrganizerLayout() {
   const location  = useLocation()
   const [collapsed,         setCollapsed]         = useState(false)
   const [mobileMenuOpen,    setMobileMenuOpen]    = useState(false)
-  const [isMobile,          setIsMobile]          = useState(window.innerWidth <= 768)
+  const [isMobile,          setIsMobile]          = useState(globalThis.innerWidth <= 768)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu,   setShowProfileMenu]   = useState(false)
 
@@ -135,9 +135,9 @@ export default function OrganizerLayout() {
   const roleColor = getRoleColor(profile?.role)
 
   useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth <= 768)
-    window.addEventListener('resize', h)
-    return () => window.removeEventListener('resize', h)
+    const h = () => setIsMobile(globalThis.innerWidth <= 768)
+    globalThis.addEventListener('resize', h)
+    return () => globalThis.removeEventListener('resize', h)
   }, [])
 
   async function handleSignOut() { 

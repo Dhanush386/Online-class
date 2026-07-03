@@ -1391,7 +1391,7 @@ export default function CodingManagement() {
 
                                 <div style={{
                                     display: 'grid',
-                                    gridTemplateColumns: window.innerWidth <= 600 ? '1fr' : '1.5fr 1fr 1fr',
+                                    gridTemplateColumns: globalThis.innerWidth <= 600 ? '1fr' : '1.5fr 1fr 1fr',
                                     gap: '1rem',
                                     marginBottom: '1.25rem'
                                 }}>
@@ -1885,7 +1885,7 @@ export default function CodingManagement() {
                                     <Eye size={14} /> Submissions
                                 </button>
                                 <button
-                                    onClick={() => window.open(`/student/coding/${c.id}?admin=true`, '_blank')}
+                                    onClick={() => globalThis.open(`/student/coding/${c.id}?admin=true`, '_blank')}
                                     className="btn-secondary"
                                     style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
                                 >

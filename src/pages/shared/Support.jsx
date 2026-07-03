@@ -3,6 +3,220 @@ import { Send, User as UserIcon, Clock, CheckCheck, MessageSquare, Search, Paper
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 
+function TicketList({ filteredTickets, selectedTicket, setSelectedTicket, fetchMessages }) {
+    return (
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+            {filteredTickets.map(t => (
+                <button 
+                    key={t.id} 
+                    onClick={() => {
+                        setSelectedTicket(t)
+                        fetchMessages(t.id)
+                    }}
+                    style={{
+                        width: '100%',
+                        display: 'flex',
+                        gap: '0.85rem',
+                        padding: '1rem 1.25rem',
+                        border: 'none',
+                        borderBottom: '1px solid var(--sidebar-border)',
+                        background: selectedTicket?.id === t.id ? '#eff6ff' : 'transparent',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        alignItems: 'center',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    <div style={{ 
+                        width: 40, height: 40, borderRadius: '50%', 
+                        background: t.status === 'closed' ? '#ef4444' : 'var(--accent)', color: 'white', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
+                        {t.student?.avatar_url ? <img src={t.student?.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : <UserIcon size={20} />}
+                    </div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: t.status === 'closed' ? 'var(--text-muted)' : 'var(--text-primary)' }}>{t.subject}</span>
+                            <span style={{ fontSize: '0.85rem', padding: '2px 6px', borderRadius: 4, background: t.status === 'closed' ? '#fee2e2' : '#ecfdf5', color: t.status === 'closed' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{t.status}</span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {t.student?.name}
+                        </div>
+                    </div>
+                </button>
+            ))}
+        </div>
+    );
+}
+
+function MessageBubble({ msg, isOrganizer }) {
+    const fromMe = isOrganizer ? !msg.is_from_student : msg.is_from_student
+    return (
+        <div style={{ alignSelf: fromMe ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
+            <div style={{ 
+                padding: '0.85rem 1rem', 
+                borderRadius: fromMe ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                background: fromMe ? 'var(--accent)' : 'white',
+                color: fromMe ? 'white' : 'var(--text-primary)',
+                fontSize: '0.875rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                marginBottom: '0.25rem'
+            }}>
+                {msg.attachment_url && (
+                    <div style={{ marginBottom: msg.message ? '0.5rem' : 0 }}>
+                        {msg.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <a href={msg.attachment_url} target="_blank" rel="noreferrer">
+                                <img 
+                                    src={msg.attachment_url} 
+                                    alt="attachment" 
+                                    style={{ maxWidth: '100%', borderRadius: 8, maxHeight: 200, display: 'block' }} 
+                                />
+                            </a>
+                        ) : (
+                            <a 
+                                href={msg.attachment_url} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '0.5rem', 
+                                    padding: '0.5rem', 
+                                    background: fromMe ? 'rgba(255,255,255,0.1)' : '#f8fafc',
+                                    borderRadius: 6,
+                                    color: 'inherit',
+                                    textDecoration: 'none',
+                                    fontSize: '0.85rem'
+                                }}
+                            >
+                                <File size={16} />
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>
+                                    {msg.attachment_name || 'View Attachment'}
+                                </span>
+                            </a>
+                        )}
+                    </div>
+                )}
+                {msg.message}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: fromMe ? 'flex-end' : 'flex-start', gap: '0.4rem', fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
+                <Clock size={10} />
+                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {fromMe && msg.is_read && <CheckCheck size={12} color="#10b981" />}
+            </div>
+        </div>
+    )
+}
+
+function MessageList({ messages, isOrganizer, scrollRef }) {
+    return (
+        <div 
+            ref={scrollRef}
+            style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#f1f5f940' }}
+        >
+            {messages.map(msg => (
+                <MessageBubble key={msg.id} msg={msg} isOrganizer={isOrganizer} />
+            ))}
+            {messages.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    No messages yet. Start the conversation!
+                </div>
+            )}
+        </div>
+    );
+}
+
+function MessageInput({ 
+    selectedTicket, attachment, setAttachment, fileInputRef, handleFileChange, 
+    newMessage, setNewMessage, sending, uploading, handleSendMessage 
+}) {
+    if (selectedTicket.status === 'closed') {
+        return (
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--sidebar-border)', background: 'white' }}>
+                <div style={{ textAlign: 'center', padding: '0.5rem', color: '#ef4444', background: '#fef2f2', borderRadius: 8, fontSize: '0.85rem', fontWeight: 500 }}>
+                    This ticket is closed. Please open a new ticket if you need further help.
+                </div>
+            </div>
+        );
+    }
+
+    const disableSubmit = (!newMessage.trim() && !attachment) || sending || uploading;
+
+    return (
+        <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--sidebar-border)', background: 'white' }}>
+            {attachment && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.5rem 0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: '0.85rem' }}>
+                    <div style={{ background: 'var(--accent)', color: 'white', padding: '4px', borderRadius: 4 }}>
+                        {attachment.type.startsWith('image/') ? <ImageIcon size={14} /> : <File size={14} />}
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {attachment.name}
+                    </span>
+                    <button 
+                        type="button" 
+                        onClick={() => setAttachment(null)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                    >
+                        <X size={14} />
+                    </button>
+                </div>
+            )}
+            <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+                <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                    accept="image/*,application/pdf,.doc,.docx"
+                />
+                <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current.click()}
+                    style={{ background: '#f1f5f9', border: 'none', color: 'var(--text-muted)', padding: '0.6rem', borderRadius: 8, cursor: 'pointer' }}
+                    title="Attach file"
+                >
+                    <Paperclip size={20} />
+                </button>
+                <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Type your message here..." 
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    style={{ background: '#f8fafc', flex: 1 }}
+                />
+                <button 
+                    type="submit" 
+                    disabled={disableSubmit}
+                    className="btn-primary" 
+                    style={{ 
+                        width: 'auto', 
+                        padding: '0.6rem 1.25rem', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        minWidth: 50,
+                        background: !disableSubmit ? 'var(--accent)' : '#e2e8f0',
+                        cursor: !disableSubmit ? 'pointer' : 'default',
+                        border: 'none',
+                        borderRadius: 8,
+                        color: 'white',
+                        opacity: 1,
+                        visibility: 'visible'
+                    }}
+                >
+                    {sending || uploading ? (
+                        <div className="animate-spin" style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%' }}></div>
+                    ) : (
+                        <Send size={18} />
+                    )}
+                </button>
+            </div>
+        </form>
+    );
+}
+
 export default function Support() {
     const { profile } = useAuth()
     const isOrganizer = profile?.role === 'organizer'
@@ -114,9 +328,9 @@ export default function Support() {
             
             setSelectedTicket(prev => ({ ...prev, status: 'closed' }))
             fetchTickets()
-            alert('Ticket closed successfully')
+            globalThis.alert('Ticket closed successfully')
         } catch (err) {
-            alert('Failed to close ticket: ' + err.message)
+            globalThis.alert('Failed to close ticket: ' + err.message)
         }
     }
 
@@ -168,7 +382,7 @@ export default function Support() {
             setNewMessage('')
             setAttachment(null)
         } catch (err) {
-            alert('Failed to send message: ' + err.message)
+            globalThis.alert('Failed to send message: ' + err.message)
         } finally {
             setSending(false)
             setUploading(false)
@@ -179,7 +393,7 @@ export default function Support() {
         const file = e.target.files[0]
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
-                alert('File size too large (max 5MB)')
+                globalThis.alert('File size too large (max 5MB)')
                 return
             }
             setAttachment(file)
@@ -223,57 +437,16 @@ export default function Support() {
                             />
                         </div>
                     </div>
-                    <div style={{ flex: 1, overflowY: 'auto' }}>
-                        {filteredTickets.map(t => (
-                            <button 
-                                key={t.id} 
-                                onClick={() => {
-                                    setSelectedTicket(t)
-                                    fetchMessages(t.id)
-                                }}
-                                style={{
-                                    width: '100%',
-                                    display: 'flex',
-                                    gap: '0.85rem',
-                                    padding: '1rem 1.25rem',
-                                    border: 'none',
-                                    borderBottom: '1px solid var(--sidebar-border)',
-                                    background: selectedTicket?.id === t.id ? '#eff6ff' : 'transparent',
-                                    cursor: 'pointer',
-                                    textAlign: 'left',
-                                    alignItems: 'center',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                <div style={{ 
-                                    width: 40, height: 40, borderRadius: '50%', 
-                                    background: t.status === 'closed' ? '#ef4444' : 'var(--accent)', color: 'white', 
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    flexShrink: 0
-                                }}>
-                                    {t.student?.avatar_url ? <img src={t.student?.avatar_url} style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : <UserIcon size={20} />}
-                                </div>
-                                <div style={{ flex: 1, overflow: 'hidden' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: t.status === 'closed' ? 'var(--text-muted)' : 'var(--text-primary)' }}>{t.subject}</span>
-                                        <span style={{ fontSize: '0.85rem', padding: '2px 6px', borderRadius: 4, background: t.status === 'closed' ? '#fee2e2' : '#ecfdf5', color: t.status === 'closed' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{t.status}</span>
-                                    </div>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {t.student?.name}
-                                    </div>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
+                    <TicketList 
+                        filteredTickets={filteredTickets}
+                        selectedTicket={selectedTicket}
+                        setSelectedTicket={setSelectedTicket}
+                        fetchMessages={fetchMessages}
+                    />
                 </div>
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white' }}>
-                    {!selectedTicket ? (
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '1rem' }}>
-                            <MessageSquare size={48} style={{ opacity: 0.3 }} />
-                            <p>{isOrganizer ? 'Select a ticket to respond' : 'Select a ticket to view conversation'}</p>
-                        </div>
-                    ) : (
+                    {selectedTicket ? (
                         <>
                             <div style={{ padding: '0.85rem 1.5rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
@@ -295,154 +468,26 @@ export default function Support() {
                                 )}
                             </div>
 
-                            <div 
-                                ref={scrollRef}
-                                style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#f1f5f940' }}
-                            >
-                                {messages.map((msg, i) => {
-                                    const fromMe = isOrganizer ? !msg.is_from_student : msg.is_from_student
-                                    return (
-                                        <div key={msg.id} style={{ alignSelf: fromMe ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
-                                            <div style={{ 
-                                                padding: '0.85rem 1rem', 
-                                                borderRadius: fromMe ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
-                                                background: fromMe ? 'var(--accent)' : 'white',
-                                                color: fromMe ? 'white' : 'var(--text-primary)',
-                                                fontSize: '0.875rem',
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                                marginBottom: '0.25rem'
-                                            }}>
-                                                {msg.attachment_url && (
-                                                    <div style={{ marginBottom: msg.message ? '0.5rem' : 0 }}>
-                                                        {msg.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                                            <a href={msg.attachment_url} target="_blank" rel="noreferrer">
-                                                                <img 
-                                                                    src={msg.attachment_url} 
-                                                                    alt="attachment" 
-                                                                    style={{ maxWidth: '100%', borderRadius: 8, maxHeight: 200, display: 'block' }} 
-                                                                />
-                                                            </a>
-                                                        ) : (
-                                                            <a 
-                                                                href={msg.attachment_url} 
-                                                                target="_blank" 
-                                                                rel="noreferrer"
-                                                                style={{ 
-                                                                    display: 'flex', 
-                                                                    alignItems: 'center', 
-                                                                    gap: '0.5rem', 
-                                                                    padding: '0.5rem', 
-                                                                    background: fromMe ? 'rgba(255,255,255,0.1)' : '#f8fafc',
-                                                                    borderRadius: 6,
-                                                                    color: 'inherit',
-                                                                    textDecoration: 'none',
-                                                                    fontSize: '0.85rem'
-                                                                }}
-                                                            >
-                                                                <File size={16} />
-                                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>
-                                                                    {msg.attachment_name || 'View Attachment'}
-                                                                </span>
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {msg.message}
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: fromMe ? 'flex-end' : 'flex-start', gap: '0.4rem', fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
-                                                <Clock size={10} />
-                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                {fromMe && msg.is_read && <CheckCheck size={12} color="#10b981" />}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                                {messages.length === 0 && (
-                                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                        No messages yet. Start the conversation!
-                                    </div>
-                                )}
-                            </div>
+                            <MessageList messages={messages} isOrganizer={isOrganizer} scrollRef={scrollRef} />
 
-                            <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--sidebar-border)', background: 'white' }}>
-                                {selectedTicket.status === 'closed' ? (
-                                    <div style={{ textAlign: 'center', padding: '0.5rem', color: '#ef4444', background: '#fef2f2', borderRadius: 8, fontSize: '0.85rem', fontWeight: 500 }}>
-                                        This ticket is closed. Please open a new ticket if you need further help.
-                                    </div>
-                                ) : (
-                                    <>
-                                        {attachment && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.5rem 0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: '0.85rem' }}>
-                                                <div style={{ background: 'var(--accent)', color: 'white', padding: '4px', borderRadius: 4 }}>
-                                                    {attachment.type.startsWith('image/') ? <ImageIcon size={14} /> : <File size={14} />}
-                                                </div>
-                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {attachment.name}
-                                                </span>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => setAttachment(null)}
-                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
-                                                >
-                                                    <X size={14} />
-                                                </button>
-                                            </div>
-                                        )}
-                                        <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
-                                            <input 
-                                                type="file" 
-                                                ref={fileInputRef}
-                                                style={{ display: 'none' }}
-                                                onChange={handleFileChange}
-                                                accept="image/*,application/pdf,.doc,.docx"
-                                            />
-                                            <button 
-                                                type="button" 
-                                                onClick={() => fileInputRef.current.click()}
-                                                style={{ background: '#f1f5f9', border: 'none', color: 'var(--text-muted)', padding: '0.6rem', borderRadius: 8, cursor: 'pointer' }}
-                                                title="Attach file"
-                                            >
-                                                <Paperclip size={20} />
-                                            </button>
-                                            <input 
-                                                type="text" 
-                                                className="form-input" 
-                                                placeholder="Type your message here..." 
-                                                value={newMessage}
-                                                onChange={(e) => setNewMessage(e.target.value)}
-                                                style={{ background: '#f8fafc', flex: 1 }}
-                                            />
-                                            <button 
-                                                type="submit" 
-                                                disabled={(!newMessage.trim() && !attachment) || sending || uploading}
-                                                className="btn-primary" 
-                                                style={{ 
-                                                    width: 'auto', 
-                                                    padding: '0.6rem 1.25rem', 
-                                                    display: 'flex', 
-                                                    alignItems: 'center', 
-                                                    justifyContent: 'center',
-                                                    minWidth: 50,
-                                                    background: (newMessage.trim() || attachment) ? 'var(--accent)' : '#e2e8f0',
-                                                    cursor: (newMessage.trim() || attachment) ? 'pointer' : 'default',
-                                                    border: 'none',
-                                                    borderRadius: 8,
-                                                    color: 'white',
-                                                    opacity: 1,
-                                                    visibility: 'visible'
-                                                }}
-                                            >
-                                                {sending || uploading ? (
-                                                    <div className="animate-spin" style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%' }}></div>
-                                                ) : (
-                                                    <Send size={18} />
-                                                )}
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
-                            </form>
+                            <MessageInput 
+                                selectedTicket={selectedTicket}
+                                attachment={attachment}
+                                setAttachment={setAttachment}
+                                fileInputRef={fileInputRef}
+                                handleFileChange={handleFileChange}
+                                newMessage={newMessage}
+                                setNewMessage={setNewMessage}
+                                sending={sending}
+                                uploading={uploading}
+                                handleSendMessage={handleSendMessage}
+                            />
                         </>
+                    ) : (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '1rem' }}>
+                            <MessageSquare size={48} style={{ opacity: 0.3 }} />
+                            <p>{isOrganizer ? 'Select a ticket to respond' : 'Select a ticket to view conversation'}</p>
+                        </div>
                     )}
                 </div>
             </div>

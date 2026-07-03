@@ -215,8 +215,8 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                 if (dayA !== dayB) return dayA - dayB;
 
                 const TYPE_ORDER = { 'live': 0, 'video': 1, 'resource': 2, 'coding': 3, 'assessment': 4 };
-                const typeA = TYPE_ORDER[a.type] !== undefined ? TYPE_ORDER[a.type] : 99;
-                const typeB = TYPE_ORDER[b.type] !== undefined ? TYPE_ORDER[b.type] : 99;
+                const typeA = TYPE_ORDER[a.type] ?? 99;
+                const typeB = TYPE_ORDER[b.type] ?? 99;
                 return typeA - typeB;
             });
 
@@ -254,8 +254,8 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                 if (dayA !== dayB) return dayA - dayB;
 
                 const TYPE_ORDER = { 'live': 0, 'video': 1, 'resource': 2, 'coding': 3, 'assessment': 4 };
-                const typeA = TYPE_ORDER[a.type] !== undefined ? TYPE_ORDER[a.type] : 99;
-                const typeB = TYPE_ORDER[b.type] !== undefined ? TYPE_ORDER[b.type] : 99;
+                const typeA = TYPE_ORDER[a.type] ?? 99;
+                const typeB = TYPE_ORDER[b.type] ?? 99;
                 return typeA - typeB;
             });
         });

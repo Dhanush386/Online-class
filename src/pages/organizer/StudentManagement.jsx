@@ -62,6 +62,39 @@ ExpiryControl.propTypes = {
     saving: PropTypes.bool.isRequired
 }
 
+const TabButton = ({ currentTab, tabName, onClick, color, children }) => {
+    const isActive = currentTab === tabName;
+    return (
+        <button
+            className={`nav-btn ${isActive ? 'active' : ''}`}
+            onClick={() => onClick(tabName)}
+            style={{ 
+                padding: '0.85rem 1rem', 
+                background: 'none', 
+                border: 'none', 
+                borderBottom: isActive ? `2px solid ${color}` : '2px solid transparent', 
+                color: isActive ? 'var(--text-primary)' : 'var(--text-muted)', 
+                fontWeight: 600, 
+                fontSize: '0.9rem', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem', 
+                cursor: 'pointer' 
+            }}
+        >
+            {children}
+        </button>
+    );
+};
+
+TabButton.propTypes = {
+    currentTab: PropTypes.string.isRequired,
+    tabName: PropTypes.string.isRequired,
+    onClick: PropTypes.func.isRequired,
+    color: PropTypes.string.isRequired,
+    children: PropTypes.node.isRequired
+};
+
 export default function StudentManagement() {
     const { profile } = useAuth()
     const [students, setStudents] = useState([])
@@ -240,7 +273,7 @@ export default function StudentManagement() {
     }
 
     async function handleRemoveCourse(studentId, courseId) {
-        if (!confirm('Are you sure you want to remove this course assignment? This will also clear the student\'s progress for this course.')) return
+        if (!globalThis.confirm('Are you sure you want to remove this course assignment? This will also clear the student\'s progress for this course.')) return
 
         setSaving(true)
         try {
@@ -290,7 +323,7 @@ export default function StudentManagement() {
     }
 
     async function handleDeleteStudent(id) {
-        if (!confirm('Are you sure you want to PERMANENTLY remove this student? This will delete their account and all their data (enrollments, progress, etc.). This cannot be undone.')) return
+        if (!globalThis.confirm('Are you sure you want to PERMANENTLY remove this student? This will delete their account and all their data (enrollments, progress, etc.). This cannot be undone.')) return
         setSaving(true)
         try {
             const { error } = await supabase.rpc('delete_user_permanently', { target_user_id: id })
@@ -311,10 +344,10 @@ export default function StudentManagement() {
             return
         }
 
-        if (!confirm(`CRITICAL WARNING: You are about to PERMANENTLY delete ALL ${studentsToRemove.length} students. This will remove their accounts, courses, and all progress. THIS CANNOT BE UNDONE.`)) return
-        if (!confirm('FINAL CONFIRMATION: Are you absolutely sure you want to purge the entire student roster?')) return
+        if (!globalThis.confirm(`CRITICAL WARNING: You are about to PERMANENTLY delete ALL ${studentsToRemove.length} students. This will remove their accounts, courses, and all progress. THIS CANNOT BE UNDONE.`)) return
+        if (!globalThis.confirm('FINAL CONFIRMATION: Are you absolutely sure you want to purge the entire student roster?')) return
         
-        const verification = prompt('To confirm mass deletion, type "PURGE ALL STUDENTS" below:')
+        const verification = globalThis.prompt('To confirm mass deletion, type "PURGE ALL STUDENTS" below:')
         if (verification !== 'PURGE ALL STUDENTS') {
             alert('Mass deletion cancelled. Verification text did not match.')
             return
@@ -508,7 +541,7 @@ export default function StudentManagement() {
     }
 
     async function handleDeleteGroup(groupId) {
-        if (!confirm('Delete this group? Students will be removed from it but will keep their course access.')) return
+        if (!globalThis.confirm('Delete this group? Students will be removed from it but will keep their course access.')) return
         try {
             await supabase.from('groups').delete().eq('id', groupId)
             loadData(true)
@@ -665,25 +698,18 @@ export default function StudentManagement() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--card-border)' }}>
-                <button
-                    className={`nav-btn ${tab === 'active' ? 'active' : ''}`}
-                    onClick={() => setTab('active')}
-                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'active' ? '2px solid #6366f1' : '2px solid transparent', color: tab === 'active' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
-                >
+                <TabButton currentTab={tab} tabName="active" onClick={setTab} color="#6366f1">
                     Active Students
-                </button>
-                <button
-                    className={`nav-btn ${tab === 'pending' ? 'active' : ''}`}
-                    onClick={() => setTab('pending')}
-                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'pending' ? '2px solid #f59e0b' : '2px solid transparent', color: tab === 'pending' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
-                >
+                </TabButton>
+                
+                <TabButton currentTab={tab} tabName="pending" onClick={setTab} color="#f59e0b">
                     Pending Approval
                     {pendingCount > 0 && (
                         <span style={{ background: '#f59e0b', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontSize: '0.7rem' }}>
                             {pendingCount}
                         </span>
                     )}
-                </button>
+                </TabButton>
 
                 {tab === 'pending' && (
                     <button
@@ -696,20 +722,14 @@ export default function StudentManagement() {
                         <Users size={14} /> {saving ? 'Syncing...' : 'Sync Students'}
                     </button>
                 )}
-                <button
-                    className={`nav-btn ${tab === 'team' ? 'active' : ''}`}
-                    onClick={() => setTab('team')}
-                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'team' ? '2px solid #8b5cf6' : '2px solid transparent', color: tab === 'team' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
-                >
+
+                <TabButton currentTab={tab} tabName="team" onClick={setTab} color="#8b5cf6">
                     Organizer Team
-                </button>
-                <button
-                    className={`nav-btn ${tab === 'groups' ? 'active' : ''}`}
-                    onClick={() => setTab('groups')}
-                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', borderBottom: tab === 'groups' ? '2px solid #10b981' : '2px solid transparent', color: tab === 'groups' ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
-                >
+                </TabButton>
+                
+                <TabButton currentTab={tab} tabName="groups" onClick={setTab} color="#10b981">
                     Batches & Groups
-                </button>
+                </TabButton>
             </div>
 
             {renderContent()}
@@ -1067,7 +1087,7 @@ function StudentCard({
                     <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#10b981', borderColor: 'rgba(16,185,129,0.2)' }} onClick={(e) => { e.stopPropagation(); setAssigningTo(student); setError(''); }}>
                         <Users size={14} /> Assign
                     </button>
-                    <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => { e.stopPropagation(); if(window.confirm('Are you sure you want to remove this student?')) handleDeleteStudent(student.id) }}>
+                    <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => { e.stopPropagation(); if(globalThis.confirm('Are you sure you want to remove this student?')) handleDeleteStudent(student.id) }}>
                         <Trash2 size={14} /> Remove
                     </button>
                     <button 

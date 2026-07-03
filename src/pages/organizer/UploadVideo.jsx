@@ -157,12 +157,12 @@ export default function ScheduleLiveClass() {
             return (
                 <div>
                     <label htmlFor="file-upload" className="form-label">Video File (Supabase Storage)</label>
-                    <div role="button" tabIndex={0} style={{ border: '2px dashed var(--card-border)', borderRadius: 12, padding: '2rem', textAlign: 'center', cursor: 'pointer', background: '#f8fafc' }} onClick={() => document.getElementById('file-upload').click()} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('file-upload').click(); } }}>
+                    <button type="button" style={{ width: '100%', border: '2px dashed var(--card-border)', borderRadius: 12, padding: '2rem', textAlign: 'center', cursor: 'pointer', background: '#f8fafc', display: 'block' }} onClick={() => document.getElementById('file-upload').click()}>
                         <input id="file-upload" type="file" accept="video/*" onChange={e => setSelectedFile(e.target.files[0])} style={{ display: 'none' }} />
                         <PlayCircle size={32} color="#6366f1" style={{ margin: '0 auto 1rem', opacity: 0.6 }} />
                         <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{selectedFile ? selectedFile.name : 'Click to select or drag video file'}</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Recommended: MP4, Max: 100MB</div>
-                    </div>
+                    </button>
                 </div>
             )
         }

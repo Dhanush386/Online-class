@@ -161,7 +161,7 @@ export default function OrganizerAnalytics() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [isMobile, setIsMobile] = useState(globalThis.innerWidth < 768)
   
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -185,10 +185,10 @@ export default function OrganizerAnalytics() {
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
+      setIsMobile(globalThis.innerWidth < 768)
     }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    globalThis.addEventListener('resize', handleResize)
+    return () => globalThis.removeEventListener('resize', handleResize)
   }, [])
 
   const loadDashboardData = useCallback(async () => {

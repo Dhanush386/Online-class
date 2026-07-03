@@ -255,7 +255,7 @@ export default function CourseDetail() {
 
         setActiveVideo(video)
         setSignedUrl(null)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+        globalThis.scrollTo({ top: 0, behavior: 'smooth' })
 
         // ── Google Drive ────────────────────────────────────────────────
         if (video.video_url.includes('drive.google.com') || video.drive_file_id) {
@@ -269,7 +269,7 @@ export default function CourseDetail() {
             }
             
             // Fallback if no file ID could be extracted
-            window.open(video.video_url, '_blank')
+            globalThis.open(video.video_url, '_blank')
             markComplete(video.id)
             return
         }
@@ -605,7 +605,7 @@ export default function CourseDetail() {
                             } else if (type === 'assessment') {
                                 navigate(`/student/assessments/${content.id}/take`)
                             } else if (type === 'resource') {
-                                if (content.url) window.open(content.url, '_blank')
+                                if (content.url) globalThis.open(content.url, '_blank')
                             }
                         }}
                     />

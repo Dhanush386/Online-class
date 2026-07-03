@@ -523,7 +523,7 @@ export default function TakeAssessment() {
             // Shuffle questions for this student
             let fetchedQuestions = qData || []
             for (let i = fetchedQuestions.length - 1; i > 0; i--) {
-                const j = Math.floor((window.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * (i + 1));
+                const j = Math.floor((globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * (i + 1));
                 [fetchedQuestions[i], fetchedQuestions[j]] = [fetchedQuestions[j], fetchedQuestions[i]];
             }
             

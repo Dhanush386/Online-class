@@ -100,12 +100,12 @@ export default function LiveNotes({ videoId, isOrganizer, channel }) {
             }
         };
 
-        window.addEventListener('beforeunload', handleBeforeUnload);
+        globalThis.addEventListener('beforeunload', handleBeforeUnload);
 
         return () => {
             clearInterval(broadcastInterval);
             clearInterval(saveInterval);
-            window.removeEventListener('beforeunload', handleBeforeUnload);
+            globalThis.removeEventListener('beforeunload', handleBeforeUnload);
             handleBeforeUnload(); // Save on component unmount as well
         };
     }, [isOrganizer, videoId, profile, channel]);

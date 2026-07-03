@@ -77,7 +77,7 @@ export default function StudentLayout() {
   const location  = useLocation()
   const [collapsed,       setCollapsed]       = useState(false)
   const [mobileMenuOpen,  setMobileMenuOpen]  = useState(false)
-  const [isMobile,        setIsMobile]        = useState(window.innerWidth <= 768)
+  const [isMobile,        setIsMobile]        = useState(globalThis.innerWidth <= 768)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications,   setNotifications]   = useState([])
   const [unreadCount,     setUnreadCount]     = useState(0)
@@ -92,9 +92,9 @@ export default function StudentLayout() {
   }
 
   useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth <= 768)
-    window.addEventListener('resize', h)
-    return () => window.removeEventListener('resize', h)
+    const h = () => setIsMobile(globalThis.innerWidth <= 768)
+    globalThis.addEventListener('resize', h)
+    return () => globalThis.removeEventListener('resize', h)
   }, [])
 
   useEffect(() => {

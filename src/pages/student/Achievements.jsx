@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { Award, Trophy, Star, Target, Zap, Shield, Rocket, Heart, Flame, Code, BookOpen, Database, Lock, Check } from 'lucide-react'
+import { Award, Trophy, Star, Target, Zap, Heart, Flame, Code, BookOpen, Lock, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const generateRankBadges = () => {

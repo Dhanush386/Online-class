@@ -192,9 +192,9 @@ export default function CodingPractice() {
                         <div key={c.id} className="glass-card stack-mobile" style={{
                             padding: '1.5rem 2rem',
                             display: 'grid',
-                            gridTemplateColumns: window.innerWidth <= 1024 ? '1fr' : '2fr 1fr 1fr 1fr 1fr auto',
+                            gridTemplateColumns: globalThis.innerWidth <= 1024 ? '1fr' : '2fr 1fr 1fr 1fr 1fr auto',
                             alignItems: 'center',
-                            gap: window.innerWidth <= 1024 ? '1rem' : '0',
+                            gap: globalThis.innerWidth <= 1024 ? '1rem' : '0',
                             borderRadius: '12px',
                             cursor: lockStatus.locked ? 'not-allowed' : 'pointer',
                             opacity: lockStatus.locked ? 0.7 : 1,
@@ -223,7 +223,7 @@ export default function CodingPractice() {
                             </div>
 
                             {/* Mobile Info Row */}
-                            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', width: '100%', borderBottom: window.innerWidth <= 1024 ? '1px solid #f1f5f9' : 'none', paddingBottom: window.innerWidth <= 1024 ? '1rem' : '0' }}>
+                            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', width: '100%', borderBottom: globalThis.innerWidth <= 1024 ? '1px solid #f1f5f9' : 'none', paddingBottom: globalThis.innerWidth <= 1024 ? '1rem' : '0' }}>
 
                                 {/* Difficulty */}
                                 <div>
@@ -246,9 +246,9 @@ export default function CodingPractice() {
                             </div>
 
                             {/* Progress Metrics Group */}
-                            <div style={{ display: 'flex', gap: '1.5rem', width: '100%', justifyContent: window.innerWidth <= 1024 ? 'space-between' : 'flex-start' }}>
+                            <div style={{ display: 'flex', gap: '1.5rem', width: '100%', justifyContent: globalThis.innerWidth <= 1024 ? 'space-between' : 'flex-start' }}>
                                 {/* Test Cases Passed */}
-                                <div style={{ flex: window.innerWidth <= 1024 ? 1 : 'unset' }}>
+                                <div style={{ flex: globalThis.innerWidth <= 1024 ? 1 : 'unset' }}>
                                     <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.25rem' }} className="show-mobile">TEST CASES</div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e40af' }}>
                                         {metrics.tests}<span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/{tcCount}</span>
@@ -259,7 +259,7 @@ export default function CodingPractice() {
                                 </div>
 
                                 {/* Score */}
-                                <div style={{ flex: window.innerWidth <= 1024 ? 1 : 'unset' }}>
+                                <div style={{ flex: globalThis.innerWidth <= 1024 ? 1 : 'unset' }}>
                                     <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.25rem' }} className="show-mobile">SCORE</div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e40af' }}>
                                         {metrics.score}<span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>/{c.xp_reward || 15}</span>
@@ -271,7 +271,7 @@ export default function CodingPractice() {
                             </div>
 
                             {/* Action Arrow */}
-                            <div style={{ color: lockStatus.locked ? 'var(--text-muted)' : '#3b82f6', display: window.innerWidth <= 1024 ? 'none' : 'block' }}>
+                            <div style={{ color: lockStatus.locked ? 'var(--text-muted)' : '#3b82f6', display: globalThis.innerWidth <= 1024 ? 'none' : 'block' }}>
                                 {lockStatus.locked ? <Lock size={22} /> : <ArrowRightCircle size={24} />}
                             </div>
                         </div>

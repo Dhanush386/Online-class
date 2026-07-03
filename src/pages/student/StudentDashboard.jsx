@@ -21,7 +21,7 @@ import useXpAward from '../../hooks/useXpAward'
 export default function StudentDashboard() {
   const { profile, stats } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [isMobile, setIsMobile] = useState(globalThis.innerWidth < 768)
   useXpAward()
 
   // Dashboard states
@@ -44,9 +44,9 @@ export default function StudentDashboard() {
   const [topLeaderboard, setTopLeaderboard] = useState([])
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    const handleResize = () => setIsMobile(globalThis.innerWidth < 768)
+    globalThis.addEventListener('resize', handleResize)
+    return () => globalThis.removeEventListener('resize', handleResize)
   }, [])
 
   useEffect(() => {

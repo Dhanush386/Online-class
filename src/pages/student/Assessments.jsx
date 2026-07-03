@@ -9,6 +9,120 @@ const TAB_LABELS = { daily: 'Daily Assessment', weekly: 'Weekly Assessment', fin
 const TAB_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
 const MAX_ATTEMPTS = 1
 
+function AssessmentCard({ a, tab, submissions, navigate }) {
+    const isOverdue = a.due_date && new Date(a.due_date) < new Date()
+    const color = TAB_COLORS[tab]
+    const attemptCount = (submissions[a.id] || []).length
+    const isExhausted = attemptCount >= MAX_ATTEMPTS
+    const bestScore = isExhausted
+        ? Math.max(...(submissions[a.id] || []).map(s => s.score))
+        : null
+
+    let statusBadge;
+    if (isExhausted) {
+        statusBadge = <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4 }}><Lock size={10} /> No Attempts Left</span>
+    } else if (a.isLocked) {
+        statusBadge = <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4 }}><Lock size={10} /> Locked</span>
+    } else if (isOverdue) {
+        statusBadge = <span className="badge badge-danger">Overdue</span>
+    } else {
+        statusBadge = <span className="badge badge-success">Active</span>
+    }
+
+    let ctaButton;
+    if (isExhausted) {
+        ctaButton = (
+            <button
+                onClick={() => navigate(`/student/assessments/${a.id}/review`)}
+                className="btn-secondary"
+                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
+            >
+                <Eye size={15} /> Review Attempts
+            </button>
+        )
+    } else if (a.isLocked) {
+        ctaButton = (
+            <button
+                onClick={() => alert(a.lockReason)}
+                className="btn-secondary"
+                style={{ width: '100%', justifyContent: 'center', opacity: 0.7, gap: '0.5rem' }}
+            >
+                <Lock size={15} /> Locked
+            </button>
+        )
+    } else if (isOverdue) {
+        ctaButton = (
+            <button
+                disabled
+                className="btn-secondary"
+                style={{ width: '100%', justifyContent: 'center', opacity: 0.6, cursor: 'not-allowed', gap: '0.5rem' }}
+            >
+                <Lock size={15} /> Deadline Passed
+            </button>
+        )
+    } else {
+        ctaButton = (
+            <button
+                onClick={() => navigate(`/student/assessments/${a.id}/take`)}
+                className="btn-primary"
+                style={{ width: '100%', justifyContent: 'center', background: `linear-gradient(135deg, ${color}, ${color}cc)`, boxShadow: `0 4px 15px ${color}25` }}
+            >
+                {attemptCount > 0 ? 'Retry Assessment' : 'Start Assessment'} <ChevronRight size={15} />
+            </button>
+        )
+    }
+
+    return (
+        <div className="glass-card" style={{ padding: '1.5rem', transition: 'all 0.2s ease', opacity: isExhausted ? 0.9 : 1 }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(0,0,0,0.08)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--card-shadow)' }}
+        >
+            {/* Type badge + status */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <span className="badge" style={{ background: `${color}20`, color }}>
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </span>
+                {statusBadge}
+            </div>
+
+            {/* Title */}
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{a.title}</h3>
+            {a.description && <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1rem' }}>{a.description}</p>}
+
+            {/* Meta */}
+            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
+                {a.courses?.title && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <ClipboardList size={11} /> {a.courses.title}
+                    </span>
+                )}
+                {a.due_date && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Calendar size={11} /> Due {new Date(a.due_date).toLocaleDateString()}
+                    </span>
+                )}
+            </div>
+
+            {/* Attempt counter */}
+            <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                    <span>Attempts used</span>
+                    <span style={{ fontWeight: 700, color: isExhausted ? '#dc2626' : color }}>{attemptCount} / {MAX_ATTEMPTS}</span>
+                </div>
+                <div style={{ height: 5, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ width: `${(attemptCount / MAX_ATTEMPTS) * 100}%`, height: '100%', background: isExhausted ? '#ef4444' : color, transition: 'width 0.3s' }} />
+                </div>
+                {isExhausted && bestScore !== null && (
+                    <p style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, marginTop: '0.4rem' }}>Best score: {bestScore} correct</p>
+                )}
+            </div>
+
+            {/* CTA */}
+            {ctaButton}
+        </div>
+    )
+}
+
 export default function Assessments() {
     const { profile } = useAuth()
     const navigate = useNavigate()
@@ -57,33 +171,32 @@ export default function Assessments() {
 
 
             const grouped = { daily: [], weekly: [], final: [] }
-                ; (assessData || [])
-                    .filter(a => !a.courses?.start_date || new Date(a.courses.start_date) <= now)
-                    .forEach(a => {
-                        let isLocked = false
-                        let lockReason = ''
-                        
-                        if (lockedAssessIds.includes(a.id)) {
-                            isLocked = true
-                            lockReason = 'This assessment is locked by the instructor.'
-                        } else {
-                            const dayAccessObj = (locksDay || []).find(da => da.course_id === a.course_id && da.day_number === a.day_number && userGroupIds.includes(da.group_id))
-                            if (dayAccessObj && (dayAccessObj.is_locked || (dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now))) {
-                                isLocked = true
-                                lockReason = dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now 
-                                    ? `This day opens at ${new Date(dayAccessObj.open_time).toLocaleString()}` 
-                                    : 'This day is currently locked.'
-                            } else if (a.open_time && new Date(a.open_time) > now) {
-                                isLocked = true
-                                lockReason = `This assessment opens at ${new Date(a.open_time).toLocaleString()}`
-                            }
-                        }
+            const filteredAssessments = (assessData || []).filter(a => !a.courses?.start_date || new Date(a.courses.start_date) <= now)
+            for (const a of filteredAssessments) {
+                let isLocked = false
+                let lockReason = ''
+                
+                if (lockedAssessIds.includes(a.id)) {
+                    isLocked = true
+                    lockReason = 'This assessment is locked by the instructor.'
+                } else {
+                    const dayAccessObj = (locksDay || []).find(da => da.course_id === a.course_id && da.day_number === a.day_number && userGroupIds.includes(da.group_id))
+                    if (dayAccessObj && (dayAccessObj.is_locked || (dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now))) {
+                        isLocked = true
+                        lockReason = dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now 
+                            ? `This day opens at ${new Date(dayAccessObj.open_time).toLocaleString()}` 
+                            : 'This day is currently locked.'
+                    } else if (a.open_time && new Date(a.open_time) > now) {
+                        isLocked = true
+                        lockReason = `This assessment opens at ${new Date(a.open_time).toLocaleString()}`
+                    }
+                }
 
-                        a.isLocked = isLocked
-                        a.lockReason = lockReason
+                a.isLocked = isLocked
+                a.lockReason = lockReason
 
-                        if (grouped[a.type]) grouped[a.type].push(a) 
-                    })
+                if (grouped[a.type]) grouped[a.type].push(a) 
+            }
             setAssessments(grouped)
 
             // Group submissions by assessment_id
@@ -132,116 +245,25 @@ export default function Assessments() {
             </div>
 
             {/* Cards */}
-            {loading ? (
-                <p style={{ color: 'var(--text-muted)' }}>Loading assessments...</p>
-            ) : items.length === 0 ? (
-                <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
-                    <ClipboardList size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
-                    <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No {tab} assessments yet</p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>Your organizer will publish assessments soon</p>
+            {(() => {
+                if (loading) {
+                    return <p style={{ color: 'var(--text-muted)' }}>Loading assessments...</p>
+                }
+                if (items.length === 0) {
+                    return (
+                        <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
+                            <ClipboardList size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block' }} />
+                            <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>No {tab} assessments yet</p>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>Your organizer will publish assessments soon</p>
+                        </div>
+                    )
+                }
+                return (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+                        {items.map(a => <AssessmentCard key={a.id} a={a} tab={tab} submissions={submissions} navigate={navigate} />)}
                 </div>
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-                    {items.map(a => {
-                        const isOverdue = a.due_date && new Date(a.due_date) < new Date()
-                        const color = TAB_COLORS[tab]
-                        const attemptCount = (submissions[a.id] || []).length
-                        const isExhausted = attemptCount >= MAX_ATTEMPTS
-                        const bestScore = isExhausted
-                            ? Math.max(...(submissions[a.id] || []).map(s => s.score))
-                            : null
-
-                        return (
-                            <div key={a.id} className="glass-card" style={{ padding: '1.5rem', transition: 'all 0.2s ease', opacity: isExhausted ? 0.9 : 1 }}
-                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(0,0,0,0.08)' }}
-                                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--card-shadow)' }}
-                            >
-                                {/* Type badge + status */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                    <span className="badge" style={{ background: `${color}20`, color }}>
-                                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                                    </span>
-                                    {isExhausted
-                                        ? <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4 }}><Lock size={10} /> No Attempts Left</span>
-                                        : a.isLocked
-                                            ? <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4 }}><Lock size={10} /> Locked</span>
-                                            : isOverdue
-                                                ? <span className="badge badge-danger">Overdue</span>
-                                                : <span className="badge badge-success">Active</span>
-                                    }
-                                </div>
-
-                                {/* Title */}
-                                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{a.title}</h3>
-                                {a.description && <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1rem' }}>{a.description}</p>}
-
-                                {/* Meta */}
-                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
-                                    {a.courses?.title && (
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                            <ClipboardList size={11} /> {a.courses.title}
-                                        </span>
-                                    )}
-                                    {a.due_date && (
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                            <Calendar size={11} /> Due {new Date(a.due_date).toLocaleDateString()}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Attempt counter */}
-                                <div style={{ marginBottom: '1.25rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                                        <span>Attempts used</span>
-                                        <span style={{ fontWeight: 700, color: isExhausted ? '#dc2626' : color }}>{attemptCount} / {MAX_ATTEMPTS}</span>
-                                    </div>
-                                    <div style={{ height: 5, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
-                                        <div style={{ width: `${(attemptCount / MAX_ATTEMPTS) * 100}%`, height: '100%', background: isExhausted ? '#ef4444' : color, transition: 'width 0.3s' }} />
-                                    </div>
-                                    {isExhausted && bestScore !== null && (
-                                        <p style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, marginTop: '0.4rem' }}>Best score: {bestScore} correct</p>
-                                    )}
-                                </div>
-
-                                {/* CTA */}
-                                {isExhausted ? (
-                                    <button
-                                        onClick={() => navigate(`/student/assessments/${a.id}/review`)}
-                                        className="btn-secondary"
-                                        style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
-                                    >
-                                        <Eye size={15} /> Review Attempts
-                                    </button>
-                                ) : a.isLocked ? (
-                                    <button
-                                        onClick={() => alert(a.lockReason)}
-                                        className="btn-secondary"
-                                        style={{ width: '100%', justifyContent: 'center', opacity: 0.7, gap: '0.5rem' }}
-                                    >
-                                        <Lock size={15} /> Locked
-                                    </button>
-                                ) : isOverdue ? (
-                                    <button
-                                        disabled
-                                        className="btn-secondary"
-                                        style={{ width: '100%', justifyContent: 'center', opacity: 0.6, cursor: 'not-allowed', gap: '0.5rem' }}
-                                    >
-                                        <Lock size={15} /> Deadline Passed
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => navigate(`/student/assessments/${a.id}/take`)}
-                                        className="btn-primary"
-                                        style={{ width: '100%', justifyContent: 'center', background: `linear-gradient(135deg, ${color}, ${color}cc)`, boxShadow: `0 4px 15px ${color}25` }}
-                                    >
-                                        {attemptCount > 0 ? 'Retry Assessment' : 'Start Assessment'} <ChevronRight size={15} />
-                                    </button>
-                                )}
-                            </div>
-                        )
-                    })}
-                </div>
-            )}
+                )
+            })()}
         </div>
     )
 }

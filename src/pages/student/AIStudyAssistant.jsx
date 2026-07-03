@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+
 import { 
   Sparkles, Brain, TrendingUp, AlertTriangle, 
-  Target, Zap, RefreshCw, ChevronRight, CheckCircle, Activity
+  Target, Zap, RefreshCw, CheckCircle, Activity
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -15,7 +15,7 @@ export default function AIStudyAssistant() {
   const [refreshing, setRefreshing] = useState(false);
   const [aiData, setAiData] = useState(null);
   const [activeCourseId, setActiveCourseId] = useState(null);
-  const { healthScore, breakdown, weakTopics, mastery, loading: healthLoading } = useLearningHealth(activeCourseId);
+  const { healthScore, breakdown, weakTopics, mastery } = useLearningHealth(activeCourseId);
 
   // Load active course
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function AIStudyAssistant() {
 
         if (cached) {
           // If cached within last 24h, use it
-          const hoursSince = (new Date() - new Date(cached.generated_at)) / (1000 * 60 * 60);
+          const hoursSince = (Date.now() - new Date(cached.generated_at)) / (1000 * 60 * 60);
           if (hoursSince < 24) {
             setAiData(cached);
             setLoading(false);
@@ -64,14 +64,7 @@ export default function AIStudyAssistant() {
         }
       }
 
-      // 2. Fetch raw telemetry (mocking actual aggregation for now)
-      // In a real scenario, this would query enrollments, submissions, etc.
-      // Use Web Crypto API to satisfy security linters, even though this is just mock data
-      const getSecureRandom = () => {
-        const array = new Uint32Array(1);
-        window.crypto.getRandomValues(array);
-        return array[0] / (0xffffffff + 1);
-      };
+
 
       // Use REAL health data from useLearningHealth (not random values)
       const metrics = {
@@ -154,7 +147,11 @@ export default function AIStudyAssistant() {
   const { health_score, health_score_breakdown, weak_topics, strong_topics, recommendation_text, action_items } = aiData;
   const { attendance, assessments, coding, progress } = health_score_breakdown || {};
 
-  const getHealthColor = (score) => score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
+  const getHealthColor = (score) => {
+    if (score >= 80) return '#10b981';
+    if (score >= 60) return '#f59e0b';
+    return '#ef4444';
+  };
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '2rem' }}>
@@ -255,7 +252,7 @@ export default function AIStudyAssistant() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {weak_topics?.length > 0 ? weak_topics.map((item, i) => (
-              <div key={i} style={{ padding: '0.85rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
+              <div key={item.topic} style={{ padding: '0.85rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{item.topic}</span>
                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: '12px' }}>
                   {item.confidence}% Match
@@ -272,7 +269,7 @@ export default function AIStudyAssistant() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {strong_topics?.length > 0 ? strong_topics.map((item, i) => (
-              <div key={i} style={{ padding: '0.85rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+              <div key={item.topic} style={{ padding: '0.85rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{item.topic}</span>
                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '12px' }}>
                   {item.confidence}% Match
@@ -301,7 +298,7 @@ export default function AIStudyAssistant() {
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
           {action_items?.map((action, i) => (
-            <div key={i} tabIndex={0} style={{ 
+            <div key={action} style={{ 
               padding: '1rem', 
               background: 'var(--bg-primary)', 
               borderRadius: '12px', 

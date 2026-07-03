@@ -124,8 +124,8 @@ function RemoteAudioRenderer() {
 
 // ─── Snap to nearest corner ──────────────────────────────────────────────────
 function snapToCorner(x, y, widgetW, widgetH) {
-    const vw = window.innerWidth
-    const vh = window.innerHeight
+    const vw = globalThis.innerWidth
+    const vh = globalThis.innerHeight
     const pad = 16
 
     const corners = [
@@ -463,7 +463,7 @@ function PipWidget({ pipWindow, restoreMeeting }) {
 function DraggableWidget() {
     const WIDGET_W = 280
     const WIDGET_H = 180
-    const [pos, setPos] = useState({ x: window.innerWidth - WIDGET_W - 16, y: window.innerHeight - WIDGET_H - 100 })
+    const [pos, setPos] = useState({ x: globalThis.innerWidth - WIDGET_W - 16, y: globalThis.innerHeight - WIDGET_H - 100 })
     const [isDragging, setIsDragging] = useState(false)
     const dragOffset = useRef({ x: 0, y: 0 })
     const widgetRef = useRef(null)
@@ -482,8 +482,8 @@ function DraggableWidget() {
         if (!isDragging) return
         hasDragged.current = true
         setPos({
-            x: Math.max(0, Math.min(window.innerWidth - WIDGET_W, e.clientX - dragOffset.current.x)),
-            y: Math.max(0, Math.min(window.innerHeight - WIDGET_H, e.clientY - dragOffset.current.y)),
+            x: Math.max(0, Math.min(globalThis.innerWidth - WIDGET_W, e.clientX - dragOffset.current.x)),
+            y: Math.max(0, Math.min(globalThis.innerHeight - WIDGET_H, e.clientY - dragOffset.current.y)),
         })
     }, [isDragging])
 
@@ -503,13 +503,13 @@ function DraggableWidget() {
     useEffect(() => {
         const handleResize = () => {
             setPos(prev => {
-                const x = Math.min(prev.x, window.innerWidth - WIDGET_W - 16)
-                const y = Math.min(prev.y, window.innerHeight - WIDGET_H - 100)
+                const x = Math.min(prev.x, globalThis.innerWidth - WIDGET_W - 16)
+                const y = Math.min(prev.y, globalThis.innerHeight - WIDGET_H - 100)
                 return { x: Math.max(16, x), y: Math.max(16, y) }
             })
         }
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
+        globalThis.addEventListener('resize', handleResize)
+        return () => globalThis.removeEventListener('resize', handleResize)
     }, [])
 
     return (
@@ -551,7 +551,7 @@ export default function FloatingMeetingWidget() {
         isRecording, isUploading
     } = useMeeting()
 
-    const [isMobile] = useState(() => window.innerWidth <= 768)
+    const [isMobile] = useState(() => globalThis.innerWidth <= 768)
 
     const title = videoData?.title || 'Live Meeting'
     const truncatedTitle = title.length > 20 ? title.slice(0, 18) + '…' : title
