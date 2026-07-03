@@ -2,20 +2,15 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 
-import {
-  Clock, BookOpen, Trophy, Award, Code as CodeIcon, ChevronRight,
-  Flame, Star, ArrowRight, Zap, CheckCircle, Calendar,
-  TrendingUp, Sparkles, ShieldCheck, Play, RefreshCw, BarChart2, Coins
-} from 'lucide-react'
+import { TrendingUp, RefreshCw, BarChart2 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend, RadialBarChart, RadialBar
+  Tooltip
 } from 'recharts'
 
-import { GlassCard, Avatar } from '../../design-system'
-import XpTimeline from '../../components/student/XpTimeline'
-import DailyPlanner from '../../components/student/DailyPlanner'
+import { GlassCard } from '../../design-system'
 import useXpAward from '../../hooks/useXpAward'
 
 export default function StudentDashboard() {
