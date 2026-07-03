@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+
 import {
   Clock, BookOpen, Trophy, Award, Code as CodeIcon, ChevronRight,
   Flame, Star, ArrowRight, Zap, CheckCircle, Calendar,
@@ -81,7 +81,7 @@ export default function StudentDashboard() {
 
       // Execute all queries concurrently
       const [
-        _enrollmentsRes, progressRes, submissionsRes, upcomingVideosRes, pastVideosRes,
+        _enrollmentsRes, progressRes, submissionsRes, _upcomingVideosRes, pastVideosRes,
         attendedCountRes, codingSubsRes, liveAttRes, leaderboardRes
       ] = await Promise.all([
         enrollmentsPromise, progressPromise, submissionsPromise, upcomingVideosPromise, pastVideosPromise,

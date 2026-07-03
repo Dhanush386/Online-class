@@ -32,13 +32,7 @@ export default function AIStudyAssistant() {
     loadActiveCourse();
   }, [profile?.id]);
 
-  useEffect(() => {
-    if (profile?.id) {
-      loadAIData();
-    }
-  }, [profile?.id]);
-
-  const loadAIData = async (forceRefresh = false) => {
+  const loadAIData = useCallback(async (forceRefresh = false) => {
     if (forceRefresh) setRefreshing(true);
     else setLoading(true);
 
@@ -130,7 +124,7 @@ export default function AIStudyAssistant() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [profile?.id, breakdown, healthScore, mastery, weakTopics, activeCourseId]);
 
   if (loading) {
     return (
@@ -251,7 +245,7 @@ export default function AIStudyAssistant() {
             <Target size={18} /> Focus Areas (Weaknesses)
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {weak_topics?.length > 0 ? weak_topics.map((item, i) => (
+            {weak_topics?.length > 0 ? weak_topics.map((item) => (
               <div key={item.topic} style={{ padding: '0.85rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{item.topic}</span>
                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: '12px' }}>
@@ -268,7 +262,7 @@ export default function AIStudyAssistant() {
             <Zap size={18} /> Strengths
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {strong_topics?.length > 0 ? strong_topics.map((item, i) => (
+            {strong_topics?.length > 0 ? strong_topics.map((item) => (
               <div key={item.topic} style={{ padding: '0.85rem 1rem', background: 'var(--bg-primary)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{item.topic}</span>
                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '12px' }}>
@@ -297,7 +291,7 @@ export default function AIStudyAssistant() {
           <TrendingUp size={18} color="var(--primary-600)" /> Recommended Actions
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-          {action_items?.map((action, i) => (
+          {action_items?.map((action) => (
             <div key={action} style={{ 
               padding: '1rem', 
               background: 'var(--bg-primary)', 

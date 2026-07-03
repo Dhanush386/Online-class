@@ -18,6 +18,249 @@ import { WorkspaceOutput } from './workspace/components/WorkspaceOutput'
 const MAX_ATTEMPTS = 2
 const BYPASS_PROCTORING = false // Set to false to enable AI proctoring violations in production
 
+const runHtmlTestcases = (htmlTestcases, htmlCode) => {
+    const results = []
+    for (const tc of (htmlTestcases || [])) {
+        try {
+            const parser = new DOMParser()
+            const doc = parser.parseFromString(htmlCode, 'text/html')
+            const found = doc.querySelectorAll(tc.selector)
+            const minCount = tc.minCount || 1
+            const passed = found.length >= minCount
+            results.push({ description: tc.description || `Check: ${tc.selector}`, passed, type: 'html', expected: minCount > 1 ? `≥ ${minCount} × "${tc.selector}"` : `element "${tc.selector}" exists`, actual: found.length === 0 ? 'not found' : `found ${found.length}` })
+        } catch {
+            results.push({ description: tc.description || tc.selector, passed: false, type: 'html', expected: tc.selector, actual: 'selector error' })
+        }
+    }
+    return results
+}
+
+const runCssTestcases = (cssTestcases, iframeRef) => {
+    const results = []
+    for (const tc of (cssTestcases || [])) {
+        try {
+            const iDoc = iframeRef.current?.contentDocument
+            const iWin = iframeRef.current?.contentWindow
+            if (!iDoc || !iWin) { results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, actual: 'iframe not ready' }); continue }
+            const el = iDoc.querySelector(tc.selector)
+            if (!el) { results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `"${tc.selector}" exists`, actual: 'element not found' }); continue }
+            const style = iWin.getComputedStyle(el)
+            const camel = tc.property.replace(/-([a-z])/g, (_, l) => l.toUpperCase())
+            const actualVal = (style[camel] || style.getPropertyValue(tc.property) || '').trim()
+            const passed = tc.value ? actualVal.toLowerCase().includes(tc.value.toLowerCase()) : (actualVal !== '' && actualVal !== 'none' && actualVal !== 'normal' && actualVal !== '0px')
+            results.push({ description: tc.description || `${tc.selector} → ${tc.property}`, passed, type: 'css', expected: tc.value ? `${tc.property}: ${tc.value}` : `${tc.property} to be set`, actual: actualVal || 'not set' })
+        } catch {
+            results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, actual: 'evaluation error' })
+        }
+    }
+    return results
+}
+
+const runJsTestcases = (jsTestcases, jsCode) => {
+    const results = []
+    for (const tc of (jsTestcases || [])) {
+        try {
+            const pattern = new RegExp(String.raw`\b${tc.keyword.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}\b`, 'i')
+            const passed = pattern.test(jsCode)
+            results.push({ description: tc.description || `Uses: ${tc.keyword}`, passed, type: 'js', expected: `"${tc.keyword}" used in JS`, actual: passed ? 'found ✓' : 'not found' })
+        } catch {
+            const passed = jsCode.includes(tc.keyword)
+            results.push({ description: tc.description || tc.keyword, passed, type: 'js', expected: `"${tc.keyword}"`, actual: passed ? 'found' : 'not found' })
+        }
+    }
+}
+
+const initializeStarterCode = (data, isCombinedData, setters) => {
+    const { setSubCodes, setGenericCode, setHtmlCode, setCssCode, setJsCode } = setters;
+    if (isCombinedData) {
+        const initialSubCodes = {};
+        data.test_cases.sub_questions.forEach((q, i) => {
+            initialSubCodes[i] = q.starter_code || '';
+        });
+        setSubCodes(initialSubCodes);
+        setGenericCode(initialSubCodes[0] || '');
+    } else if (data.language !== 'html' && data.starter_code) {
+        setGenericCode(data.starter_code)
+    } else if (data.language === 'html' && data.starter_code) {
+        try {
+            const parsed = JSON.parse(data.starter_code)
+            if (parsed.html) setHtmlCode(parsed.html)
+            if (parsed.css) setCssCode(parsed.css)
+            if (parsed.js) setJsCode(parsed.js)
+        } catch {
+            setHtmlCode(data.starter_code)
+        }
+    }
+}
+
+const processUserData = (userData, isCombinedData, setters) => {
+    const { setAttemptCount, setHasUnlockedAnswer, setSolvedSubIds } = setters;
+    setAttemptCount(userData?.length || 0)
+
+    if (userData?.some(sub => sub.code === 'Unlocked answer without submission')) {
+        setHasUnlockedAnswer(true)
+    }
+
+    if (isCombinedData && userData) {
+        const solved = [];
+        userData.forEach(sub => {
+            if (sub.status === 'accepted') {
+                try {
+                    const parsed = JSON.parse(sub.code);
+                    if (parsed.isCombined && parsed.subId) solved.push(parsed.subId);
+                } catch { /* empty */ }
+            }
+        });
+        setSolvedSubIds(solved);
+    }
+}
+
+const loadTargetImage = (targetUrl) => {
+    return new Promise((resolve, reject) => {
+        const targetImg = new Image()
+        targetImg.crossOrigin = "anonymous"
+        targetImg.src = targetUrl
+        targetImg.onload = () => resolve(targetImg)
+        targetImg.onerror = reject
+    })
+}
+
+const calculatePixelDifferences = (data1, data2, width, height) => {
+    const diffCanvas = document.createElement('canvas')
+    diffCanvas.width = width; diffCanvas.height = height
+    const diffCtx = diffCanvas.getContext('2d')
+    const diffData = diffCtx.createImageData(width, height)
+    let matches = 0; let foregroundMatches = 0; let foregroundTotal = 0; const totalPixels = width * height
+
+    for (let i = 0; i < data1.length; i += 4) {
+        const r1 = data1[i], g1 = data1[i+1], b1 = data1[i+2]
+        const r2 = data2[i], g2 = data2[i+1], b2 = data2[i+2]
+        const isMatch = Math.abs(r1 - r2) < 25 && Math.abs(g1 - g2) < 25 && Math.abs(b1 - b2) < 25
+        if (isMatch) matches++
+        const isTargetForeground = r2 < 245 || g2 < 245 || b2 < 245
+        if (isTargetForeground) {
+            foregroundTotal++
+            if (isMatch) foregroundMatches++
+        }
+        const pxIdx = i
+        diffData.data[pxIdx] = isMatch ? 0 : 255
+        diffData.data[pxIdx+1] = isMatch ? 200 : 0
+        diffData.data[pxIdx+2] = 0
+        diffData.data[pxIdx+3] = 255
+    }
+    diffCtx.putImageData(diffData, 0, 0)
+    return {
+        total: matches / totalPixels,
+        foreground: foregroundTotal > 0 ? foregroundMatches / foregroundTotal : 0,
+        diffImage: diffCanvas.toDataURL()
+    }
+}
+
+const processTestCases = async (params) => {
+    const { challenge, currentTestCases, genericCode, getVisualSimilarity, initPyodide } = params;
+
+    if (challenge.language.startsWith('python')) {
+        await initPyodide()
+    }
+
+    const testResults = []
+    let overallPassed = true
+
+    for (let i = 0; i < currentTestCases.length; i++) {
+        const tc = currentTestCases[i]
+        let passed = false
+        let stdout = ''
+
+        if (challenge.language === 'html' && tc.output_image_url) {
+            const visualResult = await getVisualSimilarity(tc.output_image_url)
+            passed = visualResult.total > 0.85 && visualResult.foreground > 0.05
+            stdout = `[VER-7.1] Visual Match: ${(visualResult.total * 100).toFixed(2)}%\nForeground: ${(visualResult.foreground * 100).toFixed(2)}% (Target: 5%+)`
+            tc.actual_image = visualResult.diffImage
+        } else if (challenge.language.startsWith('python')) {
+            try {
+                globalThis.pyodideOutputBuffer.length = 0
+                globalThis.pyodideInstance.globals.set("test_input", tc.input || "")
+                await globalThis.pyodideInstance.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdin = StringIO(test_input)
+                `)
+                await globalThis.pyodideInstance.runPythonAsync(genericCode)
+                stdout = globalThis.pyodideOutputBuffer.join('\n').trim()
+                const expected = (tc.expected_output || "").trim()
+                passed = stdout === expected
+            } catch (err) {
+                stdout = err.toString()
+                passed = false
+            }
+        } else {
+            passed = true 
+        }
+
+        testResults.push({ id: i + 1, passed, actual: stdout, actual_image: tc.actual_image })
+        if (!passed) overallPassed = false
+    }
+
+    return { testResults, overallPassed };
+}
+
+const recordSubmission = async (params) => {
+    const { 
+        challenge, challengeId, profile, currentQuestion, isCombined, solvedSubIds,
+        setSolvedSubIds, htmlCode, cssCode, jsCode, genericCode, hasUnlockedAnswer,
+        refreshStats, toast, stopProctoring, supabase 
+    } = params;
+
+    let alreadySolved = false;
+    if (isCombined) {
+        alreadySolved = solvedSubIds.includes(currentQuestion.id);
+    } else {
+        const { data: previousSubs } = await supabase.from('coding_submissions')
+            .select('id').eq('challenge_id', challengeId).eq('student_id', profile.id).eq('status', 'accepted');
+        alreadySolved = previousSubs && previousSubs.length > 0;
+    }
+
+    let finalCodePayload;
+    if (isCombined) {
+        finalCodePayload = JSON.stringify({ isCombined: true, subId: currentQuestion.id, code: genericCode });
+    } else if (challenge.language === 'html') {
+        finalCodePayload = JSON.stringify({html: htmlCode, css: cssCode, js: jsCode});
+    } else {
+        finalCodePayload = genericCode;
+    }
+
+    const finalScore = (hasUnlockedAnswer || alreadySolved) ? 0 : (currentQuestion.xp_reward || 15);
+
+    await supabase.from('coding_submissions').insert({
+        student_id: profile.id, challenge_id: challengeId,
+        status: 'accepted', score: finalScore, code: finalCodePayload
+    })
+
+    if (isCombined && !alreadySolved && !hasUnlockedAnswer) {
+        setSolvedSubIds(prev => [...prev, currentQuestion.id]);
+    }
+
+    if (!alreadySolved && !hasUnlockedAnswer) {
+        const earnedXp = currentQuestion.xp_reward || 15;
+        const { data: userData } = await supabase.from('users').select('xp').eq('id', profile.id).single();
+        if (userData) {
+            const newXp = (userData.xp || 0) + earnedXp;
+            await supabase.from('users').update({ xp: newXp }).eq('id', profile.id);
+            if (refreshStats) refreshStats();
+            toast.success(`Congratulations! You earned ${earnedXp} XP for solving this challenge.`);
+        }
+    }
+
+    let isFullyCompleted = true;
+    if (isCombined && (solvedSubIds.length + (!alreadySolved && !hasUnlockedAnswer ? 1 : 0)) < challenge.test_cases.sub_questions.length) {
+        isFullyCompleted = false;
+    }
+
+    if (isFullyCompleted) {
+        stopProctoring();
+    }
+}
+
 export default function CodeWorkspace() {
     const { challengeId } = useParams()
     const navigate = useNavigate()
@@ -79,47 +322,18 @@ export default function CodeWorkspace() {
 
     const runWebTestcases = async () => {
         const results = []
-        for (const tc of (webTestcases?.html || [])) {
-            try {
-                const parser = new DOMParser()
-                const doc = parser.parseFromString(htmlCode, 'text/html')
-                const found = doc.querySelectorAll(tc.selector)
-                const minCount = tc.minCount || 1
-                const passed = found.length >= minCount
-                results.push({ description: tc.description || `Check: ${tc.selector}`, passed, type: 'html', expected: minCount > 1 ? `≥ ${minCount} × "${tc.selector}"` : `element "${tc.selector}" exists`, actual: found.length === 0 ? 'not found' : `found ${found.length}` })
-            } catch {
-                results.push({ description: tc.description || tc.selector, passed: false, type: 'html', expected: tc.selector, actual: 'selector error' })
-            }
+        if (webTestcases?.html?.length) {
+            results.push(...runHtmlTestcases(webTestcases.html, htmlCode))
         }
+        
         if (webTestcases?.css?.length) {
             updatePreview()
             await new Promise(r => setTimeout(r, 450))
-            for (const tc of webTestcases.css) {
-                try {
-                    const iDoc = iframeRef.current?.contentDocument
-                    const iWin = iframeRef.current?.contentWindow
-                    if (!iDoc || !iWin) { results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, actual: 'iframe not ready' }); continue }
-                    const el = iDoc.querySelector(tc.selector)
-                    if (!el) { results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `"${tc.selector}" exists`, actual: 'element not found' }); continue }
-                    const style = iWin.getComputedStyle(el)
-                    const camel = tc.property.replace(/-([a-z])/g, (_, l) => l.toUpperCase())
-                    const actualVal = (style[camel] || style.getPropertyValue(tc.property) || '').trim()
-                    const passed = tc.value ? actualVal.toLowerCase().includes(tc.value.toLowerCase()) : (actualVal !== '' && actualVal !== 'none' && actualVal !== 'normal' && actualVal !== '0px')
-                    results.push({ description: tc.description || `${tc.selector} → ${tc.property}`, passed, type: 'css', expected: tc.value ? `${tc.property}: ${tc.value}` : `${tc.property} to be set`, actual: actualVal || 'not set' })
-                } catch {
-                    results.push({ description: tc.description || tc.selector, passed: false, type: 'css', expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, actual: 'evaluation error' })
-                }
-            }
+            results.push(...runCssTestcases(webTestcases.css, iframeRef))
         }
-        for (const tc of (webTestcases?.js || [])) {
-            try {
-                const pattern = new RegExp(`\\b${tc.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
-                const passed = pattern.test(jsCode)
-                results.push({ description: tc.description || `Uses: ${tc.keyword}`, passed, type: 'js', expected: `"${tc.keyword}" used in JS`, actual: passed ? 'found ✓' : 'not found' })
-            } catch {
-                const passed = jsCode.includes(tc.keyword)
-                results.push({ description: tc.description || tc.keyword, passed, type: 'js', expected: `"${tc.keyword}"`, actual: passed ? 'found' : 'not found' })
-            }
+        
+        if (webTestcases?.js?.length) {
+            results.push(...runJsTestcases(webTestcases.js, jsCode))
         }
         return results
     }
@@ -267,45 +481,10 @@ export default function CodeWorkspace() {
             setChallenge(data)
             
             const isCombinedData = data.test_cases?.is_combined === true;
-            if (isCombinedData) {
-                const initialSubCodes = {};
-                data.test_cases.sub_questions.forEach((q, i) => {
-                    initialSubCodes[i] = q.starter_code || '';
-                });
-                setSubCodes(initialSubCodes);
-                setGenericCode(initialSubCodes[0] || '');
-            } else if (data.language !== 'html' && data.starter_code) {
-                setGenericCode(data.starter_code)
-            } else if (data.language === 'html' && data.starter_code) {
-                try {
-                    const parsed = JSON.parse(data.starter_code)
-                    if (parsed.html) setHtmlCode(parsed.html)
-                    if (parsed.css) setCssCode(parsed.css)
-                    if (parsed.js) setJsCode(parsed.js)
-                } catch {
-                    setHtmlCode(data.starter_code)
-                }
-            }
+            initializeStarterCode(data, isCombinedData, { setSubCodes, setGenericCode, setHtmlCode, setCssCode, setJsCode });
 
             const { data: userData } = await supabase.from('coding_submissions').select('id, code, status').eq('challenge_id', challengeId).eq('student_id', profile.id)
-            setAttemptCount(userData ? userData.length : 0)
-
-            if (userData && userData.some(sub => sub.code === 'Unlocked answer without submission')) {
-                setHasUnlockedAnswer(true)
-            }
-
-            if (userData && isCombinedData) {
-                const solved = [];
-                userData.forEach(sub => {
-                    if (sub.status === 'accepted') {
-                        try {
-                            const parsed = JSON.parse(sub.code);
-                            if (parsed.isCombined && parsed.subId) solved.push(parsed.subId);
-                        } catch { /* empty */ }
-                    }
-                });
-                setSolvedSubIds(solved);
-            }
+            processUserData(userData, isCombinedData, { setAttemptCount, setHasUnlockedAnswer, setSolvedSubIds });
 
             const { data: all } = await supabase.from('coding_challenges').select('id, title').order('created_at')
             setCurrentIndex(all.findIndex(c => c.id === challengeId))
@@ -348,13 +527,8 @@ export default function CodeWorkspace() {
         try {
             const iframe = iframeRef.current
             const studentCanvas = await html2canvas(iframe.contentDocument.body, { useCORS: true, scale: 1 })
-            const targetImg = new Image()
-            targetImg.crossOrigin = "anonymous"
-            targetImg.src = targetUrl
-            await new Promise((resolve, reject) => {
-                targetImg.onload = resolve
-                targetImg.onerror = reject
-            })
+            const targetImg = await loadTargetImage(targetUrl)
+            
             const width = 200; const height = 150
             const canvas1 = document.createElement('canvas'); const canvas2 = document.createElement('canvas')
             canvas1.width = width; canvas1.height = height; canvas2.width = width; canvas2.height = height
@@ -364,34 +538,8 @@ export default function CodeWorkspace() {
             
             const data1 = ctx1.getImageData(0, 0, width, height).data
             const data2 = ctx2.getImageData(0, 0, width, height).data
-            const diffCanvas = document.createElement('canvas')
-            diffCanvas.width = width; diffCanvas.height = height
-            const diffCtx = diffCanvas.getContext('2d')
-            const diffData = diffCtx.createImageData(width, height)
-            let matches = 0; let foregroundMatches = 0; let foregroundTotal = 0; const totalPixels = width * height
-
-            for (let i = 0; i < data1.length; i += 4) {
-                const r1 = data1[i], g1 = data1[i+1], b1 = data1[i+2]
-                const r2 = data2[i], g2 = data2[i+1], b2 = data2[i+2]
-                const isMatch = Math.abs(r1 - r2) < 25 && Math.abs(g1 - g2) < 25 && Math.abs(b1 - b2) < 25
-                if (isMatch) matches++
-                const isTargetForeground = r2 < 245 || g2 < 245 || b2 < 245
-                if (isTargetForeground) {
-                    foregroundTotal++
-                    if (isMatch) foregroundMatches++
-                }
-                const pxIdx = i
-                diffData.data[pxIdx] = isMatch ? 0 : 255
-                diffData.data[pxIdx+1] = isMatch ? 200 : 0
-                diffData.data[pxIdx+2] = 0
-                diffData.data[pxIdx+3] = 255
-            }
-            diffCtx.putImageData(diffData, 0, 0)
-            return {
-                total: matches / totalPixels,
-                foreground: foregroundTotal > 0 ? foregroundMatches / foregroundTotal : 0,
-                diffImage: diffCanvas.toDataURL()
-            }
+            
+            return calculatePixelDifferences(data1, data2, width, height)
         } catch (err) {
             console.error("Visual similarity error:", err)
             return { total: 0, foreground: 0, diffImage: null }
@@ -481,118 +629,31 @@ sys.stdin = StringIO(test_input)
                 }
                 setResult({ status: 'success', message: `✅ All ${tcResults.length} testcases passed!`, testResults: tcResults })
 
-                let alreadySolved = false
-                const { data: previousSubs } = await supabase.from('coding_submissions')
-                    .select('id').eq('challenge_id', challengeId).eq('student_id', profile.id).eq('status', 'accepted')
-                alreadySolved = previousSubs && previousSubs.length > 0
-                const finalScore = (hasUnlockedAnswer || alreadySolved) ? 0 : (currentQuestion.xp_reward || 15)
-                await supabase.from('coding_submissions').insert({
-                    student_id: profile.id, challenge_id: challengeId,
-                    status: 'accepted', score: finalScore,
-                    code: JSON.stringify({ html: htmlCode, css: cssCode, js: jsCode })
+                await recordSubmission({
+                    challenge, challengeId, profile, currentQuestion, isCombined: false,
+                    solvedSubIds, setSolvedSubIds, htmlCode, cssCode, jsCode, genericCode,
+                    hasUnlockedAnswer, refreshStats, toast, stopProctoring, supabase 
                 })
-                if (!alreadySolved && !hasUnlockedAnswer) {
-                    const { data: userData } = await supabase.from('users').select('xp').eq('id', profile.id).single()
-                    if (userData) {
-                        await supabase.from('users').update({ xp: (userData.xp || 0) + finalScore }).eq('id', profile.id)
-                        if (refreshStats) refreshStats()
-                        toast.success(`Congratulations! You earned ${finalScore} XP!`)
-                    }
-                }
-                stopProctoring()
                 setSubmitting(false)
                 return
             }
             
             if (challenge.language.startsWith('python')) {
                 setResult({ status: 'running', message: 'Initializing Python Engine for tests...' })
-                await initPyodide()
             }
 
-            const testResults = []
-            let overallPassed = true
-
-            for (let i = 0; i < currentTestCases.length; i++) {
-                const tc = currentTestCases[i]
-                let passed = false
-                let stdout = ''
-
-                if (challenge.language === 'html' && tc.output_image_url) {
-                    const visualResult = await getVisualSimilarity(tc.output_image_url)
-                    passed = visualResult.total > 0.85 && visualResult.foreground > 0.05
-                    stdout = `[VER-7.1] Visual Match: ${(visualResult.total * 100).toFixed(2)}%\nForeground: ${(visualResult.foreground * 100).toFixed(2)}% (Target: 5%+)`
-                    tc.actual_image = visualResult.diffImage
-                } else if (challenge.language.startsWith('python')) {
-                    try {
-                        globalThis.pyodideOutputBuffer.length = 0
-                        globalThis.pyodideInstance.globals.set("test_input", tc.input || "")
-                        await globalThis.pyodideInstance.runPythonAsync(`
-import sys
-from io import StringIO
-sys.stdin = StringIO(test_input)
-                        `)
-                        await globalThis.pyodideInstance.runPythonAsync(genericCode)
-                        stdout = globalThis.pyodideOutputBuffer.join('\n').trim()
-                        const expected = (tc.expected_output || "").trim()
-                        passed = stdout === expected
-                    } catch (err) {
-                        stdout = err.toString()
-                        passed = false
-                    }
-                } else {
-                    passed = true 
-                }
-
-                testResults.push({ id: i + 1, passed, actual: stdout, actual_image: tc.actual_image })
-                if (!passed) overallPassed = false
-            }
+            const { testResults, overallPassed } = await processTestCases({
+                challenge, currentTestCases, genericCode, getVisualSimilarity, initPyodide
+            });
 
             setResult({ status: overallPassed ? 'success' : 'error', message: overallPassed ? 'Success: All tests passed!' : 'Error: Some tests failed', testResults })
             
             if (overallPassed && !canBypass) {
-                let alreadySolved = false;
-                if (isCombined) {
-                    alreadySolved = solvedSubIds.includes(currentQuestion.id);
-                } else {
-                    const { data: previousSubs } = await supabase.from('coding_submissions')
-                        .select('id').eq('challenge_id', challengeId).eq('student_id', profile.id).eq('status', 'accepted');
-                    alreadySolved = previousSubs && previousSubs.length > 0;
-                }
-
-                const finalCodePayload = isCombined 
-                    ? JSON.stringify({ isCombined: true, subId: currentQuestion.id, code: genericCode })
-                    : (challenge.language === 'html' ? JSON.stringify({html: htmlCode, css: cssCode, js: jsCode}) : genericCode);
-
-                const finalScore = (hasUnlockedAnswer || alreadySolved) ? 0 : (currentQuestion.xp_reward || 15);
-
-                await supabase.from('coding_submissions').insert({
-                    student_id: profile.id, challenge_id: challengeId,
-                    status: 'accepted', score: finalScore, code: finalCodePayload
+                await recordSubmission({
+                    challenge, challengeId, profile, currentQuestion, isCombined,
+                    solvedSubIds, setSolvedSubIds, htmlCode, cssCode, jsCode, genericCode,
+                    hasUnlockedAnswer, refreshStats, toast, stopProctoring, supabase 
                 })
-
-                if (isCombined && !alreadySolved && !hasUnlockedAnswer) {
-                    setSolvedSubIds(prev => [...prev, currentQuestion.id]);
-                }
-
-                if (!alreadySolved && !hasUnlockedAnswer) {
-                    const earnedXp = currentQuestion.xp_reward || 15;
-                    const { data: userData } = await supabase.from('users').select('xp').eq('id', profile.id).single();
-                    if (userData) {
-                        const newXp = (userData.xp || 0) + earnedXp;
-                        await supabase.from('users').update({ xp: newXp }).eq('id', profile.id);
-                        if (refreshStats) refreshStats();
-                        toast.success(`Congratulations! You earned ${earnedXp} XP for solving this challenge.`);
-                    }
-                }
-
-                let isFullyCompleted = true;
-                if (isCombined && (solvedSubIds.length + (!alreadySolved && !hasUnlockedAnswer ? 1 : 0)) < challenge.test_cases.sub_questions.length) {
-                    isFullyCompleted = false;
-                }
-
-                if (isFullyCompleted) {
-                    stopProctoring();
-                }
             }
         } catch (err) {
             console.error(err)
@@ -659,7 +720,7 @@ sys.stdin = StringIO(test_input)
             />
 
             {cameraEnabled && !canBypass && (
-                <div style={{ position: 'fixed', top: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: !faceDetected ? 10000 : 1000, background: '#000', transition: 'all 0.3s ease', transform: !faceDetected ? 'scale(1.5) translate(-20px, 20px)' : 'none' }}>
+                <div style={{ position: 'fixed', top: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: faceDetected ? 1000 : 10000, background: '#000', transition: 'all 0.3s ease', transform: faceDetected ? 'none' : 'scale(1.5) translate(-20px, 20px)' }}>
                     <video 
                         ref={(node) => {
                             videoRef.current = node;

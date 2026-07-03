@@ -141,6 +141,31 @@ AssessmentCard.propTypes = {
     navigate: PropTypes.func.isRequired,
 };
 
+function getLockStatus(a, lockedAssessIds, locksDay, userGroupIds, now) {
+    if (lockedAssessIds.includes(a.id)) {
+        return { isLocked: true, lockReason: 'This assessment is locked by the instructor.' };
+    }
+
+    const dayAccessObj = (locksDay || []).find(da => 
+        da.course_id === a.course_id && 
+        da.day_number === a.day_number && 
+        userGroupIds.includes(da.group_id)
+    );
+
+    if (dayAccessObj && (dayAccessObj.is_locked || (dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now))) {
+        const reason = dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now 
+            ? `This day opens at ${new Date(dayAccessObj.open_time).toLocaleString()}` 
+            : 'This day is currently locked.';
+        return { isLocked: true, lockReason: reason };
+    }
+
+    if (a.open_time && new Date(a.open_time) > now) {
+        return { isLocked: true, lockReason: `This assessment opens at ${new Date(a.open_time).toLocaleString()}` };
+    }
+
+    return { isLocked: false, lockReason: '' };
+}
+
 export default function Assessments() {
     const { profile } = useAuth()
     const navigate = useNavigate()
@@ -190,30 +215,15 @@ export default function Assessments() {
 
             const grouped = { daily: [], weekly: [], final: [] }
             const filteredAssessments = (assessData || []).filter(a => !a.courses?.start_date || new Date(a.courses.start_date) <= now)
+            
             for (const a of filteredAssessments) {
-                let isLocked = false
-                let lockReason = ''
-                
-                if (lockedAssessIds.includes(a.id)) {
-                    isLocked = true
-                    lockReason = 'This assessment is locked by the instructor.'
-                } else {
-                    const dayAccessObj = (locksDay || []).find(da => da.course_id === a.course_id && da.day_number === a.day_number && userGroupIds.includes(da.group_id))
-                    if (dayAccessObj && (dayAccessObj.is_locked || (dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now))) {
-                        isLocked = true
-                        lockReason = dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now 
-                            ? `This day opens at ${new Date(dayAccessObj.open_time).toLocaleString()}` 
-                            : 'This day is currently locked.'
-                    } else if (a.open_time && new Date(a.open_time) > now) {
-                        isLocked = true
-                        lockReason = `This assessment opens at ${new Date(a.open_time).toLocaleString()}`
-                    }
-                }
+                const { isLocked, lockReason } = getLockStatus(a, lockedAssessIds, locksDay, userGroupIds, now);
+                a.isLocked = isLocked;
+                a.lockReason = lockReason;
 
-                a.isLocked = isLocked
-                a.lockReason = lockReason
-
-                if (grouped[a.type]) grouped[a.type].push(a) 
+                if (grouped[a.type]) {
+                    grouped[a.type].push(a);
+                } 
             }
             setAssessments(grouped)
 

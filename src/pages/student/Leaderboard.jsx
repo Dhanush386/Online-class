@@ -1,7 +1,49 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { Trophy, Medal, Award, Star, Zap, ChevronRight, User, Search, TrendingUp } from 'lucide-react'
+import { Trophy, Medal, Award, User, Search, TrendingUp } from 'lucide-react'
+
+const getRankInfo = (xp) => {
+    const tiers = [
+        { name: 'Iron', color: 'var(--text-muted)', base: 0, step: 200, bg: 'rgba(148,163,184,0.1)' },
+        { name: 'Bronze', color: '#b45309', base: 1000, step: 200, bg: 'rgba(180,83,9,0.1)' },
+        { name: 'Silver', color: 'var(--text-muted)', base: 2000, step: 300, bg: 'rgba(100,116,139,0.1)' },
+        { name: 'Gold', color: '#f59e0b', base: 3500, step: 800, bg: 'rgba(245,158,11,0.1)' },
+        { name: 'Diamond', color: '#a855f7', base: 7500, step: 1000, bg: 'rgba(168,85,247,0.1)' }
+    ]
+
+    let currentTier = tiers[0]
+    for (let i = tiers.length - 1; i >= 0; i--) {
+        if (xp >= tiers[i].base) {
+            currentTier = tiers[i]
+            break
+        }
+    }
+
+    const xpInTier = xp - currentTier.base
+    const levelNum = Math.min(5, Math.floor(xpInTier / currentTier.step) + 1)
+    const romanLevels = ['I', 'II', 'III', 'IV', 'V']
+    
+    return { 
+        rankName: `${currentTier.name} ${romanLevels[Math.max(0, levelNum - 1)]}`, 
+        color: currentTier.color, 
+        bg: currentTier.bg 
+    }
+}
+
+const getRankBg = (rank) => {
+    if (rank === 1) return 'rgba(245, 158, 11, 0.15)'
+    if (rank === 2) return 'rgba(148, 163, 184, 0.15)'
+    if (rank === 3) return 'rgba(180, 83, 9, 0.15)'
+    return 'transparent'
+}
+
+const getRankColor = (rank) => {
+    if (rank === 1) return '#fbbf24'
+    if (rank === 2) return '#cbd5e1'
+    if (rank === 3) return '#fb923c'
+    return 'var(--text-muted)'
+}
 
 export default function Leaderboard() {
     const { profile } = useAuth()
@@ -10,6 +52,41 @@ export default function Leaderboard() {
     const [search, setSearch] = useState('')
 
     useEffect(() => {
+        async function fetchLeaderboard() {
+            try {
+                setLoading(true)
+                // Fetch all students with their denormalized XP
+                const { data: students, error } = await supabase
+                    .from('users')
+                    .select('id, name, avatar_url, xp')
+                    .eq('role', 'student')
+                    .order('xp', { ascending: false })
+                    .order('name', { ascending: true })
+                
+                if (error) throw error
+
+                const sortedStudents = (students || []).sort((a, b) => {
+                    const xpA = a.xp || 0;
+                    const xpB = b.xp || 0;
+                    if (xpB !== xpA) return xpB - xpA;
+                    return (a.name || '').localeCompare(b.name || '');
+                });
+
+                const leaderboardData = sortedStudents.map((s, index) => ({
+                    ...s,
+                    xp: s.xp || 0,
+                    rank: index + 1,
+                    ...getRankInfo(s.xp || 0)
+                }))
+
+                setLeaderboard(leaderboardData)
+            } catch (err) {
+                console.error('Error fetching leaderboard:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+
         fetchLeaderboard()
 
         // Subscribe to real-time updates for users (where XP resides now)
@@ -22,69 +99,6 @@ export default function Leaderboard() {
             supabase.removeChannel(userChannel)
         }
     }, [])
-
-    const getRankInfo = (xp) => {
-        const tiers = [
-            { name: 'Iron', color: 'var(--text-muted)', base: 0, step: 200, bg: 'rgba(148,163,184,0.1)' },
-            { name: 'Bronze', color: '#b45309', base: 1000, step: 200, bg: 'rgba(180,83,9,0.1)' },
-            { name: 'Silver', color: 'var(--text-muted)', base: 2000, step: 300, bg: 'rgba(100,116,139,0.1)' },
-            { name: 'Gold', color: '#f59e0b', base: 3500, step: 800, bg: 'rgba(245,158,11,0.1)' },
-            { name: 'Diamond', color: '#a855f7', base: 7500, step: 1000, bg: 'rgba(168,85,247,0.1)' }
-        ]
-
-        let currentTier = tiers[0]
-        for (let i = tiers.length - 1; i >= 0; i--) {
-            if (xp >= tiers[i].base) {
-                currentTier = tiers[i]
-                break
-            }
-        }
-
-        const xpInTier = xp - currentTier.base
-        const levelNum = Math.min(5, Math.floor(xpInTier / currentTier.step) + 1)
-        const romanLevels = ['I', 'II', 'III', 'IV', 'V']
-        
-        return { 
-            rankName: `${currentTier.name} ${romanLevels[Math.max(0, levelNum - 1)]}`, 
-            color: currentTier.color, 
-            bg: currentTier.bg 
-        }
-    }
-
-    async function fetchLeaderboard() {
-        try {
-            setLoading(true)
-            // Fetch all students with their denormalized XP
-            const { data: students, error } = await supabase
-                .from('users')
-                .select('id, name, avatar_url, xp')
-                .eq('role', 'student')
-                .order('xp', { ascending: false })
-                .order('name', { ascending: true })
-            
-            if (error) throw error
-
-            const sortedStudents = (students || []).sort((a, b) => {
-                const xpA = a.xp || 0;
-                const xpB = b.xp || 0;
-                if (xpB !== xpA) return xpB - xpA;
-                return (a.name || '').localeCompare(b.name || '');
-            });
-
-            const leaderboardData = sortedStudents.map((s, index) => ({
-                ...s,
-                xp: s.xp || 0,
-                rank: index + 1,
-                ...getRankInfo(s.xp || 0)
-            }))
-
-            setLeaderboard(leaderboardData)
-        } catch (err) {
-            console.error('Error fetching leaderboard:', err)
-        } finally {
-            setLoading(false)
-        }
-    }
 
     const filteredLeaderboard = leaderboard.filter(s => 
         s.name?.toLowerCase().includes(search.toLowerCase())
@@ -249,8 +263,8 @@ export default function Leaderboard() {
                                                         justifyContent: 'center',
                                                         fontSize: '0.85rem',
                                                         fontWeight: 800,
-                                                        background: rank <= 3 ? (rank === 1 ? 'rgba(245, 158, 11, 0.15)' : rank === 2 ? 'rgba(148, 163, 184, 0.15)' : 'rgba(180, 83, 9, 0.15)') : 'transparent',
-                                                        color: rank === 1 ? '#fbbf24' : rank === 2 ? '#cbd5e1' : rank === 3 ? '#fb923c' : 'var(--text-muted)'
+                                                        background: getRankBg(rank),
+                                                        color: getRankColor(rank)
                                                     }}>
                                                         {rank}
                                                     </div>

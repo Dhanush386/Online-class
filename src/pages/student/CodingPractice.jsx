@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import {
-    ChevronRight, Trophy, CheckCircle2, Circle,
-    ArrowRightCircle, Search, Filter, BookOpen,
-    ChevronDown, GraduationCap, Layout, Lock
+    ChevronRight,
+    ArrowRightCircle, BookOpen,
+    Layout, Lock
 } from 'lucide-react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 
 function getDifficultyColor(difficulty) {
@@ -189,7 +189,7 @@ export default function CodingPractice() {
                     const lockStatus = checkIfLocked(c)
 
                     return (
-                        <div key={c.id} className="glass-card stack-mobile" style={{
+                        <button key={c.id} className="glass-card stack-mobile" style={{
                             padding: '1.5rem 2rem',
                             display: 'grid',
                             gridTemplateColumns: globalThis.innerWidth <= 1024 ? '1fr' : '2fr 1fr 1fr 1fr 1fr auto',
@@ -198,7 +198,13 @@ export default function CodingPractice() {
                             borderRadius: '12px',
                             cursor: lockStatus.locked ? 'not-allowed' : 'pointer',
                             opacity: lockStatus.locked ? 0.7 : 1,
-                            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                            textAlign: 'left',
+                            font: 'inherit',
+                            color: 'inherit',
+                            width: '100%',
+                            margin: 0,
+                            border: 'none'
                         }} onClick={() => {
                             if (lockStatus.locked) {
                                 alert(lockStatus.reason)
@@ -274,7 +280,7 @@ export default function CodingPractice() {
                             <div style={{ color: lockStatus.locked ? 'var(--text-muted)' : '#3b82f6', display: globalThis.innerWidth <= 1024 ? 'none' : 'block' }}>
                                 {lockStatus.locked ? <Lock size={22} /> : <ArrowRightCircle size={24} />}
                             </div>
-                        </div>
+                        </button>
                     )
                 })}
             </div>

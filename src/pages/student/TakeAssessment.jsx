@@ -995,7 +995,7 @@ export default function TakeAssessment() {
 
             {/* Webcam Feed */}
             {cameraEnabled && (
-                <div style={{ position: 'fixed', top: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: !faceDetected ? 10000 : 50, background: '#000', transition: 'all 0.3s ease', transform: !faceDetected ? 'scale(1.5) translate(-20px, 20px)' : 'none' }}>
+                <div style={{ position: 'fixed', top: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: faceDetected ? 50 : 10000, background: '#000', transition: 'all 0.3s ease', transform: faceDetected ? 'none' : 'scale(1.5) translate(-20px, 20px)' }}>
                     <video 
                         ref={(node) => {
                             videoRef.current = node;

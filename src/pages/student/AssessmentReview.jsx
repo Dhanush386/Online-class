@@ -16,24 +16,24 @@ export default function AssessmentReview() {
     const [activeAttempt, setActiveAttempt] = useState(0)
 
     useEffect(() => {
-        if (assessmentId) loadData()
-    }, [assessmentId])
+        async function loadData() {
+            setLoading(true)
+            const [{ data: assess }, { data: qData }, { data: subData }] = await Promise.all([
+                supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
+                supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true }),
+                supabase.from('assessment_submissions').select('*')
+                    .eq('assessment_id', assessmentId)
+                    .eq('student_id', profile.id)
+                    .order('created_at', { ascending: true })
+            ])
+            setAssessment(assess)
+            setQuestions(qData || [])
+            setSubmissions(subData || [])
+            setLoading(false)
+        }
 
-    async function loadData() {
-        setLoading(true)
-        const [{ data: assess }, { data: qData }, { data: subData }] = await Promise.all([
-            supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
-            supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true }),
-            supabase.from('assessment_submissions').select('*')
-                .eq('assessment_id', assessmentId)
-                .eq('student_id', profile.id)
-                .order('created_at', { ascending: true })
-        ])
-        setAssessment(assess)
-        setQuestions(qData || [])
-        setSubmissions(subData || [])
-        setLoading(false)
-    }
+        if (assessmentId) loadData()
+    }, [assessmentId, profile.id])
 
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading review...</div>
 

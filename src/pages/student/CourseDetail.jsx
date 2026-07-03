@@ -1,21 +1,46 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Video, Clock, ExternalLink, Calendar, CheckCircle, Zap, Play, X, ClipboardList, Code, ChevronRight, Eye, Lock, FileText, Edit2, Plus, List, Trash2, Save, FileEdit, Map, LayoutList } from 'lucide-react'
+import { Clock, ExternalLink, Calendar, X, Lock, FileText, Edit2, Plus, List, Trash2, Save } from 'lucide-react'
 import ReactPlayer from 'react-player'
-import ProtectedViewer from '../../components/shared/ProtectedViewer'
 import SplitViewer from '../../components/shared/SplitViewer'
-import JourneyMap from '../../components/student/JourneyMap'
-import DayDetailPanel from '../../components/student/DayDetailPanel'
 import WeeklyCompletionModal from '../../components/student/WeeklyCompletionModal'
-import SemesterTimeline from '../../components/student/SemesterTimeline'
 import CourseJourneyTimeline from '../../components/student/CourseJourneyTimeline'
 import useWeeklyCourse from '../../hooks/useWeeklyCourse'
 import useXpAward from '../../hooks/useXpAward'
 
 const MAX_ATTEMPTS = 1
 const ASSESS_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
+
+const checkItemLocked = (item, type, { lockedCodingIds, lockedAssessIds, lockedMaterialIds, groupDayAccess, now }) => {
+    if (type === 'coding' && lockedCodingIds.includes(item.id)) return true
+    if (type === 'assessment' && lockedAssessIds.includes(item.id)) return true
+    if (type === 'resource' && lockedMaterialIds.includes(item.id)) return true
+
+    for (const da of groupDayAccess) {
+        if (da.day_number === item.day_number) {
+            if (da.is_locked || (da.open_time && new Date(da.open_time) > now)) return true
+            break
+        }
+    }
+    
+    const itemTime = item.open_time || item.scheduled_time || item.start_time
+    if (itemTime && new Date(itemTime) > now) return true
+
+    return false
+}
+
+// Extract Google Drive file ID from any share-link format
+function extractDriveFileId(url) {
+    // Format: /file/d/FILE_ID/view or /file/d/FILE_ID/preview
+    const slashMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
+    if (slashMatch) return slashMatch[1]
+    // Format: ?id=FILE_ID or open?id=FILE_ID
+    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+    if (idMatch) return idMatch[1]
+    return null
+}
 
 export default function CourseDetail() {
     const { courseId } = useParams()
@@ -99,30 +124,18 @@ export default function CourseDetail() {
             setCourse(crs)
             const now = new Date()
             
-            const getIsItemLocked = (item, type) => {
-                if (type === 'coding' && lockedCodingIds.includes(item.id)) return true
-                if (type === 'assessment' && lockedAssessIds.includes(item.id)) return true
-                if (type === 'resource' && lockedMaterialIds.includes(item.id)) return true
+            const lockCtx = { lockedCodingIds, lockedAssessIds, lockedMaterialIds, groupDayAccess, now }
 
-                const dayAcc = groupDayAccess.find(da => da.day_number === item.day_number)
-                if (dayAcc && (dayAcc.is_locked || (dayAcc.open_time && new Date(dayAcc.open_time) > now))) return true
-                
-                const itemTime = item.open_time || item.scheduled_time || item.start_time
-                if (itemTime && new Date(itemTime) > now) return true
-
-                return false
-            }
-
-            setSessions((vids || []).map(v => ({ ...v, isLocked: getIsItemLocked(v, 'video') })))
-            setProgress({ ...(prog || {}), video_progress: vpData || [] })
-            setChallenges((chls || []).map(c => ({ ...c, isLocked: getIsItemLocked(c, 'coding') })))
+            setSessions((vids || []).map(v => ({ ...v, isLocked: checkItemLocked(v, 'video', lockCtx) })))
+            setProgress({ ...prog, video_progress: vpData || [] })
+            setChallenges((chls || []).map(c => ({ ...c, isLocked: checkItemLocked(c, 'coding', lockCtx) })))
             setCodingSubmissions(codingSubsData || [])
-            setCourseResources((resData || []).map(r => ({ ...r, isLocked: getIsItemLocked(r, 'resource') })))
+            setCourseResources((resData || []).map(r => ({ ...r, isLocked: checkItemLocked(r, 'resource', lockCtx) })))
 
             const grouped = { daily: [], weekly: [], final: [] }
                 ; (assessData || [])
                     .forEach(a => { 
-                        a.isLocked = getIsItemLocked(a, 'assessment')
+                        a.isLocked = checkItemLocked(a, 'assessment', lockCtx)
                         if (grouped[a.type]) grouped[a.type].push(a) 
                     })
             setAssessments(grouped)
@@ -236,18 +249,7 @@ export default function CourseDetail() {
             console.error('Progress upsert error:', upError)
         }
 
-        setProgress(p => ({ ...(p || {}), completion_percentage: finalPct }))
-    }
-
-    // Extract Google Drive file ID from any share-link format
-    function extractDriveFileId(url) {
-        // Format: /file/d/FILE_ID/view or /file/d/FILE_ID/preview
-        const slashMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/)
-        if (slashMatch) return slashMatch[1]
-        // Format: ?id=FILE_ID or open?id=FILE_ID
-        const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
-        if (idMatch) return idMatch[1]
-        return null
+        setProgress(p => ({ ...p, completion_percentage: finalPct }))
     }
 
     async function handleWatchVideo(video) {
@@ -345,7 +347,7 @@ export default function CourseDetail() {
             }
 
             setProgress(prev => ({
-                ...(prev || {}),
+                ...prev,
                 video_progress: [...(prev?.video_progress || []), { video_id: sessionId }]
             }))
             updateOverallProgress()
@@ -419,248 +421,100 @@ export default function CourseDetail() {
         ...courseResources.map(r => r.day_number)
     ].filter(d => d !== null))
 
-
-    if (loading) return <div style={{ color: 'var(--text-muted)', padding: '2rem' }}>Loading...</div>
-
-    const isStudent = profile?.role === 'student'
-    const hasStarted = !course?.start_date || new Date(course.start_date) <= new Date()
-
-    if (isStudent && !hasStarted) {
-        return (
-            <div className="animate-fade-in" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
-                <div style={{ width: 80, height: 80, background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                    <Clock size={40} color="#6366f1" />
+    const renderPlayerContent = () => {
+        if (loadingVideo) {
+            return (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="animate-spin" style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%' }} />
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Securing your connection...</span>
                 </div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Course Starting Soon</h2>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: 500, margin: '0 auto 2rem' }}>
-                    This course is scheduled to start on <strong style={{color: 'var(--text-primary)'}}>{new Date(course.start_date).toLocaleString()}</strong>.
-                    <br />Please check back then to access your lessons and materials.
-                </p>
-                <button onClick={() => navigate('/student/courses')} className="btn-secondary">
-                    Back to My Courses
-                </button>
+            )
+        }
+        if (!signedUrl) return null
+        if (videoType === 'drive-iframe') {
+            return (
+                <iframe
+                    src={signedUrl}
+                    width="100%"
+                    height="100%"
+                    style={{ position: 'absolute', top: 0, left: 0, border: 'none' }}
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                    title={activeVideo.title}
+                />
+            )
+        }
+        return (
+            <ReactPlayer
+                url={signedUrl}
+                controls
+                playing={true}
+                width="100%"
+                height="100%"
+                style={{ position: 'absolute', top: 0, left: 0 }}
+                onEnded={() => markComplete(activeVideo.id)}
+                config={{
+                    file: {
+                        attributes: {
+                            controlsList: 'nodownload',
+                            disablePictureInPicture: true,
+                            onContextMenu: e => e.preventDefault()
+                        }
+                    }
+                }}
+            />
+        )
+    }
+
+    const renderVideoModal = () => {
+        if (!activeVideo) return null
+        
+        if (activeVideo.slide_url) {
+            return (
+                <SplitViewer 
+                    videoUrl={signedUrl || (videoType === 'drive-iframe' ? activeVideo.video_url : null)}
+                    slideUrl={activeVideo.slide_url}
+                    videoType={videoType}
+                    title={activeVideo.title}
+                    onClose={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }}
+                    onEnded={() => markComplete(activeVideo.id)}
+                    loadingVideo={loadingVideo}
+                />
+            )
+        }
+
+        return (
+            <div style={{ 
+                position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.95)', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem',
+                backdropFilter: 'blur(10px)', animation: 'fadeIn 0.3s ease-out'
+            }}>
+                <div style={{ width: '100%', maxWidth: '1100px', position: 'relative' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderTopLeftRadius: 16, borderTopRightRadius: 16, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
+                            <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{activeVideo.title}</h2>
+                        </div>
+                        <button onClick={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '0.6rem', cursor: 'pointer', color: 'white', display: 'flex' }}>
+                            <X size={20} />
+                        </button>
+                    </div>
+                    <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+                        {renderPlayerContent()}
+                    </div>
+                    <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.05)', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                            <Lock size={14} />
+                            <span>Secured by Learnova Protection System</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         )
     }
 
-    return (
-        <div className="animate-fade-in">
-            {/* Cinematic Video Modal */}
-            {activeVideo && (
-                activeVideo.slide_url ? (
-                    <SplitViewer 
-                        videoUrl={signedUrl || (videoType === 'drive-iframe' ? activeVideo.video_url : null)}
-                        slideUrl={activeVideo.slide_url}
-                        videoType={videoType}
-                        title={activeVideo.title}
-                        onClose={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }}
-                        onEnded={() => markComplete(activeVideo.id)}
-                        loadingVideo={loadingVideo}
-                    />
-                ) : (
-                    <div style={{ 
-                        position: 'fixed', 
-                        inset: 0, 
-                        zIndex: 10000, 
-                        background: 'rgba(0,0,0,0.95)', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        padding: '2rem',
-                        backdropFilter: 'blur(10px)',
-                        animation: 'fadeIn 0.3s ease-out'
-                    }}>
-                        <div style={{ width: '100%', maxWidth: '1100px', position: 'relative' }}>
-                            {/* Modal Header */}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderTopLeftRadius: 16, borderTopRightRadius: 16, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
-                                    <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{activeVideo.title}</h2>
-                                </div>
-                                <button 
-                                    onClick={() => { setActiveVideo(null); setSignedUrl(null); setVideoType('native') }} 
-                                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '0.6rem', cursor: 'pointer', color: 'white', display: 'flex' }}
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            {/* Player Container */}
-                            <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
-                                {loadingVideo ? (
-                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
-                                        <div className="animate-spin" style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%' }} />
-                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Securing your connection...</span>
-                                    </div>
-                                ) : signedUrl ? (
-                                    videoType === 'drive-iframe' ? (
-                                        // Google Drive Preview iframe
-                                        <iframe
-                                            src={signedUrl}
-                                            width="100%"
-                                            height="100%"
-                                            style={{ position: 'absolute', top: 0, left: 0, border: 'none' }}
-                                            allow="autoplay; fullscreen"
-                                            allowFullScreen
-                                            title={activeVideo.title}
-                                        />
-                                    ) : (
-                                        // ReactPlayer for Supabase/YouTube/other URLs
-                                        <ReactPlayer
-                                            url={signedUrl}
-                                            controls
-                                            playing={true}
-                                            width="100%"
-                                            height="100%"
-                                            style={{ position: 'absolute', top: 0, left: 0 }}
-                                            onEnded={() => markComplete(activeVideo.id)}
-                                            config={{
-                                                file: {
-                                                    attributes: {
-                                                        controlsList: 'nodownload',
-                                                        disablePictureInPicture: true,
-                                                        onContextMenu: e => e.preventDefault()
-                                                    }
-                                                }
-                                            }}
-                                        />
-                                    )
-                                ) : null}
-                            </div>
-
-                            {/* Modal Footer */}
-                            <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.05)', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                                    <Lock size={14} />
-                                    <span>Secured by Learnova Protection System</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )
-            )}
-
-            {/* Header */}
-            <div style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{course?.title}</h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{course?.description}</p>
-                    </div>
-                    {(course?.start_date || course?.end_date) && (
-                        <div style={{ textAlign: 'right', background: 'rgba(99,102,241,0.05)', padding: '0.85rem 1.25rem', borderRadius: 12, border: '1px solid rgba(99,102,241,0.1)' }}>
-                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Course Timeline</div>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Calendar size={14} color="#6366f1" />
-                                {course.start_date ? new Date(course.start_date).toLocaleDateString() : 'TBA'} - {course.end_date ? new Date(course.end_date).toLocaleDateString() : 'TBA'}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Progress banner */}
-            {progress && (
-                <div className="glass-card" style={{ padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Your Progress</span>
-                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-light)' }}>{progress.completion_percentage}%</span>
-                        </div>
-                        <div className="progress-bar-track">
-                            <div className="progress-bar-fill" style={{ width: `${progress.completion_percentage}%` }} />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-
-
-            {/* Course Journey Timeline */}
-            {weeks.length > 0 && (
-                <div style={{ marginBottom: '1.25rem' }}>
-                    <CourseJourneyTimeline 
-                        course={course}
-                        sessions={sessions}
-                        challenges={challenges}
-                        courseResources={courseResources}
-                        assessments={assessments}
-                        progress={{
-                            ...progress,
-                            video_progress: progress?.video_progress || [],
-                            assessment_submissions: Object.values(submissions).flat(),
-                            coding_submissions: codingSubmissions
-                        }}
-                        getScheduleDate={getScheduleDate}
-                        onModuleAction={(type, module) => {
-                            const content = module._content;
-                            if (!content) return;
-                            
-                            if (type === 'video' || type === 'watch') {
-                                handleWatchVideo(content)
-                            } else if (type === 'live') {
-                                navigate(`/student/classroom/${content.id}`)
-                            } else if (type === 'coding') {
-                                navigate(`/student/coding/${content.id}`)
-                            } else if (type === 'assessment') {
-                                navigate(`/student/assessments/${content.id}/take`)
-                            } else if (type === 'resource') {
-                                if (content.url) globalThis.open(content.url, '_blank')
-                            }
-                        }}
-                    />
-                </div>
-            )}
-
-            {/* Weekly Completion Modal */}
-            {showWeeklyModal && completedWeekInfo && (
-                <WeeklyCompletionModal
-                    isVisible={showWeeklyModal}
-                    weekNumber={completedWeekInfo.weekNumber}
-                    xpEarned={completedWeekInfo.xpEarned}
-                    coinsEarned={completedWeekInfo.coinsEarned}
-                    grade={completedWeekInfo.grade}
-                    nextWeekNumber={completedWeekInfo.nextWeekNumber}
-                    aiSummary={completedWeekInfo.aiSummary}
-                    attendancePercentage={completedWeekInfo.attendancePercentage}
-                    videoPercentage={completedWeekInfo.videoPercentage}
-                    codingPercentage={completedWeekInfo.codingPercentage}
-                    quizPercentage={completedWeekInfo.quizPercentage}
-                    onClose={() => setShowWeeklyModal(false)}
-                    onContinue={() => {
-                        setShowWeeklyModal(false)
-                        refreshProgress()
-                    }}
-                />
-            )}
-
-            {/* XP Toast */}
-            {toastMessage && (
-                <div style={{
-                    position: 'fixed',
-                    bottom: 24,
-                    right: 24,
-                    zIndex: 10001,
-                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                    color: '#fff',
-                    padding: '0.85rem 1.5rem',
-                    borderRadius: 14,
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                    boxShadow: '0 8px 32px rgba(99,102,241,0.3)',
-                    animation: 'fadeInUp 0.3s ease-out',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.2rem',
-                }}>
-                    <span>{toastMessage.text}</span>
-                    {toastMessage.reason && (
-                        <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>{toastMessage.reason}</span>
-                    )}
-                </div>
-            )}
-
-
+    const renderNotesSection = () => {
+        return (
             <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '2px dashed var(--card-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -786,6 +640,158 @@ export default function CourseDetail() {
                     )}
                 </div>
             </div>
+        )
+    }
+
+    if (loading) return <div style={{ color: 'var(--text-muted)', padding: '2rem' }}>Loading...</div>
+
+    const isStudent = profile?.role === 'student'
+    const hasStarted = !course?.start_date || new Date(course.start_date) <= new Date()
+
+    if (isStudent && !hasStarted) {
+        return (
+            <div className="animate-fade-in" style={{ padding: '5rem 2rem', textAlign: 'center' }}>
+                <div style={{ width: 80, height: 80, background: 'rgba(99,102,241,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                    <Clock size={40} color="#6366f1" />
+                </div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Course Starting Soon</h2>
+                <p style={{ color: 'var(--text-secondary)', maxWidth: 500, margin: '0 auto 2rem' }}>
+                    This course is scheduled to start on <strong style={{color: 'var(--text-primary)'}}>{new Date(course.start_date).toLocaleString()}</strong>.
+                    <br />Please check back then to access your lessons and materials.
+                </p>
+                <button onClick={() => navigate('/student/courses')} className="btn-secondary">
+                    Back to My Courses
+                </button>
+            </div>
+        )
+    }
+
+    return (
+        <div className="animate-fade-in">
+            {renderVideoModal()}
+
+            {/* Header */}
+            <div style={{ marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{course?.title}</h1>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{course?.description}</p>
+                    </div>
+                    {(course?.start_date || course?.end_date) && (
+                        <div style={{ textAlign: 'right', background: 'rgba(99,102,241,0.05)', padding: '0.85rem 1.25rem', borderRadius: 12, border: '1px solid rgba(99,102,241,0.1)' }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Course Timeline</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Calendar size={14} color="#6366f1" />
+                                {course.start_date ? new Date(course.start_date).toLocaleDateString() : 'TBA'} - {course.end_date ? new Date(course.end_date).toLocaleDateString() : 'TBA'}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Progress banner */}
+            {progress && (
+                <div className="glass-card" style={{ padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Your Progress</span>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-light)' }}>{progress.completion_percentage}%</span>
+                        </div>
+                        <div className="progress-bar-track">
+                            <div className="progress-bar-fill" style={{ width: `${progress.completion_percentage}%` }} />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+
+            {/* Course Journey Timeline */}
+            {weeks.length > 0 && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                    <CourseJourneyTimeline 
+                        course={course}
+                        sessions={sessions}
+                        challenges={challenges}
+                        courseResources={courseResources}
+                        assessments={assessments}
+                        progress={{
+                            ...progress,
+                            video_progress: progress?.video_progress || [],
+                            assessment_submissions: Object.values(submissions).flat(),
+                            coding_submissions: codingSubmissions
+                        }}
+                        getScheduleDate={getScheduleDate}
+                        onModuleAction={(type, module) => {
+                            const content = module._content;
+                            if (!content) return;
+                            
+                            if (type === 'video' || type === 'watch') {
+                                handleWatchVideo(content)
+                            } else if (type === 'live') {
+                                navigate(`/student/classroom/${content.id}`)
+                            } else if (type === 'coding') {
+                                navigate(`/student/coding/${content.id}`)
+                            } else if (type === 'assessment') {
+                                navigate(`/student/assessments/${content.id}/take`)
+                            } else if (type === 'resource') {
+                                if (content.url) globalThis.open(content.url, '_blank')
+                            }
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* Weekly Completion Modal */}
+            {showWeeklyModal && completedWeekInfo && (
+                <WeeklyCompletionModal
+                    isVisible={showWeeklyModal}
+                    weekNumber={completedWeekInfo.weekNumber}
+                    xpEarned={completedWeekInfo.xpEarned}
+                    coinsEarned={completedWeekInfo.coinsEarned}
+                    grade={completedWeekInfo.grade}
+                    nextWeekNumber={completedWeekInfo.nextWeekNumber}
+                    aiSummary={completedWeekInfo.aiSummary}
+                    attendancePercentage={completedWeekInfo.attendancePercentage}
+                    videoPercentage={completedWeekInfo.videoPercentage}
+                    codingPercentage={completedWeekInfo.codingPercentage}
+                    quizPercentage={completedWeekInfo.quizPercentage}
+                    onClose={() => setShowWeeklyModal(false)}
+                    onContinue={() => {
+                        setShowWeeklyModal(false)
+                        refreshProgress()
+                    }}
+                />
+            )}
+
+            {/* XP Toast */}
+            {toastMessage && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: 24,
+                    right: 24,
+                    zIndex: 10001,
+                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    color: '#fff',
+                    padding: '0.85rem 1.5rem',
+                    borderRadius: 14,
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    boxShadow: '0 8px 32px rgba(99,102,241,0.3)',
+                    animation: 'fadeInUp 0.3s ease-out',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.2rem',
+                }}>
+                    <span>{toastMessage.text}</span>
+                    {toastMessage.reason && (
+                        <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>{toastMessage.reason}</span>
+                    )}
+                </div>
+            )}
+
+
+            {renderNotesSection()}
         </div>
     )
 }
