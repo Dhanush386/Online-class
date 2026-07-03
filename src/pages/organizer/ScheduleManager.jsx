@@ -82,6 +82,7 @@ export default function ScheduleManager() {
             day_of_week: Number.parseInt(editVideo.day_of_week) || 1,
             course_id: editVideo.course_id,
             video_url: editVideo.video_url,
+            duration_seconds: editVideo.recording_duration_mins ? Number.parseFloat(editVideo.recording_duration_mins) * 60 : null,
         }).eq('id', editVideo.id)
         if (!error) {
             await loadData()
@@ -212,7 +213,10 @@ export default function ScheduleManager() {
                                             <button onClick={() => handleViewAttendance(v)} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
                                                 <Users size={13} /> Attendance
                                             </button>
-                                            <button onClick={() => setEditVideo({ ...v })} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
+                                            <button onClick={() => setEditVideo({ 
+                                                ...v, 
+                                                recording_duration_mins: v.duration_seconds ? v.duration_seconds / 60 : '' 
+                                            })} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
                                                 <Edit2 size={13} /> Edit
                                             </button>
                                             <button onClick={() => handleDelete(v.id)} className="btn-danger">
@@ -258,9 +262,13 @@ export default function ScheduleManager() {
                                     <input id="edit-time" name="scheduled_time" type="datetime-local" className="form-input" value={toLocalInput(editVideo.scheduled_time)} onChange={e => setEditVideo(p => ({ ...p, scheduled_time: e.target.value }))} />
                                 </div>
                                 <div>
-                                    <label htmlFor="edit-duration" className="form-label">Duration (min)</label>
+                                    <label htmlFor="edit-duration" className="form-label">Live Class Duration (min)</label>
                                     <input id="edit-duration" name="duration_minutes" type="number" className="form-input" value={editVideo.duration_minutes || ''} onChange={e => setEditVideo(p => ({ ...p, duration_minutes: e.target.value }))} />
                                 </div>
+                            </div>
+                            <div>
+                                <label htmlFor="edit-recording-duration" className="form-label">Recording Duration (min)</label>
+                                <input id="edit-recording-duration" name="recording_duration_mins" type="number" step="0.1" className="form-input" placeholder="e.g. 45" value={editVideo.recording_duration_mins || ''} onChange={e => setEditVideo(p => ({ ...p, recording_duration_mins: e.target.value }))} />
                             </div>
                             <div>
                                 <label htmlFor="edit-url" className="form-label">Meeting URL (Google Meet / Zoom)</label>

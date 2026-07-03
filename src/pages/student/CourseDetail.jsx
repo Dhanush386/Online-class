@@ -275,7 +275,10 @@ export default function CourseDetail() {
                 setSignedUrl(previewUrl)
                 
                 if (completionTimerRef.current) clearTimeout(completionTimerRef.current)
-                const durationMs = (video.duration_minutes || 30) * 60 * 1000
+                const durationMs = video.duration_seconds 
+                    ? video.duration_seconds * 1000 
+                    : (video.duration_minutes || 30) * 60 * 1000;
+                
                 completionTimerRef.current = setTimeout(() => {
                     markComplete(video.id)
                     completionTimerRef.current = null
@@ -288,7 +291,10 @@ export default function CourseDetail() {
             setVideoType('fallback')
             
             if (completionTimerRef.current) clearTimeout(completionTimerRef.current)
-            const durationMs = (video.duration_minutes || 30) * 60 * 1000
+            const durationMs = video.duration_seconds 
+                ? video.duration_seconds * 1000 
+                : (video.duration_minutes || 30) * 60 * 1000;
+            
             completionTimerRef.current = setTimeout(() => {
                 markComplete(video.id)
                 completionTimerRef.current = null
