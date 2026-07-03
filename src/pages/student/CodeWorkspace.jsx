@@ -333,7 +333,7 @@ export default function CodeWorkspace() {
         }
         
         if (webTestcases?.js?.length) {
-            results.push(...runJsTestcases(webTestcases.js, jsCode))
+            runJsTestcases(webTestcases.js, jsCode)
         }
         return results
     }
