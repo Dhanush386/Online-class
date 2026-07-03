@@ -83,7 +83,7 @@ export default function CourseDetail() {
     const {
         weeks, getScheduleDate, refreshProgress
     } = useWeeklyCourse(courseId)
-    const { toastMessage } = useXpAward()
+    const { awardXp, toastMessage } = useXpAward()
 
     useEffect(() => {
         async function load() {
@@ -278,8 +278,10 @@ export default function CourseDetail() {
                 const durationMs = video.duration_seconds 
                     ? video.duration_seconds * 1000 
                     : (video.duration_minutes || 30) * 60 * 1000;
+                console.log(`[XP Timer] Starting timer for ${durationMs / 1000}s (duration_seconds=${video.duration_seconds}, duration_minutes=${video.duration_minutes})`)
                 
                 completionTimerRef.current = setTimeout(() => {
+                    console.log('[XP Timer] Timer fired! Marking video complete:', video.id)
                     markComplete(video.id)
                     completionTimerRef.current = null
                 }, durationMs)
@@ -294,8 +296,10 @@ export default function CourseDetail() {
             const durationMs = video.duration_seconds 
                 ? video.duration_seconds * 1000 
                 : (video.duration_minutes || 30) * 60 * 1000;
+            console.log(`[XP Timer] Starting fallback timer for ${durationMs / 1000}s`)
             
             completionTimerRef.current = setTimeout(() => {
+                console.log('[XP Timer] Fallback timer fired! Marking video complete:', video.id)
                 markComplete(video.id)
                 completionTimerRef.current = null
             }, durationMs)
@@ -336,39 +340,59 @@ export default function CourseDetail() {
     }
 
     async function markComplete(sessionId) {
-        if (!profile?.id || !courseId) return
+        if (!profile?.id || !courseId) {
+            console.warn('markComplete: Skipped — profile or courseId missing', { profileId: profile?.id, courseId })
+            return
+        }
 
         try {
-            console.log('markComplete: Trying to update progress for', { student_id: profile.id, video_id: sessionId })
+            console.log('markComplete: Saving progress for', { student_id: profile.id, video_id: sessionId, course_id: courseId })
             
-            // Try updating existing row first
-            const { data: updated, error: updateErr } = await supabase
+            // Use upsert to handle both insert and update in one call
+            const { data: upserted, error: upsertErr } = await supabase
                 .from('video_progress')
-                .update({ completed: true, watched_percentage: 100, completed_from: 'RECORDED_VIDEO' })
-                .eq('student_id', profile.id)
-                .eq('video_id', sessionId)
-                .select()
-
-            if (updateErr) {
-                console.error('Update error:', updateErr)
-            }
-
-            // If no existing row, insert a new one
-            if (!updateErr && (!updated || updated.length === 0)) {
-                console.log('markComplete: No row found, trying to insert...')
-                const { error: insertErr } = await supabase.from('video_progress').insert({
+                .upsert({
                     student_id: profile.id,
                     course_id: courseId,
                     video_id: sessionId,
                     completed: true,
                     watched_percentage: 100,
-                    completed_from: 'RECORDED_VIDEO'
+                }, {
+                    onConflict: 'student_id,video_id',
                 })
-                
-                if (insertErr) {
-                    console.error('Insert error details:', insertErr)
-                    alert(`Failed to save progress: ${insertErr.message} (Code: ${insertErr.code})`)
+                .select()
+
+            if (upsertErr) {
+                console.error('markComplete upsert error:', upsertErr)
+                // Fallback: try plain insert without extra columns
+                const { error: fallbackErr } = await supabase.from('video_progress').insert({
+                    student_id: profile.id,
+                    course_id: courseId,
+                    video_id: sessionId,
+                    completed: true,
+                    watched_percentage: 100,
+                })
+                if (fallbackErr) {
+                    console.error('markComplete fallback insert also failed:', fallbackErr)
                     return
+                }
+            }
+
+            console.log('markComplete: Progress saved successfully!')
+
+            // Award XP and streak for watching the recorded video
+            if (awardXp) {
+                try {
+                    const result = await awardXp({
+                        eventType: 'recorded_video',
+                        referenceId: sessionId,
+                        courseId: courseId,
+                        moduleType: 'video',
+                        reason: '📹 Recorded class completed',
+                    })
+                    console.log('markComplete: XP award result:', result)
+                } catch (xpErr) {
+                    console.error('markComplete: XP award failed:', xpErr)
                 }
             }
 
