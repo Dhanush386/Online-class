@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import PropTypes from 'prop-types'
-import { Send, User as UserIcon, Clock, CheckCheck, MessageSquare, Search, Paperclip, File, X, Image as ImageIcon } from 'lucide-react'
+import { Send, User as UserIcon, Clock, CheckCheck, MessageSquare, Search, Paperclip, File, X, Image as ImageIcon, Plus } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 
@@ -272,6 +272,11 @@ export default function Support() {
     
     const fileInputRef = useRef(null)
     
+    // New ticket state
+    const [isCreatingModalOpen, setIsCreatingModalOpen] = useState(false)
+    const [newTicketSubject, setNewTicketSubject] = useState('')
+    const [creatingTicket, setCreatingTicket] = useState(false)
+    
     // Organizer/Shared state
     const [tickets, setTickets] = useState([])
     const [selectedTicket, setSelectedTicket] = useState(null)
@@ -355,6 +360,41 @@ export default function Support() {
             }
         }
         setLoading(false)
+    }
+
+    const handleCreateTicket = async (e) => {
+        e.preventDefault()
+        if (!newTicketSubject.trim()) return
+
+        setCreatingTicket(true)
+        try {
+            const { data, error } = await supabase
+                .from('support_tickets')
+                .insert({
+                    student_id: profile.id,
+                    subject: newTicketSubject.trim(),
+                    status: 'open'
+                })
+                .select()
+                .single()
+
+            if (error) throw error
+
+            setNewTicketSubject('')
+            setIsCreatingModalOpen(false)
+            await fetchTickets()
+            
+            if (data) {
+                setSelectedTicket(data)
+                fetchMessages(data.id)
+            }
+            
+            globalThis.alert('Ticket created successfully')
+        } catch (err) {
+            globalThis.alert('Failed to create ticket: ' + err.message)
+        } finally {
+            setCreatingTicket(false)
+        }
     }
 
     const handleCloseTicket = async () => {
@@ -467,16 +507,28 @@ export default function Support() {
             <div className="glass-card stack-mobile" style={{ flex: 1, display: 'flex', overflow: 'hidden', padding: 0 }}>
                 <div style={{ flexBasis: '320px', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
                     <div style={{ padding: '1.25rem' }}>
-                        <div style={{ position: 'relative' }}>
-                            <Search style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={16} />
-                            <input 
-                                type="text" 
-                                placeholder="Search tickets..." 
-                                className="form-input"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                style={{ paddingLeft: '2.5rem', background: 'var(--bg-elevated)' }}
-                            />
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <Search style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={16} />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search tickets..." 
+                                    className="form-input"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    style={{ paddingLeft: '2.5rem', background: 'var(--bg-elevated)', width: '100%' }}
+                                />
+                            </div>
+                            {!isOrganizer && (
+                                <button 
+                                    onClick={() => setIsCreatingModalOpen(true)}
+                                    className="btn-primary"
+                                    style={{ padding: '0 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', height: '42px', whiteSpace: 'nowrap' }}
+                                >
+                                    <Plus size={16} />
+                                    New
+                                </button>
+                            )}
                         </div>
                     </div>
                     <TicketList 
@@ -533,6 +585,40 @@ export default function Support() {
                     )}
                 </div>
             </div>
+
+            {isCreatingModalOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className="glass-card" style={{ width: '100%', maxWidth: 500, padding: '2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Create New Ticket</h3>
+                            <button onClick={() => setIsCreatingModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateTicket}>
+                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>Subject</label>
+                                <input 
+                                    type="text" 
+                                    className="form-input" 
+                                    placeholder="Brief description of your issue..."
+                                    value={newTicketSubject}
+                                    onChange={(e) => setNewTicketSubject(e.target.value)}
+                                    required
+                                    autoFocus
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                <button type="button" onClick={() => setIsCreatingModalOpen(false)} className="btn-secondary">Cancel</button>
+                                <button type="submit" className="btn-primary" disabled={creatingTicket}>
+                                    {creatingTicket ? 'Creating...' : 'Create Ticket'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
