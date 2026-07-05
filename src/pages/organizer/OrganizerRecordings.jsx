@@ -188,146 +188,131 @@ export default function OrganizerRecordings() {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="glass-card" style={{ overflowX: 'auto' }}>
-                <div style={{ minWidth: '800px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-                        <thead>
-                            <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid var(--card-border)' }}>
-                                <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Recording</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Course</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Date</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Duration</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Status</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600, textAlign: 'right' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading && (
-                                <tr>
-                                    <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                        <Loader className="animate-spin" size={24} style={{ margin: '0 auto 1rem' }} />
-                                        Loading recordings...
-                                    </td>
-                                </tr>
-                            )}
-                            {!loading && filteredRecordings.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                        <Video size={32} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
-                                        No recordings found matching your filters.
-                                    </td>
-                                </tr>
-                            )}
-                            {!loading && filteredRecordings.length > 0 && (
-                                filteredRecordings.map(rec => (
-                                    <tr key={rec.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
-                                        <td style={{ padding: '1rem' }}>
-                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{rec.title}</div>
-                                            {rec.file_size_mb && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}><Database size={12}/> {rec.file_size_mb} MB</div>}
-                                        </td>
-                                        <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{rec.courses?.title || 'Unknown'}</td>
-                                        <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <Calendar size={14} />
-                                                {rec.recorded_at ? new Date(rec.recorded_at).toLocaleDateString() : new Date(rec.created_at).toLocaleDateString()}
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <Clock size={14} />
-                                                {formatDuration(rec.duration_seconds)}
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '1rem' }}>
-                                            {getRecordingStatusBadge(rec)}
-                                        </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                {rec.recording_status === 'failed' && failedUploads[rec.id] && (
-                                                    <>
-                                                        <button 
-                                                            onClick={async () => {
-                                                                const ok = await retryUpload(rec.id)
-                                                                if (ok) loadData()
-                                                            }}
-                                                            style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: 'none', background: '#3b82f6', color: 'white', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                                                            className="hover-scale"
-                                                        >
-                                                            <RefreshCcw size={16} /> Retry
-                                                        </button>
-                                                        <button 
-                                                            onClick={async () => {
-                                                                await deleteFailedUpload(rec.id)
-                                                                loadData()
-                                                            }}
-                                                            style={{ padding: '0.4rem', borderRadius: 6, border: 'none', background: '#fee2e2', color: '#dc2626', cursor: 'pointer' }}
-                                                            className="hover-scale"
-                                                            title="Discard failed upload"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </>
-                                                )}
-                                                <button 
-                                                    onClick={() => {
-                                                        setEditingSlide(rec)
-                                                        setSlideUrl(rec.slide_url || '')
-                                                        setSlideFile(null)
-                                                    }}
-                                                    style={{ padding: '0.4rem', borderRadius: 6, border: 'none', background: rec.slide_url ? '#dcfce7' : '#f3e8ff', color: rec.slide_url ? '#16a34a' : '#9333ea', cursor: 'pointer', transition: 'all 0.2s' }}
-                                                    title={rec.slide_url ? "Edit PPT" : "Attach PPT"}
-                                                    className="hover-scale"
-                                                >
-                                                    <FileText size={16} />
-                                                </button>
-                                                {rec.video_url && (
-                                                    <>
-                                                        <button 
-                                                            onClick={() => copyToClipboard(rec.video_url)}
-                                                            style={{ padding: '0.4rem', borderRadius: 6, border: 'none', background: '#f1f5f9', color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}
-                                                            title="Copy Drive Link"
-                                                            className="hover-scale"
-                                                        >
-                                                            <Copy size={16} />
-                                                        </button>
-                                                        <a 
-                                                            href={rec.video_url} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: 'none', background: '#10b981', color: 'white', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                                                            className="hover-scale"
-                                                        >
-                                                            <PlayCircle size={16} /> Watch
-                                                        </a>
-                                                        <button 
-                                                            onClick={async () => {
-                                                                if (!gToken) {
-                                                                    loginToDrive()
-                                                                    return
-                                                                }
-                                                                if (globalThis.confirm('Are you sure you want to completely delete this recording from Google Drive?')) {
-                                                                    const ok = await deleteRecordingFromDrive(rec.id, rec.drive_file_id)
-                                                                    if (ok) loadData()
-                                                                }
-                                                            }}
-                                                            style={{ padding: '0.4rem', borderRadius: 6, border: 'none', background: '#fee2e2', color: '#dc2626', cursor: 'pointer', transition: 'all 0.2s' }}
-                                                            title="Delete Recording"
-                                                            className="hover-scale"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+            {/* Recordings List */}
+            {loading && (
+                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <Loader className="animate-spin" size={24} style={{ margin: '0 auto 1rem' }} />
+                    Loading recordings...
                 </div>
-            </div>
+            )}
+            {!loading && filteredRecordings.length === 0 && (
+                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.02)', borderRadius: '12px' }}>
+                    <Video size={32} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
+                    No recordings found matching your filters.
+                </div>
+            )}
+            {!loading && filteredRecordings.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {filteredRecordings.map(rec => (
+                        <div key={rec.id} className="glass-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', padding: '1.25rem', borderRadius: '12px' }}>
+                            <div style={{ flex: '1 1 250px' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Recording</div>
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{rec.title}</div>
+                                {rec.file_size_mb && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}><Database size={12}/> {rec.file_size_mb} MB</div>}
+                            </div>
+                            <div style={{ flex: '1 1 150px' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Course</div>
+                                <div style={{ color: 'var(--text-secondary)' }}>{rec.courses?.title || 'Unknown'}</div>
+                            </div>
+                            <div style={{ flex: '1 1 150px' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Date</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)' }}>
+                                    <Calendar size={14} />
+                                    {rec.recorded_at ? new Date(rec.recorded_at).toLocaleDateString() : new Date(rec.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div style={{ flex: '1 1 100px' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Duration</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)' }}>
+                                    <Clock size={14} />
+                                    {formatDuration(rec.duration_seconds)}
+                                </div>
+                            </div>
+                            <div style={{ flex: '1 1 100px' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Status</div>
+                                {getRecordingStatusBadge(rec)}
+                            </div>
+                            <div style={{ flex: '1 1 100%', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--card-border)' }}>
+                                {rec.recording_status === 'failed' && failedUploads[rec.id] && (
+                                    <>
+                                        <button 
+                                            onClick={async () => {
+                                                const ok = await retryUpload(rec.id)
+                                                if (ok) loadData()
+                                            }}
+                                            style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: 'none', background: '#3b82f6', color: 'white', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                            className="hover-scale"
+                                        >
+                                            <RefreshCcw size={16} /> Retry
+                                        </button>
+                                        <button 
+                                            onClick={async () => {
+                                                await deleteFailedUpload(rec.id)
+                                                loadData()
+                                            }}
+                                            style={{ padding: '0.4rem', borderRadius: 6, border: 'none', background: '#fee2e2', color: '#dc2626', cursor: 'pointer' }}
+                                            className="hover-scale"
+                                            title="Discard failed upload"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </>
+                                )}
+                                <button 
+                                    onClick={() => {
+                                        setEditingSlide(rec)
+                                        setSlideUrl(rec.slide_url || '')
+                                        setSlideFile(null)
+                                    }}
+                                    style={{ padding: '0.4rem', borderRadius: 6, border: 'none', background: rec.slide_url ? '#dcfce7' : '#f3e8ff', color: rec.slide_url ? '#16a34a' : '#9333ea', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 6 }}
+                                    title={rec.slide_url ? "Edit PPT" : "Attach PPT"}
+                                    className="hover-scale"
+                                >
+                                    <FileText size={16} /> Attach PPT
+                                </button>
+                                {rec.video_url && (
+                                    <>
+                                        <button 
+                                            onClick={() => copyToClipboard(rec.video_url)}
+                                            style={{ padding: '0.4rem', borderRadius: 6, border: 'none', background: '#f1f5f9', color: '#64748b', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 6 }}
+                                            title="Copy Drive Link"
+                                            className="hover-scale"
+                                        >
+                                            <Copy size={16} /> Link
+                                        </button>
+                                        <a 
+                                            href={rec.video_url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: 'none', background: '#10b981', color: 'white', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                            className="hover-scale"
+                                        >
+                                            <PlayCircle size={16} /> Watch
+                                        </a>
+                                        <button 
+                                            onClick={async () => {
+                                                if (!gToken) {
+                                                    loginToDrive()
+                                                    return
+                                                }
+                                                if (globalThis.confirm('Are you sure you want to completely delete this recording from Google Drive?')) {
+                                                    const ok = await deleteRecordingFromDrive(rec.id, rec.drive_file_id)
+                                                    if (ok) loadData()
+                                                }
+                                            }}
+                                            style={{ padding: '0.4rem', borderRadius: 6, border: 'none', background: '#fee2e2', color: '#dc2626', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 6 }}
+                                            title="Delete Recording"
+                                            className="hover-scale"
+                                        >
+                                            <Trash2 size={16} /> Delete
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Attach PPT Modal */}
             {editingSlide && (
