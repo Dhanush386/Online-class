@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 import { 
   Sparkles, Brain, TrendingUp, AlertTriangle, 
@@ -15,7 +15,8 @@ export default function AIStudyAssistant() {
   const [refreshing, setRefreshing] = useState(false);
   const [aiData, setAiData] = useState(null);
   const [activeCourseId, setActiveCourseId] = useState(null);
-  const { healthScore, breakdown, weakTopics, mastery } = useLearningHealth(activeCourseId);
+  const { healthScore, breakdown, weakTopics, mastery, loading: healthLoading } = useLearningHealth(activeCourseId);
+  const hasLoadedRef = useRef(false);
 
   // Load active course
   useEffect(() => {
@@ -125,6 +126,13 @@ export default function AIStudyAssistant() {
       setRefreshing(false);
     }
   }, [profile?.id, breakdown, healthScore, mastery, weakTopics, activeCourseId]);
+
+  useEffect(() => {
+    if (!healthLoading && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      loadAIData();
+    }
+  }, [healthLoading, loadAIData]);
 
   if (loading) {
     return (
