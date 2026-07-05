@@ -99,7 +99,7 @@ export default function useLearningHealth(courseId) {
       ).length
       const attendanceScore = totalClasses > 0
         ? Math.round((presentClasses / totalClasses) * 100)
-        : 100 // no classes yet = perfect
+        : 0 // no classes yet = 0%
 
       // Calculate quiz score (0-100): average percentage across all assessments
       const quizScores = (quizData || []).map(q =>
@@ -107,7 +107,7 @@ export default function useLearningHealth(courseId) {
       )
       const quizScore = quizScores.length > 0
         ? Math.round(quizScores.reduce((a, b) => a + b, 0) / quizScores.length)
-        : 100
+        : 0
 
       // Calculate coding score (0-100): unique challenges solved / total
       const uniqueSolved = new Set((codingData || []).map(c => c.challenge_id)).size
