@@ -275,7 +275,7 @@ export default function OrganizerProfile() {
                         </div>
                         <div>
                             <label htmlFor="profile-email" className="form-label">Email</label>
-                            <input id="profile-email" value={formData.email} disabled className="form-input" style={{ background: '#f8fafc', color: 'var(--text-muted)' }} />
+                            <input id="profile-email" value={formData.email} disabled className="form-input" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }} />
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#10b981', fontSize: '0.85rem', marginTop: '0.4rem', fontWeight: 600 }}>
                                 <CheckCircle2 size={12} /> Verified
                             </div>
