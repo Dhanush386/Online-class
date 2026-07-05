@@ -50,7 +50,7 @@ export default function AIStudyAssistant() {
         if (cached) {
           // If cached within last 24h, use it
           const hoursSince = (Date.now() - new Date(cached.generated_at)) / (1000 * 60 * 60);
-          if (hoursSince < 24) {
+          if (hoursSince < 24 && cached.health_score === healthScore) {
             setAiData(cached);
             setLoading(false);
             setRefreshing(false);
