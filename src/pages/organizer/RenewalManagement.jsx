@@ -134,113 +134,109 @@ export default function RenewalManagement() {
             </div>
 
             {/* List */}
-            <div className="glass-card" style={{ overflowX: 'auto' }}>
-                <table className="data-table" style={{ minWidth: '700px' }}>
-                    <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>Transaction Details</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading && (
-                            <tr>
-                                <td colSpan="5" style={{ textAlign: 'center', padding: '4rem' }}>
-                                    <Loader2 className="animate-spin" size={32} style={{ color: 'var(--accent)', margin: '0 auto' }} />
-                                    <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>Loading requests...</p>
-                                </td>
-                            </tr>
-                        )}
-                        {!loading && filteredRequests.length === 0 && (
-                            <tr>
-                                <td colSpan="5" style={{ textAlign: 'center', padding: '4rem' }}>
-                                    <Clock size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
-                                    <p style={{ color: 'var(--text-secondary)' }}>No {filter === 'all' ? '' : filter} requests found.</p>
-                                </td>
-                            </tr>
-                        )}
-                        {!loading && filteredRequests.length > 0 && (
-                            filteredRequests.map((req) => (
-                                <tr key={req.id}>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                            <div style={{ width: 36, height: 36, background: 'var(--accent-glow)', color: 'var(--accent)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <User size={18} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{req.users.name}</div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{req.users.email}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                                            <CreditCard size={14} />
-                                            {req.transaction_id}
-                                        </div>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>₹{req.amount} via {req.payment_method}</div>
-                                    </td>
-                                    <td style={{ fontSize: '0.8rem' }}>
-                                        {new Date(req.created_at).toLocaleDateString()}
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                    </td>
-                                    <td>
-                                        <span className={`badge badge-${getStatusBadgeClass(req.status)}`}>
-                                            {req.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {req.status === 'pending' && (
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <button 
-                                                    onClick={() => handleAction(req.id, 'approved')}
-                                                    disabled={actioningId === req.id}
-                                                    style={{ 
-                                                        background: '#d1fae5', 
-                                                        color: '#065f46', 
-                                                        border: 'none', 
-                                                        padding: '6px', 
-                                                        borderRadius: '6px', 
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center'
-                                                    }}
-                                                    title="Approve"
-                                                >
-                                                    {actioningId === req.id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleAction(req.id, 'rejected')}
-                                                    disabled={actioningId === req.id}
-                                                    style={{ 
-                                                        background: '#fee2e2', 
-                                                        color: '#991b1b', 
-                                                        border: 'none', 
-                                                        padding: '6px', 
-                                                        borderRadius: '6px', 
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center'
-                                                    }}
-                                                    title="Reject"
-                                                >
-                                                    {actioningId === req.id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
-                                                </button>
-                                            </div>
-                                        )}
-                                        {req.status !== 'pending' && (
-                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Processed</span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            {loading && (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <Loader2 className="animate-spin" size={32} style={{ color: 'var(--accent)', margin: '0 auto' }} />
+                    <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>Loading requests...</p>
+                </div>
+            )}
+            {!loading && filteredRequests.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '4rem', background: 'rgba(0,0,0,0.02)', borderRadius: '12px' }}>
+                    <Clock size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
+                    <p style={{ color: 'var(--text-secondary)' }}>No {filter === 'all' ? '' : filter} requests found.</p>
+                </div>
+            )}
+            {!loading && filteredRequests.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {filteredRequests.map((req) => (
+                        <div key={req.id} className="glass-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', padding: '1.25rem', borderRadius: '12px' }}>
+                            <div style={{ flex: '1 1 250px' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', fontWeight: 700 }}>Student</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                    <div style={{ width: 36, height: 36, background: 'var(--accent-glow)', color: 'var(--accent)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <User size={18} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{req.users.name}</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{req.users.email}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ flex: '1 1 200px' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Transaction Details</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                                    <CreditCard size={14} />
+                                    {req.transaction_id}
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>₹{req.amount} via {req.payment_method}</div>
+                            </div>
+                            <div style={{ flex: '1 1 120px' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Date</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                                    {new Date(req.created_at).toLocaleDateString()}
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                </div>
+                            </div>
+                            <div style={{ flex: '1 1 100px' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Status</div>
+                                <span className={`badge badge-${getStatusBadgeClass(req.status)}`}>
+                                    {req.status}
+                                </span>
+                            </div>
+                            <div style={{ flex: '1 1 100%', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--card-border)' }}>
+                                {req.status === 'pending' ? (
+                                    <>
+                                        <button 
+                                            onClick={() => handleAction(req.id, 'approved')}
+                                            disabled={actioningId === req.id}
+                                            style={{ 
+                                                background: '#d1fae5', 
+                                                color: '#065f46', 
+                                                border: 'none', 
+                                                padding: '0.5rem 1rem', 
+                                                borderRadius: '6px', 
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                fontWeight: 600,
+                                                fontSize: '0.85rem'
+                                            }}
+                                            className="hover-scale"
+                                        >
+                                            {actioningId === req.id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Approve
+                                        </button>
+                                        <button 
+                                            onClick={() => handleAction(req.id, 'rejected')}
+                                            disabled={actioningId === req.id}
+                                            style={{ 
+                                                background: '#fee2e2', 
+                                                color: '#991b1b', 
+                                                border: 'none', 
+                                                padding: '0.5rem 1rem', 
+                                                borderRadius: '6px', 
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                fontWeight: 600,
+                                                fontSize: '0.85rem'
+                                            }}
+                                            className="hover-scale"
+                                        >
+                                            {actioningId === req.id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />} Reject
+                                        </button>
+                                    </>
+                                ) : (
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0' }}>
+                                        <CheckCircle2 size={16} /> Processed
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }
