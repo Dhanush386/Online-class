@@ -428,15 +428,15 @@ export default function AIChatbot() {
                             <div key={s.id} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', borderRadius: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                                 <button 
                                     onClick={() => handleResumeChat(s.id)}
-                                    style={{ flex: 1, padding: '1rem', background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', textAlign: 'left', fontFamily: 'inherit' }}
+                                    style={{ flex: 1, minWidth: 0, padding: '1rem', background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', textAlign: 'left', fontFamily: 'inherit' }}
                                     onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)' }}
                                     onFocus={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)' }}
                                     onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
                                     onBlur={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
                                 >
                                     <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
-                                        <div style={{ padding: '8px', background: 'rgba(99,102,241,0.1)', borderRadius: '10px', color: '#6366f1' }}><MessageSquare size={18} /></div>
-                                        <div style={{ overflow: 'hidden', flex: 1 }}>
+                                        <div style={{ padding: '8px', background: 'rgba(99,102,241,0.1)', borderRadius: '10px', color: '#6366f1', flexShrink: 0 }}><MessageSquare size={18} /></div>
+                                        <div style={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
                                             <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}><Clock size={12} /> {date}</div>
                                         </div>
@@ -444,7 +444,7 @@ export default function AIChatbot() {
                                 </button>
                                 <button 
                                     onClick={(e) => handleDeleteSession(e, s.id)}
-                                    style={{ padding: '1rem', color: 'var(--text-muted)', background: 'none', border: 'none', borderLeft: '1px solid var(--sidebar-border)', cursor: 'pointer', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    style={{ padding: '1rem', color: 'var(--text-muted)', background: 'none', border: 'none', borderLeft: '1px solid var(--sidebar-border)', cursor: 'pointer', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                                     onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
                                     onFocus={(e) => e.currentTarget.style.color = '#ef4444'}
                                     onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
