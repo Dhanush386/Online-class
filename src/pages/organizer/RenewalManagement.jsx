@@ -80,8 +80,8 @@ export default function RenewalManagement() {
     )
 
     return (
-        <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto', overflowX: 'hidden' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Renewal Management</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Verify and approve student access renewal requests</p>
@@ -97,7 +97,7 @@ export default function RenewalManagement() {
 
             {/* Controls */}
             <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
                     <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input 
                         type="text" 
@@ -109,7 +109,7 @@ export default function RenewalManagement() {
                     />
                 </div>
                 
-                <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '10px' }}>
                     {['pending', 'approved', 'rejected', 'all'].map((f) => (
                         <button
                             key={f}
