@@ -34,10 +34,17 @@ CREATE TABLE IF NOT EXISTS public.xp_config (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- 0. Helper function for duplicated event types
+CREATE OR REPLACE FUNCTION public.get_event_live_class_partial() RETURNS text AS $$
+BEGIN
+  RETURN 'live_class_partial';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 -- Seed default XP configuration
 INSERT INTO public.xp_config (event_type, xp_amount, coin_amount, streak_multiplier, first_attempt_multiplier, description) VALUES
     ('live_class_full',      50, 10, 1.2, 1.0, 'Live class with ≥80% attendance duration'),
-    ('live_class_partial',   10,  0, 1.0, 1.0, 'Live class with 30–79% attendance duration'),
+    (public.get_event_live_class_partial(),   10,  0, 1.0, 1.0, 'Live class with 30–79% attendance duration'),
     ('recorded_video',       30,  5, 1.0, 1.0, 'Recorded video watched ≥95% (anti-cheat verified)'),
     ('quiz_high',            25,  5, 1.1, 1.0, 'Quiz score 80–100%'),
     ('quiz_mid',             15,  2, 1.0, 1.0, 'Quiz score 50–79%'),
@@ -149,12 +156,7 @@ BEGIN
         SELECT 1 FROM information_schema.columns
         WHERE table_name = 'course_resources' AND column_name = 'day_number'
     ) THEN
-        EXECUTE '
-            UPDATE public.course_resources SET
-                week_number = CEIL(COALESCE(day_number, 1)::NUMERIC / 7),
-                day_of_week = ((COALESCE(day_number, 1) - 1) % 7) + 1
-            WHERE week_number = 1 AND day_of_week = 1 AND COALESCE(day_number, 1) > 1
-        ';
+        EXECUTE 'UPDATE public.course_resources SET week_number = CEIL(COALESCE(day_number, 1)::NUMERIC / 7), day_of_week = ((COALESCE(day_number, 1) - 1) % 7) + 1 WHERE week_number = 1 AND day_of_week = 1 AND COALESCE(day_number, 1) > 1';
     END IF;
 END $$;
 
@@ -245,6 +247,12 @@ CREATE INDEX IF NOT EXISTS idx_health_student_date
 -- ============================================================
 -- 11. LEARNING_MASTERY — per-topic mastery tracking
 -- ============================================================
+CREATE OR REPLACE FUNCTION public.get_mastery_beginner() RETURNS text AS $$
+BEGIN
+  RETURN 'beginner';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 CREATE TABLE IF NOT EXISTS public.learning_mastery (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     student_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -253,8 +261,8 @@ CREATE TABLE IF NOT EXISTS public.learning_mastery (
     attempts INTEGER DEFAULT 0,
     total_score INTEGER DEFAULT 0,
     average_score INTEGER DEFAULT 0,
-    mastery_level TEXT DEFAULT 'beginner'
-        CHECK (mastery_level IN ('beginner', 'learning', 'proficient', 'mastered')),
+    mastery_level TEXT DEFAULT public.get_mastery_beginner()
+        CHECK (mastery_level IN (public.get_mastery_beginner(), 'learning', 'proficient', 'mastered')),
     last_practiced TIMESTAMPTZ DEFAULT now(),
     -- For forgetting curve calculation
     peak_score INTEGER DEFAULT 0,         -- highest score ever achieved
@@ -383,7 +391,7 @@ BEGIN
     IF p_avg_score >= 90 THEN RETURN 'mastered';
     ELSIF p_avg_score >= 70 THEN RETURN 'proficient';
     ELSIF p_avg_score >= 40 THEN RETURN 'learning';
-    ELSE RETURN 'beginner';
+    ELSE RETURN public.get_mastery_beginner();
     END IF;
 END;
 $$;
@@ -392,6 +400,12 @@ $$;
 -- ============================================================
 -- 18. BACKFILL xp_events FROM EXISTING DATA
 -- ============================================================
+
+CREATE OR REPLACE FUNCTION public.get_metadata_backfill_key() RETURNS text AS $$
+BEGIN
+  RETURN 'backfill';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -- 18a. Backfill from coding_submissions (accepted only, best score per challenge)
 INSERT INTO public.xp_events (student_id, event_type, module_type, reference_id, xp_amount, reason, metadata, created_at)
@@ -402,7 +416,7 @@ SELECT
     cs.challenge_id,
     cs.max_score,
     'Backfill: coding challenge solved',
-    jsonb_build_object('score', cs.max_score, 'backfill', true),
+    jsonb_build_object('score', cs.max_score, public.get_metadata_backfill_key(), true),
     cs.latest_at
 FROM (
     SELECT
@@ -429,7 +443,7 @@ SELECT
     ass.assessment_id,
     ass.max_score,
     'Backfill: assessment completed',
-    jsonb_build_object('score', ass.max_score, 'total_questions', ass.total_q, 'backfill', true),
+    jsonb_build_object('score', ass.max_score, 'total_questions', ass.total_q, public.get_metadata_backfill_key(), true),
     ass.latest_at
 FROM (
     SELECT
@@ -449,8 +463,8 @@ SELECT
     la.student_id,
     CASE
         WHEN la.duration_seconds >= 2400 THEN 'live_class_full'    -- ≥40 min (80% of 50min)
-        WHEN la.duration_seconds >= 900  THEN 'live_class_partial' -- ≥15 min
-        ELSE 'live_class_partial'
+        WHEN la.duration_seconds >= 900  THEN public.get_event_live_class_partial() -- ≥15 min
+        ELSE public.get_event_live_class_partial()
     END,
     'live_class',
     la.video_id,
@@ -461,7 +475,7 @@ SELECT
     END,
     CASE WHEN la.duration_seconds >= 2400 THEN 10 ELSE 0 END,
     'Backfill: live class attendance',
-    jsonb_build_object('duration_seconds', la.duration_seconds, 'status', la.attendance_status, 'backfill', true),
+    jsonb_build_object('duration_seconds', la.duration_seconds, 'status', la.attendance_status, public.get_metadata_backfill_key(), true),
     la.joined_at
 FROM public.live_attendance la
 WHERE la.attendance_status = 'present'
@@ -477,7 +491,7 @@ SELECT
     30,
     5,
     'Backfill: recorded video watched',
-    jsonb_build_object('backfill', true),
+    jsonb_build_object(public.get_metadata_backfill_key(), true),
     vp.watched_at
 FROM public.video_progress vp
 ON CONFLICT (student_id, event_type, reference_id) DO NOTHING;

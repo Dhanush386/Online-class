@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Clock } from 'lucide-react'
 
@@ -31,4 +32,16 @@ export function WorkspaceHeader({
             </div>
         </header>
     )
+}
+
+WorkspaceHeader.propTypes = {
+    canBypass: PropTypes.bool,
+    currentIndex: PropTypes.number,
+    challenge: PropTypes.shape({
+        title: PropTypes.string
+    }),
+    isStarted: PropTypes.bool,
+    violationCount: PropTypes.number,
+    timeLeft: PropTypes.number,
+    formatTime: PropTypes.func
 }

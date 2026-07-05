@@ -3,9 +3,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { 
-    CreditCard, CheckCircle2, AlertCircle, Loader2, 
-    ArrowRight, ShieldCheck, Zap, Copy, ExternalLink,
-    Smartphone, Download, Clock
+    CheckCircle2, AlertCircle, Loader2, 
+    ShieldCheck, Zap, Copy, Smartphone, Clock
 } from 'lucide-react'
 
 export default function RenewAccess() {
@@ -18,7 +17,6 @@ export default function RenewAccess() {
     const [checking, setChecking] = useState(true)
 
     const UPI_ID = "dhanush74244@okhdfcbank"
-    const AMOUNT = "100"
 
 
     const handleCopyUpi = () => {
@@ -87,6 +85,167 @@ export default function RenewAccess() {
         }
     }
 
+    const renderContent = () => {
+        if (pendingRequest) {
+            return (
+                <div style={{ textAlign: 'center', padding: '1rem' }}>
+                    <div style={{ 
+                        background: 'rgba(245,158,11,0.1)', 
+                        color: '#f59e0b', 
+                        padding: '1.5rem', 
+                        borderRadius: '16px',
+                        border: '1px solid rgba(245,158,11,0.2)',
+                        marginBottom: '2rem'
+                    }}>
+                        <Clock size={40} style={{ marginBottom: '1rem' }} />
+                        <h3 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Renewal Under Review</h3>
+                        <p style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
+                            We've received your transaction ID: <strong>{pendingRequest.transaction_id}</strong>. 
+                            Our team is currently verifying it. Your access will be extended automatically once approved.
+                        </p>
+                    </div>
+                    <button 
+                        type="button"
+                        onClick={() => signOut()}
+                        style={{ 
+                            background: 'none', 
+                            border: 'none', 
+                            color: 'var(--text-muted)', 
+                            fontSize: '0.875rem', 
+                            cursor: 'pointer',
+                            textDecoration: 'underline'
+                        }}
+                    >
+                        Log Out from Account
+                    </button>
+                </div>
+            )
+        }
+
+        if (checking) {
+            return (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    <Loader2 size={32} className="animate-spin" style={{ color: '#6366f1', margin: '0 auto' }} />
+                </div>
+            )
+        }
+
+        return (
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>Step 1: Pay via UPI</div>
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.85rem', 
+                        background: 'rgba(255,255,255,0.05)', 
+                        padding: '0.85rem 1rem', 
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                        <Smartphone size={20} color="#6366f1" />
+                        <span style={{ flex: 1, fontSize: '0.9rem', color: '#f8fafc', fontWeight: 600 }}>{UPI_ID}</span>
+                        <button 
+                            type="button" 
+                            onClick={handleCopyUpi} 
+                            style={{ 
+                                background: 'none', 
+                                border: 'none', 
+                                color: copied ? '#10b981' : '#6366f1', 
+                                cursor: 'pointer',
+                                padding: '4px'
+                            }}
+                        >
+                            {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
+                        </button>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Scan QR or pay to the above UPI ID using GPay, PhonePe, or Paytm.</p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        Step 2: Enter Transaction ID (UTR)
+                        <input 
+                            value={transactionId}
+                            onChange={(e) => setTransactionId(e.target.value)}
+                            placeholder="Enter 12-digit UTR/Ref number"
+                            style={{ 
+                                width: '100%', 
+                                padding: '1rem', 
+                                background: 'rgba(255,255,255,0.05)', 
+                                border: '1px solid rgba(255,255,255,0.1)', 
+                                borderRadius: '12px',
+                                color: 'white',
+                                outline: 'none',
+                                fontWeight: 'normal'
+                            }}
+                            autoFocus
+                        />
+                    </label>
+                </div>
+
+                {error && (
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.5rem', 
+                        color: '#ef4444', 
+                        fontSize: '0.85rem',
+                        background: 'rgba(239,68,68,0.1)',
+                        padding: '0.85rem',
+                        borderRadius: '8px'
+                    }}>
+                        <AlertCircle size={16} />
+                        <span>{error}</span>
+                    </div>
+                )}
+
+                <button 
+                    type="submit" 
+                    disabled={saving || !transactionId} 
+                    className="btn-primary" 
+                    style={{ 
+                        width: '100%', 
+                        padding: '1rem', 
+                        fontSize: '1rem', 
+                        gap: '0.85rem',
+                        background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                        boxShadow: '0 10px 20px rgba(99,102,241,0.2)'
+                    }}
+                >
+                    {saving ? (
+                        <>
+                            <Loader2 size={20} className="animate-spin" />
+                            Processing Renewal...
+                        </>
+                    ) : (
+                        <>
+                            <ShieldCheck size={20} />
+                            Verify & Extend Access
+                        </>
+                    )}
+                </button>
+
+                <div style={{ textAlign: 'center' }}>
+                    <button 
+                        type="button"
+                        onClick={() => signOut()}
+                        style={{ 
+                            background: 'none', 
+                            border: 'none', 
+                            color: 'var(--text-muted)', 
+                            fontSize: '0.875rem', 
+                            cursor: 'pointer',
+                            textDecoration: 'underline'
+                        }}
+                    >
+                        Log Out from Account
+                    </button>
+                </div>
+            </form>
+        )
+    }
+
     return (
         <div style={{ 
             minHeight: '100vh', 
@@ -116,30 +275,7 @@ export default function RenewAccess() {
                     filter: 'blur(40px)'
                 }} />
 
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <div style={{ 
-                        width: 64, 
-                        height: 64, 
-                        background: isExpired ? 'rgba(239,68,68,0.1)' : 'rgba(99,102,241,0.1)', 
-                        color: isExpired ? '#ef4444' : '#6366f1', 
-                        borderRadius: '16px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        margin: '0 auto 1.5rem',
-                        border: `1px solid ${isExpired ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.2)'}`
-                    }}>
-                        {isExpired ? <AlertCircle size={32} /> : <Zap size={32} />}
-                    </div>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>
-                        {isExpired ? 'Access Expired' : 'Extend Access'}
-                    </h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-                        {isExpired 
-                            ? 'Your current subscription phase has ended. Renew now to continue your learning journey.' 
-                            : 'Want more learning time? Extend your access ahead of time to keep your streak going!'}
-                    </p>
-                </div>
+                <HeaderSection isExpired={isExpired} />
 
                 <div style={{ 
                     background: 'rgba(255,255,255,0.03)', 
@@ -158,154 +294,7 @@ export default function RenewAccess() {
                     </div>
                 </div>
 
-                {pendingRequest ? (
-                    <div style={{ textAlign: 'center', padding: '1rem' }}>
-                        <div style={{ 
-                            background: 'rgba(245,158,11,0.1)', 
-                            color: '#f59e0b', 
-                            padding: '1.5rem', 
-                            borderRadius: '16px',
-                            border: '1px solid rgba(245,158,11,0.2)',
-                            marginBottom: '2rem'
-                        }}>
-                            <Clock size={40} style={{ marginBottom: '1rem' }} />
-                            <h3 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Renewal Under Review</h3>
-                            <p style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
-                                We've received your transaction ID: <strong>{pendingRequest.transaction_id}</strong>. 
-                                Our team is currently verifying it. Your access will be extended automatically once approved.
-                            </p>
-                        </div>
-                        <button 
-                            type="button"
-                            onClick={() => signOut()}
-                            style={{ 
-                                background: 'none', 
-                                border: 'none', 
-                                color: 'var(--text-muted)', 
-                                fontSize: '0.875rem', 
-                                cursor: 'pointer',
-                                textDecoration: 'underline'
-                            }}
-                        >
-                            Log Out from Account
-                        </button>
-                    </div>
-                ) : checking ? (
-                    <div style={{ textAlign: 'center', padding: '2rem' }}>
-                        <Loader2 size={32} className="animate-spin" style={{ color: '#6366f1', margin: '0 auto' }} />
-                    </div>
-                ) : (
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        {/* ... existing form content ... */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>Step 1: Pay via UPI</label>
-                            <div style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0.85rem', 
-                                background: 'rgba(255,255,255,0.05)', 
-                                padding: '0.85rem 1rem', 
-                                borderRadius: '12px',
-                                border: '1px solid rgba(255,255,255,0.1)'
-                            }}>
-                                <Smartphone size={20} color="#6366f1" />
-                                <span style={{ flex: 1, fontSize: '0.9rem', color: '#f8fafc', fontWeight: 600 }}>{UPI_ID}</span>
-                                <button 
-                                    type="button" 
-                                    onClick={handleCopyUpi} 
-                                    style={{ 
-                                        background: 'none', 
-                                        border: 'none', 
-                                        color: copied ? '#10b981' : '#6366f1', 
-                                        cursor: 'pointer',
-                                        padding: '4px'
-                                    }}
-                                >
-                                    {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
-                                </button>
-                            </div>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Scan QR or pay to the above UPI ID using GPay, PhonePe, or Paytm.</p>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>Step 2: Enter Transaction ID (UTR)</label>
-                            <input 
-                                value={transactionId}
-                                onChange={(e) => setTransactionId(e.target.value)}
-                                placeholder="Enter 12-digit UTR/Ref number"
-                                style={{ 
-                                    width: '100%', 
-                                    padding: '1rem', 
-                                    background: 'rgba(255,255,255,0.05)', 
-                                    border: '1px solid rgba(255,255,255,0.1)', 
-                                    borderRadius: '12px',
-                                    color: 'white',
-                                    outline: 'none'
-                                }}
-                                autoFocus
-                            />
-                        </div>
-
-                        {error && (
-                            <div style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0.5rem', 
-                                color: '#ef4444', 
-                                fontSize: '0.85rem',
-                                background: 'rgba(239,68,68,0.1)',
-                                padding: '0.85rem',
-                                borderRadius: '8px'
-                            }}>
-                                <AlertCircle size={16} />
-                                <span>{error}</span>
-                            </div>
-                        )}
-
-                        <button 
-                            type="submit" 
-                            disabled={saving || !transactionId} 
-                            className="btn-primary" 
-                            style={{ 
-                                width: '100%', 
-                                padding: '1rem', 
-                                fontSize: '1rem', 
-                                gap: '0.85rem',
-                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                                boxShadow: '0 10px 20px rgba(99,102,241,0.2)'
-                            }}
-                        >
-                            {saving ? (
-                                <>
-                                    <Loader2 size={20} className="animate-spin" />
-                                    Processing Renewal...
-                                </>
-                            ) : (
-                                <>
-                                    <ShieldCheck size={20} />
-                                    Verify & Extend Access
-                                </>
-                            )}
-                        </button>
-
-                        <div style={{ textAlign: 'center' }}>
-                            <button 
-                                type="button"
-                                onClick={() => signOut()}
-                                style={{ 
-                                    background: 'none', 
-                                    border: 'none', 
-                                    color: 'var(--text-muted)', 
-                                    fontSize: '0.875rem', 
-                                    cursor: 'pointer',
-                                    textDecoration: 'underline'
-                                }}
-                            >
-                                Log Out from Account
-                            </button>
-                        </div>
-                    </form>
-                )}
+                {renderContent()}
 
                 <div style={{ 
                     marginTop: '2rem', 
@@ -344,6 +333,35 @@ export default function RenewAccess() {
                     color: var(--text-secondary);
                 }
             `}</style>
+        </div>
+    )
+}
+
+function HeaderSection({ isExpired }) {
+    return (
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{ 
+                width: 64, 
+                height: 64, 
+                background: isExpired ? 'rgba(239,68,68,0.1)' : 'rgba(99,102,241,0.1)', 
+                color: isExpired ? '#ef4444' : '#6366f1', 
+                borderRadius: '16px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                margin: '0 auto 1.5rem',
+                border: `1px solid ${isExpired ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.2)'}`
+            }}>
+                {isExpired ? <AlertCircle size={32} /> : <Zap size={32} />}
+            </div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+                {isExpired ? 'Access Expired' : 'Extend Access'}
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                {isExpired 
+                    ? 'Your current subscription phase has ended. Renew now to continue your learning journey.' 
+                    : 'Want more learning time? Extend your access ahead of time to keep your streak going!'}
+            </p>
         </div>
     )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
@@ -76,7 +77,7 @@ export default function StudentDashboard() {
 
       // Execute all queries concurrently
       const [
-        _enrollmentsRes, progressRes, submissionsRes, _upcomingVideosRes, pastVideosRes,
+        , progressRes, submissionsRes, , pastVideosRes,
         attendedCountRes, codingSubsRes, liveAttRes, leaderboardRes
       ] = await Promise.all([
         enrollmentsPromise, progressPromise, submissionsPromise, upcomingVideosPromise, pastVideosPromise,
@@ -107,13 +108,11 @@ export default function StudentDashboard() {
       // Assessment Average
       let totalAssScore = 0
       let validAss = 0
-      const formattedScores = []
       subs.forEach(s => {
         if (s.total_questions > 0) {
           const pct = (s.score / s.total_questions) * 100
           totalAssScore += pct
           validAss++
-          formattedScores.push({ name: s.assessments?.title?.substring(0, 10) || 'Quiz', Score: Math.round(pct) })
         }
       })
       const avgAss = validAss > 0 ? Math.round(totalAssScore / validAss) : 0
@@ -301,8 +300,8 @@ export default function StudentDashboard() {
                 <BarChart2 size={18} color="#06b6d4" /> Learning Consistency
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', flex: 1, justifyContent: 'center' }}>
-                {learningConsistency.map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {learningConsistency.map((item) => (
+                  <div key={item.day} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ width: 30, fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>{item.day}</div>
                     <div style={{ flex: 1, height: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
                       <div style={{ width: `${Math.max(2, item.intensity)}%`, height: '100%', background: item.intensity > 0 ? '#06b6d4' : 'transparent', borderRadius: 2 }} />
@@ -328,8 +327,8 @@ export default function StudentDashboard() {
                 </Link>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', justifyItems: 'center' }}>
-                {getUnlockedBadges().map((badge, i) => (
-                  <BadgeBox key={i} icon={badge.icon} name={badge.name} active={!badge.locked} />
+                {getUnlockedBadges().map((badge) => (
+                  <BadgeBox key={badge.name} icon={badge.icon} name={badge.name} active={!badge.locked} />
                 ))}
               </div>
             </GlassCard>
@@ -478,6 +477,14 @@ function KPIStudentCard({ icon, title, value, subtitle, color }) {
   )
 }
 
+KPIStudentCard.propTypes = {
+  icon: PropTypes.node.isRequired,
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  subtitle: PropTypes.string,
+  color: PropTypes.string
+}
+
 function hexToRgb(hex) {
   if (!hex) return '255,255,255';
   let c = hex.substring(1).split('');
@@ -510,4 +517,10 @@ function BadgeBox({ icon, name, active }) {
       </div>
     </div>
   )
+}
+
+BadgeBox.propTypes = {
+  icon: PropTypes.node.isRequired,
+  name: PropTypes.string.isRequired,
+  active: PropTypes.bool.isRequired
 }

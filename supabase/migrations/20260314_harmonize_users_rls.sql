@@ -33,17 +33,11 @@ ON public.users FOR UPDATE
 TO authenticated
 USING (
     (auth.uid() = id) OR
-    EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE id = auth.uid() AND role IN ('main_admin', 'organizer')
-    )
+    public.is_elevated_admin()
 )
 WITH CHECK (
     (auth.uid() = id) OR
-    EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE id = auth.uid() AND role IN ('main_admin', 'organizer')
-    )
+    public.is_elevated_admin()
 );
 
 -- DELETE: Main Admins and Organizers can delete users
@@ -51,10 +45,7 @@ CREATE POLICY "Enable delete for admins"
 ON public.users FOR DELETE
 TO authenticated
 USING (
-    EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE id = auth.uid() AND role IN ('main_admin', 'organizer')
-    )
+    public.is_elevated_admin()
 );
 
 -- 4. Reload schema cache

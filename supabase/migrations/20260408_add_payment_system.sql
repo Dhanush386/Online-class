@@ -39,14 +39,16 @@ RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+    extension_interval CONSTANT INTERVAL := '31 days';
 BEGIN
     UPDATE public.users
     SET access_expires_at = COALESCE(
         CASE 
-            WHEN access_expires_at > NOW() THEN access_expires_at + INTERVAL '31 days'
-            ELSE NOW() + INTERVAL '31 days'
+            WHEN access_expires_at > NOW() THEN access_expires_at + extension_interval
+            ELSE NOW() + extension_interval
         END,
-        NOW() + INTERVAL '31 days'
+        NOW() + extension_interval
     )
     WHERE id = p_student_id;
 END;

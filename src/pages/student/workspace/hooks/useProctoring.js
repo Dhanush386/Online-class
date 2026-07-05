@@ -50,67 +50,71 @@ export function useProctoring({ isStarted, canBypass, BYPASS_PROCTORING, challen
 
     // Run Proctoring Loop
     useEffect(() => {
+        const processProctoringPredictions = (predictions) => {
+            let phoneDetected = false;
+            let personCount = 0;
+            predictions.forEach(p => {
+                if (p.class === 'cell phone') phoneDetected = true;
+                if (p.class === 'person') personCount++;
+            });
+            setFaceDetected(personCount > 0);
+            
+            const now = Date.now();
+
+            // 1. Phone Detection (Risk: +40)
+            if (phoneDetected) {
+                setViolationCount(prev => {
+                    const next = prev + 1;
+                    if (next < 3) {
+                        setSecurityAlert(`Security Warning (${next}/3): Unauthorized device (cell phone) detected by AI Proctoring.`);
+                    }
+                    return next;
+                });
+
+                if (now - (lastViolationTimes.current['phone_detected'] || 0) > 10000) {
+                    lastViolationTimes.current['phone_detected'] = now;
+                    logViolation('phone_detected', 40);
+                }
+            }
+
+            // 2. Face Lost Detection (Risk: +20)
+            if (personCount === 0) {
+                if (now - (lastViolationTimes.current['face_lost'] || 0) > 10000) {
+                    lastViolationTimes.current['face_lost'] = now;
+                    logViolation('face_lost', 20);
+                }
+            }
+
+            // 3. Multiple Faces Detection (Risk: +50)
+            if (personCount > 1) {
+                setViolationCount(prev => {
+                    const next = prev + 1;
+                    if (next < 3) {
+                        setSecurityAlert(`Security Warning (${next}/3): Multiple people detected in webcam feed.`);
+                    }
+                    return next;
+                });
+
+                if (now - (lastViolationTimes.current['multiple_faces'] || 0) > 10000) {
+                    lastViolationTimes.current['multiple_faces'] = now;
+                    logViolation('multiple_faces', 50);
+                }
+            }
+        };
+
         if (BYPASS_PROCTORING) return;
         if (isStarted && cameraEnabled && aiModel && videoRef.current && !canBypass) {
             proctorInterval.current = setInterval(async () => {
-                if (videoRef.current && videoRef.current.readyState === 4) {
-                    const predictions = await aiModel.detect(videoRef.current)
-                    let phoneDetected = false
-                    let personCount = 0
-                    predictions.forEach(p => {
-                        if (p.class === 'cell phone') phoneDetected = true
-                        if (p.class === 'person') personCount++
-                    })
-                    setFaceDetected(personCount > 0)
-                    
-                    const now = Date.now();
-
-                    // 1. Phone Detection (Risk: +40)
-                    if (phoneDetected) {
-                        setViolationCount(prev => {
-                            const next = prev + 1
-                            if (next < 3) {
-                                setSecurityAlert(`Security Warning (${next}/3): Unauthorized device (cell phone) detected by AI Proctoring.`)
-                            }
-                            return next
-                        })
-
-                        if (now - (lastViolationTimes.current['phone_detected'] || 0) > 10000) {
-                            lastViolationTimes.current['phone_detected'] = now;
-                            logViolation('phone_detected', 40);
-                        }
-                    }
-
-                    // 2. Face Lost Detection (Risk: +20)
-                    if (personCount === 0) {
-                        if (now - (lastViolationTimes.current['face_lost'] || 0) > 10000) {
-                            lastViolationTimes.current['face_lost'] = now;
-                            logViolation('face_lost', 20);
-                        }
-                    }
-
-                    // 3. Multiple Faces Detection (Risk: +50)
-                    if (personCount > 1) {
-                        setViolationCount(prev => {
-                            const next = prev + 1
-                            if (next < 3) {
-                                setSecurityAlert(`Security Warning (${next}/3): Multiple people detected in webcam feed.`)
-                            }
-                            return next
-                        })
-
-                        if (now - (lastViolationTimes.current['multiple_faces'] || 0) > 10000) {
-                            lastViolationTimes.current['multiple_faces'] = now;
-                            logViolation('multiple_faces', 50);
-                        }
-                    }
+                if (videoRef.current?.readyState === 4) {
+                    const predictions = await aiModel.detect(videoRef.current);
+                    processProctoringPredictions(predictions);
                 }
-            }, 2500)
+            }, 2500);
         }
         return () => {
-            if (proctorInterval.current) clearInterval(proctorInterval.current)
-        }
-    }, [isStarted, cameraEnabled, aiModel, canBypass, BYPASS_PROCTORING])
+            if (proctorInterval.current) clearInterval(proctorInterval.current);
+        };
+    }, [isStarted, cameraEnabled, aiModel, canBypass, BYPASS_PROCTORING]);
 
     const logViolation = async (type, increment) => {
         if (BYPASS_PROCTORING) return;

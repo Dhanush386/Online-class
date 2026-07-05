@@ -62,15 +62,21 @@ CREATE POLICY "Organizers can view all violations" ON public.proctoring_violatio
     );
 
 -- 5. Create storage bucket for proctoring evidence
+CREATE OR REPLACE FUNCTION public.get_proctoring_evidence_bucket() RETURNS text AS $$
+BEGIN
+  RETURN 'proctoring-evidence';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 INSERT INTO storage.buckets (id, name, public) 
-VALUES ('proctoring-evidence', 'proctoring-evidence', true)
+VALUES (public.get_proctoring_evidence_bucket(), public.get_proctoring_evidence_bucket(), true)
 ON CONFLICT (id) DO NOTHING;
 
 -- RLS policies for proctoring-evidence storage bucket
 CREATE POLICY "Public Select Access for Evidence" ON storage.objects
-    FOR SELECT USING (bucket_id = 'proctoring-evidence');
+    FOR SELECT USING (bucket_id = public.get_proctoring_evidence_bucket());
 
 CREATE POLICY "Authenticated Insert Access for Student Evidence" ON storage.objects
     FOR INSERT TO authenticated WITH CHECK (
-        bucket_id = 'proctoring-evidence'
+        bucket_id = public.get_proctoring_evidence_bucket()
     );

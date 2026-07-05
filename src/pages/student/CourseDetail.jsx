@@ -42,6 +42,28 @@ function extractDriveFileId(url) {
     return null
 }
 
+function NoteCard({ note, onEdit, onDelete }) {
+    return (
+        <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', border: '1px solid var(--card-border)', background: 'white' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>{note.title}</h4>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={() => onEdit(note)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }} title="Edit">
+                        <Edit2 size={16} />
+                    </button>
+                    <button onClick={() => onDelete(note.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }} title="Delete">
+                        <Trash2 size={16} color="#ef4444" />
+                    </button>
+                </div>
+            </div>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
+            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                <Calendar size={12} /> {new Date(note.created_at).toLocaleDateString()}
+            </div>
+        </div>
+    )
+}
+
 export default function CourseDetail() {
     const { courseId } = useParams()
     const { profile } = useAuth()
@@ -259,6 +281,34 @@ export default function CourseDetail() {
         setProgress(p => ({ ...p, completion_percentage: finalPct }))
     }
 
+    function getVideoDurationMs(video) {
+        return video.duration_seconds
+            ? video.duration_seconds * 1000
+            : (video.duration_minutes || 30) * 60 * 1000;
+    }
+
+    function startCompletionTimer(video, label) {
+        if (completionTimerRef.current) clearTimeout(completionTimerRef.current)
+        const durationMs = getVideoDurationMs(video)
+        console.log(`[XP Timer] Starting ${label} timer for ${durationMs / 1000}s (duration_seconds=${video.duration_seconds}, duration_minutes=${video.duration_minutes})`)
+
+        completionTimerRef.current = setTimeout(() => {
+            console.log(`[XP Timer] ${label} timer fired! Marking video complete:`, video.id)
+            markComplete(video.id)
+            completionTimerRef.current = null
+        }, durationMs)
+    }
+
+    function extractSupabasePath(url) {
+        if (url.includes('/storage/v1/object/public/videos/')) {
+            return url.split('/storage/v1/object/public/videos/')[1]
+        }
+        if (url.includes('/storage/v1/object/sign/videos/')) {
+            return url.split('/storage/v1/object/sign/videos/')[1].split('?')[0]
+        }
+        return url
+    }
+
     async function handleWatchVideo(video) {
         if (!video.video_url) return
 
@@ -270,39 +320,13 @@ export default function CourseDetail() {
         if (video.video_url.includes('drive.google.com') || video.drive_file_id) {
             const fileId = extractDriveFileId(video.video_url) || video.drive_file_id
             if (fileId) {
-                const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`
                 setVideoType('drive-iframe')
-                setSignedUrl(previewUrl)
-                
-                if (completionTimerRef.current) clearTimeout(completionTimerRef.current)
-                const durationMs = video.duration_seconds 
-                    ? video.duration_seconds * 1000 
-                    : (video.duration_minutes || 30) * 60 * 1000;
-                console.log(`[XP Timer] Starting timer for ${durationMs / 1000}s (duration_seconds=${video.duration_seconds}, duration_minutes=${video.duration_minutes})`)
-                
-                completionTimerRef.current = setTimeout(() => {
-                    console.log('[XP Timer] Timer fired! Marking video complete:', video.id)
-                    markComplete(video.id)
-                    completionTimerRef.current = null
-                }, durationMs)
-                return
+                setSignedUrl(`https://drive.google.com/file/d/${fileId}/preview`)
+            } else {
+                globalThis.open(video.video_url, '_blank')
+                setVideoType('fallback')
             }
-            
-            // Fallback if no file ID could be extracted
-            globalThis.open(video.video_url, '_blank')
-            setVideoType('fallback')
-            
-            if (completionTimerRef.current) clearTimeout(completionTimerRef.current)
-            const durationMs = video.duration_seconds 
-                ? video.duration_seconds * 1000 
-                : (video.duration_minutes || 30) * 60 * 1000;
-            console.log(`[XP Timer] Starting fallback timer for ${durationMs / 1000}s`)
-            
-            completionTimerRef.current = setTimeout(() => {
-                console.log('[XP Timer] Fallback timer fired! Marking video complete:', video.id)
-                markComplete(video.id)
-                completionTimerRef.current = null
-            }, durationMs)
+            startCompletionTimer(video, fileId ? 'Drive' : 'Fallback')
             return
         }
 
@@ -316,14 +340,7 @@ export default function CourseDetail() {
         // ── Supabase Storage ─────────────────────────────────────────────
         try {
             setLoadingVideo(true)
-
-            let path = video.video_url
-            if (path.includes('/storage/v1/object/public/videos/')) {
-                path = path.split('/storage/v1/object/public/videos/')[1]
-            } else if (path.includes('/storage/v1/object/sign/videos/')) {
-                path = path.split('/storage/v1/object/sign/videos/')[1].split('?')[0]
-            }
-
+            const path = extractSupabasePath(video.video_url)
             const { data, error } = await supabase.storage
                 .from('videos')
                 .createSignedUrl(path, 7200)
@@ -349,7 +366,7 @@ export default function CourseDetail() {
             console.log('markComplete: Saving progress for', { student_id: profile.id, video_id: sessionId, course_id: courseId })
             
             // Use upsert to handle both insert and update in one call
-            const { data: upserted, error: upsertErr } = await supabase
+            const { error: upsertErr } = await supabase
                 .from('video_progress')
                 .upsert({
                     student_id: profile.id,
@@ -693,23 +710,7 @@ export default function CourseDetail() {
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                                     {notes.filter(n => n.day_number === day).map(note => (
-                                        <div key={note.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', border: '1px solid var(--card-border)', background: 'white' }}>
-                                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                                                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>{note.title}</h4>
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button onClick={() => setActiveNote(note)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }} title="Edit">
-                                                        <Edit2 size={16} />
-                                                    </button>
-                                                    <button onClick={() => handleDeleteNote(note.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }} title="Delete">
-                                                        <Trash2 size={16} color="#ef4444" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
-                                            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                                <Calendar size={12} /> {new Date(note.created_at).toLocaleDateString()}
-                                            </div>
-                                        </div>
+                                        <NoteCard key={note.id} note={note} onEdit={setActiveNote} onDelete={handleDeleteNote} />
                                     ))}
                                 </div>
                             </div>

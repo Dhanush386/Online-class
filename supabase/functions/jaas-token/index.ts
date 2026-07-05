@@ -12,7 +12,7 @@ serve(async (req) => {
     }
 
     try {
-        const { roomName, userName, userEmail, isModerator, avatarUrl } = await req.json()
+        const { userName, userEmail, isModerator, avatarUrl } = await req.json()
 
         const appId = Deno.env.get('JAAS_APP_ID')
         const kid = Deno.env.get('JAAS_KID')
@@ -50,7 +50,7 @@ serve(async (req) => {
             payload.context.user.moderator = "true"
         }
 
-        const token = jwt.sign(payload, privateKey.replace(/\\n/g, '\n'), {
+        const token = jwt.sign(payload, privateKey.replaceAll('\\n', '\n'), {
             algorithm: 'RS256',
             header: {
                 kid: kid,

@@ -4,11 +4,10 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { countries, indiaDistricts } from '../../data/locationData'
 import { 
-    User, Mail, Phone, MapPin, Briefcase, GraduationCap, 
-    Link as LinkIcon, Github, Twitter, Linkedin, Trophy, 
+    Briefcase, GraduationCap, Linkedin, Trophy, 
     Camera, Upload, Trash2, Plus, ChevronDown, ChevronRight,
-    Search, Languages, Globe, Calendar, CheckCircle2, AlertCircle,
-    X, Loader2, Save, MessageSquare, HelpCircle
+    Search, CheckCircle2, AlertCircle,
+    X, Loader2, Save, HelpCircle
 } from 'lucide-react'
 
 const sections = [
@@ -100,7 +99,14 @@ export default function Profile() {
             if (error && error.code !== 'PGRST116') throw error
             
             if (data) {
-                setFormData(prev => ({ ...prev, ...data }))
+                const ensureIds = (arr) => (arr || []).map(item => item.id ? item : { ...item, id: crypto.randomUUID() });
+                setFormData(prev => ({ 
+                    ...prev, 
+                    ...data,
+                    education_details: ensureIds(data.education_details),
+                    work_experience: ensureIds(data.work_experience),
+                    projects_achievements: ensureIds(data.projects_achievements)
+                }))
             } else {
                 // Initialize with some data from user profile if available
                 setFormData(prev => ({
@@ -254,6 +260,48 @@ export default function Profile() {
         }, 'image/jpeg', 0.9)
     }
 
+    const removeEducation = (id) => {
+        setFormData(p => ({
+            ...p,
+            education_details: p.education_details.filter(item => item.id !== id)
+        }))
+    }
+
+    const removeWorkExperience = (id) => {
+        setFormData(p => ({
+            ...p,
+            work_experience: p.work_experience.filter(item => item.id !== id)
+        }))
+    }
+
+    const removeProject = (id) => {
+        setFormData(p => ({
+            ...p,
+            projects_achievements: p.projects_achievements.filter(item => item.id !== id)
+        }))
+    }
+
+    const updateEducation = (id, field, value) => {
+        setFormData(p => ({
+            ...p,
+            education_details: p.education_details.map(item => item.id === id ? { ...item, [field]: value } : item)
+        }))
+    }
+
+    const updateWorkExperience = (id, field, value) => {
+        setFormData(p => ({
+            ...p,
+            work_experience: p.work_experience.map(item => item.id === id ? { ...item, [field]: value } : item)
+        }))
+    }
+
+    const updateProject = (id, field, value) => {
+        setFormData(p => ({
+            ...p,
+            projects_achievements: p.projects_achievements.map(item => item.id === id ? { ...item, [field]: value } : item)
+        }))
+    }
+
     if (loading) {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -396,7 +444,7 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '2.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Photo</label>
+                                        <label htmlFor="photo-upload" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Photo</label>
                                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>This will be your profile photo. Same will be used for exams, placements etc..</p>
                                         
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
@@ -420,6 +468,7 @@ export default function Profile() {
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                                                 <input 
+                                                    id="photo-upload"
                                                     type="file" 
                                                     ref={fileInputRef} 
                                                     style={{ display: 'none' }} 
@@ -491,6 +540,7 @@ export default function Profile() {
                                                             ref={videoRef} 
                                                             autoPlay 
                                                             playsInline 
+                                                            muted
                                                             style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
                                                         />
                                                         {/* Face Overlay */}
@@ -535,8 +585,9 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>First Name</label>
+                                            <label htmlFor="first_name" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>First Name</label>
                                             <input 
+                                                id="first_name"
                                                 name="first_name"
                                                 value={formData.first_name}
                                                 onChange={handleChange}
@@ -546,8 +597,9 @@ export default function Profile() {
                                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ex: Sachin</p>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Surname/Last Name</label>
+                                            <label htmlFor="last_name" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Surname/Last Name</label>
                                             <input 
+                                                id="last_name"
                                                 name="last_name"
                                                 value={formData.last_name}
                                                 onChange={handleChange}
@@ -559,8 +611,9 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Name on your IRC Certificate</label>
+                                        <label htmlFor="certificate_name" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Name on your IRC Certificate</label>
                                         <input 
+                                            id="certificate_name"
                                             name="certificate_name"
                                             value={formData.certificate_name}
                                             onChange={handleChange}
@@ -572,8 +625,9 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Gender</label>
+                                            <label htmlFor="gender" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Gender</label>
                                             <select 
+                                                id="gender"
                                                 name="gender" 
                                                 value={formData.gender} 
                                                 onChange={handleChange}
@@ -586,8 +640,9 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Date of Birth</label>
+                                            <label htmlFor="dob" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Date of Birth</label>
                                             <input 
+                                                id="dob"
                                                 type="date"
                                                 name="dob"
                                                 value={formData.dob}
@@ -599,12 +654,13 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>LinkedIn Profile URL</label>
+                                            <label htmlFor="linkedin_url" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>LinkedIn Profile URL</label>
                                             <div style={{ position: 'relative' }}>
                                                 <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#0077b5' }}>
                                                     <Linkedin size={18} />
                                                 </div>
                                                 <input 
+                                                    id="linkedin_url"
                                                     name="linkedin_url"
                                                     value={formData.linkedin_url}
                                                     onChange={handleChange}
@@ -616,10 +672,11 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Resume/CV</label>
+                                        <label htmlFor="resume-upload" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Resume/CV</label>
                                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Upload your latest resume in PDF format (Max 5MB)</p>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                                             <input 
+                                                id="resume-upload"
                                                 type="file" 
                                                 ref={resumeInputRef} 
                                                 style={{ display: 'none' }} 
@@ -656,10 +713,11 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Phone Number</label>
+                                            <label htmlFor="phone" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Phone Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
+                                                    id="phone"
                                                     name="phone"
                                                     value={formData.phone || ''}
                                                     onChange={handleChange}
@@ -670,10 +728,11 @@ export default function Profile() {
                                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Primary contact number</p>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>WhatsApp Number</label>
+                                            <label htmlFor="whatsapp_number" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>WhatsApp Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
+                                                    id="whatsapp_number"
                                                     name="whatsapp_number"
                                                     value={formData.whatsapp_number || ''}
                                                     onChange={handleChange}
@@ -686,9 +745,10 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '2rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Email ID</label>
+                                        <label htmlFor="email" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Email ID</label>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <input 
+                                                id="email"
                                                 value={user?.email || ''}
                                                 disabled
                                                 style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}
@@ -700,17 +760,16 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ background: '#f8fafc', borderRadius: 12, padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}>
+                                        <label htmlFor="whatsapp_updates" style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontWeight: 600, color: 'var(--card-border)', fontSize: '0.95rem' }}>
                                             <input 
+                                                id="whatsapp_updates"
                                                 type="checkbox" 
                                                 name="whatsapp_updates"
                                                 checked={formData.whatsapp_updates} 
                                                 onChange={handleChange}
                                                 style={{ width: 20, height: 20, accentColor: '#10b981' }} 
                                             />
-                                            <div>
-                                                <p style={{ fontWeight: 600, color: 'var(--card-border)', fontSize: '0.95rem' }}>I would like to receive updates in WhatsApp.</p>
-                                            </div>
+                                            I would like to receive updates in WhatsApp.
                                         </label>
                                     </div>
                                 </section>
@@ -725,8 +784,9 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>First Name</label>
+                                            <label htmlFor="parent_first_name" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>First Name</label>
                                             <input 
+                                                id="parent_first_name"
                                                 name="parent_first_name"
                                                 value={formData.parent_first_name}
                                                 onChange={handleChange}
@@ -735,8 +795,9 @@ export default function Profile() {
                                             />
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Surname/Last Name</label>
+                                            <label htmlFor="parent_last_name" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Surname/Last Name</label>
                                             <input 
+                                                id="parent_last_name"
                                                 name="parent_last_name"
                                                 value={formData.parent_last_name}
                                                 onChange={handleChange}
@@ -748,8 +809,9 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Relation with the student</label>
+                                            <label htmlFor="parent_relation" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Relation with the student</label>
                                             <select 
+                                                id="parent_relation"
                                                 name="parent_relation" 
                                                 value={formData.parent_relation} 
                                                 onChange={handleChange}
@@ -762,8 +824,9 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Occupation</label>
+                                            <label htmlFor="parent_occupation" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Occupation</label>
                                             <select 
+                                                id="parent_occupation"
                                                 name="parent_occupation" 
                                                 value={formData.parent_occupation} 
                                                 onChange={handleChange}
@@ -792,10 +855,11 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Parent/Guardian Phone Number</label>
+                                            <label htmlFor="parent_phone" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Parent/Guardian Phone Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
+                                                    id="parent_phone"
                                                     name="parent_phone"
                                                     value={formData.parent_phone || ''}
                                                     onChange={handleChange}
@@ -805,10 +869,11 @@ export default function Profile() {
                                             </div>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Parent/Guardian WhatsApp Number</label>
+                                            <label htmlFor="parent_whatsapp" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Parent/Guardian WhatsApp Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
                                                 <input 
+                                                    id="parent_whatsapp"
                                                     name="parent_whatsapp"
                                                     value={formData.parent_whatsapp || ''}
                                                     onChange={handleChange}
@@ -829,8 +894,9 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Address Line 1</label>
+                                        <label htmlFor="address_line1" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Address Line 1</label>
                                         <input 
+                                            id="address_line1"
                                             name="address_line1"
                                             value={formData.address_line1}
                                             onChange={handleChange}
@@ -840,8 +906,9 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Address Line 2</label>
+                                        <label htmlFor="address_line2" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Address Line 2</label>
                                         <input 
+                                            id="address_line2"
                                             name="address_line2"
                                             value={formData.address_line2}
                                             onChange={handleChange}
@@ -852,8 +919,9 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Country</label>
+                                            <label htmlFor="country" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Country</label>
                                             <select 
+                                                id="country"
                                                 name="country" 
                                                 value={formData.country} 
                                                 onChange={(e) => {
@@ -870,8 +938,9 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Postal/Pin Code</label>
+                                            <label htmlFor="pincode" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Postal/Pin Code</label>
                                             <input 
+                                                id="pincode"
                                                 name="pincode"
                                                 value={formData.pincode}
                                                 onChange={handleChange}
@@ -883,8 +952,9 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>State</label>
+                                            <label htmlFor="state" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>State</label>
                                             <select 
+                                                id="state"
                                                 name="state" 
                                                 value={formData.state} 
                                                 onChange={(e) => {
@@ -903,9 +973,10 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>District</label>
+                                            <label htmlFor="district" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>District</label>
                                             {formData.country === 'India' ? (
                                                 <select 
+                                                    id="district"
                                                     name="district" 
                                                     value={formData.district} 
                                                     onChange={handleChange}
@@ -918,6 +989,7 @@ export default function Profile() {
                                                 </select>
                                             ) : (
                                                 <input 
+                                                    id="district"
                                                     name="district"
                                                     value={formData.district}
                                                     onChange={handleChange}
@@ -939,8 +1011,9 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Current Coding Level</label>
+                                            <label htmlFor="coding_level" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Current Coding Level</label>
                                             <select 
+                                                id="coding_level"
                                                 name="coding_level" 
                                                 value={formData.coding_level} 
                                                 onChange={handleChange}
@@ -954,7 +1027,7 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>Do you have a Laptop/Computer?</label>
+                                            <div style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>Do you have a Laptop/Computer?</div>
                                             <div style={{ display: 'flex', gap: '2rem' }}>
                                                 {['Yes', 'No'].map(v => (
                                                     <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', cursor: 'pointer' }}>
@@ -973,12 +1046,13 @@ export default function Profile() {
                                     </div>
 
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Technical Skills (if any)</label>
+                                        <label htmlFor="technical_skills" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Technical Skills (if any)</label>
                                         <div style={{ position: 'relative' }}>
                                             <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
                                                 <Search size={18} />
                                             </div>
                                             <input 
+                                                id="technical_skills"
                                                 value={skillInput}
                                                 onChange={(e) => {
                                                     setSkillInput(e.target.value)
@@ -1031,7 +1105,9 @@ export default function Profile() {
                                                                         transition: 'all 0.2s'
                                                                     }}
                                                                     onMouseOver={(e) => { e.target.style.background = '#e2e8f0' }}
+                                                                    onFocus={(e) => { e.target.style.background = '#e2e8f0' }}
                                                                     onMouseOut={(e) => { e.target.style.background = '#f1f5f9' }}
+                                                                    onBlur={(e) => { e.target.style.background = '#f1f5f9' }}
                                                                 >
                                                                     + {skill}
                                                                 </button>
@@ -1066,8 +1142,14 @@ export default function Profile() {
                                         
                                         {showSkillSuggestions && (
                                             <div 
+                                                aria-hidden="true"
                                                 style={{ position: 'fixed', inset: 0, zIndex: 90 }} 
                                                 onClick={() => setShowSkillSuggestions(false)} 
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === 'Escape') {
+                                                        setShowSkillSuggestions(false);
+                                                    }
+                                                }}
                                             />
                                         )}
                                     </div>
@@ -1083,8 +1165,9 @@ export default function Profile() {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Preferred Language for teaching</label>
+                                            <label htmlFor="language_teaching" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Preferred Language for teaching</label>
                                             <select 
+                                                id="language_teaching"
                                                 name="language_teaching" 
                                                 value={formData.language_teaching} 
                                                 onChange={handleChange}
@@ -1097,8 +1180,9 @@ export default function Profile() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Preferred Language for watching video lectures</label>
+                                            <label htmlFor="language_watching" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Preferred Language for watching video lectures</label>
                                             <select 
+                                                id="language_watching"
                                                 name="language_watching" 
                                                 value={formData.language_watching} 
                                                 onChange={handleChange}
@@ -1125,7 +1209,7 @@ export default function Profile() {
                                 <button 
                                     onClick={() => setFormData(p => ({ 
                                         ...p, 
-                                        education_details: [...p.education_details, { school: '', degree: '', year: '', city: '' }] 
+                                        education_details: [...p.education_details, { id: crypto.randomUUID(), school: '', degree: '', year: '', city: '' }] 
                                     }))}
                                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, background: 'rgba(16,185,129,0.1)', color: '#10b981', border: 'none', fontWeight: 600, cursor: 'pointer' }}
                                 >
@@ -1140,38 +1224,34 @@ export default function Profile() {
                                         <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No education details added yet</p>
                                     </div>
                                 ) : (
-                                    formData.education_details.map((edu, idx) => (
-                                        <div key={idx} style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: 16, position: 'relative' }}>
+                                    formData.education_details.map(edu => (
+                                        <div key={edu.id} style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: 16, position: 'relative' }}>
                                             <button 
-                                                onClick={() => setFormData(p => ({ ...p, education_details: p.education_details.filter((_, i) => i !== idx) }))}
+                                                onClick={() => removeEducation(edu.id)}
                                                 style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}
                                             >
                                                 <Trash2 size={18} />
                                             </button>
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>School/College</label>
-                                                    <input 
-                                                        value={edu.school}
-                                                        onChange={(e) => {
-                                                            const newEdu = [...formData.education_details];
-                                                            newEdu[idx].school = e.target.value;
-                                                            setFormData(p => ({ ...p, education_details: newEdu }));
-                                                        }}
-                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                                    />
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                                                        School/College
+                                                        <input 
+                                                            value={edu.school}
+                                                            onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
+                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                        />
+                                                    </label>
                                                 </div>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Degree/Course</label>
-                                                    <input 
-                                                        value={edu.degree}
-                                                        onChange={(e) => {
-                                                            const newEdu = [...formData.education_details];
-                                                            newEdu[idx].degree = e.target.value;
-                                                            setFormData(p => ({ ...p, education_details: newEdu }));
-                                                        }}
-                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                                    />
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                                                        Degree/Course
+                                                        <input 
+                                                            value={edu.degree}
+                                                            onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                        />
+                                                    </label>
                                                 </div>
                                             </div>
                                         </div>
@@ -1191,7 +1271,7 @@ export default function Profile() {
                                 <button 
                                     onClick={() => setFormData(p => ({ 
                                         ...p, 
-                                        work_experience: [...p.work_experience, { company: '', role: '', duration: '' }] 
+                                        work_experience: [...p.work_experience, { id: crypto.randomUUID(), company: '', role: '', duration: '' }] 
                                     }))}
                                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, background: 'rgba(16,185,129,0.1)', color: '#10b981', border: 'none', fontWeight: 600, cursor: 'pointer' }}
                                 >
@@ -1206,38 +1286,34 @@ export default function Profile() {
                                         <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No work experience added yet</p>
                                     </div>
                                 ) : (
-                                    formData.work_experience.map((work, idx) => (
-                                        <div key={idx} style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: 16, position: 'relative' }}>
+                                    formData.work_experience.map(work => (
+                                        <div key={work.id} style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: 16, position: 'relative' }}>
                                             <button 
-                                                onClick={() => setFormData(p => ({ ...p, work_experience: p.work_experience.filter((_, i) => i !== idx) }))}
+                                                onClick={() => removeWorkExperience(work.id)}
                                                 style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}
                                             >
                                                 <Trash2 size={18} />
                                             </button>
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Company</label>
-                                                    <input 
-                                                        value={work.company}
-                                                        onChange={(e) => {
-                                                            const newWork = [...formData.work_experience];
-                                                            newWork[idx].company = e.target.value;
-                                                            setFormData(p => ({ ...p, work_experience: newWork }));
-                                                        }}
-                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                                    />
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                                                        Company
+                                                        <input 
+                                                            value={work.company}
+                                                            onChange={(e) => updateWorkExperience(work.id, 'company', e.target.value)}
+                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                        />
+                                                    </label>
                                                 </div>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Role</label>
-                                                    <input 
-                                                        value={work.role}
-                                                        onChange={(e) => {
-                                                            const newWork = [...formData.work_experience];
-                                                            newWork[idx].role = e.target.value;
-                                                            setFormData(p => ({ ...p, work_experience: newWork }));
-                                                        }}
-                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                                    />
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                                                        Role
+                                                        <input 
+                                                            value={work.role}
+                                                            onChange={(e) => updateWorkExperience(work.id, 'role', e.target.value)}
+                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                        />
+                                                    </label>
                                                 </div>
                                             </div>
                                         </div>
@@ -1257,7 +1333,7 @@ export default function Profile() {
                                 <button 
                                     onClick={() => setFormData(p => ({ 
                                         ...p, 
-                                        projects_achievements: [...p.projects_achievements, { title: '', description: '', link: '' }] 
+                                        projects_achievements: [...p.projects_achievements, { id: crypto.randomUUID(), title: '', description: '', link: '' }] 
                                     }))}
                                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, background: 'rgba(16,185,129,0.1)', color: '#10b981', border: 'none', fontWeight: 600, cursor: 'pointer' }}
                                 >
@@ -1272,38 +1348,34 @@ export default function Profile() {
                                         <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No projects or achievements added yet</p>
                                     </div>
                                 ) : (
-                                    formData.projects_achievements.map((proj, idx) => (
-                                        <div key={idx} style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: 16, position: 'relative' }}>
+                                    formData.projects_achievements.map(proj => (
+                                        <div key={proj.id} style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: 16, position: 'relative' }}>
                                             <button 
-                                                onClick={() => setFormData(p => ({ ...p, projects_achievements: p.projects_achievements.filter((_, i) => i !== idx) }))}
+                                                onClick={() => removeProject(proj.id)}
                                                 style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}
                                             >
                                                 <Trash2 size={18} />
                                             </button>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Project Title</label>
-                                                    <input 
-                                                        value={proj.title}
-                                                        onChange={(e) => {
-                                                            const newProj = [...formData.projects_achievements];
-                                                            newProj[idx].title = e.target.value;
-                                                            setFormData(p => ({ ...p, projects_achievements: newProj }));
-                                                        }}
-                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                                    />
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                                                        Project Title
+                                                        <input 
+                                                            value={proj.title}
+                                                            onChange={(e) => updateProject(proj.id, 'title', e.target.value)}
+                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                        />
+                                                    </label>
                                                 </div>
                                                 <div>
-                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Link/URL</label>
-                                                    <input 
-                                                        value={proj.link}
-                                                        onChange={(e) => {
-                                                            const newProj = [...formData.projects_achievements];
-                                                            newProj[idx].link = e.target.value;
-                                                            setFormData(p => ({ ...p, projects_achievements: newProj }));
-                                                        }}
-                                                        style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                                    />
+                                                    <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                                                        Link/URL
+                                                        <input 
+                                                            value={proj.link}
+                                                            onChange={(e) => updateProject(proj.id, 'link', e.target.value)}
+                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                        />
+                                                    </label>
                                                 </div>
                                             </div>
                                         </div>

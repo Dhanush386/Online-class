@@ -1,5 +1,12 @@
 -- Create AI Study Assistant Tables
 
+-- 0. Helper function for status strings
+CREATE OR REPLACE FUNCTION public.get_active_status() RETURNS VARCHAR(20) AS $$
+BEGIN
+  RETURN 'active';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 -- 1. AI Recommendations
 CREATE TABLE IF NOT EXISTS public.ai_recommendations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -10,13 +17,13 @@ CREATE TABLE IF NOT EXISTS public.ai_recommendations (
     strong_topics JSONB NOT NULL,
     recommendation_text TEXT NOT NULL,
     action_items JSONB NOT NULL,
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT public.get_active_status(),
     generated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Ensure a student only has one active recommendation at a time or just index it
 -- Actually, the user suggested `student_id UNIQUE`. Let's add a unique constraint on student_id where status='active'
-CREATE UNIQUE INDEX ai_recommendations_active_student_idx ON public.ai_recommendations (student_id) WHERE status = 'active';
+CREATE UNIQUE INDEX ai_recommendations_active_student_idx ON public.ai_recommendations (student_id) WHERE status = public.get_active_status();
 
 -- Enable RLS
 ALTER TABLE public.ai_recommendations ENABLE ROW LEVEL SECURITY;
@@ -35,7 +42,7 @@ CREATE TABLE IF NOT EXISTS public.ai_study_plans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     student_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
     plan_data JSONB NOT NULL,
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(20) DEFAULT public.get_active_status(),
     generated_at TIMESTAMPTZ DEFAULT now()
 );
 

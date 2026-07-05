@@ -102,7 +102,8 @@ const runJsTestcases = (jsTestcases, jsCode) => {
     const results = []
     for (const tc of (jsTestcases || [])) {
         try {
-            const pattern = new RegExp(String.raw`\b${tc.keyword.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}\b`, 'i')
+            const escapedKeyword = tc.keyword.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
+            const pattern = new RegExp(String.raw`\b${escapedKeyword}\b`, 'i')
             const passed = pattern.test(jsCode)
             results.push({ description: tc.description || `Uses: ${tc.keyword}`, passed, type: 'js', expected: `"${tc.keyword}" used in JS`, actual: passed ? 'found ✓' : 'not found' })
         } catch {
@@ -110,6 +111,7 @@ const runJsTestcases = (jsTestcases, jsCode) => {
             results.push({ description: tc.description || tc.keyword, passed, type: 'js', expected: `"${tc.keyword}"`, actual: passed ? 'found' : 'not found' })
         }
     }
+    return results
 }
 
 const initializeStarterCode = (data, isCombinedData, setters) => {
@@ -246,6 +248,36 @@ sys.stdin = StringIO(test_input)
     return { testResults, overallPassed };
 }
 
+const checkAlreadySolved = async (isCombined, solvedSubIds, currentQuestion, supabase, challengeId, profileId) => {
+    if (isCombined) {
+        return solvedSubIds.includes(currentQuestion.id);
+    }
+    const { data: previousSubs } = await supabase.from('coding_submissions')
+        .select('id').eq('challenge_id', challengeId).eq('student_id', profileId).eq('status', 'accepted');
+    return previousSubs?.length > 0;
+}
+
+const buildCodePayload = (isCombined, currentQuestion, genericCode, challenge, htmlCode, cssCode, jsCode) => {
+    if (isCombined) {
+        return JSON.stringify({ isCombined: true, subId: currentQuestion.id, code: genericCode });
+    }
+    if (challenge.language === 'html') {
+        return JSON.stringify({ html: htmlCode, css: cssCode, js: jsCode });
+    }
+    return genericCode;
+}
+
+const awardXpIfEligible = async (currentQuestion, profile, supabase, refreshStats, toast) => {
+    const earnedXp = currentQuestion.xp_reward || 15;
+    const { data: userData } = await supabase.from('users').select('xp').eq('id', profile.id).single();
+    if (!userData) return;
+
+    const newXp = (userData.xp || 0) + earnedXp;
+    await supabase.from('users').update({ xp: newXp }).eq('id', profile.id);
+    refreshStats?.();
+    toast.success(`Congratulations! You earned ${earnedXp} XP for solving this challenge.`);
+}
+
 const recordSubmission = async (params) => {
     const { 
         challenge, challengeId, profile, currentQuestion, isCombined, solvedSubIds,
@@ -253,50 +285,26 @@ const recordSubmission = async (params) => {
         refreshStats, toast, stopProctoring, supabase 
     } = params;
 
-    let alreadySolved = false;
-    if (isCombined) {
-        alreadySolved = solvedSubIds.includes(currentQuestion.id);
-    } else {
-        const { data: previousSubs } = await supabase.from('coding_submissions')
-            .select('id').eq('challenge_id', challengeId).eq('student_id', profile.id).eq('status', 'accepted');
-        alreadySolved = previousSubs && previousSubs.length > 0;
-    }
-
-    let finalCodePayload;
-    if (isCombined) {
-        finalCodePayload = JSON.stringify({ isCombined: true, subId: currentQuestion.id, code: genericCode });
-    } else if (challenge.language === 'html') {
-        finalCodePayload = JSON.stringify({html: htmlCode, css: cssCode, js: jsCode});
-    } else {
-        finalCodePayload = genericCode;
-    }
-
-    const finalScore = (hasUnlockedAnswer || alreadySolved) ? 0 : (currentQuestion.xp_reward || 15);
+    const alreadySolved = await checkAlreadySolved(isCombined, solvedSubIds, currentQuestion, supabase, challengeId, profile.id);
+    const finalCodePayload = buildCodePayload(isCombined, currentQuestion, genericCode, challenge, htmlCode, cssCode, jsCode);
+    const isFirstSolve = !alreadySolved && !hasUnlockedAnswer;
+    const finalScore = isFirstSolve ? (currentQuestion.xp_reward || 15) : 0;
 
     await supabase.from('coding_submissions').insert({
         student_id: profile.id, challenge_id: challengeId,
         status: 'accepted', score: finalScore, code: finalCodePayload
     })
 
-    if (isCombined && !alreadySolved && !hasUnlockedAnswer) {
+    if (isCombined && isFirstSolve) {
         setSolvedSubIds(prev => [...prev, currentQuestion.id]);
     }
 
-    if (!alreadySolved && !hasUnlockedAnswer) {
-        const earnedXp = currentQuestion.xp_reward || 15;
-        const { data: userData } = await supabase.from('users').select('xp').eq('id', profile.id).single();
-        if (userData) {
-            const newXp = (userData.xp || 0) + earnedXp;
-            await supabase.from('users').update({ xp: newXp }).eq('id', profile.id);
-            if (refreshStats) refreshStats();
-            toast.success(`Congratulations! You earned ${earnedXp} XP for solving this challenge.`);
-        }
+    if (isFirstSolve) {
+        await awardXpIfEligible(currentQuestion, profile, supabase, refreshStats, toast);
     }
 
-    let isFullyCompleted = true;
-    if (isCombined && (solvedSubIds.length + (!alreadySolved && !hasUnlockedAnswer ? 1 : 0)) < challenge.test_cases.sub_questions.length) {
-        isFullyCompleted = false;
-    }
+    const newSolvedCount = solvedSubIds.length + (isFirstSolve ? 1 : 0);
+    const isFullyCompleted = !isCombined || newSolvedCount >= challenge.test_cases.sub_questions.length;
 
     if (isFullyCompleted) {
         stopProctoring();
@@ -375,7 +383,7 @@ export default function CodeWorkspace() {
         }
         
         if (webTestcases?.js?.length) {
-            runJsTestcases(webTestcases.js, jsCode)
+            results.push(...runJsTestcases(webTestcases.js, jsCode))
         }
         return results
     }

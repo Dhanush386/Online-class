@@ -22,9 +22,9 @@ serve(async (req) => {
 
         const healthScore = Math.round(
             (attendance * 0.25) +
-            (assessments * 0.30) +
+            (assessments * 0.3) +
             (coding * 0.25) +
-            (progress * 0.20)
+            (progress * 0.2)
         );
 
         let aiResponse = null;

@@ -7,19 +7,22 @@ AS $$
 DECLARE
     inserted_count integer := 0;
     user_record record;
+    default_role CONSTANT TEXT := 'student';
+    extracted_role TEXT;
 BEGIN
     FOR user_record IN 
         SELECT id, email, raw_user_meta_data->>'name' as name, raw_user_meta_data->>'role' as role
         FROM auth.users
         WHERE id NOT IN (SELECT id FROM public.users)
     LOOP
+        extracted_role := COALESCE(user_record.role, default_role);
         INSERT INTO public.users (id, email, name, role, status)
         VALUES (
             user_record.id, 
             user_record.email, 
             COALESCE(user_record.name, 'New User'), 
-            COALESCE(user_record.role, 'student'),
-            CASE WHEN user_record.role = 'student' THEN 'pending' ELSE 'approved' END
+            extracted_role,
+            CASE WHEN extracted_role = default_role THEN 'pending' ELSE 'approved' END
         )
         ON CONFLICT (id) DO NOTHING;
         inserted_count := inserted_count + 1;
@@ -35,15 +38,18 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public
 AS $$
+DECLARE
+  extracted_role TEXT := COALESCE(new.raw_user_meta_data->>'role', 'student');
+  default_student_role CONSTANT TEXT := 'student';
 BEGIN
   INSERT INTO public.users (id, name, email, role, status)
   VALUES (
     new.id,
     COALESCE(new.raw_user_meta_data->>'name', 'New User'),
     new.email,
-    COALESCE(new.raw_user_meta_data->>'role', 'student'),
+    extracted_role,
     CASE 
-      WHEN (new.raw_user_meta_data->>'role') = 'student' THEN 'pending'
+      WHEN extracted_role = default_student_role THEN 'pending'
       ELSE 'approved' 
     END
   )

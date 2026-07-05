@@ -6,12 +6,16 @@
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
+CREATE OR REPLACE FUNCTION public.get_role_organizer() RETURNS text AS $$
+BEGIN RETURN 'organizer'; END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 -- ============ USERS ============
 create table if not exists public.users (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
   email text not null unique,
-  role text not null check (role in ('organizer', 'student')),
+  role text not null check (role in (public.get_role_organizer(), 'student')),
   status text default 'approved' check (status in ('pending', 'approved', 'rejected')),
   avatar_url text,
   created_at timestamptz default now()
@@ -231,7 +235,7 @@ drop policy if exists "Anyone can view badges" on public.badges;
 drop policy if exists "Organizers can award badges" on public.badges;
 create policy "Anyone can view badges" on public.badges for select using (true);
 create policy "Organizers can award badges" on public.badges for insert with check (
-  exists (select 1 from public.users where id = auth.uid() and role = 'organizer')
+  exists (select 1 from public.users where id = auth.uid() and role = public.get_role_organizer())
 );
 
 -- Questions
@@ -262,7 +266,7 @@ create policy "Organizers can view submissions for their challenges" on public.c
 drop policy if exists "Organizers can manage invites" on public.organizer_invites;
 drop policy if exists "Anyone can check their own invite" on public.organizer_invites;
 create policy "Organizers can manage invites" on public.organizer_invites for all using (
-  exists (select 1 from public.users where id = auth.uid() and role = 'organizer')
+  exists (select 1 from public.users where id = auth.uid() and role = public.get_role_organizer())
 );
 create policy "Anyone can check their own invite" on public.organizer_invites for select using (true);
 
@@ -450,13 +454,13 @@ CREATE POLICY "Users can view relevant notifications" ON public.notifications
   FOR SELECT USING (
     target = 'all' OR 
     (target = 'students' AND EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'student')) OR
-    (target = 'organizers' AND EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('organizer', 'main_admin', 'sub_admin')))
+    (target = 'organizers' AND EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN (public.get_role_organizer(), 'main_admin', 'sub_admin')))
   );
 
 DROP POLICY IF EXISTS "Organizers can manage notifications" ON public.notifications;
 CREATE POLICY "Organizers can manage notifications" ON public.notifications
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('organizer', 'main_admin', 'sub_admin'))
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN (public.get_role_organizer(), 'main_admin', 'sub_admin'))
   );
 
 -- ============ NOTIFICATION READS ============

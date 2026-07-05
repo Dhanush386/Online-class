@@ -48,6 +48,37 @@ BEGIN
 END
 $$;
 
+-- 1.5 Helper function for attendance status
+CREATE OR REPLACE FUNCTION public.get_attendance_present() RETURNS text AS $$
+BEGIN
+  RETURN 'present';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION public.get_notification_academic() RETURNS text AS $$
+BEGIN RETURN 'academic'; END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION public.get_activity_started() RETURNS text AS $$
+BEGIN RETURN 'STARTED'; END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION public.get_status_pending() RETURNS text AS $$
+BEGIN RETURN 'pending'; END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION public.get_event_live_class_full() RETURNS text AS $$
+BEGIN RETURN 'live_class_full'; END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION public.get_event_weekly_champion() RETURNS text AS $$
+BEGIN RETURN 'weekly_champion'; END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION public.get_tg_op_delete() RETURNS text AS $$
+BEGIN RETURN 'DELETE'; END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 -- Drop Dependent View First to avoid column alter type dependency errors
 DROP VIEW IF EXISTS public.course_analytics_view;
 
@@ -82,7 +113,7 @@ SELECT
                 SELECT 
                     (SELECT COUNT(*) FROM public.enrollments WHERE course_id = c.id) as total_students,
                     (SELECT COUNT(*) FROM public.videos WHERE course_id = c.id) as total_videos,
-                    (SELECT COUNT(*) FROM public.live_attendance WHERE course_id = c.id AND attendance_status = 'present'::public.attendance_status_enum) as present_count
+                    (SELECT COUNT(*) FROM public.live_attendance WHERE course_id = c.id AND attendance_status::text = public.get_attendance_present()) as present_count
             )
             SELECT CASE 
                 WHEN total_students > 0 AND total_videos > 0 THEN (present_count::float / (total_students * total_videos)) * 100
@@ -215,7 +246,7 @@ CREATE TABLE IF NOT EXISTS public.student_activity_state (
     course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
     activity_id UUID NOT NULL,
     activity_type public.activity_type_enum,
-    status public.activity_status_enum DEFAULT 'STARTED'::public.activity_status_enum,
+    status public.activity_status_enum DEFAULT public.get_activity_started()::public.activity_status_enum,
     resume_position NUMERIC DEFAULT 0,
     last_opened TIMESTAMPTZ DEFAULT now(),
     created_at TIMESTAMPTZ DEFAULT now(),
@@ -366,7 +397,7 @@ CREATE TABLE IF NOT EXISTS public.activity_attempts (
     browser public.browser_enum,
     ip_hash TEXT,
     attempt_number INTEGER DEFAULT 1,
-    status public.activity_status_enum DEFAULT 'STARTED'::public.activity_status_enum,
+    status public.activity_status_enum DEFAULT public.get_activity_started()::public.activity_status_enum,
     started_at TIMESTAMPTZ DEFAULT now(),
     completed_at TIMESTAMPTZ,
     duration_seconds INTEGER DEFAULT 0,
@@ -410,7 +441,7 @@ CREATE TABLE IF NOT EXISTS public.ai_generation_queue (
     week_number INTEGER,
     job_type public.ai_job_type_enum,
     priority INTEGER DEFAULT 0,
-    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    status TEXT DEFAULT public.get_status_pending() CHECK (status IN (public.get_status_pending(), 'processing', 'completed', 'failed')),
     retry_count INTEGER DEFAULT 0,
     max_retries INTEGER DEFAULT 3,
     error_message TEXT,
@@ -445,15 +476,15 @@ DECLARE
     v_category public.notification_category_enum;
 BEGIN
     -- Map XP event type to notification properties
-    IF NEW.event_type = 'live_class_full' OR NEW.event_type = 'live_class_partial' THEN
+    IF NEW.event_type = public.get_event_live_class_full() OR NEW.event_type = 'live_class_partial' THEN
         v_icon := 'attendance';
         v_color := '#ef4444';
-        v_category := 'academic'::public.notification_category_enum;
+        v_category := public.get_notification_academic()::public.notification_category_enum;
     ELSIF NEW.event_type = 'recorded_video' THEN
         v_icon := 'video';
         v_color := '#9333ea';
-        v_category := 'academic'::public.notification_category_enum;
-    ELSIF NEW.event_type = 'weekly_bonus' OR NEW.event_type = 'weekly_champion' OR NEW.event_type = 'daily_streak' THEN
+        v_category := public.get_notification_academic()::public.notification_category_enum;
+    ELSIF NEW.event_type = 'weekly_bonus' OR NEW.event_type = public.get_event_weekly_champion() OR NEW.event_type = 'daily_streak' THEN
         v_icon := 'achievement';
         v_color := '#f59e0b';
         v_category := 'gamification'::public.notification_category_enum;
@@ -510,7 +541,7 @@ BEGIN
     END IF;
 
     -- Sync when status becomes present or recovered
-    IF (NEW.attendance_status = 'present' OR NEW.attendance_status = 'recovered') 
+    IF (NEW.attendance_status::text = public.get_attendance_present() OR NEW.attendance_status::text = 'recovered') 
        AND (OLD.attendance_status IS DISTINCT FROM NEW.attendance_status OR TG_OP = 'INSERT') THEN
         
         -- Get details
@@ -521,7 +552,7 @@ BEGIN
             student_id, video_id, course_id, completed, watched_percentage, completed_from, watched_at, xp_awarded
         ) VALUES (
             NEW.student_id, NEW.video_id, v_course_id, true, 100, 
-            CASE WHEN NEW.attendance_status = 'present' THEN 'LIVE_CLASS'::public.completed_from_enum ELSE 'MANUAL'::public.completed_from_enum END,
+            CASE WHEN NEW.attendance_status::text = public.get_attendance_present() THEN 'LIVE_CLASS'::public.completed_from_enum ELSE 'MANUAL'::public.completed_from_enum END,
             now(), true
         )
         ON CONFLICT (student_id, video_id)
@@ -534,13 +565,13 @@ BEGIN
 
         -- Read dynamic rewards from xp_config
         BEGIN
-            IF NEW.attendance_status = 'present' THEN
+            IF NEW.attendance_status::text = public.get_attendance_present() THEN
                 SELECT xp_amount, coin_amount, streak_multiplier INTO v_xp, v_coins, v_multiplier 
-                FROM public.xp_config WHERE event_type = 'live_class_full';
+                FROM public.xp_config WHERE event_type = public.get_event_live_class_full();
             ELSE
                 -- Recovered awards 50% XP
                 SELECT xp_amount, coin_amount, streak_multiplier INTO v_xp, v_coins, v_multiplier 
-                FROM public.xp_config WHERE event_type = 'live_class_full';
+                FROM public.xp_config WHERE event_type = public.get_event_live_class_full();
                 v_multiplier := v_multiplier * 0.5;
             END IF;
         EXCEPTION WHEN OTHERS THEN
@@ -554,9 +585,9 @@ BEGIN
             base_xp, xp_multiplier, xp_amount, coin_amount, reason, source_id
         ) VALUES (
             NEW.student_id, v_course_id, v_schedule_id, 
-            CASE WHEN NEW.attendance_status = 'present' THEN 'ATTENDANCE' ELSE 'ATTENDANCE_RECOVERY' END,
+            CASE WHEN NEW.attendance_status::text = public.get_attendance_present() THEN 'ATTENDANCE' ELSE 'ATTENDANCE_RECOVERY' END,
             'live_class', NEW.video_id, v_xp, v_multiplier, ROUND(v_xp * v_multiplier)::INTEGER, v_coins,
-            CASE WHEN NEW.attendance_status = 'present' THEN 'Attended Live Class: ' ELSE 'Recovered Attendance: ' END || COALESCE(v_title, ''),
+            CASE WHEN NEW.attendance_status::text = public.get_attendance_present() THEN 'Attended Live Class: ' ELSE 'Recovered Attendance: ' END || COALESCE(v_title, ''),
             NEW.id
         )
         ON CONFLICT (student_id, event_type, reference_id) DO NOTHING;
@@ -582,7 +613,7 @@ DECLARE
     v_coins INTEGER := 5;
     v_multiplier NUMERIC := 1.0;
 BEGIN
-    IF NEW.completed = true AND NEW.xp_awarded = false THEN
+    IF NEW.completed AND NOT NEW.xp_awarded THEN
         -- Mark as awarded
         NEW.xp_awarded := true;
 
@@ -744,7 +775,7 @@ BEGIN
         BEGIN
             -- If perfect score across all metrics, award Weekly Champion!
             IF v_completed_live = v_total_live AND v_completed_quiz = v_total_quiz AND v_completed_coding = v_total_coding THEN
-                v_event_type := 'weekly_champion';
+                v_event_type := public.get_event_weekly_champion();
             END IF;
 
             -- Load values from config
@@ -758,7 +789,7 @@ BEGIN
                 p_student_id, p_course_id, v_event_type, 'weekly', 
                 CAST(md5(p_student_id::TEXT || '-' || p_course_id::TEXT || '-week-' || p_week_number::TEXT) AS UUID),
                 v_xp_reward, 1.0, v_xp_reward, v_coin_reward, 
-                CASE WHEN v_event_type = 'weekly_champion' THEN '🏆 Weekly Champion! ' ELSE 'Completed Week ' END || p_week_number || ' Tasks'
+                CASE WHEN v_event_type = public.get_event_weekly_champion() THEN '🏆 Weekly Champion! ' ELSE 'Completed Week ' END || p_week_number || ' Tasks'
             )
             ON CONFLICT (student_id, event_type, reference_id) DO NOTHING;
 
@@ -766,7 +797,7 @@ BEGIN
             INSERT INTO public.ai_generation_queue (
                 student_id, course_id, week_number, job_type, priority, status
             ) VALUES (
-                p_student_id, p_course_id, p_week_number, 'SUMMARY'::public.ai_job_type_enum, 2, 'pending'
+                p_student_id, p_course_id, p_week_number, 'SUMMARY'::public.ai_job_type_enum, 2, public.get_status_pending()
             );
         END;
     END IF;
@@ -824,7 +855,7 @@ DECLARE
     v_course_id UUID;
     v_video_id UUID;
 BEGIN
-    IF TG_OP = 'DELETE' THEN
+    IF TG_OP = public.get_tg_op_delete() THEN
         v_student_id := OLD.student_id;
         v_course_id := OLD.course_id;
         v_video_id := OLD.video_id;
@@ -839,7 +870,7 @@ BEGIN
         PERFORM public.refresh_student_week_progress(v_student_id, v_course_id, v_week);
     END IF;
     
-    IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+    IF TG_OP = public.get_tg_op_delete() THEN RETURN OLD; ELSE RETURN NEW; END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -858,7 +889,7 @@ DECLARE
     v_challenge_id UUID;
     v_student_id UUID;
 BEGIN
-    IF TG_OP = 'DELETE' THEN
+    IF TG_OP = public.get_tg_op_delete() THEN
         v_student_id := OLD.student_id;
         v_challenge_id := OLD.challenge_id;
     ELSE
@@ -871,7 +902,7 @@ BEGIN
         PERFORM public.refresh_student_week_progress(v_student_id, v_course_id, v_week);
     END IF;
     
-    IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+    IF TG_OP = public.get_tg_op_delete() THEN RETURN OLD; ELSE RETURN NEW; END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -890,7 +921,7 @@ DECLARE
     v_assessment_id UUID;
     v_student_id UUID;
 BEGIN
-    IF TG_OP = 'DELETE' THEN
+    IF TG_OP = public.get_tg_op_delete() THEN
         v_student_id := OLD.student_id;
         v_assessment_id := OLD.assessment_id;
     ELSE
@@ -903,7 +934,7 @@ BEGIN
         PERFORM public.refresh_student_week_progress(v_student_id, v_course_id, v_week);
     END IF;
     
-    IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+    IF TG_OP = public.get_tg_op_delete() THEN RETURN OLD; ELSE RETURN NEW; END IF;
 END;
 $$ LANGUAGE plpgsql;
 

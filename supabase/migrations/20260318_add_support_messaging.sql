@@ -1,4 +1,12 @@
 -- ============ SUPPORT MESSAGES ============
+
+-- 0. Helper function for organizer checks
+CREATE OR REPLACE FUNCTION public.is_organizer()
+RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'organizer');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TABLE IF NOT EXISTS public.support_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     student_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -25,17 +33,17 @@ FOR INSERT WITH CHECK (auth.uid() = student_id);
 DROP POLICY IF EXISTS "Organizers can view all messages" ON public.support_messages;
 CREATE POLICY "Organizers can view all messages" ON public.support_messages
 FOR SELECT USING (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'organizer')
+    public.is_organizer()
 );
 
 DROP POLICY IF EXISTS "Organizers can respond to messages" ON public.support_messages;
 CREATE POLICY "Organizers can respond to messages" ON public.support_messages
 FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'organizer')
+    public.is_organizer()
 );
 
 DROP POLICY IF EXISTS "Organizers can mark messages as read" ON public.support_messages;
 CREATE POLICY "Organizers can mark messages as read" ON public.support_messages
 FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'organizer')
+    public.is_organizer()
 );

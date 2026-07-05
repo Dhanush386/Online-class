@@ -1,3 +1,11 @@
+-- 0. Helper function for any admin checks
+CREATE OR REPLACE FUNCTION public.is_any_admin()
+RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('organizer', 'main_admin', 'sub_admin'));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 create table if not exists public.live_class_sessions (
     video_id uuid primary key references public.videos(id) on delete cascade,
     status text default 'active' check (status in ('active', 'ended', 'archived')),
@@ -35,18 +43,18 @@ create policy "Anyone can read live class sessions"
 
 create policy "Organizers can insert live class sessions" 
     on public.live_class_sessions for insert with check (
-        exists (select 1 from public.users where id = auth.uid() and role in ('organizer', 'main_admin', 'sub_admin'))
+        public.is_any_admin()
     );
 
 create policy "Organizers can update live class sessions" 
     on public.live_class_sessions for update using (
-        exists (select 1 from public.users where id = auth.uid() and role in ('organizer', 'main_admin', 'sub_admin'))
+        public.is_any_admin()
     );
 
 -- Policies for live_chat_messages
 create policy "Users can read classroom chat" 
     on public.live_chat_messages for select using (
-        exists (select 1 from public.users where id = auth.uid() and role in ('organizer', 'main_admin', 'sub_admin'))
+        public.is_any_admin()
         or exists (
             select 1 from public.videos v
             join public.enrollments e on v.course_id = e.course_id
@@ -59,7 +67,7 @@ create policy "Users can insert their own chat"
     on public.live_chat_messages for insert with check (
         auth.uid() = user_id
         and (
-            exists (select 1 from public.users where id = auth.uid() and role in ('organizer', 'main_admin', 'sub_admin'))
+            public.is_any_admin()
             or exists (
                 select 1 from public.videos v
                 join public.enrollments e on v.course_id = e.course_id
@@ -71,12 +79,12 @@ create policy "Users can insert their own chat"
 
 create policy "Organizers can update chat" 
     on public.live_chat_messages for update using (
-        exists (select 1 from public.users where id = auth.uid() and role in ('organizer', 'main_admin', 'sub_admin'))
+        public.is_any_admin()
     );
 
 create policy "Organizers can delete chat" 
     on public.live_chat_messages for delete using (
-        exists (select 1 from public.users where id = auth.uid() and role in ('organizer', 'main_admin', 'sub_admin'))
+        public.is_any_admin()
     );
 
 -- Policies for live_chat_reactions

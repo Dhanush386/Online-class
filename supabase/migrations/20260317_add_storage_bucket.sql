@@ -1,6 +1,13 @@
+-- 0. Helper function for bucket name constant
+CREATE OR REPLACE FUNCTION public.get_study_materials_bucket() RETURNS text AS $$
+BEGIN
+  RETURN 'study-materials';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 -- 1. Create the storage bucket for study materials
 INSERT INTO storage.buckets (id, name, public) 
-VALUES ('study-materials', 'study-materials', true)
+VALUES (public.get_study_materials_bucket(), public.get_study_materials_bucket(), true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Set up RLS policies for the bucket
@@ -9,7 +16,7 @@ CREATE POLICY "Organizers can upload study materials"
 ON storage.objects FOR INSERT 
 TO authenticated 
 WITH CHECK (
-  bucket_id = 'study-materials' AND 
+  bucket_id = public.get_study_materials_bucket() AND 
   EXISTS (
     SELECT 1 FROM public.users 
     WHERE id = auth.uid() AND role IN ('organizer', 'main_admin', 'sub_admin')
@@ -21,7 +28,7 @@ CREATE POLICY "Organizers can delete study materials"
 ON storage.objects FOR DELETE 
 TO authenticated 
 USING (
-  bucket_id = 'study-materials' AND 
+  bucket_id = public.get_study_materials_bucket() AND 
   EXISTS (
     SELECT 1 FROM public.users 
     WHERE id = auth.uid() AND role IN ('organizer', 'main_admin', 'sub_admin')
@@ -32,7 +39,7 @@ USING (
 CREATE POLICY "Public read access for study materials" 
 ON storage.objects FOR SELECT 
 TO authenticated 
-USING (bucket_id = 'study-materials');
+USING (bucket_id = public.get_study_materials_bucket());
 
 -- 3. Reload schema cache
 NOTIFY pgrst, 'reload schema';

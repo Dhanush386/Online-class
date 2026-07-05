@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { ChevronLeft, ChevronRight, Send, AlertCircle, Clock, CheckCircle2, XCircle, Lock, ShieldAlert, Camera, Code as CodeIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, Clock, CheckCircle2, Lock, ShieldAlert, Camera, Code as CodeIcon } from 'lucide-react'
 import * as tf from '@tensorflow/tfjs'
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
 import CodeEditor from '../../components/CodeEditor'
@@ -14,6 +14,30 @@ const BYPASS_PROCTORING = false // Set to false to enable AI proctoring violatio
 import { useDeviceType } from '../../hooks/useDeviceType'
 import MobileBlocker from '../../components/MobileBlocker'
 
+const isMulti = (q) => {
+    if (!q?.correct_answer) return false
+    if (q.correct_answer.startsWith('[') && q.correct_answer.endsWith(']')) {
+        try {
+            const arr = JSON.parse(q.correct_answer)
+            return Array.isArray(arr) && arr.length > 1
+        } catch {
+            return false
+        }
+    }
+    return false
+}
+
+const getCorrectArray = (q) => {
+    try {
+        if (q?.correct_answer?.startsWith('[') && q?.correct_answer?.endsWith(']')) {
+            return JSON.parse(q.correct_answer)
+        }
+        return [q.correct_answer]
+    } catch {
+        return [q.correct_answer]
+    }
+}
+
 export default function TakeAssessment() {
     const { assessmentId } = useParams()
     const { profile, user } = useAuth()
@@ -21,7 +45,6 @@ export default function TakeAssessment() {
 
     const [assessment, setAssessment] = useState(null)
     const [questions, setQuestions] = useState([])
-    const [_attemptNumber, setAttemptNumber] = useState(1)
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
@@ -37,7 +60,6 @@ export default function TakeAssessment() {
     const [requiresReentry, setRequiresReentry] = useState(false)
     const [securityAlert, setSecurityAlert] = useState(null)
     const [faceDetected, setFaceDetected] = useState(true)
-    const _containerRef = useRef(null)
 
     // Proctoring Risk Engine & Session States
     const [sessionId, setSessionId] = useState(null)
@@ -85,9 +107,47 @@ export default function TakeAssessment() {
     // Run Proctoring Loop
     useEffect(() => {
         if (BYPASS_PROCTORING) return
+
+        const handlePhoneDetected = (now) => {
+            setViolationCount(prev => {
+                const next = prev + 1
+                if (next < 3) {
+                    setSecurityAlert(`Security Warning (${next}/3): Unauthorized device (cell phone) detected by AI Proctoring.`)
+                }
+                return next
+            })
+
+            if (now - (lastViolationTimes.current['phone_detected'] || 0) > 10000) {
+                lastViolationTimes.current['phone_detected'] = now;
+                logViolation('phone_detected', 40);
+            }
+        }
+
+        const handleFaceLost = (now) => {
+            if (now - (lastViolationTimes.current['face_lost'] || 0) > 10000) {
+                lastViolationTimes.current['face_lost'] = now;
+                logViolation('face_lost', 20);
+            }
+        }
+
+        const handleMultipleFaces = (now) => {
+            setViolationCount(prev => {
+                const next = prev + 1
+                if (next < 3) {
+                    setSecurityAlert(`Security Warning (${next}/3): Multiple people detected in webcam feed.`)
+                }
+                return next
+            })
+
+            if (now - (lastViolationTimes.current['multiple_faces'] || 0) > 10000) {
+                lastViolationTimes.current['multiple_faces'] = now;
+                logViolation('multiple_faces', 50);
+            }
+        }
+
         if (isStarted && cameraEnabled && aiModel && videoRef.current) {
             proctorInterval.current = setInterval(async () => {
-                if (videoRef.current && videoRef.current.readyState === 4) {
+                if (videoRef.current?.readyState === 4) {
                     const predictions = await aiModel.detect(videoRef.current)
                     
                     let phoneDetected = false
@@ -103,44 +163,13 @@ export default function TakeAssessment() {
                     const now = Date.now();
 
                     // 1. Phone Detection (Risk: +40)
-                    if (phoneDetected) {
-                        setViolationCount(prev => {
-                            const next = prev + 1
-                            if (next < 3) {
-                                setSecurityAlert(`Security Warning (${next}/3): Unauthorized device (cell phone) detected by AI Proctoring.`)
-                            }
-                            return next
-                        })
-
-                        if (now - (lastViolationTimes.current['phone_detected'] || 0) > 10000) {
-                            lastViolationTimes.current['phone_detected'] = now;
-                            logViolation('phone_detected', 40);
-                        }
-                    }
+                    if (phoneDetected) handlePhoneDetected(now)
 
                     // 2. Face Lost Detection (Risk: +20)
-                    if (personCount === 0) {
-                        if (now - (lastViolationTimes.current['face_lost'] || 0) > 10000) {
-                            lastViolationTimes.current['face_lost'] = now;
-                            logViolation('face_lost', 20);
-                        }
-                    }
+                    if (personCount === 0) handleFaceLost(now)
 
                     // 3. Multiple Faces Detection (Risk: +50)
-                    if (personCount > 1) {
-                        setViolationCount(prev => {
-                            const next = prev + 1
-                            if (next < 3) {
-                                setSecurityAlert(`Security Warning (${next}/3): Multiple people detected in webcam feed.`)
-                            }
-                            return next
-                        })
-
-                        if (now - (lastViolationTimes.current['multiple_faces'] || 0) > 10000) {
-                            lastViolationTimes.current['multiple_faces'] = now;
-                            logViolation('multiple_faces', 50);
-                        }
-                    }
+                    if (personCount > 1) handleMultipleFaces(now)
                 }
             }, 2500)
         }
@@ -670,7 +699,7 @@ export default function TakeAssessment() {
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading assessment...</div>
     if (error && !assessment) return <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>Error: {error}</div>
 
-    if ((requiresReentry || securityAlert) && !submitted && !BYPASS_PROCTORING) {
+    const renderSecurityBlock = () => {
         return (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.98)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
                 <div className="glass-card animate-scale-in" style={{ maxWidth: 500, padding: '3rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
@@ -693,7 +722,11 @@ export default function TakeAssessment() {
         )
     }
 
-    if (submitted) {
+    if ((requiresReentry || securityAlert) && !submitted && !BYPASS_PROCTORING) {
+        return renderSecurityBlock()
+    }
+
+    const renderSubmittedState = () => {
         return (
             <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg-base)', overflowY: 'auto', padding: '4rem 1.25rem' }}>
                 <div className="animate-fade-in" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
@@ -729,11 +762,15 @@ export default function TakeAssessment() {
         )
     }
 
+    if (submitted) {
+        return renderSubmittedState()
+    }
+
     if (!isDesktop || isMobile || isTablet) {
         return <MobileBlocker />
     }
 
-    if (!isStarted) {
+    const renderStartScreen = () => {
         return (
             <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg-base)', overflowY: 'auto', padding: '4rem 1.25rem' }}>
                 <div className="animate-fade-in" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
@@ -753,11 +790,7 @@ export default function TakeAssessment() {
                             <li style={{ listStyleType: 'disc', marginLeft: '1rem' }}>Receiving 3 violation strikes will result in automatic test failure.</li>
                         </div>
                         
-                        {!cameraEnabled ? (
-                            <button onClick={startCamera} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem', marginBottom: '1rem', border: '1.5px solid var(--primary-500)', color: 'var(--primary-400)', background: 'transparent' }}>
-                                <Camera size={20} style={{ marginRight: '0.5rem' }} /> Enable Webcam to Continue
-                            </button>
-                        ) : (
+                        {cameraEnabled ? (
                             <div style={{ marginBottom: '1rem' }}>
                                 <div style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', padding: '0.85rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                                     <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
@@ -766,6 +799,10 @@ export default function TakeAssessment() {
                                     Enter Secure Mode & Start
                                 </button>
                             </div>
+                        ) : (
+                            <button onClick={startCamera} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem', marginBottom: '1rem', border: '1.5px solid var(--primary-500)', color: 'var(--primary-400)', background: 'transparent' }}>
+                                <Camera size={20} style={{ marginRight: '0.5rem' }} /> Enable Webcam to Continue
+                            </button>
                         )}
 
                         <Link to={`/student/courses/${assessment?.course_id}`} style={{ display: 'block', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
@@ -777,32 +814,14 @@ export default function TakeAssessment() {
         )
     }
 
+    if (!isStarted) {
+        return renderStartScreen()
+    }
+
     const currentQ = questions[currentIdx]
     const progress = Math.round(((currentIdx + 1) / questions.length) * 100)
 
-    const isMulti = (q) => {
-        if (!q?.correct_answer) return false
-        if (q.correct_answer.startsWith('[') && q.correct_answer.endsWith(']')) {
-            try {
-                const arr = JSON.parse(q.correct_answer)
-                return Array.isArray(arr) && arr.length > 1
-            } catch {
-                return false
-            }
-        }
-        return false
-    }
 
-    const getCorrectArray = (q) => {
-        try {
-            if (q?.correct_answer?.startsWith('[') && q?.correct_answer?.endsWith(']')) {
-                return JSON.parse(q.correct_answer)
-            }
-            return [q.correct_answer]
-        } catch {
-            return [q.correct_answer]
-        }
-    }
 
     const handleOptionClick = (opt) => {
         if (isMulti(currentQ)) {
@@ -826,204 +845,218 @@ export default function TakeAssessment() {
         ? (Array.isArray(currentAnswer) && currentAnswer.length > 0)
         : (currentAnswer !== undefined && currentAnswer !== null && currentAnswer !== '')
 
+    const renderHeader = () => (
+        <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+                <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                    <ChevronLeft size={16} /> Quit Assessment
+                </button>
+                <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{assessment?.title}</h1>
+                {profile && <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontWeight: 600 }}>Student: {profile.full_name || profile.name || 'Unknown'}</div>}
+            </div>
+            <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                {timeLeft !== null && (
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.4rem', 
+                        color: timeLeft <= 60 ? '#ef4444' : 'var(--text-secondary)', 
+                        fontSize: '0.85rem', 
+                        fontWeight: 700,
+                        background: timeLeft <= 60 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.08)',
+                        padding: '0.3rem 0.6rem',
+                        borderRadius: 6,
+                        border: timeLeft <= 60 ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(99, 102, 241, 0.15)'
+                    }}>
+                        <Clock size={14} className={timeLeft <= 60 ? 'animate-pulse' : ''} />
+                        {formatTime(timeLeft)}
+                    </div>
+                )}
+                {violationCount > 0 && (
+                    <div style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 700, background: '#fef2f2', padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid #fee2e2' }}>
+                        Violations: {violationCount}/3
+                    </div>
+                )}
+                <div>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Question {currentIdx + 1} of {questions.length}</div>
+                    <div style={{ width: 120, height: 6, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ width: `${progress}%`, height: '100%', background: '#6366f1', transition: 'width 0.3s ease' }} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderQuestionCard = () => (
+        <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2rem', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                {currentQ?.question_text}
+            </h2>
+            {currentQ?.image_url && (
+                <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+                    <img src={currentQ.image_url} alt="Question Reference" style={{ maxWidth: '100%', maxHeight: '350px', borderRadius: '12px', border: '1px solid var(--card-border)', objectFit: 'contain' }} />
+                </div>
+            )}
+
+            {currentQ?.question_type === 'code_mcq' && currentQ?.code_snippet && (
+                <div style={{ marginBottom: '2rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                    <div style={{ background: '#1e293b', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <CodeIcon size={16} color="#94a3b8" />
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0' }}>
+                                {currentQ.snippet_title || 'Code Snippet'}
+                            </span>
+                        </div>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            {currentQ.code_language}
+                        </span>
+                    </div>
+                    <div style={{ background: '#0f172a', overflowX: 'auto' }}>
+                        <div style={{ minWidth: '100%', width: 'max-content' }}>
+                            <CodeEditor
+                                value={currentQ.code_snippet}
+                                language={currentQ.code_language}
+                                readOnly={true}
+                                theme="dark"
+                                style={{ height: 'auto', minHeight: 150, padding: 0 }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {currentQ?.options.map((opt, i) => {
+                    const isSelected = isMulti(currentQ) 
+                        ? (Array.isArray(answers[currentQ.id]) && answers[currentQ.id].includes(opt))
+                        : answers[currentQ.id] === opt
+
+                    return (
+                        <button
+                            key={opt}
+                            onClick={() => handleOptionClick(opt)}
+                            style={{
+                                padding: '1.25rem 1.5rem',
+                                borderRadius: 12,
+                                border: `2px solid ${isSelected ? '#6366f1' : 'var(--card-border)'}`,
+                                background: isSelected ? 'rgba(99, 102, 241, 0.08)' : 'var(--card-bg)',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '1rem',
+                                transition: 'all 0.2s ease',
+                                color: isSelected ? 'var(--primary-400)' : 'var(--text-primary)',
+                                fontWeight: isSelected ? 600 : 500
+                            }}
+                        >
+                            <div style={{
+                                width: 24, height: 24,
+                                borderRadius: isMulti(currentQ) ? '6px' : '50%',
+                                border: `2px solid ${isSelected ? '#6366f1' : 'var(--text-muted)'}`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: isSelected ? '#6366f1' : 'transparent',
+                                color: 'white',
+                                fontSize: '0.85rem',
+                                flexShrink: 0
+                            }}>
+                                {isSelected ? <CheckCircle2 size={14} /> : String.fromCodePoint(65 + i)}
+                            </div>
+                            {opt}
+                        </button>
+                    )
+                })}
+            </div>
+        </div>
+    );
+
+    const renderNavigation = () => (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+                onClick={() => setCurrentIdx(p => Math.max(0, p - 1))}
+                disabled={currentIdx === 0}
+                className="btn-secondary"
+                style={{ gap: '0.5rem', opacity: currentIdx === 0 ? 0.5 : 1 }}
+            >
+                <ChevronLeft size={18} /> Previous
+            </button>
+
+            {currentIdx === questions.length - 1 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={submitting || (timeLeft !== null && timeLeft > 60) || !isAnswered}
+                        className="btn-primary"
+                        style={{ gap: '0.5rem', padding: '0.85rem 2rem' }}
+                    >
+                        {submitting ? 'Submitting...' : <><Send size={18} /> Submit Assessment</>}
+                    </button>
+                    {timeLeft !== null && timeLeft > 60 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600 }}>
+                            <Clock size={12} className="animate-pulse" />
+                            <span>Enabled in {formatTime(timeLeft - 60)}</span>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <button
+                    onClick={() => setCurrentIdx(p => Math.min(questions.length - 1, p + 1))}
+                    disabled={!isAnswered}
+                    className="btn-primary"
+                    style={{ gap: '0.5rem' }}
+                >
+                    Next Question <ChevronRight size={18} />
+                </button>
+            )}
+        </div>
+    );
+
+    const renderWebcamFeed = () => {
+        if (!cameraEnabled) return null;
+        return (
+            <div style={{ position: 'fixed', top: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: faceDetected ? 50 : 10000, background: '#000', transition: 'all 0.3s ease', transform: faceDetected ? 'none' : 'scale(1.5) translate(-20px, 20px)' }}>
+                <video 
+                    ref={(node) => {
+                        videoRef.current = node;
+                        if (node && mediaStream) {
+                            if (node.srcObject !== mediaStream) node.srcObject = mediaStream;
+                            if (node.paused) node.play().catch(e => console.error("Video play error:", e));
+                        }
+                    }}
+                    autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+                <div style={{ position: 'absolute', bottom: '4px', left: '0', right: '0', textAlign: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 800, background: 'rgba(239,68,68,0.8)', padding: '2px 0' }}>
+                    AI PROCTORING ACTIVE
+                </div>
+            </div>
+        );
+    };
+
+    const renderFaceNotDetectedOverlay = () => {
+        if (faceDetected || !isStarted || !cameraEnabled || submitted || BYPASS_PROCTORING) return null;
+        return (
+            <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.95)', backdropFilter: 'blur(15px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', flexDirection: 'column' }}>
+                <div style={{ width: 100, height: 100, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', color: '#ef4444', animation: 'pulse 2s infinite' }}>
+                    <Camera size={50} />
+                </div>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'white', marginBottom: '1rem', textAlign: 'center' }}>Face Not Detected</h1>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.2rem', maxWidth: 600, textAlign: 'center', lineHeight: 1.6 }}>
+                    AI Proctoring has lost track of your face. Please ensure you are looking directly at the camera and your face is well-lit to continue the assessment.
+                </p>
+            </div>
+        );
+    };
+
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg-base)', overflowY: 'auto', padding: '2rem 1.25rem' }}>
             <div className="animate-fade-in" style={{ maxWidth: 800, margin: '0 auto' }}>
-                {/* Header */}
-                <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                        <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                            <ChevronLeft size={16} /> Quit Assessment
-                        </button>
-                        <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{assessment?.title}</h1>
-                        {profile && <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontWeight: 600 }}>Student: {profile.full_name || profile.name || 'Unknown'}</div>}
-                    </div>
-                    <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        {timeLeft !== null && (
-                            <div style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0.4rem', 
-                                color: timeLeft <= 60 ? '#ef4444' : 'var(--text-secondary)', 
-                                fontSize: '0.85rem', 
-                                fontWeight: 700,
-                                background: timeLeft <= 60 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.08)',
-                                padding: '0.3rem 0.6rem',
-                                borderRadius: 6,
-                                border: timeLeft <= 60 ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(99, 102, 241, 0.15)'
-                            }}>
-                                <Clock size={14} className={timeLeft <= 60 ? 'animate-pulse' : ''} />
-                                {formatTime(timeLeft)}
-                            </div>
-                        )}
-                        {violationCount > 0 && (
-                            <div style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 700, background: '#fef2f2', padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid #fee2e2' }}>
-                                Violations: {violationCount}/3
-                            </div>
-                        )}
-                        <div>
-                            <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Question {currentIdx + 1} of {questions.length}</div>
-                            <div style={{ width: 120, height: 6, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 3, overflow: 'hidden' }}>
-                                <div style={{ width: `${progress}%`, height: '100%', background: '#6366f1', transition: 'width 0.3s ease' }} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Question Card */}
-                <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '2rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2rem', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                        {currentQ?.question_text}
-                    </h2>
-                    {currentQ?.image_url && (
-                        <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-                            <img src={currentQ.image_url} alt="Question Reference" style={{ maxWidth: '100%', maxHeight: '350px', borderRadius: '12px', border: '1px solid var(--card-border)', objectFit: 'contain' }} />
-                        </div>
-                    )}
-
-                    {currentQ?.question_type === 'code_mcq' && currentQ?.code_snippet && (
-                        <div style={{ marginBottom: '2rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
-                            <div style={{ background: '#1e293b', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <CodeIcon size={16} color="#94a3b8" />
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0' }}>
-                                        {currentQ.snippet_title || 'Code Snippet'}
-                                    </span>
-                                </div>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    {currentQ.code_language}
-                                </span>
-                            </div>
-                            <div style={{ background: '#0f172a', overflowX: 'auto' }}>
-                                <div style={{ minWidth: '100%', width: 'max-content' }}>
-                                    <CodeEditor
-                                        value={currentQ.code_snippet}
-                                        language={currentQ.code_language}
-                                        readOnly={true}
-                                        theme="dark"
-                                        style={{ height: 'auto', minHeight: 150, padding: 0 }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {currentQ?.options.map((opt, i) => {
-                            const isSelected = isMulti(currentQ) 
-                                ? (Array.isArray(answers[currentQ.id]) && answers[currentQ.id].includes(opt))
-                                : answers[currentQ.id] === opt
-
-                            return (
-                                <button
-                                    key={i}
-                                    onClick={() => handleOptionClick(opt)}
-                                    style={{
-                                        padding: '1.25rem 1.5rem',
-                                        borderRadius: 12,
-                                        border: `2px solid ${isSelected ? '#6366f1' : 'var(--card-border)'}`,
-                                        background: isSelected ? 'rgba(99, 102, 241, 0.08)' : 'var(--card-bg)',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '1rem',
-                                        transition: 'all 0.2s ease',
-                                        color: isSelected ? 'var(--primary-400)' : 'var(--text-primary)',
-                                        fontWeight: isSelected ? 600 : 500
-                                    }}
-                                >
-                                    <div style={{
-                                        width: 24, height: 24,
-                                        borderRadius: isMulti(currentQ) ? '6px' : '50%',
-                                        border: `2px solid ${isSelected ? '#6366f1' : 'var(--text-muted)'}`,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        background: isSelected ? '#6366f1' : 'transparent',
-                                        color: 'white',
-                                        fontSize: '0.85rem',
-                                        flexShrink: 0
-                                    }}>
-                                        {isSelected ? <CheckCircle2 size={14} /> : String.fromCodePoint(65 + i)}
-                                    </div>
-                                    {opt}
-                                </button>
-                            )
-                        })}
-                    </div>
-                </div>
-
-                {/* Navigation */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <button
-                        onClick={() => setCurrentIdx(p => Math.max(0, p - 1))}
-                        disabled={currentIdx === 0}
-                        className="btn-secondary"
-                        style={{ gap: '0.5rem', opacity: currentIdx === 0 ? 0.5 : 1 }}
-                    >
-                        <ChevronLeft size={18} /> Previous
-                    </button>
-
-                    {currentIdx === questions.length - 1 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={submitting || (timeLeft !== null && timeLeft > 60) || !isAnswered}
-                                className="btn-primary"
-                                style={{ gap: '0.5rem', padding: '0.85rem 2rem' }}
-                            >
-                                {submitting ? 'Submitting...' : <><Send size={18} /> Submit Assessment</>}
-                            </button>
-                            {timeLeft !== null && timeLeft > 60 && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600 }}>
-                                    <Clock size={12} className="animate-pulse" />
-                                    <span>Enabled in {formatTime(timeLeft - 60)}</span>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setCurrentIdx(p => Math.min(questions.length - 1, p + 1))}
-                            disabled={!isAnswered}
-                            className="btn-primary"
-                            style={{ gap: '0.5rem' }}
-                        >
-                            Next Question <ChevronRight size={18} />
-                        </button>
-                    )}
-                </div>
+                {renderHeader()}
+                {renderQuestionCard()}
+                {renderNavigation()}
             </div>
 
-            {/* Webcam Feed */}
-            {cameraEnabled && (
-                <div style={{ position: 'fixed', top: '20px', right: '20px', width: '150px', height: '112px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: faceDetected ? 50 : 10000, background: '#000', transition: 'all 0.3s ease', transform: faceDetected ? 'none' : 'scale(1.5) translate(-20px, 20px)' }}>
-                    <video 
-                        ref={(node) => {
-                            videoRef.current = node;
-                            if (node && mediaStream) {
-                                if (node.srcObject !== mediaStream) node.srcObject = mediaStream;
-                                if (node.paused) node.play().catch(e => console.error("Video play error:", e));
-                            }
-                        }}
-                        autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                    />
-                    <div style={{ position: 'absolute', bottom: '4px', left: '0', right: '0', textAlign: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 800, background: 'rgba(239,68,68,0.8)', padding: '2px 0' }}>
-                        AI PROCTORING ACTIVE
-                    </div>
-                </div>
-            )}
-
-            {/* Face Not Detected Overlay */}
-            {!faceDetected && isStarted && cameraEnabled && !submitted && !BYPASS_PROCTORING && (
-                <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.95)', backdropFilter: 'blur(15px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', flexDirection: 'column' }}>
-                    <div style={{ width: 100, height: 100, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', color: '#ef4444', animation: 'pulse 2s infinite' }}>
-                        <Camera size={50} />
-                    </div>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'white', marginBottom: '1rem', textAlign: 'center' }}>Face Not Detected</h1>
-                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.2rem', maxWidth: 600, textAlign: 'center', lineHeight: 1.6 }}>
-                        AI Proctoring has lost track of your face. Please ensure you are looking directly at the camera and your face is well-lit to continue the assessment.
-                    </p>
-                </div>
-            )}
+            {renderWebcamFeed()}
+            {renderFaceNotDetectedOverlay()}
         </div>
     )
 }

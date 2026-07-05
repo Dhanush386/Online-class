@@ -1,5 +1,13 @@
 -- Role-Based Admin Management Migration
 
+-- 0. Create helper function for main admin check
+CREATE OR REPLACE FUNCTION public.is_main_admin()
+RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'main_admin');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 1. Create assignments table
 CREATE TABLE IF NOT EXISTS public.admin_course_assignments (
     admin_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -20,7 +28,7 @@ CREATE POLICY "Main admins have full access to courses"
 ON public.courses FOR ALL
 TO authenticated
 USING (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'main_admin')
+    public.is_main_admin()
 );
 
 DROP POLICY IF EXISTS "Sub admins can view assigned courses" ON public.courses;
@@ -31,9 +39,7 @@ USING (
     EXISTS (
         SELECT 1 FROM public.admin_course_assignments 
         WHERE admin_id = auth.uid() AND course_id = public.courses.id
-    ) OR EXISTS (
-        SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'main_admin'
-    )
+    ) OR public.is_main_admin()
 );
 
 DROP POLICY IF EXISTS "Sub admins can update assigned courses" ON public.courses;
@@ -53,7 +59,7 @@ CREATE POLICY "Management access for coding challenges"
 ON public.coding_challenges FOR ALL
 TO authenticated
 USING (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'main_admin') OR
+    public.is_main_admin() OR
     EXISTS (
         SELECT 1 FROM public.admin_course_assignments 
         WHERE admin_id = auth.uid() AND course_id = public.coding_challenges.course_id
@@ -66,7 +72,7 @@ CREATE POLICY "Management access for assessments"
 ON public.assessments FOR ALL
 TO authenticated
 USING (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'main_admin') OR
+    public.is_main_admin() OR
     EXISTS (
         SELECT 1 FROM public.admin_course_assignments 
         WHERE admin_id = auth.uid() AND course_id = public.assessments.course_id
@@ -79,7 +85,7 @@ CREATE POLICY "Management access for videos"
 ON public.videos FOR ALL
 TO authenticated
 USING (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'main_admin') OR
+    public.is_main_admin() OR
     EXISTS (
         SELECT 1 FROM public.admin_course_assignments 
         WHERE admin_id = auth.uid() AND course_id = public.videos.course_id
@@ -92,7 +98,7 @@ CREATE POLICY "Management access for resources"
 ON public.course_resources FOR ALL
 TO authenticated
 USING (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'main_admin') OR
+    public.is_main_admin() OR
     EXISTS (
         SELECT 1 FROM public.admin_course_assignments 
         WHERE admin_id = auth.uid() AND course_id = public.course_resources.course_id

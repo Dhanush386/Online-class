@@ -19,7 +19,7 @@ webpush.setVapidDetails(
 );
 
 serve(async (req) => {
-  const { title, message, target } = await req.json();
+  const { title, message } = await req.json();
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

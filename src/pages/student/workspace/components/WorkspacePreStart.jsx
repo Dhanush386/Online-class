@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Lock, Camera, CheckCircle2, ShieldAlert } from 'lucide-react'
+import PropTypes from 'prop-types'
 
 export function WorkspacePreStart({
     isStarted,
@@ -35,11 +36,7 @@ export function WorkspacePreStart({
                         <li>Receiving 3 violation strikes will result in automatic test failure.</li>
                     </div>
                     
-                    {!cameraEnabled ? (
-                        <button onClick={startCamera} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem', marginBottom: '1rem', border: '1px solid #6366f1', color: '#6366f1' }}>
-                            <Camera size={20} style={{ marginRight: '0.5rem' }} /> Enable Webcam to Continue
-                        </button>
-                    ) : (
+                    {cameraEnabled ? (
                         <div style={{ marginBottom: '1rem' }}>
                             <div style={{ background: '#ecfdf5', color: '#059669', padding: '0.85rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600 }}>
                                 <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
@@ -48,6 +45,10 @@ export function WorkspacePreStart({
                                 Enter Secure Mode & Start
                             </button>
                         </div>
+                    ) : (
+                        <button onClick={startCamera} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem', marginBottom: '1rem', border: '1px solid #6366f1', color: '#6366f1' }}>
+                            <Camera size={20} style={{ marginRight: '0.5rem' }} /> Enable Webcam to Continue
+                        </button>
                     )}
                     <Link to="/student/coding" style={{ display: 'block', marginTop: '1.5rem', color: 'var(--text-muted)' }}>Cancel and Go Back</Link>
                 </div>
@@ -94,4 +95,22 @@ export function WorkspacePreStart({
     }
 
     return null;
+}
+
+WorkspacePreStart.propTypes = {
+    isStarted: PropTypes.bool,
+    canBypass: PropTypes.bool,
+    BYPASS_PROCTORING: PropTypes.bool,
+    requiresReentry: PropTypes.bool,
+    securityAlert: PropTypes.string,
+    violationCount: PropTypes.number,
+    cameraEnabled: PropTypes.bool,
+    startCamera: PropTypes.func,
+    enterFullScreen: PropTypes.func,
+    handleStartChallenge: PropTypes.func,
+    challenge: PropTypes.shape({
+        title: PropTypes.string
+    }),
+    setSecurityAlert: PropTypes.func,
+    setRequiresReentry: PropTypes.func
 }

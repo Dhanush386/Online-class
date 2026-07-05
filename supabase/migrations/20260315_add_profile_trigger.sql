@@ -7,15 +7,18 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public
 AS $$
+DECLARE
+  extracted_role TEXT := COALESCE(new.raw_user_meta_data->>'role', 'student');
+  default_student_role CONSTANT TEXT := 'student';
 BEGIN
   INSERT INTO public.users (id, name, email, role, status)
   VALUES (
     new.id,
     COALESCE(new.raw_user_meta_data->>'name', 'New User'),
     new.email,
-    COALESCE(new.raw_user_meta_data->>'role', 'student'),
+    extracted_role,
     CASE 
-      WHEN COALESCE(new.raw_user_meta_data->>'role', 'student') = 'student' THEN 'pending'
+      WHEN extracted_role = default_student_role THEN 'pending'
       ELSE 'approved'
     END
   );

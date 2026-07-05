@@ -25,7 +25,7 @@ serve(async (req) => {
         const payload = await req.json()
         const record = payload.record
 
-        if (!record || !record.student_name) {
+        if (!record?.student_name) {
             return new Response('Skipped', { status: 200, headers: corsHeaders })
         }
 

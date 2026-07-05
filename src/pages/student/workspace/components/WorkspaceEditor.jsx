@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types'
 import { Maximize, RotateCcw, Save, Settings, Play, Code as CodeIcon } from 'lucide-react'
 import CodeEditor from '../../../../components/CodeEditor'
 
@@ -83,4 +84,27 @@ export function WorkspaceEditor({
             </div>
         </div>
     )
+}
+
+WorkspaceEditor.propTypes = {
+    challenge: PropTypes.shape({
+        language: PropTypes.string
+    }),
+    webTab: PropTypes.string,
+    setWebTab: PropTypes.func,
+    htmlCode: PropTypes.string,
+    setHtmlCode: PropTypes.func,
+    cssCode: PropTypes.string,
+    setCssCode: PropTypes.func,
+    jsCode: PropTypes.string,
+    setJsCode: PropTypes.func,
+    genericCode: PropTypes.string,
+    setGenericCode: PropTypes.func,
+    isCombined: PropTypes.bool,
+    handleSubCodeChange: PropTypes.func,
+    isReadOnly: PropTypes.bool,
+    runCode: PropTypes.func,
+    handleSubmit: PropTypes.func,
+    running: PropTypes.bool,
+    submitting: PropTypes.bool
 }
