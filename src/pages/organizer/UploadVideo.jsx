@@ -134,7 +134,7 @@ export default function ScheduleLiveClass() {
             <button
                 type="button"
                 onClick={() => setMode(type)}
-                style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 9, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', background: isActive ? 'white' : 'transparent', color: isActive ? '#6366f1' : 'var(--text-muted)', boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                style={{ flex: '1 1 140px', padding: '0.6rem', border: 'none', borderRadius: 9, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', background: isActive ? 'var(--accent)' : 'transparent', color: isActive ? 'white' : 'var(--text-secondary)', boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.2)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
             >
                 <Icon size={16} /> {label}
             </button>
@@ -242,7 +242,7 @@ export default function ScheduleLiveClass() {
             </div>
 
             {/* Mode Toggle */}
-            <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.35rem', borderRadius: 12, marginBottom: '2rem', gap: '0.35rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', background: 'rgba(255,255,255,0.05)', padding: '0.35rem', borderRadius: 12, marginBottom: '2rem', gap: '0.35rem' }}>
                 {renderModeButton('live', Radio, 'Live Class')}
                 {renderModeButton('upload', Upload, 'Upload Video')}
                 {renderModeButton('link', Link, 'Google Drive/Link')}
@@ -311,7 +311,7 @@ export default function ScheduleLiveClass() {
                     {/* Slide URL */}
                     <div>
                         <label htmlFor="slide-url" className="form-label">Slide URL (PPT/PDF) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
                             <div style={{ position: 'relative', flex: 1 }}>
                                 <Link size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input
@@ -358,7 +358,7 @@ export default function ScheduleLiveClass() {
                     </div>
 
                     {/* Schedule fields */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                         <div>
                             <label htmlFor="week-number" className="form-label">Week</label>
                             <input id="week-number" name="week_number" type="number" className="form-input" min="1" value={form.week_number} onChange={e => setForm(p => ({ ...p, week_number: e.target.value }))} required />
@@ -377,7 +377,7 @@ export default function ScheduleLiveClass() {
                         </div>
                     </div>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                         {renderScheduleFields()}
                     </div>
 
