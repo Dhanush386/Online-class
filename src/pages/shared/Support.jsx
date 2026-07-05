@@ -21,7 +21,7 @@ function TicketList({ filteredTickets, selectedTicket, setSelectedTicket, fetchM
                         padding: '1rem 1.25rem',
                         border: 'none',
                         borderBottom: '1px solid var(--sidebar-border)',
-                        background: selectedTicket?.id === t.id ? '#eff6ff' : 'transparent',
+                        background: selectedTicket?.id === t.id ? 'rgba(99,102,241,0.1)' : 'transparent',
                         cursor: 'pointer',
                         textAlign: 'left',
                         alignItems: 'center',
@@ -38,7 +38,7 @@ function TicketList({ filteredTickets, selectedTicket, setSelectedTicket, fetchM
                     </div>
                     <div style={{ flex: 1, overflow: 'hidden' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: t.status === 'closed' ? 'var(--text-muted)' : '#0f172a' }}>{t.subject}</span>
+                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: t.status === 'closed' ? 'var(--text-muted)' : 'var(--text-primary)' }}>{t.subject}</span>
                             <span style={{ fontSize: '0.85rem', padding: '2px 6px', borderRadius: 4, background: t.status === 'closed' ? '#fee2e2' : '#ecfdf5', color: t.status === 'closed' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{t.status}</span>
                         </div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -65,8 +65,8 @@ function MessageBubble({ msg, isOrganizer }) {
             <div style={{ 
                 padding: '0.85rem 1rem', 
                 borderRadius: fromMe ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
-                background: fromMe ? 'var(--accent)' : 'white',
-                color: fromMe ? 'white' : '#0f172a',
+                background: fromMe ? 'var(--accent)' : 'var(--bg-elevated)',
+                color: fromMe ? 'white' : 'var(--text-primary)',
                 fontSize: '0.875rem',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                 marginBottom: '0.25rem'
@@ -91,7 +91,7 @@ function MessageBubble({ msg, isOrganizer }) {
                                     alignItems: 'center', 
                                     gap: '0.5rem', 
                                     padding: '0.5rem', 
-                                    background: fromMe ? 'rgba(255,255,255,0.1)' : '#f8fafc',
+                                    background: fromMe ? 'rgba(255,255,255,0.1)' : 'var(--bg-base)',
                                     borderRadius: 6,
                                     color: 'inherit',
                                     textDecoration: 'none',
@@ -134,7 +134,7 @@ function MessageList({ messages, isOrganizer, scrollRef }) {
     return (
         <div 
             ref={scrollRef}
-            style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#f1f5f940' }}
+            style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(241, 245, 249, 0.02)' }}
         >
             {messages.map(msg => (
                 <MessageBubble key={msg.id} msg={msg} isOrganizer={isOrganizer} />
@@ -160,8 +160,8 @@ function MessageInput({
 }) {
     if (selectedTicket.status === 'closed') {
         return (
-            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--sidebar-border)', background: 'white' }}>
-                <div style={{ textAlign: 'center', padding: '0.5rem', color: '#ef4444', background: '#fef2f2', borderRadius: 8, fontSize: '0.85rem', fontWeight: 500 }}>
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--sidebar-border)', background: 'var(--bg-base)' }}>
+                <div style={{ textAlign: 'center', padding: '0.5rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', borderRadius: 8, fontSize: '0.85rem', fontWeight: 500 }}>
                     This ticket is closed. Please open a new ticket if you need further help.
                 </div>
             </div>
@@ -171,9 +171,9 @@ function MessageInput({
     const disableSubmit = (!newMessage.trim() && !attachment) || sending || uploading;
 
     return (
-        <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--sidebar-border)', background: 'white' }}>
+        <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--sidebar-border)', background: 'var(--bg-base)' }}>
             {attachment && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.5rem 0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: '0.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.5rem 0.85rem', background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', borderRadius: 8, marginBottom: '0.85rem' }}>
                     <div style={{ background: 'var(--accent)', color: 'white', padding: '4px', borderRadius: 4 }}>
                         {attachment.type.startsWith('image/') ? <ImageIcon size={14} /> : <File size={14} />}
                     </div>
@@ -200,7 +200,7 @@ function MessageInput({
                 <button 
                     type="button" 
                     onClick={() => fileInputRef.current.click()}
-                    style={{ background: '#f1f5f9', border: 'none', color: 'var(--text-muted)', padding: '0.6rem', borderRadius: 8, cursor: 'pointer' }}
+                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', color: 'var(--text-muted)', padding: '0.6rem', borderRadius: 8, cursor: 'pointer' }}
                     title="Attach file"
                 >
                     <Paperclip size={20} />
@@ -211,7 +211,7 @@ function MessageInput({
                     placeholder="Type your message here..." 
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    style={{ background: '#f8fafc', flex: 1 }}
+                    style={{ background: 'var(--bg-elevated)', flex: 1 }}
                 />
                 <button 
                     type="submit" 
@@ -465,7 +465,7 @@ export default function Support() {
             </div>
 
             <div className="glass-card stack-mobile" style={{ flex: 1, display: 'flex', overflow: 'hidden', padding: 0 }}>
-                <div style={{ flexBasis: '320px', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+                <div style={{ flexBasis: '320px', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
                     <div style={{ padding: '1.25rem' }}>
                         <div style={{ position: 'relative' }}>
                             <Search style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={16} />
@@ -475,7 +475,7 @@ export default function Support() {
                                 className="form-input"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                style={{ paddingLeft: '2.5rem', background: 'white' }}
+                                style={{ paddingLeft: '2.5rem', background: 'var(--bg-elevated)' }}
                             />
                         </div>
                     </div>
@@ -487,7 +487,7 @@ export default function Support() {
                     />
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
                     {selectedTicket ? (
                         <>
                             <div style={{ padding: '0.85rem 1.5rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -496,14 +496,14 @@ export default function Support() {
                                         <UserIcon size={16} />
                                     </div>
                                     <div>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>{selectedTicket.subject}</div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedTicket.subject}</div>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Ticket #{selectedTicket.id.slice(0, 8)} • {selectedTicket.student?.name}</div>
                                     </div>
                                 </div>
                                 {isOrganizer && selectedTicket.status === 'open' && (
                                     <button 
                                         onClick={handleCloseTicket}
-                                        style={{ color: '#ef4444', border: '1px solid #fee2e2', background: '#fef2f2', padding: '0.4rem 0.8rem', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+                                        style={{ color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.1)', padding: '0.4rem 0.8rem', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
                                     >
                                         Close Ticket
                                     </button>
