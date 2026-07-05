@@ -147,7 +147,7 @@ export default function Notifications() {
             <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
+                        <tr style={{ background: 'rgba(255,255,255,0.03)', textAlign: 'left' }}>
                             <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>NOTIFICATION</th>
                             <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>TARGET</th>
                             <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>SENT ON</th>
@@ -163,7 +163,7 @@ export default function Notifications() {
                                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
                                             <div style={{ marginTop: '0.2rem' }}>{getTypeIcon(n.type)}</div>
                                             <div>
-                                                <div style={{ fontWeight: 600, color: '#0f172a' }}>{n.title}</div>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.message}</div>
                                             </div>
                                         </div>
@@ -240,7 +240,7 @@ export default function Notifications() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                 <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={{ background: 'white', borderRadius: 16, border: '1px solid var(--sidebar-border)', overflow: 'hidden' }}>
+                    <div className="glass-card" style={{ padding: 0, borderRadius: 16, border: '1px solid var(--sidebar-border)', overflow: 'hidden' }}>
                         <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                             <History size={20} color="var(--text-secondary)" />
                             <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Broadcasting History</h2>
@@ -254,7 +254,7 @@ export default function Notifications() {
             {/* Create Modal */}
             {showCreateModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-                    <div className="animate-scale-in" style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: '500px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
+                    <div className="animate-scale-in" style={{ background: 'var(--bg-base)', border: '1px solid var(--sidebar-border)', borderRadius: 20, width: '100%', maxWidth: '500px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
                         <div style={{ padding: '1.5rem', background: 'var(--accent)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                                 <Send size={24} />
@@ -279,7 +279,7 @@ export default function Notifications() {
                                             placeholder="e.g. Schedule Update for Tomorrow"
                                             value={formData.title}
                                             onChange={e => setFormData({...formData, title: e.target.value})}
-                                            style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }}
+                                            style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', background: 'var(--bg-elevated)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
                                         />
                                     </label>
                                 </div>
@@ -293,7 +293,7 @@ export default function Notifications() {
                                             placeholder="Write your announcement here..."
                                             value={formData.message}
                                             onChange={e => setFormData({...formData, message: e.target.value})}
-                                            style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', resize: 'vertical', boxSizing: 'border-box' }}
+                                            style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', resize: 'vertical', background: 'var(--bg-elevated)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
                                         />
                                     </label>
                                 </div>
@@ -305,7 +305,7 @@ export default function Notifications() {
                                             <select 
                                                 value={formData.type}
                                                 onChange={e => setFormData({...formData, type: e.target.value})}
-                                                style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', background: 'white', boxSizing: 'border-box' }}
+                                                style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', background: 'var(--bg-elevated)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
                                             >
                                                 <option value="info">Information</option>
                                                 <option value="warning">Important Alert</option>
@@ -319,7 +319,7 @@ export default function Notifications() {
                                             <select 
                                                 value={formData.target}
                                                 onChange={e => setFormData({...formData, target: e.target.value})}
-                                                style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', background: 'white', boxSizing: 'border-box' }}
+                                                style={{ display: 'block', width: '100%', marginTop: '0.5rem', padding: '0.8rem', borderRadius: 10, border: '1px solid var(--sidebar-border)', outline: 'none', fontSize: '0.95rem', background: 'var(--bg-elevated)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
                                             >
                                                 <option value="all">Everyone</option>
                                                 <option value="students">Students Only</option>
