@@ -144,63 +144,48 @@ export default function Notifications() {
             );
         }
         return (
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ background: 'rgba(255,255,255,0.03)', textAlign: 'left' }}>
-                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>NOTIFICATION</th>
-                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>TARGET</th>
-                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>SENT ON</th>
-                            <th style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>ACTIONS</th>
-                        </tr>
-                    </thead>
-                    <tbody style={{ fontSize: '0.9rem' }}>
-                        {notifications.map(n => {
-                            const target = getTargetLabel(n.target)
-                            return (
-                                <tr key={n.id} style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
-                                            <div style={{ marginTop: '0.2rem' }}>{getTypeIcon(n.type)}</div>
-                                            <div>
-                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.message}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {notifications.map(n => {
+                    const target = getTargetLabel(n.target)
+                    return (
+                        <div key={n.id} style={{ borderBottom: '1px solid var(--sidebar-border)', padding: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flex: '1 1 min-content' }}>
+                                <div style={{ marginTop: '0.2rem', flexShrink: 0 }}>{getTypeIcon(n.type)}</div>
+                                <div>
+                                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem', fontSize: '0.95rem' }}>{n.title}</div>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: '1.4', wordBreak: 'break-word' }}>{n.message}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                                         <span style={{ 
-                                            fontSize: '0.85rem', 
-                                            fontWeight: 600, 
-                                            padding: '0.25rem 0.6rem', 
+                                            fontSize: '0.75rem', 
+                                            fontWeight: 700, 
+                                            padding: '0.2rem 0.6rem', 
                                             borderRadius: 20, 
                                             background: target.bg, 
-                                            color: target.color 
+                                            color: target.color,
+                                            textTransform: 'uppercase'
                                         }}>
                                             {target.label}
                                         </span>
-                                    </td>
-                                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                                             <Clock size={14} />
                                             {new Date(n.created_at).toLocaleDateString()}
                                         </div>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <button 
-                                            onClick={() => handleDelete(n.id)}
-                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: 8 }}
-                                            className="nav-item-hover"
-                                            title="Delete History"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            )
-                        })}
-                    </tbody>
-                </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ flexShrink: 0, paddingLeft: '0.5rem' }}>
+                                <button 
+                                    onClick={() => handleDelete(n.id)}
+                                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    className="nav-item-hover"
+                                    title="Delete History"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    )
+                })}
             </div>
         );
     };
