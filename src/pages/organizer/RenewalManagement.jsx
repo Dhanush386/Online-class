@@ -109,7 +109,7 @@ export default function RenewalManagement() {
                     />
                 </div>
                 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.25rem', borderRadius: '10px' }}>
                     {['pending', 'approved', 'rejected', 'all'].map((f) => (
                         <button
                             key={f}
@@ -118,13 +118,14 @@ export default function RenewalManagement() {
                                 padding: '0.5rem 1rem',
                                 borderRadius: '8px',
                                 border: 'none',
-                                background: filter === f ? 'white' : 'transparent',
-                                color: filter === f ? 'var(--accent)' : 'var(--text-secondary)',
+                                background: filter === f ? 'var(--accent)' : 'transparent',
+                                color: filter === f ? 'white' : 'var(--text-secondary)',
                                 fontSize: '0.8rem',
                                 fontWeight: 600,
                                 cursor: 'pointer',
-                                boxShadow: filter === f ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                                textTransform: 'capitalize'
+                                boxShadow: filter === f ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
+                                textTransform: 'capitalize',
+                                transition: 'all 0.2s'
                             }}
                         >
                             {f}
