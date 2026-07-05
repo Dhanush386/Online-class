@@ -42,7 +42,7 @@ function CourseJourneyItem({ item, onModuleAction }) {
         width: '100%',
         border: '1px solid #e2e8f0',
         textAlign: 'left',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between',
         padding: '1.1rem 1.5rem',
         borderRadius: '12px',
         transition: 'all 0.25s ease',
@@ -280,7 +280,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
         <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '2rem' }}>
             
             {/* Top Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>
                     Your Schedule
                 </h1>

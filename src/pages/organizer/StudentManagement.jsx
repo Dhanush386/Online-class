@@ -697,7 +697,7 @@ export default function StudentManagement() {
                 </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--card-border)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--card-border)' }}>
                 <TabButton currentTab={tab} tabName="active" onClick={setTab} color="#6366f1">
                     Active Students
                 </TabButton>
@@ -1080,7 +1080,7 @@ function StudentCard({
                         <div className="progress-bar-fill" style={{ width: `${avg}%`, background: getScoreGradient(avg) }} />
                     </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.85rem' }}>
                     <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }} onClick={(e) => { e.stopPropagation(); setViewingProfileId(student.id); }}>
                         <User size={14} /> Profile
                     </button>

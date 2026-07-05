@@ -189,8 +189,8 @@ export default function OrganizerRecordings() {
             </div>
 
             {/* Table */}
-            <div className="glass-card" style={{ overflow: 'hidden' }}>
-                <div style={{ overflowX: 'auto' }}>
+            <div className="glass-card" style={{ overflowX: 'auto' }}>
+                <div style={{ minWidth: '800px' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                         <thead>
                             <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid var(--card-border)' }}>

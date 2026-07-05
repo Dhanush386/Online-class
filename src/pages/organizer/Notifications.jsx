@@ -163,7 +163,7 @@ export default function Notifications() {
                                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
                                             <div style={{ marginTop: '0.2rem' }}>{getTypeIcon(n.type)}</div>
                                             <div>
-                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
+                                                <div style={{ fontWeight: 600, color: '#0f172a' }}>{n.title}</div>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.message}</div>
                                             </div>
                                         </div>
@@ -207,12 +207,12 @@ export default function Notifications() {
 
     return (
         <div className="animate-fade-in" style={{ maxWidth: '1000px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="stack-mobile" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Global Notifications</h1>
                     <p style={{ color: 'var(--text-secondary)' }}>Broadcast announcements and alerts to all platform users.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                     {!isCheckingSub && !isSubscribed && (
                         <button 
                             onClick={handleEnableNotifications}

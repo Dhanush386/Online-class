@@ -238,7 +238,7 @@ export default function Leaderboard() {
                         </div>
 
                         <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.03)' }}>
                                         <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rank</th>

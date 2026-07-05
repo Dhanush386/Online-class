@@ -248,7 +248,7 @@ export default function OrganizerProfile() {
             </div>
 
             {/* Stats Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+            <div className="stat-grid" style={{ marginBottom: '2rem' }}>
                 {statCards.map(s => (
                     <div key={s.label} className="glass-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
                         <div style={{ width: 40, height: 40, borderRadius: 10, background: `${s.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.85rem' }}>
@@ -261,9 +261,9 @@ export default function OrganizerProfile() {
             </div>
 
             {/* Form Sections */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <div className="stack-mobile" style={{ display: 'flex', gap: '2rem' }}>
                 {/* Personal Info */}
-                <div className="glass-card" style={{ padding: '2rem' }}>
+                <div className="glass-card" style={{ padding: '2rem', flex: 1 }}>
                     <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <User size={18} color="#6366f1" /> Personal Information
                     </h3>
@@ -292,7 +292,7 @@ export default function OrganizerProfile() {
                 </div>
 
                 {/* Professional Info */}
-                <div className="glass-card" style={{ padding: '2rem' }}>
+                <div className="glass-card" style={{ padding: '2rem', flex: 1 }}>
                     <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Briefcase size={18} color="#f59e0b" /> Professional Details
                     </h3>

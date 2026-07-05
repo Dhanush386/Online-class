@@ -169,8 +169,9 @@ export default function ScheduleManager() {
                     </div>
                 )}
                 {!loading && videos.length > 0 && (
-                    <table className="data-table">
-                        <thead>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table className="data-table" style={{ minWidth: '700px' }}>
+                            <thead>
                             <tr>
                                 <th>Video Title</th>
                                 <th>Course</th>
@@ -227,7 +228,8 @@ export default function ScheduleManager() {
                                 </tr>
                             ))}
                         </tbody>
-                    </table>
+                        </table>
+                    </div>
                 )}
             </div>
 
@@ -322,7 +324,7 @@ export default function ScheduleManager() {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                                     {/* Analytics Row */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+                                    <div className="stat-grid" style={{ gap: '1rem' }}>
                                         <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}>
                                             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{totalEnrolled}</div>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Students</div>
@@ -356,8 +358,8 @@ export default function ScheduleManager() {
                                                 No students have joined this class yet.
                                             </div>
                                         ) : (
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
-                                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflowX: 'auto' }}>
+                                                <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                                                     <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                                         <tr>
                                                             <th style={{ padding: '0.85rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Student</th>

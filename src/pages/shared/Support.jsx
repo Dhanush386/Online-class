@@ -38,7 +38,7 @@ function TicketList({ filteredTickets, selectedTicket, setSelectedTicket, fetchM
                     </div>
                     <div style={{ flex: 1, overflow: 'hidden' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: t.status === 'closed' ? 'var(--text-muted)' : 'var(--text-primary)' }}>{t.subject}</span>
+                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: t.status === 'closed' ? 'var(--text-muted)' : '#0f172a' }}>{t.subject}</span>
                             <span style={{ fontSize: '0.85rem', padding: '2px 6px', borderRadius: 4, background: t.status === 'closed' ? '#fee2e2' : '#ecfdf5', color: t.status === 'closed' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{t.status}</span>
                         </div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -66,7 +66,7 @@ function MessageBubble({ msg, isOrganizer }) {
                 padding: '0.85rem 1rem', 
                 borderRadius: fromMe ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
                 background: fromMe ? 'var(--accent)' : 'white',
-                color: fromMe ? 'white' : 'var(--text-primary)',
+                color: fromMe ? 'white' : '#0f172a',
                 fontSize: '0.875rem',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                 marginBottom: '0.25rem'
@@ -464,8 +464,8 @@ export default function Support() {
                 </p>
             </div>
 
-            <div className="glass-card" style={{ flex: 1, display: 'flex', overflow: 'hidden', padding: 0 }}>
-                <div style={{ width: '320px', borderRight: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+            <div className="glass-card stack-mobile" style={{ flex: 1, display: 'flex', overflow: 'hidden', padding: 0 }}>
+                <div style={{ flexBasis: '320px', flexShrink: 0, borderRight: '1px solid var(--sidebar-border)', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
                     <div style={{ padding: '1.25rem' }}>
                         <div style={{ position: 'relative' }}>
                             <Search style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={16} />
@@ -496,8 +496,8 @@ export default function Support() {
                                         <UserIcon size={16} />
                                     </div>
                                     <div>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{selectedTicket.subject}</div>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Ticket #{selectedTicket.id.slice(0, 8)} • {selectedTicket.student?.name}</div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>{selectedTicket.subject}</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Ticket #{selectedTicket.id.slice(0, 8)} • {selectedTicket.student?.name}</div>
                                     </div>
                                 </div>
                                 {isOrganizer && selectedTicket.status === 'open' && (

@@ -134,8 +134,8 @@ export default function RenewalManagement() {
             </div>
 
             {/* List */}
-            <div className="glass-card" style={{ overflow: 'hidden' }}>
-                <table className="data-table">
+            <div className="glass-card" style={{ overflowX: 'auto' }}>
+                <table className="data-table" style={{ minWidth: '700px' }}>
                     <thead>
                         <tr>
                             <th>Student</th>
