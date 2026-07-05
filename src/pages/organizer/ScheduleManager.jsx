@@ -169,66 +169,49 @@ export default function ScheduleManager() {
                     </div>
                 )}
                 {!loading && videos.length > 0 && (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table className="data-table" style={{ minWidth: '700px' }}>
-                            <thead>
-                            <tr>
-                                <th>Video Title</th>
-                                <th>Course</th>
-                                <th>Scheduled Time</th>
-                                <th>Day</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {videos.map(v => (
-                                <tr key={v.id}>
-                                    <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{v.title}</td>
-                                    <td>
-                                        <span className="badge badge-info">{v.courses?.title || '—'}</span>
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                            <Calendar size={13} />
-                                            {formatTime(v.scheduled_time)}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
-                                            W{v.week_number || 1} D{v.day_of_week || 1}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {getStatusBadge(v)}
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button 
-                                                onClick={() => navigate(`/organizer/classroom/${v.id}`)} 
-                                                className={`btn-primary ${isLive(v.scheduled_time, v.duration_minutes) ? 'btn-live-pulse' : ''}`}
-                                                style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem', background: isLive(v.scheduled_time, v.duration_minutes) ? '#ef4444' : '#6366f1' }}
-                                            >
-                                                <Video size={13} /> Launch Classroom
-                                            </button>
-                                            <button onClick={() => handleViewAttendance(v)} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
-                                                <Users size={13} /> Attendance
-                                            </button>
-                                            <button onClick={() => setEditVideo({ 
-                                                ...v, 
-                                                recording_duration_mins: v.duration_seconds ? v.duration_seconds / 60 : '' 
-                                            })} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
-                                                <Edit2 size={13} /> Edit
-                                            </button>
-                                            <button onClick={() => handleDelete(v.id)} className="btn-danger">
-                                                <Trash2 size={13} /> Delete
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                        </table>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' }}>
+                        {videos.map(v => (
+                            <div key={v.id} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', padding: '1.25rem', border: '1px solid var(--card-border)', borderRadius: '12px', background: 'rgba(0,0,0,0.02)' }}>
+                                <div style={{ flex: '1 1 200px' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Video Title</div>
+                                    <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{v.title}</div>
+                                </div>
+                                <div style={{ flex: '1 1 150px' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Course</div>
+                                    <span className="badge badge-info">{v.courses?.title || '—'}</span>
+                                </div>
+                                <div style={{ flex: '1 1 200px' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Scheduled Time</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                        <Calendar size={14} /> {formatTime(v.scheduled_time)}
+                                    </div>
+                                </div>
+                                <div style={{ flex: '1 1 80px' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Day</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: 'var(--accent-primary)', fontSize: '0.9rem' }}>
+                                        W{v.week_number || 1} D{v.day_of_week || 1}
+                                    </div>
+                                </div>
+                                <div style={{ flex: '1 1 100px' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 700 }}>Status</div>
+                                    {getStatusBadge(v)}
+                                </div>
+                                <div style={{ flex: '1 1 100%', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--card-border)' }}>
+                                    <button onClick={() => navigate(`/organizer/classroom/${v.id}`)} className={`btn-primary ${isLive(v.scheduled_time, v.duration_minutes) ? 'btn-live-pulse' : ''}`} style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem', background: isLive(v.scheduled_time, v.duration_minutes) ? '#ef4444' : '#6366f1' }}>
+                                        <Video size={13} /> Launch Classroom
+                                    </button>
+                                    <button onClick={() => handleViewAttendance(v)} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
+                                        <Users size={13} /> Attendance
+                                    </button>
+                                    <button onClick={() => setEditVideo({ ...v, recording_duration_mins: v.duration_seconds ? v.duration_seconds / 60 : '' })} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
+                                        <Edit2 size={13} /> Edit
+                                    </button>
+                                    <button onClick={() => handleDelete(v.id)} className="btn-danger" style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}>
+                                        <Trash2 size={13} /> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
