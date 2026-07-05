@@ -152,7 +152,7 @@ export default function Leaderboard() {
             ) : (
                 <>
                     {/* Podium */}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '2rem', marginBottom: '4rem', marginTop: '2rem', padding: '1rem', background: 'radial-gradient(circle at center, rgba(99,102,241,0.05) 0%, transparent 70%)' }}>
+                    <div className="podium-container" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '2rem', marginBottom: '4rem', marginTop: '2rem', padding: '1rem', background: 'radial-gradient(circle at center, rgba(99,102,241,0.05) 0%, transparent 70%)' }}>
                         {/* 2nd Place */}
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'transform 0.3s ease' }} className="podium-hover">
                             <div style={{ position: 'relative', marginBottom: '1rem' }}>
@@ -207,6 +207,13 @@ export default function Leaderboard() {
 
                     <style>{`
                         .podium-hover:hover { transform: translateY(-5px) !important; }
+                        @media (max-width: 600px) {
+                            .podium-container {
+                                gap: 0.5rem !important;
+                                transform: scale(0.85);
+                                transform-origin: bottom center;
+                            }
+                        }
                     `}</style>
 
                     {/* Search & List */}
@@ -237,75 +244,61 @@ export default function Leaderboard() {
                             </div>
                         </div>
 
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.03)' }}>
-                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rank</th>
-                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Champion</th>
-                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>League Tier</th>
-                                        <th style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Total XP</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {others.map((s) => {
-                                        const rank = s.rank
-                                        const isCurrentUser = s.id === profile.id
-                                        return (
-                                            <tr key={s.id} style={{ borderBottom: '1px solid var(--sidebar-border)', background: isCurrentUser ? 'rgba(99,102,241,0.15)' : 'transparent' }}>
-                                                <td style={{ padding: '1rem 1.5rem' }}>
-                                                    <div style={{ 
-                                                        width: 28, 
-                                                        height: 28, 
-                                                        borderRadius: '50%', 
-                                                        display: 'flex', 
-                                                        alignItems: 'center', 
-                                                        justifyContent: 'center',
-                                                        fontSize: '0.85rem',
-                                                        fontWeight: 800,
-                                                        background: getRankBg(rank),
-                                                        color: getRankColor(rank)
-                                                    }}>
-                                                        {rank}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {others.map((s) => {
+                                const rank = s.rank
+                                const isCurrentUser = s.id === profile.id
+                                return (
+                                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '1rem 1.5rem', borderBottom: '1px solid var(--sidebar-border)', background: isCurrentUser ? 'rgba(99,102,241,0.15)' : 'transparent', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: '1 1 min-content' }}>
+                                            <div style={{ 
+                                                width: 32, 
+                                                height: 32, 
+                                                borderRadius: '50%', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center',
+                                                fontSize: '0.85rem',
+                                                fontWeight: 800,
+                                                background: getRankBg(rank),
+                                                color: getRankColor(rank),
+                                                flexShrink: 0
+                                            }}>
+                                                {rank}
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                                <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-base)', flexShrink: 0 }}>
+                                                    {s.avatar_url ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={20} style={{ margin: '8px auto', color: 'var(--text-muted)' }} />}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                                        {s.name} {isCurrentUser && <span style={{ fontSize: '0.7rem', color: 'var(--accent)', marginLeft: '0.5rem', fontWeight: 800, textTransform: 'uppercase' }}>(You)</span>}
                                                     </div>
-                                                </td>
-                                                <td style={{ padding: '1rem 1.5rem' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                                        <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-base)' }}>
-                                                            {s.avatar_url ? <img src={s.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={20} style={{ margin: '8px auto', color: 'var(--text-muted)' }} />}
-                                                        </div>
-                                                        <div>
-                                                            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                                                {s.name} {isCurrentUser && <span style={{ fontSize: '0.7rem', color: 'var(--accent)', marginLeft: '0.5rem', fontWeight: 800, textTransform: 'uppercase' }}>(You)</span>}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td style={{ padding: '1rem 1.5rem' }}>
                                                     <div style={{ 
                                                         display: 'inline-flex', 
                                                         alignItems: 'center', 
                                                         gap: '0.4rem', 
-                                                        padding: '0.25rem 0.85rem', 
+                                                        padding: '0.2rem 0.6rem', 
                                                         borderRadius: 100, 
                                                         background: s.bg, 
                                                         color: s.color,
-                                                        fontSize: '0.85rem',
+                                                        fontSize: '0.75rem',
                                                         fontWeight: 700,
-                                                        textTransform: 'uppercase'
+                                                        textTransform: 'uppercase',
+                                                        marginTop: '0.25rem'
                                                     }}>
                                                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor' }} />
                                                         {s.rankName}
                                                     </div>
-                                                </td>
-                                                <td style={{ padding: '1rem 1.5rem', textAlign: 'right', fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                                    {s.xp.toLocaleString()}
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', textAlign: 'right' }}>
+                                            {s.xp.toLocaleString()} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>XP</span>
+                                        </div>
+                                    </div>
+                                )
+                            })}
                         </div>
                     </div>
                 </>
