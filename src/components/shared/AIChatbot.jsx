@@ -289,14 +289,14 @@ export default function AIChatbot() {
     }
 
     const renderHeader = () => (
-        <div style={{ padding: '1rem 1.25rem', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '1rem 1.25rem', background: 'var(--bg-base)', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <div style={{ padding: '6px', background: '#eff6ff', borderRadius: '8px', color: '#6366f1' }}>
+                <div style={{ padding: '6px', background: 'rgba(99,102,241,0.1)', borderRadius: '8px', color: '#6366f1' }}>
                     <MessageCircle size={20} />
                 </div>
-                <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: '#0f172a', margin: 0 }}>Virtual Assistant</h3>
+                <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)', margin: 0 }}>Virtual Assistant</h3>
             </div>
-            <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}><X size={20} /></button>
+            <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}><X size={20} /></button>
         </div>
     )
 
@@ -307,27 +307,27 @@ export default function AIChatbot() {
     }
 
     const renderTabs = () => (
-        <div style={{ display: 'flex', background: 'white', borderBottom: '1px solid #f1f5f9', padding: '0 0.5rem' }}>
+        <div style={{ display: 'flex', background: 'var(--bg-base)', borderBottom: '1px solid var(--sidebar-border)', padding: '0 0.5rem' }}>
             {['home', 'past', 'tickets'].map((tab) => (
                 <button
                     key={tab}
                     onClick={() => { setActiveTab(tab); setIsChatting(false); }}
-                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366f1' : '#64748b', position: 'relative', cursor: 'pointer', flex: 1, textTransform: 'capitalize' }}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366f1' : 'var(--text-muted)', position: 'relative', cursor: 'pointer', flex: 1, textTransform: 'capitalize' }}
                 >
                     {tabLabels[tab]}
-                    {activeTab === tab && <div style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: '3px', background: '#0f172a', borderRadius: '3px 3px 0 0' }} />}
+                    {activeTab === tab && <div style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: '3px', background: 'var(--text-primary)', borderRadius: '3px 3px 0 0' }} />}
                 </button>
             ))}
         </div>
     )
 
     const renderHome = () => (
-        <div style={{ padding: '2rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '1rem', color: '#64748b', marginBottom: '0.25rem' }}>Welcome</span>
-            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#0f172a', margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ padding: '2rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
+            <span style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Welcome</span>
+            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {profile?.name || 'Guest'} <span style={{ fontSize: '1.75rem' }}>👋</span>
             </h2>
-            <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>How can I help you?<br />Browse our Help Center or start a chat.</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>How can I help you?<br />Browse our Help Center or start a chat.</p>
             <button 
                 onClick={() => {
                     setIsOpen(false)
@@ -337,8 +337,8 @@ export default function AIChatbot() {
                 style={{
                     width: '100%',
                     padding: '1rem',
-                    background: 'white',
-                    border: '1px solid #e2e8f0',
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--sidebar-border)',
                     borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
@@ -366,7 +366,7 @@ export default function AIChatbot() {
 
     const renderChatArea = () => (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1, overflow: 'hidden' }}>
-            <div style={{ padding: '0.5rem 1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '0.5rem 1rem', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button 
                     onClick={() => { setIsChatting(false); setActiveSessionId(null); }}
                     style={{ background: 'none', border: 'none', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
@@ -374,36 +374,36 @@ export default function AIChatbot() {
                     <ChevronRight size={14} style={{ transform: 'rotate(180deg)' }} /> Back to Home
                 </button>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={handleClearChat} style={{ color: '#64748b', background: 'none', border: 'none', fontSize: '0.85rem', cursor: 'pointer' }}>Reset</button>
+                    <button onClick={handleClearChat} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', fontSize: '0.85rem', cursor: 'pointer' }}>Reset</button>
                 </div>
             </div>
 
             <div 
                 ref={scrollRef}
-                style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', background: 'white' }}
+                style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', background: 'var(--bg-base)' }}
             >
                 {getActiveMessages().map((msg, i) => (
                     <div key={msg.id || i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
-                        <div style={{ padding: '0.85rem 1rem', borderRadius: '16px', background: msg.role === 'user' ? '#7c3aed' : '#f1f5f9', color: msg.role === 'user' ? 'white' : '#0f172a', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                        <div style={{ padding: '0.85rem 1rem', borderRadius: '16px', background: msg.role === 'user' ? '#7c3aed' : 'var(--bg-elevated)', color: msg.role === 'user' ? 'white' : 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
                             {msg.content}
                         </div>
                     </div>
                 ))}
                 {isLoading && (
-                    <div style={{ alignSelf: 'flex-start', padding: '1rem', background: '#f1f5f9', borderRadius: '16px' }}>
+                    <div style={{ alignSelf: 'flex-start', padding: '1rem', background: 'var(--bg-elevated)', borderRadius: '16px' }}>
                         <Loader2 className="animate-spin" size={18} color="#6366f1" />
                     </div>
                 )}
             </div>
 
-            <form onSubmit={handleSend} style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.5rem', background: 'white' }}>
+            <form onSubmit={handleSend} style={{ padding: '1rem', borderTop: '1px solid var(--sidebar-border)', display: 'flex', gap: '0.5rem', background: 'var(--bg-base)' }}>
                 <input 
                     className="chat-input-new"
                     type="text" 
                     placeholder="Type your message..." 
                     value={input} 
                     onChange={(e) => setInput(e.target.value)}
-                    style={{ flex: 1, padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', background: '#f8fafc' }}
+                    style={{ flex: 1, padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid var(--sidebar-border)', outline: 'none', background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
                 />
                 <button type="submit" disabled={!input.trim() || isLoading} style={{ width: 44, height: 44, borderRadius: '10px', background: '#7c3aed', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Send size={20} />
@@ -413,9 +413,9 @@ export default function AIChatbot() {
     )
 
     const renderPastChats = () => (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', background: 'var(--bg-base)' }}>
             {sessions.length === 0 ? (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                     <History size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
                     <p style={{ margin: 0 }}>No past conversations yet.</p>
                 </div>
@@ -425,30 +425,30 @@ export default function AIChatbot() {
                         const lastMsg = s.messages[s.messages.length - 1]?.content || 'Empty Chat'
                         const date = new Date(s.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })
                         return (
-                            <div key={s.id} style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #f1f5f9', borderRadius: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+                            <div key={s.id} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', borderRadius: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                                 <button 
                                     onClick={() => handleResumeChat(s.id)}
                                     style={{ flex: 1, padding: '1rem', background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', textAlign: 'left', fontFamily: 'inherit' }}
-                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc' }}
-                                    onFocus={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc' }}
+                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)' }}
+                                    onFocus={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)' }}
                                     onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
                                     onBlur={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
                                 >
                                     <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
-                                        <div style={{ padding: '8px', background: '#f8fafc', borderRadius: '10px', color: '#6366f1' }}><MessageSquare size={18} /></div>
+                                        <div style={{ padding: '8px', background: 'rgba(99,102,241,0.1)', borderRadius: '10px', color: '#6366f1' }}><MessageSquare size={18} /></div>
                                         <div style={{ overflow: 'hidden', flex: 1 }}>
-                                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}><Clock size={12} /> {date}</div>
+                                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}><Clock size={12} /> {date}</div>
                                         </div>
                                     </div>
                                 </button>
                                 <button 
                                     onClick={(e) => handleDeleteSession(e, s.id)}
-                                    style={{ padding: '1rem', color: '#64748b', background: 'none', border: 'none', borderLeft: '1px solid #f1f5f9', cursor: 'pointer', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    style={{ padding: '1rem', color: 'var(--text-muted)', background: 'none', border: 'none', borderLeft: '1px solid var(--sidebar-border)', cursor: 'pointer', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
                                     onFocus={(e) => e.currentTarget.style.color = '#ef4444'}
-                                    onMouseOut={(e) => e.currentTarget.style.color = '#64748b'}
-                                    onBlur={(e) => e.currentTarget.style.color = '#64748b'}
+                                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                                    onBlur={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                                 >
                                     <Trash2 size={16} />
                                 </button>
@@ -471,7 +471,7 @@ export default function AIChatbot() {
         
         if (tickets.length === 0) {
             return (
-                <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                     <Ticket size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
                     <p style={{ margin: 0, fontSize: '0.85rem' }}>No tickets found yet.</p>
                 </div>
@@ -488,27 +488,23 @@ export default function AIChatbot() {
                             const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
                             navigate(supportPath)
                         }}
-                        style={{ display: 'block', width: '100%', padding: '1rem', borderRadius: '14px', background: 'white', border: '1px solid #f1f5f9', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'left', fontFamily: 'inherit', color: 'inherit' }}
-                        onMouseOver={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
-                        onFocus={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
-                        onMouseOut={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
-                        onBlur={(e) => e.currentTarget.style.borderColor = '#f1f5f9'}
+                        style={{ display: 'block', width: '100%', padding: '1rem', borderRadius: '14px', background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'left', fontFamily: 'inherit', color: 'inherit' }}
                     >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#0f172a', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
+                            <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
                             <span style={{ 
                                 padding: '4px 8px', 
                                 borderRadius: '6px', 
                                 fontSize: '0.6rem', 
                                 fontWeight: 700, 
                                 textTransform: 'uppercase',
-                                background: t.status === 'open' ? '#ecfdf5' : '#fef2f2',
+                                background: t.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
                                 color: t.status === 'open' ? '#10b981' : '#ef4444'
                             }}>
                                 {t.status}
                             </span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: '#64748b' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                             <Clock size={12} /> {new Date(t.created_at).toLocaleDateString()}
                         </div>
                     </button>
@@ -522,41 +518,41 @@ export default function AIChatbot() {
             return (
                 <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>New Support Ticket</h4>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>New Support Ticket</h4>
                         <button 
                             onClick={() => setIsCreatingTicket(false)}
-                            style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.8rem', cursor: 'pointer' }}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}
                         >
                             Cancel
                         </button>
                     </div>
                     <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div>
-                            <label htmlFor="ticket-subject" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.4rem' }}>Subject</label>
+                            <label htmlFor="ticket-subject" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Subject</label>
                             <input 
                                 id="ticket-subject"
                                 type="text"
                                 placeholder="What's the issue about?"
                                 value={newTicketSubject}
                                 onChange={(e) => setNewTicketSubject(e.target.value)}
-                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none' }}
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--sidebar-border)', background: 'var(--bg-elevated)', outline: 'none', color: 'var(--text-primary)' }}
                                 required
                             />
                         </div>
                         <div>
-                            <label htmlFor="ticket-description" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.4rem' }}>Description</label>
+                            <label htmlFor="ticket-description" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Description</label>
                             <textarea 
                                 id="ticket-description"
                                 placeholder="Provide more details..."
                                 value={newTicketMessage}
                                 onChange={(e) => setNewTicketMessage(e.target.value)}
-                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', minHeight: '100px', resize: 'none' }}
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--sidebar-border)', background: 'var(--bg-elevated)', outline: 'none', minHeight: '100px', resize: 'none', color: 'var(--text-primary)' }}
                                 required
                             />
                         </div>
 
                         {/* File Upload UI */}
-                        <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
+                        <div style={{ background: 'var(--bg-elevated)', padding: '0.85rem', borderRadius: '12px', border: '1px dashed var(--sidebar-border)' }}>
                             <input 
                                 type="file" 
                                 ref={fileInputRef}
@@ -572,11 +568,11 @@ export default function AIChatbot() {
                                 accept="image/*"
                             />
                             {screenshot ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', background: 'white', padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', background: 'var(--bg-base)', padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid var(--sidebar-border)' }}>
                                     <div style={{ background: '#7c3aed', color: 'white', padding: '4px', borderRadius: '4px' }}>
                                         <ImageIcon size={14} />
                                     </div>
-                                    <span style={{ fontSize: '0.7rem', color: '#0f172a', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-primary)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {screenshot.name}
                                     </span>
                                     <button 
@@ -613,12 +609,12 @@ export default function AIChatbot() {
 
 
         return (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', background: 'var(--bg-base)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>Support Tickets</h4>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Support Tickets</h4>
                     <button 
                         onClick={() => setIsCreatingTicket(true)}
-                        style={{ padding: '0.5rem 0.8rem', background: '#eff6ff', color: '#6366f1', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        style={{ padding: '0.5rem 0.8rem', background: 'rgba(99,102,241,0.1)', color: '#6366f1', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
                         <PlusCircle size={14} /> New Ticket
                     </button>
@@ -642,7 +638,7 @@ export default function AIChatbot() {
             )}
 
             {isOpen && (
-                <div className="animate-scale-in" style={{ width: '400px', height: '660px', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #f1f5f9' }}>
+                <div className="animate-scale-in" style={{ width: '400px', height: '660px', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-base)', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid var(--sidebar-border)' }}>
                     {renderHeader()}
                     {!isChatting && renderTabs()}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
