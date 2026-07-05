@@ -59,7 +59,7 @@ export function WorkspaceOutput({
     );
 
     const renderVisualResultOverlay = () => {
-        if (!result || !result.testResults?.some(t => t.actual_image)) return null;
+        if (!result?.testResults?.some(t => t.actual_image)) return null;
         return (
             <div style={{ position: 'fixed', bottom: 20, right: 20, width: 280, background: '#ffffff', borderRadius: 12, border: '1px solid #3b82f6', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', padding: '1rem', zIndex: 1000 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
 
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -164,7 +165,7 @@ export default function RenewAccess() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                     <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                        Step 2: Enter Transaction ID (UTR)
+                        Step 2: Enter Transaction ID (UTR){' '}
                         <input 
                             value={transactionId}
                             onChange={(e) => setTransactionId(e.target.value)}
@@ -365,3 +366,7 @@ function HeaderSection({ isExpired }) {
         </div>
     )
 }
+
+HeaderSection.propTypes = {
+    isExpired: PropTypes.bool
+};

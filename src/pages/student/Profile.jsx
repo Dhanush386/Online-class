@@ -768,7 +768,7 @@ export default function Profile() {
                                                 checked={formData.whatsapp_updates} 
                                                 onChange={handleChange}
                                                 style={{ width: 20, height: 20, accentColor: '#10b981' }} 
-                                            />
+                                            />{' '}
                                             I would like to receive updates in WhatsApp.
                                         </label>
                                     </div>
@@ -1235,7 +1235,7 @@ export default function Profile() {
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                                 <div>
                                                     <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                                                        School/College
+                                                        School/College{' '}
                                                         <input 
                                                             value={edu.school}
                                                             onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
@@ -1245,7 +1245,7 @@ export default function Profile() {
                                                 </div>
                                                 <div>
                                                     <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                                                        Degree/Course
+                                                        Degree/Course{' '}
                                                         <input 
                                                             value={edu.degree}
                                                             onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
@@ -1297,7 +1297,7 @@ export default function Profile() {
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                                 <div>
                                                     <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                                                        Company
+                                                        Company{' '}
                                                         <input 
                                                             value={work.company}
                                                             onChange={(e) => updateWorkExperience(work.id, 'company', e.target.value)}
@@ -1307,7 +1307,7 @@ export default function Profile() {
                                                 </div>
                                                 <div>
                                                     <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                                                        Role
+                                                        Role{' '}
                                                         <input 
                                                             value={work.role}
                                                             onChange={(e) => updateWorkExperience(work.id, 'role', e.target.value)}
@@ -1359,7 +1359,7 @@ export default function Profile() {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                                 <div>
                                                     <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                                                        Project Title
+                                                        Project Title{' '}
                                                         <input 
                                                             value={proj.title}
                                                             onChange={(e) => updateProject(proj.id, 'title', e.target.value)}
@@ -1369,7 +1369,7 @@ export default function Profile() {
                                                 </div>
                                                 <div>
                                                     <label style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                                                        Link/URL
+                                                        Link/URL{' '}
                                                         <input 
                                                             value={proj.link}
                                                             onChange={(e) => updateProject(proj.id, 'link', e.target.value)}

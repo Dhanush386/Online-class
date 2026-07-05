@@ -50,7 +50,7 @@ serve(async (req) => {
             payload.context.user.moderator = "true"
         }
 
-        const token = jwt.sign(payload, privateKey.replaceAll('\\n', '\n'), {
+        const token = jwt.sign(payload, privateKey.replaceAll(String.raw`\n`, '\n'), {
             algorithm: 'RS256',
             header: {
                 kid: kid,

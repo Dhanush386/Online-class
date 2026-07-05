@@ -39,8 +39,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
-  extracted_role TEXT := COALESCE(new.raw_user_meta_data->>'role', 'student');
   default_student_role CONSTANT TEXT := 'student';
+  extracted_role TEXT := COALESCE(new.raw_user_meta_data->>'role', default_student_role);
 BEGIN
   INSERT INTO public.users (id, name, email, role, status)
   VALUES (

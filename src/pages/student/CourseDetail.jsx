@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import PropTypes from 'prop-types'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -29,6 +30,22 @@ const checkItemLocked = (item, type, { lockedCodingIds, lockedAssessIds, lockedM
     if (itemTime && new Date(itemTime) > now) return true
 
     return false
+}
+
+function getVideoDurationMs(video) {
+    return video.duration_seconds
+        ? video.duration_seconds * 1000
+        : (video.duration_minutes || 30) * 60 * 1000;
+}
+
+function extractSupabasePath(url) {
+    if (url.includes('/storage/v1/object/public/videos/')) {
+        return url.split('/storage/v1/object/public/videos/')[1]
+    }
+    if (url.includes('/storage/v1/object/sign/videos/')) {
+        return url.split('/storage/v1/object/sign/videos/')[1].split('?')[0]
+    }
+    return url
 }
 
 // Extract Google Drive file ID from any share-link format
@@ -63,6 +80,17 @@ function NoteCard({ note, onEdit, onDelete }) {
         </div>
     )
 }
+
+NoteCard.propTypes = {
+    note: PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        title: PropTypes.string,
+        content: PropTypes.string,
+        created_at: PropTypes.string
+    }).isRequired,
+    onEdit: PropTypes.func.isRequired,
+    onDelete: PropTypes.func.isRequired
+};
 
 export default function CourseDetail() {
     const { courseId } = useParams()
@@ -281,11 +309,7 @@ export default function CourseDetail() {
         setProgress(p => ({ ...p, completion_percentage: finalPct }))
     }
 
-    function getVideoDurationMs(video) {
-        return video.duration_seconds
-            ? video.duration_seconds * 1000
-            : (video.duration_minutes || 30) * 60 * 1000;
-    }
+
 
     function startCompletionTimer(video, label) {
         if (completionTimerRef.current) clearTimeout(completionTimerRef.current)
@@ -299,15 +323,7 @@ export default function CourseDetail() {
         }, durationMs)
     }
 
-    function extractSupabasePath(url) {
-        if (url.includes('/storage/v1/object/public/videos/')) {
-            return url.split('/storage/v1/object/public/videos/')[1]
-        }
-        if (url.includes('/storage/v1/object/sign/videos/')) {
-            return url.split('/storage/v1/object/sign/videos/')[1].split('?')[0]
-        }
-        return url
-    }
+
 
     async function handleWatchVideo(video) {
         if (!video.video_url) return
