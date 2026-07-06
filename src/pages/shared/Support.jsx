@@ -597,17 +597,19 @@ export default function Support() {
                         </div>
                         <form onSubmit={handleCreateTicket}>
                             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>Subject</label>
-                                <input 
-                                    type="text" 
-                                    className="form-input" 
-                                    placeholder="Brief description of your issue..."
-                                    value={newTicketSubject}
-                                    onChange={(e) => setNewTicketSubject(e.target.value)}
-                                    required
-                                    autoFocus
-                                    style={{ width: '100%' }}
-                                />
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600 }}>
+                                    <div style={{ marginBottom: '0.5rem' }}>Subject</div>
+                                    <input 
+                                        type="text" 
+                                        className="form-input" 
+                                        placeholder="Brief description of your issue..."
+                                        value={newTicketSubject}
+                                        onChange={(e) => setNewTicketSubject(e.target.value)}
+                                        required
+                                        autoFocus
+                                        style={{ width: '100%', fontWeight: 400 }}
+                                    />
+                                </label>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                                 <button type="button" onClick={() => setIsCreatingModalOpen(false)} className="btn-secondary">Cancel</button>
