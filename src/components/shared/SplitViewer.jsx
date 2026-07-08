@@ -160,6 +160,25 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                     overflow: 'hidden'
                 }}
             >
+                {isMobile ? (
+                    <div style={{ flex: 1, position: 'relative', background: '#000', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ flex: 1, position: 'relative' }}>
+                            {loadingVideo ? (
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
+                                    <div style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                    <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>Securing connection...</span>
+                                </div>
+                            ) : (
+                                <VideoPlayer 
+                                    videoUrl={videoUrl} 
+                                    videoType={videoType} 
+                                    onEnded={onEnded} 
+                                    title={title}
+                                />
+                            )}
+                        </div>
+                    </div>
+                ) : (
                     <>
                         {/* Video Area */}
                         <div style={{ height: `${splitRatio}%`, position: 'relative', background: '#000', display: 'flex', flexDirection: 'column' }}>
@@ -213,6 +232,7 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                             <SlideViewer url={formattedSlideUrl} title={title} />
                         </div>
                     </>
+                )}
             </div>
 
             {isDragging && (
