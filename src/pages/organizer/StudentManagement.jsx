@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, User, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, X, AlertCircle, Save, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink } from 'lucide-react'
+import { Users, User, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, X, AlertCircle, Save, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink, CheckCircle } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDefaultUnlockTimeForDay } from '../../lib/dateUtils'
 import PropTypes from 'prop-types'
