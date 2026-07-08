@@ -27,7 +27,7 @@ const ExpiryControl = ({ studentId, currentExpiry, onUpdate, saving }) => {
             <input
                 type="datetime-local"
                 className="form-input"
-                style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: 'auto', background: 'white' }}
+                style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: 'auto', background: 'white', color: '#1f2937' }}
                 value={val}
                 onChange={(e) => setVal(e.target.value)}
                 disabled={saving}
