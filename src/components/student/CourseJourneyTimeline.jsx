@@ -43,7 +43,7 @@ function CourseJourneyItem({ item, onModuleAction }) {
         border: '1px solid #e2e8f0',
         textAlign: 'left',
         display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between',
-        padding: '1.1rem 1.5rem',
+        padding: 'clamp(0.8rem, 3vw, 1.1rem) clamp(1rem, 4vw, 1.5rem)',
         borderRadius: '12px',
         transition: 'all 0.25s ease',
         cursor: isLocked ? 'not-allowed' : 'pointer',
@@ -394,7 +394,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                     position: 'relative', zIndex: 2, 
                     background: 'white', 
                     borderRadius: '24px', 
-                    padding: '2.5rem 3rem', 
+                    padding: 'clamp(1.5rem, 5vw, 2.5rem) clamp(1rem, 5vw, 3rem)', 
                     minHeight: '400px'
                 }}>
                     
