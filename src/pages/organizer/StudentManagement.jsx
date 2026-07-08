@@ -1046,7 +1046,7 @@ function StudentCard({
                 >
                     <User size={14} /> Profile
                 </button>
-                <button className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem' }} onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'active') }}>
+                <button className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem' }} onClick={(e) => { e.stopPropagation(); handleUpdateStatus(student.id, 'approved') }}>
                     <CheckCircle size={14} /> Approve
                 </button>
                 <button className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.4rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => { e.stopPropagation(); handleDeleteStudent(student.id) }}>
