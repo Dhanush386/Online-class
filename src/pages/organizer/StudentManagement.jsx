@@ -1287,7 +1287,8 @@ function StudentModals({
                             </form>
                         </div>
                     </div>
-                )}\n            {managingGroup && (
+                )}
+            {managingGroup && (
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
                         <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 500, maxHeight: '80vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
                             <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1328,7 +1329,8 @@ function StudentModals({
                             </div>
                         </div>
                     </div>
-                )}\n            {schedulingGroup && (
+                )}
+            {schedulingGroup && (
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1.5rem' }}>
                         <div className="glass-card zoom-in" style={{ width: '100%', maxWidth: 700, maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
                             <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1391,7 +1393,8 @@ function StudentModals({
                             </div>
                         </div>
                     </div>
-                )}\n            {viewingProfileId && (
+                )}
+            {viewingProfileId && (
                     <StudentProfileModal 
                         studentId={viewingProfileId} 
                         onClose={() => setViewingProfileId(null)} 
