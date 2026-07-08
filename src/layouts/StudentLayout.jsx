@@ -91,6 +91,122 @@ export default function StudentLayout() {
     return isMobile ? '1rem 1rem 5rem' : '1.75rem 2rem';
   }
 
+  // Block students on mobile
+  if (isMobile) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99999,
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem',
+        textAlign: 'center',
+        overflow: 'hidden',
+      }}>
+        {/* Decorative background circles */}
+        <div style={{ position: 'absolute', top: '-15%', right: '-10%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '-10%', left: '-10%', width: '250px', height: '250px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+        {/* Icon */}
+        <div style={{
+          width: 80,
+          height: 80,
+          borderRadius: '24px',
+          background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '1.5rem',
+          border: '1px solid rgba(99,102,241,0.3)',
+          boxShadow: '0 8px 32px rgba(99,102,241,0.15)',
+        }}>
+          <Mountain size={36} color="#818cf8" />
+        </div>
+
+        {/* Title */}
+        <h1 style={{
+          fontSize: '1.5rem',
+          fontWeight: 800,
+          color: '#f1f5f9',
+          marginBottom: '0.75rem',
+          lineHeight: 1.3,
+        }}>
+          Desktop Only
+        </h1>
+
+        {/* Subtitle */}
+        <p style={{
+          fontSize: '0.95rem',
+          color: '#94a3b8',
+          lineHeight: 1.6,
+          maxWidth: '320px',
+          marginBottom: '2rem',
+        }}>
+          For the best learning experience, please access <strong style={{ color: '#c7d2fe' }}>Learnova</strong> from a <strong style={{ color: '#c7d2fe' }}>desktop or laptop</strong> computer.
+        </p>
+
+        {/* Features list */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem',
+          marginBottom: '2rem',
+          width: '100%',
+          maxWidth: '300px',
+        }}>
+          {[
+            { icon: BookOpen, text: 'Interactive coding exercises' },
+            { icon: GraduationCap, text: 'Video lessons with PPT slides' },
+            { icon: Award, text: 'Assessments & quizzes' },
+          ].map(({ icon: Icon, text }, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.75rem 1rem',
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <Icon size={18} color="#6366f1" />
+              <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 500 }}>{text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Logout button */}
+        <button
+          onClick={async () => { await signOut(); navigate('/login'); }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem 1.5rem',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '12px',
+            color: '#94a3b8',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          <LogOut size={16} />
+          Sign Out
+        </button>
+
+        <p style={{ marginTop: '2rem', fontSize: '0.7rem', color: '#475569' }}>
+          © Learnova • Best experienced on screens 768px and above
+        </p>
+      </div>
+    )
+  }
+
   useEffect(() => {
     const h = () => setIsMobile(globalThis.innerWidth <= 768)
     globalThis.addEventListener('resize', h)
