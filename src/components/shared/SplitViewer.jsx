@@ -73,11 +73,14 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
         };
     }, []);
 
-    // Dragging logic
     const handleMouseMove = (e) => {
         if (!isDragging || !containerRef.current) return;
+        
+        // Handle both mouse and touch events
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
         const containerRect = containerRef.current.getBoundingClientRect();
-        const newRatio = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+        const newRatio = ((clientY - containerRect.top) / containerRect.height) * 100;
         
         // Constrain between 20% and 80%
         if (newRatio >= 20 && newRatio <= 80) {
@@ -94,15 +97,21 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
 
     useEffect(() => {
         if (isDragging) {
-            globalThis.addEventListener('mousemove', handleMouseMove);
+            globalThis.addEventListener('mousemove', handleMouseMove, { passive: false });
             globalThis.addEventListener('mouseup', handleMouseUp);
+            globalThis.addEventListener('touchmove', handleMouseMove, { passive: false });
+            globalThis.addEventListener('touchend', handleMouseUp);
         } else {
             globalThis.removeEventListener('mousemove', handleMouseMove);
             globalThis.removeEventListener('mouseup', handleMouseUp);
+            globalThis.removeEventListener('touchmove', handleMouseMove);
+            globalThis.removeEventListener('touchend', handleMouseUp);
         }
         return () => {
             globalThis.removeEventListener('mousemove', handleMouseMove);
             globalThis.removeEventListener('mouseup', handleMouseUp);
+            globalThis.removeEventListener('touchmove', handleMouseMove);
+            globalThis.removeEventListener('touchend', handleMouseUp);
         };
     }, [isDragging, splitRatio]); // Re-bind with updated ratio
 
@@ -151,37 +160,9 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                     overflow: 'hidden'
                 }}
             >
-                {/* 1. Mobile: Fixed Video on top. Desktop: Resizable Video on top, Slides on bottom. */}
-                {isMobile ? (
-                    // MOBILE: Video First
-                    <>
-                        {/* Video Area (Mobile) */}
-                        <div style={{ width: '100%', paddingBottom: '56.25%', position: 'relative', background: '#000', flexShrink: 0 }}>
-                            {loadingVideo ? (
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
-                                    <div style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                                    <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>Securing connection...</span>
-                                </div>
-                            ) : (
-                                <VideoPlayer 
-                                    videoUrl={videoUrl} 
-                                    videoType={videoType} 
-                                    onEnded={onEnded} 
-                                    title={title}
-                                />
-                            )}
-                        </div>
-                        {/* Slides Area (Mobile) */}
-                        <div style={{ flex: 1, position: 'relative', background: 'white' }}>
-                            <SlideViewer url={formattedSlideUrl} title={title} />
-                        </div>
-                    </>
-                ) : (
-                    // DESKTOP: Top/Bottom Split (Video | Slides)
                     <>
                         {/* Video Area */}
                         <div style={{ height: `${splitRatio}%`, position: 'relative', background: '#000', display: 'flex', flexDirection: 'column' }}>
-                            {/* We wrap ReactPlayer in a container that allows it to grow. */}
                             <div style={{ flex: 1, position: 'relative' }}>
                                 {loadingVideo ? (
                                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
@@ -208,8 +189,9 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                             aria-valuenow={splitRatio}
                             aria-label="Resize panels"
                             onMouseDown={() => setIsDragging(true)}
+                            onTouchStart={() => setIsDragging(true)}
                             style={{ 
-                                height: '8px', 
+                                height: '12px', 
                                 background: isDragging ? '#6366f1' : 'rgba(255,255,255,0.05)', 
                                 cursor: 'row-resize',
                                 display: 'flex',
@@ -222,16 +204,15 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                             onMouseEnter={(e) => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
                             onMouseLeave={(e) => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
                         >
-                            <div style={{ width: 20, height: 2, background: 'rgba(255,255,255,0.3)', borderRadius: 2, margin: '0 2px' }} />
-                            <div style={{ width: 20, height: 2, background: 'rgba(255,255,255,0.3)', borderRadius: 2, margin: '0 2px' }} />
+                            <div style={{ width: 30, height: 3, background: 'rgba(255,255,255,0.4)', borderRadius: 2, margin: '0 2px' }} />
+                            <div style={{ width: 30, height: 3, background: 'rgba(255,255,255,0.4)', borderRadius: 2, margin: '0 2px' }} />
                         </div>
 
                         {/* Slides Area */}
-                        <div style={{ height: `calc(${100 - splitRatio}% - 8px)`, position: 'relative', background: 'white' }}>
+                        <div style={{ height: `calc(${100 - splitRatio}% - 12px)`, position: 'relative', background: 'white' }}>
                             <SlideViewer url={formattedSlideUrl} title={title} />
                         </div>
                     </>
-                )}
             </div>
 
             {isDragging && (

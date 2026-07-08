@@ -277,7 +277,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
     }
     
     return (
-        <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '2rem' }}>
+        <div style={{ background: '#f8fafc', borderRadius: '16px', padding: 'clamp(1rem, 5vw, 2rem)' }}>
             
             {/* Top Header */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
