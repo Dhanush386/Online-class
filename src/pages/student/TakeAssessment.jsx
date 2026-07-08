@@ -45,7 +45,6 @@ export default function TakeAssessment() {
 
     const [assessment, setAssessment] = useState(null)
     const [questions, setQuestions] = useState([])
-    const [attemptNumber, setAttemptNumber] = useState(1)
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
@@ -547,7 +546,6 @@ export default function TakeAssessment() {
                 return
             }
 
-            setAttemptNumber((existingSubs || []).length + 1)
             setAssessment(assess)
             
             // Shuffle questions for this student

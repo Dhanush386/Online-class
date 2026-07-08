@@ -91,6 +91,56 @@ export default function StudentLayout() {
     return isMobile ? '1rem 1rem 5rem' : '1.75rem 2rem';
   }
 
+  useEffect(() => {
+    const h = () => setIsMobile(globalThis.innerWidth <= 768)
+    globalThis.addEventListener('resize', h)
+    return () => globalThis.removeEventListener('resize', h)
+  }, [])
+
+  useEffect(() => {
+    if (profile?.id) {
+      fetchNotifications()
+      const channel = supabase.channel('global-notifications')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+          if (payload.new.target === 'all' || payload.new.target === 'students') {
+            setNotifications(prev => [payload.new, ...prev])
+            setUnreadCount(prev => prev + 1)
+          }
+        }).subscribe()
+      return () => supabase.removeChannel(channel)
+    }
+  }, [profile?.id])
+
+  async function fetchNotifications() {
+    if (!profile?.id) return
+    try {
+      const { data: notes } = await supabase.from('notifications').select('*')
+        .or('target.eq.all,target.eq.students').order('created_at', { ascending: false }).limit(10)
+      const { data: reads } = await supabase.from('notification_reads').select('notification_id').eq('user_id', profile.id)
+      const readIds = new Set((reads || []).map(r => r.notification_id))
+      const notesWithRead = (notes || []).map(n => ({ ...n, isRead: readIds.has(n.id) }))
+      setNotifications(notesWithRead)
+      setUnreadCount(notesWithRead.filter(n => !n.isRead).length)
+    } catch (err) { console.error('Notifications error:', err) }
+  }
+
+  async function handleMarkAllAsRead() {
+    if (!profile?.id || unreadCount === 0) return
+    try {
+      const unread = notifications.filter(n => !n.isRead)
+      await supabase.from('notification_reads').upsert(unread.map(n => ({ notification_id: n.id, user_id: profile.id })))
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnreadCount(0)
+    } catch (err) { console.error(err) }
+  }
+
+  async function handleSignOut() { 
+    if (requestNavigation('/login')) { return; }
+    await signOut(); navigate('/login') 
+  }
+
+  const inClassroomOnMobile = isMobile && location.pathname.includes('/classroom/')
+
   // Block students on mobile
   if (isMobile) {
     return (
@@ -162,8 +212,8 @@ export default function StudentLayout() {
             { icon: BookOpen, text: 'Interactive coding exercises' },
             { icon: GraduationCap, text: 'Video lessons with PPT slides' },
             { icon: Award, text: 'Assessments & quizzes' },
-          ].map(({ icon: Icon, text }, i) => (
-            <div key={i} style={{
+          ].map(({ icon: Icon, text }) => (
+            <div key={text} style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.75rem',
@@ -206,56 +256,6 @@ export default function StudentLayout() {
       </div>
     )
   }
-
-  useEffect(() => {
-    const h = () => setIsMobile(globalThis.innerWidth <= 768)
-    globalThis.addEventListener('resize', h)
-    return () => globalThis.removeEventListener('resize', h)
-  }, [])
-
-  useEffect(() => {
-    if (profile?.id) {
-      fetchNotifications()
-      const channel = supabase.channel('global-notifications')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
-          if (payload.new.target === 'all' || payload.new.target === 'students') {
-            setNotifications(prev => [payload.new, ...prev])
-            setUnreadCount(prev => prev + 1)
-          }
-        }).subscribe()
-      return () => supabase.removeChannel(channel)
-    }
-  }, [profile?.id])
-
-  async function fetchNotifications() {
-    if (!profile?.id) return
-    try {
-      const { data: notes } = await supabase.from('notifications').select('*')
-        .or('target.eq.all,target.eq.students').order('created_at', { ascending: false }).limit(10)
-      const { data: reads } = await supabase.from('notification_reads').select('notification_id').eq('user_id', profile.id)
-      const readIds = new Set((reads || []).map(r => r.notification_id))
-      const notesWithRead = (notes || []).map(n => ({ ...n, isRead: readIds.has(n.id) }))
-      setNotifications(notesWithRead)
-      setUnreadCount(notesWithRead.filter(n => !n.isRead).length)
-    } catch (err) { console.error('Notifications error:', err) }
-  }
-
-  async function handleMarkAllAsRead() {
-    if (!profile?.id || unreadCount === 0) return
-    try {
-      const unread = notifications.filter(n => !n.isRead)
-      await supabase.from('notification_reads').upsert(unread.map(n => ({ notification_id: n.id, user_id: profile.id })))
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
-      setUnreadCount(0)
-    } catch (err) { console.error(err) }
-  }
-
-  async function handleSignOut() { 
-    if (requestNavigation('/login')) { return; }
-    await signOut(); navigate('/login') 
-  }
-
-  const inClassroomOnMobile = isMobile && location.pathname.includes('/classroom/')
 
   return (
     <div style={{ display: 'flex', height: '100dvh', background: 'var(--bg-primary)' }}>
