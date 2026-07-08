@@ -563,7 +563,9 @@ export default function CourseDetail() {
     const renderVideoModal = () => {
         if (!activeVideo) return null
         
-        if (activeVideo.slide_url) {
+        const isMobileDevice = typeof globalThis !== 'undefined' && globalThis.innerWidth < 768
+
+        if (activeVideo.slide_url && !isMobileDevice) {
             return (
                 <SplitViewer 
                     videoUrl={signedUrl || (videoType === 'drive-iframe' ? activeVideo.video_url : null)}
