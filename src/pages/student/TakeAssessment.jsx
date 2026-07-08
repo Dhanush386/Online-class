@@ -45,6 +45,7 @@ export default function TakeAssessment() {
 
     const [assessment, setAssessment] = useState(null)
     const [questions, setQuestions] = useState([])
+    const [attemptNumber, setAttemptNumber] = useState(1)
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
