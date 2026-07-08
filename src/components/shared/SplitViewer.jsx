@@ -266,16 +266,26 @@ function VideoPlayer({ videoUrl, videoType, onEnded, title }) {
     if (!videoUrl) return null;
 
     if (videoType === 'drive-iframe') {
+        const isMobileDevice = typeof globalThis !== 'undefined' && globalThis.innerWidth < 768;
         return (
-            <iframe
-                src={videoUrl}
-                width="100%"
-                height="100%"
-                style={{ position: 'absolute', top: 0, left: 0, border: 'none' }}
-                allow="autoplay; fullscreen"
-                allowFullScreen
-                title={title}
-            />
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
+                <iframe
+                    src={videoUrl}
+                    style={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        left: 0, 
+                        border: 'none',
+                        width: isMobileDevice ? '200%' : '100%',
+                        height: isMobileDevice ? '200%' : '100%',
+                        transform: isMobileDevice ? 'scale(0.5)' : 'none',
+                        transformOrigin: '0 0'
+                    }}
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                    title={title}
+                />
+            </div>
         );
     }
 
