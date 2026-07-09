@@ -98,11 +98,32 @@ function HomeRedirect() {
 
 // ── App ───────────────────────────────────────────────────────────────────────
 function AppInner() {
+  const [subdomain, setSubdomain] = useState(null);
+
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW registration failed:', err));
     }
+
+    // Subdomain detection logic
+    const host = window.location.hostname;
+    const isLocalhost = host === 'localhost' || host === '127.0.0.1';
+    
+    if (!isLocalhost && host.includes('learnovas.in') && host !== 'learnovas.in' && host !== 'www.learnovas.in') {
+      const parts = host.split('.');
+      if (parts.length >= 3) {
+        setSubdomain(parts[0]);
+      }
+    }
   }, []);
+
+  if (subdomain) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <SharedProject subdomainSlug={subdomain} />
+      </Suspense>
+    );
+  }
 
   return (
     <MeetingProvider>

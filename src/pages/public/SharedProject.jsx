@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Code, Eye, ExternalLink, Calendar } from 'lucide-react'
 
-export default function SharedProject() {
+export default function SharedProject({ subdomainSlug }) {
     const { projectId } = useParams()
     const [project, setProject] = useState(null)
     const [author, setAuthor] = useState(null)
@@ -11,16 +11,22 @@ export default function SharedProject() {
     const [error, setError] = useState(null)
     const [previewContent, setPreviewContent] = useState('')
 
+    const identifier = subdomainSlug || projectId;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier);
+
     useEffect(() => {
         async function loadProject() {
             setLoading(true)
             try {
                 // 1. Fetch project data
-                const { data: pData, error: pErr } = await supabase
-                    .from('published_projects')
-                    .select('*')
-                    .eq('id', projectId)
-                    .single()
+                let query = supabase.from('published_projects').select('*');
+                if (isUuid) {
+                    query = query.eq('id', identifier);
+                } else {
+                    query = query.eq('slug', identifier);
+                }
+
+                const { data: pData, error: pErr } = await query.single()
 
                 if (pErr) throw pErr
                 if (!pData) throw new Error("Project not found.")

@@ -161,8 +161,37 @@ export default function CodePlayground() {
     const [showPublishModal, setShowPublishModal] = useState(false)
     const [publishTitle, setPublishTitle] = useState('')
     const [publishDesc, setPublishDesc] = useState('')
+    const [publishSlug, setPublishSlug] = useState('')
+    const [slugStatus, setSlugStatus] = useState('idle')
     const [publishing, setPublishing] = useState(false)
     const [publishedUrl, setPublishedUrl] = useState(null)
+
+    useEffect(() => {
+        if (!publishSlug) {
+            setSlugStatus('idle')
+            return
+        }
+
+        const isValid = /^[a-z0-9-]+$/.test(publishSlug)
+        if (!isValid) {
+            setSlugStatus('invalid')
+            return
+        }
+
+        setSlugStatus('checking')
+        const timer = setTimeout(async () => {
+            try {
+                const { data, error } = await supabase.rpc('check_slug_availability', { p_slug: publishSlug })
+                if (error) throw error
+                setSlugStatus(data ? 'available' : 'taken')
+            } catch (err) {
+                console.error('Slug check failed', err)
+                setSlugStatus('idle')
+            }
+        }, 500)
+
+        return () => clearTimeout(timer)
+    }, [publishSlug])
 
     const iframeRef = useRef(null)
     const [searchParams, setSearchParams] = useSearchParams()
@@ -247,23 +276,39 @@ export default function CodePlayground() {
     const publishProject = async (e) => {
         e.preventDefault()
         if (!publishTitle.trim() || !profile?.id) return
+        if (slugStatus !== 'available') {
+            globalThis.alert('Please choose a valid and available URL slug.')
+            return
+        }
+
         setPublishing(true)
 
         try {
+            const finalUrl = `https://${publishSlug}.learnovas.in`
             const { data, error } = await supabase.from('published_projects').insert({
                 user_id: profile.id,
                 title: publishTitle.trim(),
                 description: publishDesc.trim() || null,
+                slug: publishSlug,
+                subdomain: publishSlug,
+                published_url: finalUrl,
                 html: htmlCode,
                 css: cssCode,
                 js: jsCode
-            }).select('id').single()
+            }).select('id, slug').single()
 
             if (error) throw error
             if (data) {
-                setPublishedUrl(`${globalThis.location.origin}/p/${data.id}`)
+                const isLocalhost = globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1';
+                const successUrl = isLocalhost 
+                    ? `${globalThis.location.origin}/p/${data.slug}`
+                    : finalUrl;
+
+                setPublishedUrl(successUrl)
                 setPublishTitle('')
                 setPublishDesc('')
+                setPublishSlug('')
+                setSlugStatus('idle')
             }
         } catch (err) {
             globalThis.alert('Failed to publish project: ' + err.message)
@@ -608,7 +653,7 @@ export default function CodePlayground() {
                             ) : (
                                 <form onSubmit={publishProject}>
                                     <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                                        <label htmlFor="publish-title" className="form-label">Project Title</label>
+                                        <label htmlFor="publish-title" className="form-label">Project Name</label>
                                         <input
                                             id="publish-title"
                                             type="text"
@@ -616,8 +661,32 @@ export default function CodePlayground() {
                                             className="form-input"
                                             value={publishTitle}
                                             onChange={e => setPublishTitle(e.target.value)}
-                                            placeholder="My Awesome Website"
+                                            placeholder="Weather App"
                                         />
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                        <label htmlFor="publish-slug" className="form-label">Custom URL Slug</label>
+                                        <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', paddingRight: '1rem', overflow: 'hidden' }}>
+                                            <input
+                                                id="publish-slug"
+                                                type="text"
+                                                required
+                                                className="form-input"
+                                                style={{ border: 'none', background: 'transparent', flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+                                                value={publishSlug}
+                                                onChange={e => setPublishSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                                placeholder="weather-app"
+                                            />
+                                            <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>.learnovas.in</span>
+                                        </div>
+                                        {publishSlug && (
+                                            <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {slugStatus === 'checking' && <span style={{ color: '#9ca3af' }}>Checking availability...</span>}
+                                                {slugStatus === 'invalid' && <span style={{ color: '#ef4444' }}>❌ Invalid format (lowercase, numbers, hyphens only)</span>}
+                                                {slugStatus === 'taken' && <span style={{ color: '#ef4444' }}>❌ Already taken or reserved</span>}
+                                                {slugStatus === 'available' && <span style={{ color: '#10b981' }}>✅ Available!</span>}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                                         <label htmlFor="publish-desc" className="form-label">Description (Optional)</label>
