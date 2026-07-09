@@ -63,7 +63,7 @@ export default function SharedProject({ subdomainSlug }) {
                 setPreviewContent(combinedCode)
 
                 // 4. Increment view count
-                const { error: viewErr } = await supabase.rpc('increment_project_views', { p_id: projectId })
+                const { error: viewErr } = await supabase.rpc('increment_project_views', { p_id: pData.id })
                 if (viewErr) console.error("Failed to increment view:", viewErr)
 
             } catch (err) {
@@ -74,10 +74,10 @@ export default function SharedProject({ subdomainSlug }) {
             }
         }
 
-        if (projectId) {
+        if (identifier) {
             loadProject()
         }
-    }, [projectId])
+    }, [identifier])
 
     if (loading) {
         return (
