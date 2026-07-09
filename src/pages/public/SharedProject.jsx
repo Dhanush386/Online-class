@@ -108,8 +108,8 @@ export default function SharedProject({ subdomainSlug }) {
             {/* Top Bar */}
             <header style={{
                 height: 60,
-                background: 'var(--text-primary)',
-                borderBottom: '1px solid var(--card-border)',
+                background: '#ffffff',
+                borderBottom: '1px solid #e2e8f0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -133,11 +133,11 @@ export default function SharedProject({ subdomainSlug }) {
                     </Link>
 
                     {/* Divider */}
-                    <div style={{ width: 1, height: 24, background: 'var(--card-border)' }} />
+                    <div style={{ width: 1, height: 24, background: '#e2e8f0' }} />
 
                     {/* Project Info */}
                     <div>
-                        <h1 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'white', margin: 0 }}>{project.title}</h1>
+                        <h1 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>{project.title}</h1>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 2 }}>
                             <span>by {author || 'Unknown Developer'}</span>
                             <span>•</span>
@@ -157,8 +157,8 @@ export default function SharedProject({ subdomainSlug }) {
                         }}
                         style={{
                             background: 'none',
-                            border: '1px solid var(--text-secondary)',
-                            color: 'white',
+                            border: '1px solid #cbd5e1',
+                            color: '#1e293b',
                             padding: '0.4rem 1rem',
                             borderRadius: 6,
                             fontSize: '0.8rem',
