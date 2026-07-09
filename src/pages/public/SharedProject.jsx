@@ -97,7 +97,7 @@ export default function SharedProject({ subdomainSlug }) {
                     </div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Project Unavailable</h1>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>This web project link is invalid or the project has been removed.</p>
-                    <Link to="/login" className="btn-primary" style={{ display: 'inline-flex' }}>Return to Learnova</Link>
+                    <a href="https://learnovas.in/login" className="btn-primary" style={{ display: 'inline-flex' }}>Return to Learnova</a>
                 </div>
             </div>
         )
@@ -170,7 +170,7 @@ export default function SharedProject({ subdomainSlug }) {
                     >
                         <ExternalLink size={14} /> Share
                     </button>
-                    <Link to="/register" className="btn-primary" style={{ padding: '0.4rem 1.25rem' }}>Join Learnova</Link>
+                    <a href="https://learnovas.in/register" className="btn-primary" style={{ padding: '0.4rem 1.25rem' }}>Join Learnova</a>
                 </div>
             </header>
 
