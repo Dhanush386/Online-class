@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Zap, BookOpen, Trophy, Users } from 'lucide-react'
 import AnimatedBackground from '../../components/background/AnimatedBackground'
+import learnovaLogo from '../../assets/learnova-logo.png'
 
 const FEATURES = [
   { icon: BookOpen, title: 'Smart Learning', desc: 'AI-powered course recommendations tailored to your pace.' },
@@ -66,14 +67,11 @@ export default function Login() {
       >
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-          <div style={{
+          <img src={learnovaLogo} alt="Learnova" style={{
             width: 42, height: 42, borderRadius: 12,
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            objectFit: 'cover',
             boxShadow: '0 8px 24px rgba(99,102,241,0.4)',
-          }}>
-            <GraduationCap size={22} color="white" />
-          </div>
+          }} />
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>Learnova</div>
             <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary-500)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Learning Platform</div>
@@ -186,9 +184,7 @@ export default function Login() {
           <div style={{ marginBottom: '2rem' }}>
             {/* Mobile-only logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }} className="show-mobile-flex">
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <GraduationCap size={18} color="white" />
-              </div>
+              <img src={learnovaLogo} alt="Learnova" style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover' }} />
               <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Learnova</span>
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.75rem', color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: '0.375rem' }}>

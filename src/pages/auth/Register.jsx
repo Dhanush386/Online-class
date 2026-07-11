@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { GraduationCap, Mail, Lock, User, Eye, EyeOff, AlertCircle, BookOpen, Users, ArrowRight, Sparkles } from 'lucide-react'
 import AnimatedBackground from '../../components/background/AnimatedBackground'
+import learnovaLogo from '../../assets/learnova-logo.png'
 
 export default function Register() {
     const { signUp } = useAuth()
@@ -84,14 +85,11 @@ export default function Register() {
             >
                 {/* Logo */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <div style={{
+                    <img src={learnovaLogo} alt="Learnova" style={{
                         width: 42, height: 42, borderRadius: 12,
-                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        objectFit: 'cover',
                         boxShadow: '0 8px 24px rgba(99,102,241,0.4)',
-                    }}>
-                        <GraduationCap size={22} color="white" />
-                    </div>
+                    }} />
                     <div>
                         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>Learnova</div>
                         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary-500)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Learning Platform</div>
@@ -168,9 +166,7 @@ export default function Register() {
                 >
                     {/* Mobile-only logo */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }} className="show-mobile-flex">
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <GraduationCap size={18} color="white" />
-                        </div>
+                        <img src={learnovaLogo} alt="Learnova" style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover' }} />
                         <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Learnova</span>
                     </div>
 

@@ -13,6 +13,7 @@ import {
   ChevronDown, Sparkles
 } from 'lucide-react'
 import AIChatbot from '../components/shared/AIChatbot'
+import learnovaLogo from '../assets/learnova-logo.png'
 import CommandPalette from '../components/CommandPalette'
 import { Avatar, ProgressRing } from '../design-system'
 
@@ -378,14 +379,11 @@ function StudentSidebar({
       }}
     >
       <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
-        <div style={{
+        <img src={learnovaLogo} alt="Learnova" style={{
           width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          objectFit: 'cover',
           boxShadow: '0 4px 12px rgba(99,102,241,0.35)',
-        }}>
-          <GraduationCap size={20} color="white" />
-        </div>
+        }} />
         {(!collapsed || isMobile) && (
           <div style={{ overflow: 'hidden' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>Learnova</div>
