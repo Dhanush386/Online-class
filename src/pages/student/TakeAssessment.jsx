@@ -666,10 +666,11 @@ export default function TakeAssessment() {
                     total_questions: questions.length,
                     answers: submissionAnswers
                 })
-                .select()
-                .single()
 
-            if (sErr) throw sErr
+            if (sErr) {
+                // Ignore duplicate submission errors (23505 = unique_violation)
+                if (sErr.code !== '23505') throw sErr
+            }
 
             // Finalize the proctoring session in DB
             if (sessionIdRef.current) {
