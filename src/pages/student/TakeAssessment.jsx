@@ -331,17 +331,16 @@ export default function TakeAssessment() {
         }
     }, [isStarted, profile, assessmentId, mediaStream, connectionQuality])
 
+    const autoSubmittedRef = useRef(false)
     useEffect(() => {
-        if (violationCount >= 3 && isStarted && !submitted && !submitting && !isAutoSubmitted) {
-            handleAutoSubmit()
+        if (violationCount >= 3 && isStarted && !submitted && !submitting && !autoSubmittedRef.current) {
+            autoSubmittedRef.current = true
+            setIsAutoSubmitted(true)
+            alert('Security Violation: 3 violations detected. Your assessment is being automatically submitted.')
+            handleSubmit(true)
         }
-    }, [violationCount, isStarted])
-
-    async function handleAutoSubmit() {
-        setIsAutoSubmitted(true)
-        alert('Security Violation: 3 violations detected. Your assessment is being automatically submitted.')
-        await handleSubmit(true)
-    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [violationCount, isStarted, submitted, submitting])
 
     useEffect(() => {
         const handleSecurity = (e) => {
@@ -624,7 +623,8 @@ export default function TakeAssessment() {
     }
 
     async function handleSubmit(isAuto = false) {
-        if (!isAuto && timeLeft !== null && timeLeft > 60) {
+        // Allow auto-submit anytime; allow manual submit in last minute OR when violations maxed
+        if (!isAuto && timeLeft !== null && timeLeft > 60 && violationCount < 3) {
             alert('Submission is only allowed during the last 1 minute of the assessment.')
             return
         }
@@ -997,7 +997,7 @@ export default function TakeAssessment() {
     );
 
     const renderNavigation = () => (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <button
                 onClick={() => setCurrentIdx(p => Math.max(0, p - 1))}
                 disabled={currentIdx === 0}
@@ -1007,35 +1007,42 @@ export default function TakeAssessment() {
                 <ChevronLeft size={18} /> Previous
             </button>
 
-            {currentIdx === questions.length - 1 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                {/* Show Submit on last question OR when violations maxed */}
+                {(currentIdx === questions.length - 1 || violationCount >= 3) && (
                     <button
                         onClick={handleSubmit}
-                        disabled={submitting || (timeLeft !== null && timeLeft > 60) || !isAnswered}
+                        disabled={submitting || (timeLeft !== null && timeLeft > 60 && violationCount < 3)}
                         className="btn-primary"
-                        style={{ gap: '0.5rem', padding: '0.85rem 2rem' }}
+                        style={{
+                            gap: '0.5rem', padding: '0.85rem 2rem',
+                            ...(violationCount >= 3 ? { background: '#ef4444', borderColor: '#dc2626' } : {})
+                        }}
                     >
-                        {submitting ? 'Submitting...' : <><Send size={18} /> Submit Assessment</>}
+                        {submitting ? 'Submitting...' : <><Send size={18} /> {violationCount >= 3 ? 'Submit Now (Violations)' : 'Submit Assessment'}</>}
                     </button>
-                    {timeLeft !== null && timeLeft > 60 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600 }}>
-                            <Clock size={12} className="animate-pulse" />
-                            <span>Enabled in {formatTime(timeLeft - 60)}</span>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <button
-                    onClick={() => setCurrentIdx(p => Math.min(questions.length - 1, p + 1))}
-                    disabled={!isAnswered}
-                    className="btn-primary"
-                    style={{ gap: '0.5rem' }}
-                >
-                    Next Question <ChevronRight size={18} />
-                </button>
-            )}
+                )}
+                {timeLeft !== null && timeLeft > 60 && violationCount < 3 && currentIdx === questions.length - 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600 }}>
+                        <Clock size={12} className="animate-pulse" />
+                        <span>Enabled in {formatTime(timeLeft - 60)}</span>
+                    </div>
+                )}
+                {/* Show Next Question when not on last question */}
+                {currentIdx !== questions.length - 1 && violationCount < 3 && (
+                    <button
+                        onClick={() => setCurrentIdx(p => Math.min(questions.length - 1, p + 1))}
+                        disabled={!isAnswered}
+                        className="btn-primary"
+                        style={{ gap: '0.5rem' }}
+                    >
+                        Next Question <ChevronRight size={18} />
+                    </button>
+                )}
+            </div>
         </div>
     );
+
 
     const renderWebcamFeed = () => {
         if (!cameraEnabled) return null;
