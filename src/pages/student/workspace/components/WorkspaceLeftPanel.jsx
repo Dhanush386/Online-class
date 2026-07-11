@@ -34,7 +34,7 @@ export function WorkspaceLeftPanel({
         return (
             <>
             <div style={{ display: 'flex', gap: '0.85rem', marginBottom: '1.5rem' }}>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid var(--card-border)', background: 'var(--bg-base)' }}>
                     <CodeIcon size={14} color="var(--text-muted)" />
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total</span>
                     <span style={{ marginLeft: 'auto', fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{total}</span>
@@ -82,13 +82,13 @@ export function WorkspaceLeftPanel({
                                     {tcData.input && (
                                         <div>
                                             <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Input {idx + 1}</h5>
-                                            <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.input}</div>
+                                            <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.input}</div>
                                         </div>
                                     )}
                                     {tcData.expected_output && (
                                         <div>
                                             <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Output {idx + 1}</h5>
-                                            <div style={{ background: '#f4f6fc', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.expected_output}</div>
+                                            <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.expected_output}</div>
                                         </div>
                                     )}
                                 </div>
@@ -125,7 +125,7 @@ export function WorkspaceLeftPanel({
                         }
                 
                         return (
-                            <div key={tcData.id || tc.id || `tc-${idx}`} style={{ padding: '1rem 1.25rem', borderRadius: 8, background: '#f8fafc', borderLeft: `3px solid ${statusColor}`, transition: 'all 0.2s ease' }}>
+                            <div key={tcData.id || tc.id || `tc-${idx}`} style={{ padding: '1rem 1.25rem', borderRadius: 8, background: 'var(--bg-base)', borderLeft: `3px solid ${statusColor}`, transition: 'all 0.2s ease' }}>
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
                                     <StatusIcon size={18} color={iconColor} style={{ marginTop: 2, flexShrink: 0 }} />
                                     <div style={{ flex: 1 }}>{displayContent}</div>
@@ -149,7 +149,7 @@ export function WorkspaceLeftPanel({
                                 {hasResults && !isWebTc && tc.actual && (
                                     <div style={{ marginLeft: '2.2rem', marginTop: '0.85rem' }}>
                                         <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Your Output:</span>
-                                        <pre style={{ background: '#f1f5f9', padding: '0.5rem 0.85rem', borderRadius: 6, marginTop: '0.25rem', fontSize: '0.75rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: 'var(--text-primary)' }}>{tc.actual}</pre>
+                                        <pre style={{ background: 'var(--bg-base)', padding: '0.5rem 0.85rem', borderRadius: 6, marginTop: '0.25rem', fontSize: '0.75rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: 'var(--text-primary)' }}>{tc.actual}</pre>
                                     </div>
                                 )}
                             </div>
@@ -167,12 +167,12 @@ export function WorkspaceLeftPanel({
         <div className="animate-fade-in">
             <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>{isCombined ? `${challenge.title} - ${currentQuestion.title}` : challenge.title}</h1>
             {isCombined && (
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem', background: '#f8fafc', padding: '0.5rem', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem', background: 'var(--bg-base)', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
                     {challenge.test_cases.sub_questions.map((q, idx) => {
                         const isSolved = solvedSubIds.includes(q.id);
 
-                        let bgColor = '#ffffff';
-                        let bdColor = '#cbd5e1';
+                        let bgColor = 'var(--bg-base)';
+                        let bdColor = 'var(--card-border)';
                         if (currentSubIndex === idx) {
                             bgColor = '#3b82f6';
                             bdColor = '#2563eb';
@@ -218,7 +218,7 @@ export function WorkspaceLeftPanel({
             {currentQuestion.constraints && (
                 <div style={{ marginBottom: '2rem' }}>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Constraints</h4>
-                    <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.9rem', color: 'var(--card-border)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                    <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)', fontSize: '0.9rem', color: 'var(--card-border)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                         {currentQuestion.constraints}
                     </div>
                 </div>
@@ -227,7 +227,7 @@ export function WorkspaceLeftPanel({
             {challenge.target_visual_url && (
                 <div style={{ marginBottom: '2rem' }}>
                     <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.85rem', color: '#3b82f6' }}>Refer to the below image.</p>
-                    <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f1f5f9' }}>
+                    <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid var(--card-border)', background: 'var(--bg-base)' }}>
                         <img src={challenge.target_visual_url} alt="Goal" style={{ width: '100%', display: 'block' }} />
                     </div>
                 </div>
@@ -250,7 +250,7 @@ export function WorkspaceLeftPanel({
                             Open ↗
                         </a>
                     </div>
-                    <div style={{ borderRadius: 8, overflow: 'hidden', border: '2px solid #bfdbfe', background: '#f1f5f9', height: 220 }}>
+                    <div style={{ borderRadius: 8, overflow: 'hidden', border: '2px solid #bfdbfe', background: 'var(--bg-base)', height: 220 }}>
                         <iframe
                             src={referenceIframeUrl}
                             title="Reference Demo"
@@ -264,7 +264,7 @@ export function WorkspaceLeftPanel({
             )}
 
             {/* Testcases Section */}
-            <div style={{ marginTop: '2.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+            <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
                 <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1.25rem' }}>Testcases</h4>
                 {renderTestCases()}
             </div>
@@ -291,7 +291,7 @@ export function WorkspaceLeftPanel({
                             <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#6ee7b7' }}>You will not receive XP for this challenge.</p>
                         </div>
                     ) : (
-                        <div style={{ marginTop: '2rem', padding: '1rem', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                        <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8 }}>
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>If you are still stuck when the timer expires, you will have the option to unlock the correct answer. Note that unlocking the answer forfeits XP for this challenge.</p>
                         </div>
                     )}
@@ -307,8 +307,8 @@ export function WorkspaceLeftPanel({
     )
 
     return (
-        <div style={{ width: '28%', minWidth: 320, background: '#ffffff', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0' }}>
-            <div style={{ height: 40, borderBottom: '1px solid #e2e8f0', display: 'flex', padding: '0 4px' }}>
+        <div style={{ width: '28%', minWidth: 320, background: 'var(--bg-elevated)', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid var(--card-border)' }}>
+            <div style={{ height: 40, borderBottom: '1px solid var(--card-border)', display: 'flex', padding: '0 4px' }}>
                 <button onClick={() => setLeftTab('description')} style={{ flex: 1, background: 'none', border: 'none', color: leftTab === 'description' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', borderBottom: leftTab === 'description' ? '2px solid #3b82f6' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                     <FileText size={14} /> Description
                 </button>
