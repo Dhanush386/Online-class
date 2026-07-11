@@ -4,10 +4,13 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { ChevronLeft, CheckCircle2, XCircle, Clock, Code as CodeIcon } from 'lucide-react'
 import CodeEditor from '../../components/CodeEditor'
+import useXpAward from '../../hooks/useXpAward'
+import { getQuizEventType } from '../../constants/xpRewards'
 export default function AssessmentReview() {
     const { assessmentId } = useParams()
     const { profile } = useAuth()
     const navigate = useNavigate()
+    const { awardXp, toastMessage } = useXpAward()
 
     const [assessment, setAssessment] = useState(null)
     const [questions, setQuestions] = useState([])
@@ -34,6 +37,43 @@ export default function AssessmentReview() {
 
         if (assessmentId) loadData()
     }, [assessmentId, profile.id])
+
+    // Backfill XP for submissions that happened before XP was deployed
+    useEffect(() => {
+        async function backfillXp() {
+            if (!profile?.id || !assessmentId || submissions.length === 0 || !assessment) return
+
+            // Check if XP was already awarded for any attempt of this assessment
+            const { data: existing } = await supabase
+                .from('xp_events')
+                .select('id')
+                .eq('student_id', profile.id)
+                .in('event_type', ['quiz_high', 'quiz_mid', 'quiz_low'])
+                .eq('reference_id', assessmentId)
+                .limit(1)
+
+            if (existing && existing.length > 0) return // already awarded
+
+            // Award based on best attempt score
+            const bestSub = submissions.reduce((best, s) =>
+                (s.score / s.total_questions) > (best.score / best.total_questions) ? s : best
+            , submissions[0])
+
+            const scorePercent = Math.round((bestSub.score / bestSub.total_questions) * 100)
+            const xpEventType = getQuizEventType(scorePercent)
+
+            await awardXp({
+                eventType: xpEventType,
+                referenceId: assessmentId,
+                courseId: assessment.course_id || null,
+                moduleType: 'quiz',
+                reason: `${assessment.title} — ${scorePercent}%`,
+                isFirstAttempt: true,
+                metadata: { score: bestSub.score, total: bestSub.total_questions, percentage: scorePercent, backfilled: true }
+            })
+        }
+        backfillXp()
+    }, [submissions, assessment, profile?.id, assessmentId])
 
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading review...</div>
 
@@ -219,6 +259,34 @@ export default function AssessmentReview() {
                     )
                 })}
             </div>
+
+            {/* XP Toast */}
+            {toastMessage && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '2rem',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 99999,
+                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    color: 'white',
+                    padding: '0.85rem 1.75rem',
+                    borderRadius: '999px',
+                    fontSize: '1rem',
+                    fontWeight: 700,
+                    boxShadow: '0 8px 32px rgba(99,102,241,0.45)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    whiteSpace: 'nowrap'
+                }}>
+                    <span style={{ fontSize: '1.4rem' }}>⚡</span>
+                    <div>
+                        <div style={{ fontSize: '1rem', fontWeight: 800 }}>{toastMessage.text}</div>
+                        {toastMessage.reason && <div style={{ fontSize: '0.78rem', opacity: 0.85, marginTop: '0.1rem' }}>{toastMessage.reason}</div>}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
