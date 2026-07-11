@@ -210,7 +210,7 @@ export default function AssessmentReview() {
                                             </div>
                                             {opt}
                                             {isThisSelected && !isThisCorrect && <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Your answer</span>}
-                                            {isThisCorrect && <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>Correct</span>}
+                                            {isThisCorrect && <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>{isThisSelected ? 'Your correct answer' : 'Correct'}</span>}
                                         </div>
                                     )
                                 })}

@@ -637,13 +637,13 @@ export default function TakeAssessment() {
                 const selected = answers[q.id] || (isMulti(q) ? [] : '')
                 
                 let isCorrect = false
+                const correctArr = getCorrectArray(q)
                 if (isMulti(q)) {
-                    const correctArr = getCorrectArray(q)
                     const selectedArr = Array.isArray(selected) ? selected : [selected]
                     isCorrect = correctArr.length === selectedArr.length && 
                                correctArr.every(opt => selectedArr.includes(opt))
                 } else {
-                    isCorrect = selected === q.correct_answer
+                    isCorrect = correctArr.includes(selected)
                 }
 
                 if (isCorrect) correctCount++
