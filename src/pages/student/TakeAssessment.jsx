@@ -337,7 +337,6 @@ export default function TakeAssessment() {
         if (violationCount >= 3 && isStarted && !submitted && !submitting && !autoSubmittedRef.current) {
             autoSubmittedRef.current = true
             setIsAutoSubmitted(true)
-            setSecurityAlert('Security Violation: 3 violations detected. Your assessment is being automatically submitted.')
             // Use setTimeout + ref to ensure we call the latest handleSubmit
             setTimeout(() => {
                 if (handleSubmitRef.current) {
@@ -482,7 +481,7 @@ export default function TakeAssessment() {
             if (remaining <= 0 && !timerSubmittedRef.current) {
                 setTimeLeft(0);
                 timerSubmittedRef.current = true;
-                setSecurityAlert('⏰ Time is up! Your assessment is being automatically submitted.');
+                setIsAutoSubmitted(true);
                 // Use ref to call latest handleSubmit, with delay for React to flush
                 setTimeout(() => {
                     if (handleSubmitRef.current) {
@@ -760,7 +759,10 @@ export default function TakeAssessment() {
         )
     }
 
-    if ((requiresReentry || securityAlert) && !submitted && !BYPASS_PROCTORING) {
+    // Show Security Block UNLESS we're in auto-submit territory (violations maxed or timer expired)
+    const shouldBlockForSecurity = (requiresReentry || securityAlert) && !submitted && !BYPASS_PROCTORING
+        && violationCount < 3 && !isAutoSubmitted && !(timeLeft !== null && timeLeft <= 0)
+    if (shouldBlockForSecurity) {
         return renderSecurityBlock()
     }
 
