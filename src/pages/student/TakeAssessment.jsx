@@ -680,6 +680,7 @@ export default function TakeAssessment() {
                 })
 
             if (sErr) {
+                console.error("Supabase insert error details:", sErr);
                 // Ignore duplicate submission errors (23505 = unique_violation)
                 if (sErr.code !== '23505') throw sErr
             }
