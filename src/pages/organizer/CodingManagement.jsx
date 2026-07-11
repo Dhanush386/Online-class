@@ -194,7 +194,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                     {wcTab === 'html' && (
                         <div>
                             <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.85rem' }}>
-                                Check that specific HTML elements exist using CSS selectors. <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>minCount</code> is optional (default: 1).
+                                Check that specific HTML elements exist by tag name. <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>minCount</code> is optional (default: 1).
                             </p>
                             {(formData.web_testcases?.html || []).map((tc, idx) => (
                                 <div key={tc.id || `html-tc-${idx}`} style={{ border: '1px solid #fee2e2', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#fff5f5', position: 'relative' }}>
@@ -209,8 +209,8 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                                                 value={tc.description || ''} onChange={e => handleUpdateHtml(idx, 'description', e.target.value)} />
                                         </div>
                                         <div>
-                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#ef4444', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</div>
-                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="h1, form, .nav"
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#ef4444', display: 'block', marginBottom: '0.25rem' }}>HTML ELEMENT *</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="h1, p, button, form"
                                                 value={tc.selector || ''} onChange={e => handleUpdateHtml(idx, 'selector', e.target.value)} />
                                         </div>
                                         <div>
