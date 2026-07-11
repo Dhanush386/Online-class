@@ -168,18 +168,17 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
               }}
             >
               <div style={{
-                background: 'rgba(255,255,255,0.96)',
+                background: 'var(--bg-elevated)',
                 backdropFilter: 'blur(24px)',
                 borderRadius: 20,
-                border: '1px solid rgba(226,232,240,0.8)',
-                boxShadow: '0 24px 64px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',
+                border: '1px solid var(--card-border)',
+                boxShadow: 'var(--shadow-2xl)',
                 overflow: 'hidden',
               }}>
-                {/* Search input */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '0.85rem',
                   padding: '1rem 1.25rem',
-                  borderBottom: '1px solid rgba(226,232,240,0.6)',
+                  borderBottom: '1px solid var(--card-border)',
                 }}>
                   <Search size={18} color="var(--text-muted)" style={{ flexShrink: 0 }} />
                   <input
@@ -195,7 +194,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                     }}
                   />
                   <kbd style={{
-                    background: 'rgba(100,116,139,0.08)', border: '1px solid rgba(100,116,139,0.15)',
+                    background: 'var(--bg-base)', border: '1px solid var(--card-border)',
                     borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.7rem',
                     color: 'var(--text-muted)', fontFamily: 'var(--font-body)',
                   }}>ESC</kbd>
@@ -229,7 +228,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                                 display: 'flex', alignItems: 'center', gap: '0.85rem',
                                 width: '100%', padding: '0.85rem 0.85rem',
                                 border: 'none', borderRadius: 10,
-                                background: isActive ? 'rgba(99,102,241,0.08)' : 'transparent',
+                                background: isActive ? 'rgba(99,102,241,0.15)' : 'transparent',
                                 cursor: 'pointer', textAlign: 'left',
                                 transition: 'background 0.1s ease',
                               }}
@@ -237,20 +236,20 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                               <div style={{
                                 width: 32, height: 32, borderRadius: 8, flexShrink: 0,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: isActive ? 'rgba(99,102,241,0.12)' : 'rgba(100,116,139,0.07)',
+                                background: isActive ? 'var(--primary-500)' : 'var(--bg-base)',
                               }}>
-                                <cmd.icon size={15} color={isActive ? 'var(--primary-500)' : 'var(--text-muted)'} />
+                                <cmd.icon size={15} color={isActive ? '#fff' : 'var(--text-muted)'} />
                               </div>
                               <span style={{
                                 flex: 1, fontSize: '0.875rem', fontWeight: 500,
-                                color: isActive ? 'var(--primary-700)' : 'var(--text-primary)',
+                                color: isActive ? 'var(--primary-400)' : 'var(--text-primary)',
                                 fontFamily: 'var(--font-body)',
                               }}>{cmd.label}</span>
                               {cmd.shortcut && (
                                 <span style={{
                                   fontSize: '0.7rem', color: 'var(--text-muted)',
-                                  background: 'rgba(100,116,139,0.08)',
-                                  border: '1px solid rgba(100,116,139,0.12)',
+                                  background: 'var(--bg-base)',
+                                  border: '1px solid var(--card-border)',
                                   borderRadius: 5, padding: '0.15rem 0.4rem',
                                   fontFamily: 'var(--font-body)',
                                 }}>{cmd.shortcut}</span>
@@ -267,7 +266,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                 {/* Footer */}
                 <div style={{
                   padding: '0.625rem 1.25rem',
-                  borderTop: '1px solid rgba(226,232,240,0.6)',
+                  borderTop: '1px solid var(--card-border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
@@ -280,7 +279,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                       { key: 'Esc', label: 'Close' },
                     ].map(({ key, label }) => (
                       <span key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
-                        <kbd style={{ background: 'rgba(100,116,139,0.08)', border: '1px solid rgba(100,116,139,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem' }}>{key}</kbd>
+                        <kbd style={{ background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 4, padding: '0.1rem 0.4rem' }}>{key}</kbd>
                         {label}
                       </span>
                     ))}
