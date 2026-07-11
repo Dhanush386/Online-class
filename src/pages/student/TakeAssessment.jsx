@@ -463,6 +463,7 @@ export default function TakeAssessment() {
         return `${m}:${s}`
     }
 
+    const timerSubmittedRef = useRef(false)
     useEffect(() => {
         if (!isStarted || submitted || !assessment) return;
 
@@ -478,11 +479,17 @@ export default function TakeAssessment() {
                 return;
             }
             const remaining = Math.floor((Number.parseInt(savedEndTime) - Date.now()) / 1000);
-            if (remaining <= 0) {
+            if (remaining <= 0 && !timerSubmittedRef.current) {
                 setTimeLeft(0);
-                alert("Time is up! Your assessment will be automatically submitted.");
-                handleSubmit(true);
-            } else {
+                timerSubmittedRef.current = true;
+                setSecurityAlert('⏰ Time is up! Your assessment is being automatically submitted.');
+                // Use ref to call latest handleSubmit, with delay for React to flush
+                setTimeout(() => {
+                    if (handleSubmitRef.current) {
+                        handleSubmitRef.current(true);
+                    }
+                }, 200);
+            } else if (remaining > 0) {
                 setTimeLeft(remaining);
             }
         };
