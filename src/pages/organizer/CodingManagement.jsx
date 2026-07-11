@@ -548,13 +548,13 @@ function SubQuestionItem({
             </div>
             <div style={{ marginBottom: '1rem' }}>
                 <div className="form-label">Starter Code</div>
-                <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ height: '120px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
                     <CodeEditor value={q.starter_code} onChange={e => handleUpdateQuestionField(qIdx, 'starter_code', e.target.value)} language={language} placeholder="Initial code..." />
                 </div>
             </div>
             <div style={{ marginBottom: '1rem' }}>
                 <div className="form-label">Solution Code (Optional)</div>
-                <div style={{ height: '120px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ height: '120px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
                     <CodeEditor value={q.solution_code || ''} onChange={e => handleUpdateQuestionField(qIdx, 'solution_code', e.target.value)} language={language} placeholder="Correct answer..." />
                 </div>
             </div>
@@ -1245,13 +1245,13 @@ export default function CodingManagement() {
                 <div>
                     <div htmlFor="starter-code" className="form-label">Starter Code</div>
                     {formData.language === 'html' ? (
-                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                            <div style={{ display: 'flex', background: '#e2e8f0', borderBottom: '1px solid #cbd5e1' }}>
-                                <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
-                                <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
-                                <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'white' : 'transparent', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
+                        <div style={{ background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
+                            <div style={{ display: 'flex', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--card-border)' }}>
+                                <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'var(--primary-500)' : 'transparent', color: webTab === 'html' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
+                                <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'var(--primary-500)' : 'transparent', color: webTab === 'css' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
+                                <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'var(--primary-500)' : 'transparent', color: webTab === 'js' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
                             </div>
-                            <div style={{ height: '180px', background: 'var(--text-primary)' }}>
+                            <div style={{ height: '180px', background: 'var(--bg-base)' }}>
                                 {webTab === 'html' && (
                                     <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="Initial HTML..." />
                                 )}
@@ -1264,7 +1264,7 @@ export default function CodingManagement() {
                             </div>
                         </div>
                     ) : (
-                        <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                        <div style={{ height: '180px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
                             <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} placeholder="Initial code..." />
                         </div>
                     )}
@@ -1277,7 +1277,7 @@ export default function CodingManagement() {
 
             <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Solution Code (Optional)</div>
-                <div style={{ height: '180px', background: 'var(--text-primary)', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ height: '180px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
                     <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} placeholder="Correct answer..." />
                 </div>
             </div>
