@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot, Lock } from 'lucide-react'
 
@@ -139,13 +139,13 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
     
     const totalWeeks = course?.duration_weeks || 12
 
-    const flatAssessments = [
+    const flatAssessments = useMemo(() => [
         ...(assessments?.daily || []),
         ...(assessments?.weekly || []),
         ...(assessments?.final || [])
-    ]
+    ], [assessments])
 
-    const isTaskCompleted = (type, id) => {
+    const isTaskCompleted = useCallback((type, id) => {
         if (type === 'video' || type === 'watch') {
             return progress?.video_progress?.some(vp => vp.video_id === id) || false
         }
@@ -156,7 +156,40 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
             return progress?.assessment_submissions?.some(asub => asub.assessment_id === id) || false
         }
         return false
-    }
+    }, [progress])
+
+    // Auto-expand to the first incomplete week
+    useEffect(() => {
+        if (!course) return;
+        
+        let firstIncompleteWeek = 1;
+        
+        for (let w = 1; w <= totalWeeks; w++) {
+            // Get all items for this week
+            const weekVideos = (sessions || []).filter(v => (v.week_number || 1) === w);
+            const weekAssessments = flatAssessments.filter(a => (a.week_number || 1) === w);
+            const weekChallenges = (challenges || []).filter(c => (c.week_number || 1) === w);
+            // Resources are usually optional, so we focus on videos, assessments, and challenges
+
+            const totalTasks = weekVideos.length + weekAssessments.length + weekChallenges.length;
+            
+            if (totalTasks === 0) continue; // Skip empty weeks
+
+            let completedTasks = 0;
+            weekVideos.forEach(v => { if (isTaskCompleted('video', v.id)) completedTasks++ });
+            weekAssessments.forEach(a => { if (isTaskCompleted('assessment', a.id)) completedTasks++ });
+            weekChallenges.forEach(c => { if (isTaskCompleted('coding', c.id)) completedTasks++ });
+
+            if (completedTasks < totalTasks) {
+                firstIncompleteWeek = w;
+                break;
+            }
+        }
+        
+        setExpandedWeek(firstIncompleteWeek);
+    }, [course, sessions, flatAssessments, challenges, totalWeeks, isTaskCompleted]);
+
+
 
     const organizeWeekData = (weekNum) => {
         const topicsMap = {}
