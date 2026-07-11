@@ -72,6 +72,7 @@ export default function TakeAssessment() {
     const sessionIdRef = useRef(null)
     const lastViolationTimes = useRef({})
     const hasTabSwitched = useRef(false)
+    const handleSubmitRef = useRef(null)
 
     useEffect(() => { riskScoreRef.current = riskScore }, [riskScore])
     useEffect(() => { violationCountRef.current = violationCount }, [violationCount])
@@ -336,8 +337,13 @@ export default function TakeAssessment() {
         if (violationCount >= 3 && isStarted && !submitted && !submitting && !autoSubmittedRef.current) {
             autoSubmittedRef.current = true
             setIsAutoSubmitted(true)
-            alert('Security Violation: 3 violations detected. Your assessment is being automatically submitted.')
-            handleSubmit(true)
+            setSecurityAlert('Security Violation: 3 violations detected. Your assessment is being automatically submitted.')
+            // Use setTimeout + ref to ensure we call the latest handleSubmit
+            setTimeout(() => {
+                if (handleSubmitRef.current) {
+                    handleSubmitRef.current(true)
+                }
+            }, 200)
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [violationCount, isStarted, submitted, submitting])
@@ -718,6 +724,8 @@ export default function TakeAssessment() {
             setSubmitting(false)
         }
     }
+    // Keep ref in sync every render so auto-submit effect always calls the latest version
+    handleSubmitRef.current = handleSubmit
 
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading assessment...</div>
     if (error && !assessment) return <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>Error: {error}</div>
