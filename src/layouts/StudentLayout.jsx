@@ -103,10 +103,15 @@ export default function StudentLayout() {
       const channel = supabase.channel('global-notifications')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
           if (payload.new.target === 'all' || payload.new.target === 'students') {
-            setNotifications(prev => [payload.new, ...prev])
+            // Filter out other students' personal XP notifications
+            if (payload.new.title?.startsWith('XP Awarded!') && payload.new.sender_id !== profile.id) {
+              return;
+            }
+            setNotifications(prev => [{ ...payload.new, isRead: false }, ...prev])
             setUnreadCount(prev => prev + 1)
           }
-        }).subscribe()
+        })
+        .subscribe()
       return () => supabase.removeChannel(channel)
     }
   }, [profile?.id])
@@ -115,10 +120,19 @@ export default function StudentLayout() {
     if (!profile?.id) return
     try {
       const { data: notes } = await supabase.from('notifications').select('*')
-        .or('target.eq.all,target.eq.students').order('created_at', { ascending: false }).limit(10)
+        .or('target.eq.all,target.eq.students').order('created_at', { ascending: false }).limit(20)
+      
+      // Filter out XP notifications that belong to other students
+      const filteredNotes = (notes || []).filter(n => {
+          if (n.title?.startsWith('XP Awarded!')) {
+              return n.sender_id === profile.id
+          }
+          return true
+      }).slice(0, 10) // keep only top 10 relevant ones
+
       const { data: reads } = await supabase.from('notification_reads').select('notification_id').eq('user_id', profile.id)
       const readIds = new Set((reads || []).map(r => r.notification_id))
-      const notesWithRead = (notes || []).map(n => ({ ...n, isRead: readIds.has(n.id) }))
+      const notesWithRead = filteredNotes.map(n => ({ ...n, isRead: readIds.has(n.id) }))
       setNotifications(notesWithRead)
       setUnreadCount(notesWithRead.filter(n => !n.isRead).length)
     } catch (err) { console.error('Notifications error:', err) }
