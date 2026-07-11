@@ -38,7 +38,7 @@ export function WorkspaceOutput({
                     <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.7rem', color: colors.text, margin: 0, lineHeight: 1.5 }}>{result.message}</pre>
                 </div>
             )}
-            <div style={{ padding: '0.85rem 1.25rem 1.25rem', background: 'var(--text-primary)', borderTop: '1px solid var(--card-border)', textAlign: 'center' }}>
+            <div style={{ padding: '0.85rem 1.25rem 1.25rem', background: '#1e1e2e', borderTop: '1px solid var(--card-border)', textAlign: 'center' }}>
                 <button onClick={handleSubmit} disabled={submitting || running} style={{ width: '100%', padding: '0.85rem', borderRadius: 8, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <Layout size={16} /> {submitting ? 'Comparing...' : 'Compare & Submit'}
                 </button>
@@ -47,7 +47,7 @@ export function WorkspaceOutput({
     );
 
     const renderClassicOutput = () => (
-        <div style={{ flex: 1, padding: '1rem', background: 'var(--text-primary)', overflowY: 'auto', fontFamily: 'monospace', fontSize: '0.85rem', color: '#e2e8f0' }}>
+        <div style={{ flex: 1, padding: '1rem', background: '#1e1e2e', overflowY: 'auto', fontFamily: 'monospace', fontSize: '0.85rem', color: '#e2e8f0' }}>
             {result ? (
                 <div style={{ color: colors.genericText }}>
                     <pre style={{ whiteSpace: 'pre-wrap' }}>{result.message}</pre>
@@ -109,8 +109,8 @@ export function WorkspaceOutput({
 
     return (
         <>
-            <div style={{ width: '32%', background: 'var(--text-primary)', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid var(--card-border)', overflow: 'hidden' }}>
-                <div style={{ height: 40, borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', padding: '0 1rem', background: 'var(--text-primary)' }}>
+            <div style={{ width: '32%', background: '#1e1e2e', borderRadius: 8, display: 'flex', flexDirection: 'column', border: '1px solid var(--card-border)', overflow: 'hidden' }}>
+                <div style={{ height: 40, borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', padding: '0 1rem', background: '#1e1e2e' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)' }}>{challenge.language === 'html' ? 'PREVIEW' : 'OUTPUT'}</span>
                     <div style={{ marginLeft: 'auto' }}>
                         <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)' }}><Maximize size={14} /></button>
