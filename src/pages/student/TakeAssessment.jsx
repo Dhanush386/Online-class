@@ -886,6 +886,52 @@ export default function TakeAssessment() {
         </div>
     );
 
+    const renderOptions = () => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {currentQ?.options.map((opt, i) => {
+                const isSelected = isMulti(currentQ)
+                    ? (Array.isArray(answers[currentQ.id]) && answers[currentQ.id].includes(opt))
+                    : answers[currentQ.id] === opt
+
+                return (
+                    <button
+                        key={opt}
+                        onClick={() => handleOptionClick(opt)}
+                        style={{
+                            padding: '0.9rem 1.25rem',
+                            borderRadius: 10,
+                            border: `2px solid ${isSelected ? '#3b82f6' : 'rgba(255,255,255,0.1)'}`,
+                            background: isSelected ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255,255,255,0.04)',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.85rem',
+                            transition: 'all 0.18s ease',
+                            color: isSelected ? '#93c5fd' : 'var(--text-primary)',
+                            fontWeight: isSelected ? 600 : 400,
+                            fontSize: '0.92rem'
+                        }}
+                    >
+                        <div style={{
+                            width: 20, height: 20,
+                            borderRadius: isMulti(currentQ) ? '5px' : '50%',
+                            border: `2px solid ${isSelected ? '#3b82f6' : 'rgba(255,255,255,0.3)'}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: isSelected ? '#3b82f6' : 'transparent',
+                            color: 'white',
+                            fontSize: '0.75rem',
+                            flexShrink: 0
+                        }}>
+                            {isSelected ? <CheckCircle2 size={12} /> : null}
+                        </div>
+                        {opt}
+                    </button>
+                )
+            })}
+        </div>
+    );
+
     const renderQuestionCard = () => (
         <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '2rem' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2rem', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
@@ -896,76 +942,7 @@ export default function TakeAssessment() {
                     <img src={currentQ.image_url} alt="Question Reference" style={{ maxWidth: '100%', maxHeight: '350px', borderRadius: '12px', border: '1px solid var(--card-border)', objectFit: 'contain' }} />
                 </div>
             )}
-
-            {currentQ?.question_type === 'code_mcq' && currentQ?.code_snippet && (
-                <div style={{ marginBottom: '2rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
-                    <div style={{ background: '#1e293b', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <CodeIcon size={16} color="#94a3b8" />
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0' }}>
-                                {currentQ.snippet_title || 'Code Snippet'}
-                            </span>
-                        </div>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            {currentQ.code_language}
-                        </span>
-                    </div>
-                    <div style={{ background: '#0f172a', overflowX: 'auto' }}>
-                        <div style={{ minWidth: '100%', width: 'max-content' }}>
-                            <CodeEditor
-                                value={currentQ.code_snippet}
-                                language={currentQ.code_language}
-                                readOnly={true}
-                                theme="dark"
-                                style={{ height: 'auto', minHeight: 150, padding: 0 }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {currentQ?.options.map((opt, i) => {
-                    const isSelected = isMulti(currentQ) 
-                        ? (Array.isArray(answers[currentQ.id]) && answers[currentQ.id].includes(opt))
-                        : answers[currentQ.id] === opt
-
-                    return (
-                        <button
-                            key={opt}
-                            onClick={() => handleOptionClick(opt)}
-                            style={{
-                                padding: '1.25rem 1.5rem',
-                                borderRadius: 12,
-                                border: `2px solid ${isSelected ? '#6366f1' : 'var(--card-border)'}`,
-                                background: isSelected ? 'rgba(99, 102, 241, 0.08)' : 'var(--card-bg)',
-                                textAlign: 'left',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '1rem',
-                                transition: 'all 0.2s ease',
-                                color: isSelected ? 'var(--primary-400)' : 'var(--text-primary)',
-                                fontWeight: isSelected ? 600 : 500
-                            }}
-                        >
-                            <div style={{
-                                width: 24, height: 24,
-                                borderRadius: isMulti(currentQ) ? '6px' : '50%',
-                                border: `2px solid ${isSelected ? '#6366f1' : 'var(--text-muted)'}`,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: isSelected ? '#6366f1' : 'transparent',
-                                color: 'white',
-                                fontSize: '0.85rem',
-                                flexShrink: 0
-                            }}>
-                                {isSelected ? <CheckCircle2 size={14} /> : String.fromCodePoint(65 + i)}
-                            </div>
-                            {opt}
-                        </button>
-                    )
-                })}
-            </div>
+            {renderOptions()}
         </div>
     );
 
@@ -1045,6 +1022,101 @@ export default function TakeAssessment() {
             </div>
         );
     };
+
+    const isCodeMCQ = currentQ?.question_type === 'code_mcq' && currentQ?.code_snippet
+
+    if (isCodeMCQ) {
+        return (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: '#0d1117', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {/* Top header bar */}
+                <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0d1117', flexShrink: 0 }}>
+                    {renderHeader()}
+                </div>
+
+                {/* Split layout */}
+                <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
+                    {/* LEFT: Question + Options + Nav */}
+                    <div style={{
+                        width: '300px',
+                        minWidth: '260px',
+                        maxWidth: '340px',
+                        borderRight: '1px solid rgba(255,255,255,0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflowY: 'auto',
+                        background: '#111827',
+                        padding: '1.5rem 1.25rem',
+                        gap: '1.25rem'
+                    }}>
+                        {/* Question text */}
+                        <div>
+                            <p style={{ fontSize: '0.95rem', fontWeight: 500, color: '#f1f5f9', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                {currentQ?.question_text}
+                            </p>
+                        </div>
+
+                        {/* Options */}
+                        {renderOptions()}
+
+                        {/* Navigation */}
+                        <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
+                            {renderNavigation()}
+                        </div>
+                    </div>
+
+                    {/* Collapse toggle (visual only) */}
+                    <div style={{
+                        width: '28px',
+                        background: '#0d1117',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRight: '1px solid rgba(255,255,255,0.06)',
+                        cursor: 'default',
+                        flexShrink: 0
+                    }}>
+                        <ChevronLeft size={14} color="#4b5563" />
+                    </div>
+
+                    {/* RIGHT: Code Editor */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#0d1117' }}>
+                        {/* Editor header */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.5rem 1rem',
+                            borderBottom: '1px solid rgba(255,255,255,0.08)',
+                            background: '#111827',
+                            flexShrink: 0
+                        }}>
+                            <span style={{ fontSize: '0.8rem', color: '#6366f1', fontWeight: 700, background: 'rgba(99,102,241,0.12)', padding: '0.2rem 0.6rem', borderRadius: 4, borderTop: '2px solid #6366f1' }}>
+                                {currentQ.snippet_title || 'Code'}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {currentQ.code_language?.toUpperCase()}
+                            </span>
+                        </div>
+
+                        {/* Editor body - fills remaining height */}
+                        <div style={{ flex: 1, overflow: 'auto' }}>
+                            <CodeEditor
+                                value={currentQ.code_snippet}
+                                language={currentQ.code_language}
+                                readOnly={true}
+                                theme="dark"
+                                style={{ height: '100%', minHeight: '100%' }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {renderWebcamFeed()}
+                {renderFaceNotDetectedOverlay()}
+            </div>
+        )
+    }
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg-base)', overflowY: 'auto', padding: '2rem 1.25rem' }}>
