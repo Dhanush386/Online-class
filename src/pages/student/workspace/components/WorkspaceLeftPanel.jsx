@@ -76,19 +76,21 @@ export function WorkspaceLeftPanel({
                                 </div>
                             );
                         }
-                        if (tcData.input || tcData.expected_output) {
+                        if (tcData.input || tcData.expected_output || tcData.input_image_url || tcData.output_image_url) {
                             return (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', padding: '0.5rem 0' }}>
-                                    {tcData.input && (
+                                    {(tcData.input || tcData.input_image_url) && (
                                         <div>
                                             <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Input {idx + 1}</h5>
-                                            <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.input}</div>
+                                            {tcData.input && <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', marginBottom: tcData.input_image_url ? '0.5rem' : 0 }}>{tcData.input}</div>}
+                                            {tcData.input_image_url && <img src={tcData.input_image_url} alt="Input" style={{ maxWidth: '100%', borderRadius: 6, border: '1px solid var(--card-border)' }} />}
                                         </div>
                                     )}
-                                    {tcData.expected_output && (
+                                    {(tcData.expected_output || tcData.output_image_url) && (
                                         <div>
                                             <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Output {idx + 1}</h5>
-                                            <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>{tcData.expected_output}</div>
+                                            {tcData.expected_output && <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', marginBottom: tcData.output_image_url ? '0.5rem' : 0 }}>{tcData.expected_output}</div>}
+                                            {tcData.output_image_url && <img src={tcData.output_image_url} alt="Output" style={{ maxWidth: '100%', borderRadius: 6, border: '1px solid var(--card-border)' }} />}
                                         </div>
                                     )}
                                 </div>
@@ -199,26 +201,32 @@ export function WorkspaceLeftPanel({
                     })}
                 </div>
             )}
-            <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, marginBottom: '2rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.problem_statement}</div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '2rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.problem_statement}</div>
+
+            {currentQuestion.image_url && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <img src={currentQuestion.image_url} alt="Question Reference" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: 8, border: '1px solid var(--card-border)', display: 'block' }} />
+                </div>
+            )}
 
             {currentQuestion.input_format && (
                 <div style={{ marginBottom: '1.5rem' }}>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Input Format</h4>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.input_format}</div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.input_format}</div>
                 </div>
             )}
 
             {currentQuestion.output_format && (
                 <div style={{ marginBottom: '1.5rem' }}>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Output Format</h4>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--card-border)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.output_format}</div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.output_format}</div>
                 </div>
             )}
 
             {currentQuestion.constraints && (
                 <div style={{ marginBottom: '2rem' }}>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Constraints</h4>
-                    <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)', fontSize: '0.9rem', color: 'var(--card-border)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                    <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)', fontSize: '0.9rem', color: 'var(--text-secondary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                         {currentQuestion.constraints}
                     </div>
                 </div>
