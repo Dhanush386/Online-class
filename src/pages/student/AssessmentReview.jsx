@@ -125,24 +125,34 @@ export default function AssessmentReview() {
             )}
 
             {/* Score Card */}
-            {currentSub && (
-                <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#6366f1' }}>{currentSub.score} / {currentSub.total_questions}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Correct Answers</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981' }}>
-                            {Math.round((currentSub.score / currentSub.total_questions) * 100)}%
+            {currentSub && (() => {
+                const pct = Math.round((currentSub.score / currentSub.total_questions) * 100)
+                const xpEarned = pct >= 80 ? 25 : pct >= 50 ? 15 : 5
+                return (
+                    <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#6366f1' }}>{currentSub.score} / {currentSub.total_questions}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Correct Answers</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981' }}>{pct}%</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Score</div>
+                            </div>
+                            <div style={{ textAlign: 'center', padding: '0.5rem 1.25rem', background: 'rgba(99,102,241,0.08)', borderRadius: 12, border: '1px solid rgba(99,102,241,0.18)' }}>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                                    <span>⚡</span>{xpEarned}
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>XP Earned</div>
+                            </div>
+                            <div style={{ flexGrow: 1 }} />
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <Clock size={12} /> {new Date(currentSub.created_at).toLocaleString()}
+                            </div>
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Score</div>
                     </div>
-                    <div style={{ flexGrow: 1 }} />
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Clock size={12} /> {new Date(currentSub.created_at).toLocaleString()}
-                    </div>
-                </div>
-            )}
+                )
+            })()}
 
             {/* Questions Review */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
