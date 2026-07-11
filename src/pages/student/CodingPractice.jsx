@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import {
     ChevronRight,
     ArrowRightCircle, BookOpen,
-    Layout, Lock
+    Layout, Lock, Zap
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -175,6 +175,7 @@ export default function CodingPractice() {
                 <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Difficulty</div>
                 <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Testcases Passed</div>
                 <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Score</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>XP Reward</div>
                 <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Status</div>
                 <div style={{ width: 40 }}></div>
             </div>
@@ -192,7 +193,7 @@ export default function CodingPractice() {
                         <button key={c.id} className="glass-card stack-mobile" style={{
                             padding: '1.5rem 2rem',
                             display: 'grid',
-                            gridTemplateColumns: globalThis.innerWidth <= 1024 ? '1fr' : '2fr 1fr 1fr 1fr 1fr auto',
+                            gridTemplateColumns: globalThis.innerWidth <= 1024 ? '1fr' : '2fr 1fr 1fr 1fr 1fr 1fr auto',
                             alignItems: 'center',
                             gap: globalThis.innerWidth <= 1024 ? '1rem' : '0',
                             borderRadius: '12px',
@@ -273,6 +274,26 @@ export default function CodingPractice() {
                                     <div style={{ width: '80%', height: 3, background: '#e2e8f0', marginTop: '0.25rem', borderRadius: 2, overflow: 'hidden' }}>
                                         <div style={{ width: (c.xp_reward || 15) > 0 ? `${(metrics.score / (c.xp_reward || 15)) * 100}%` : '0%', height: '100%', background: '#2563eb' }}></div>
                                     </div>
+                                </div>
+
+                                {/* XP Reward Badge */}
+                                <div style={{ flex: globalThis.innerWidth <= 1024 ? 1 : 'unset', display: 'flex', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.25rem' }} className="show-mobile">XP REWARD</div>
+                                    <span style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.3rem',
+                                        background: status.solved ? 'rgba(99,102,241,0.12)' : 'rgba(245,158,11,0.1)',
+                                        color: status.solved ? '#6366f1' : '#d97706',
+                                        border: `1px solid ${status.solved ? 'rgba(99,102,241,0.25)' : 'rgba(245,158,11,0.25)'}`,
+                                        borderRadius: '999px',
+                                        padding: '0.3rem 0.75rem',
+                                        fontSize: '0.82rem',
+                                        fontWeight: 700
+                                    }}>
+                                        <Zap size={13} />
+                                        {c.xp_reward || 15} XP
+                                    </span>
                                 </div>
                             </div>
 

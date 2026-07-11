@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import MobileBlocker from '../../components/MobileBlocker'
 import { useDeviceType } from '../../hooks/useDeviceType'
 import { useToast } from '../../components/Toast'
+import useXpAward from '../../hooks/useXpAward'
 
 // Extracted Hooks & Components
 import { useProctoring } from './workspace/hooks/useProctoring'
@@ -267,22 +268,13 @@ const buildCodePayload = (isCombined, currentQuestion, genericCode, challenge, h
     return genericCode;
 }
 
-const awardXpIfEligible = async (currentQuestion, profile, supabase, refreshStats, toast) => {
-    const earnedXp = currentQuestion.xp_reward || 15;
-    const { data: userData } = await supabase.from('users').select('xp').eq('id', profile.id).single();
-    if (!userData) return;
-
-    const newXp = (userData.xp || 0) + earnedXp;
-    await supabase.from('users').update({ xp: newXp }).eq('id', profile.id);
-    refreshStats?.();
-    toast.success(`Congratulations! You earned ${earnedXp} XP for solving this challenge.`);
-}
+// awardXpIfEligible is now handled inside CodeWorkspace via useXpAward hook
 
 const recordSubmission = async (params) => {
     const { 
         challenge, challengeId, profile, currentQuestion, isCombined, solvedSubIds,
         setSolvedSubIds, htmlCode, cssCode, jsCode, genericCode, hasUnlockedAnswer,
-        refreshStats, toast, stopProctoring, supabase 
+        refreshStats, toast, stopProctoring, supabase, awardXp
     } = params;
 
     const alreadySolved = await checkAlreadySolved(isCombined, solvedSubIds, currentQuestion, supabase, challengeId, profile.id);
@@ -299,8 +291,17 @@ const recordSubmission = async (params) => {
         setSolvedSubIds(prev => [...prev, currentQuestion.id]);
     }
 
-    if (isFirstSolve) {
-        await awardXpIfEligible(currentQuestion, profile, supabase, refreshStats, toast);
+    if (isFirstSolve && awardXp) {
+        await awardXp({
+            eventType: 'coding_solve',
+            referenceId: challengeId,
+            courseId: challenge.course_id || null,
+            moduleType: 'coding',
+            reason: `Solved: ${currentQuestion.title || challenge.title}`,
+            isFirstAttempt: true,
+            difficulty: challenge.difficulty || 'easy',
+            metadata: { score: finalScore, title: currentQuestion.title || challenge.title }
+        })
     }
 
     const newSolvedCount = solvedSubIds.length + (isFirstSolve ? 1 : 0);
@@ -321,6 +322,7 @@ export default function CodeWorkspace() {
     const isOrganizer = profile?.role === 'organizer'
     const canBypass = isAdminMode && isOrganizer
     const { isMobile, isTablet, isDesktop } = useDeviceType()
+    const { awardXp, toastMessage } = useXpAward()
     
     const [challenge, setChallenge] = useState(null)
     const [htmlCode, setHtmlCode] = useState('<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Document</title>\n  <link rel="stylesheet" href="style.css">\n</head>\n<body>\n  <div class="main">\n    <h1>Hello World</h1>\n  </div>\n</body>\n</html>')
@@ -682,7 +684,7 @@ sys.stdin = StringIO(test_input)
                 await recordSubmission({
                     challenge, challengeId, profile, currentQuestion, isCombined: false,
                     solvedSubIds, setSolvedSubIds, htmlCode, cssCode, jsCode, genericCode,
-                    hasUnlockedAnswer, refreshStats, toast, stopProctoring, supabase 
+                    hasUnlockedAnswer, refreshStats, toast, stopProctoring, supabase, awardXp
                 })
                 setSubmitting(false)
                 return
@@ -702,7 +704,7 @@ sys.stdin = StringIO(test_input)
                 await recordSubmission({
                     challenge, challengeId, profile, currentQuestion, isCombined,
                     solvedSubIds, setSolvedSubIds, htmlCode, cssCode, jsCode, genericCode,
-                    hasUnlockedAnswer, refreshStats, toast, stopProctoring, supabase 
+                    hasUnlockedAnswer, refreshStats, toast, stopProctoring, supabase, awardXp
                 })
             }
         } catch (err) {
@@ -850,6 +852,34 @@ sys.stdin = StringIO(test_input)
                     handleUnlockAnswer={handleUnlockAnswer}
                 />
             </div>
+
+            {/* XP Toast Notification */}
+            {toastMessage && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '2rem',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 99999,
+                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    color: 'white',
+                    padding: '0.85rem 1.75rem',
+                    borderRadius: '999px',
+                    fontSize: '1rem',
+                    fontWeight: 700,
+                    boxShadow: '0 8px 32px rgba(99,102,241,0.45)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    animation: 'fadeInUp 0.4s ease'
+                }}>
+                    <span style={{ fontSize: '1.4rem' }}>⚡</span>
+                    <div>
+                        <div style={{ fontSize: '1rem', fontWeight: 800 }}>{toastMessage.text}</div>
+                        {toastMessage.reason && <div style={{ fontSize: '0.78rem', opacity: 0.85, marginTop: '0.1rem' }}>{toastMessage.reason}</div>}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -7,6 +7,8 @@ import * as tf from '@tensorflow/tfjs'
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
 import CodeEditor from '../../components/CodeEditor'
 import { useLiveKitProctoring } from '../../hooks/useLiveKitProctoring'
+import useXpAward from '../../hooks/useXpAward'
+import { getQuizEventType } from '../../constants/xpRewards'
 
 const MAX_ATTEMPTS = 1
 const BYPASS_PROCTORING = false // Set to false to enable AI proctoring violations in production
@@ -42,6 +44,7 @@ export default function TakeAssessment() {
     const { assessmentId } = useParams()
     const { profile, user } = useAuth()
     const navigate = useNavigate()
+    const { awardXp, toastMessage } = useXpAward()
 
     const [assessment, setAssessment] = useState(null)
     const [questions, setQuestions] = useState([])
@@ -686,6 +689,19 @@ export default function TakeAssessment() {
             setSubmitted(true)
             localStorage.removeItem(`assessment_endTime_${assessmentId}`)
 
+            // Award XP based on score
+            const scorePercent = Math.round((correctCount / questions.length) * 100)
+            const xpEventType = getQuizEventType(scorePercent)
+            await awardXp({
+                eventType: xpEventType,
+                referenceId: assessmentId,
+                courseId: assessment.course_id || null,
+                moduleType: 'quiz',
+                reason: `${assessment.title} — ${scorePercent}%`,
+                isFirstAttempt: true,
+                metadata: { score: correctCount, total: questions.length, percentage: scorePercent }
+            })
+
             // Update course progress
             updateOverallProgress(assessment.course_id)
         } catch (err) {
@@ -736,7 +752,7 @@ export default function TakeAssessment() {
                         <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>Assessment Completed!</h1>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>You have successfully submitted your answers for <strong>{assessment?.title}</strong>.</p>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
                             <div style={{ padding: '1.5rem', background: 'var(--bg-elevated)', borderRadius: 16, border: '1px solid var(--card-border)' }}>
                                 <div style={{ fontSize: '2rem', fontWeight: 800, color: '#6366f1' }}>{result.score} / {result.total}</div>
                                 <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Correct Answers</div>
@@ -744,6 +760,13 @@ export default function TakeAssessment() {
                             <div style={{ padding: '1.5rem', background: 'var(--bg-elevated)', borderRadius: 16, border: '1px solid var(--card-border)' }}>
                                 <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>{result.percentage}%</div>
                                 <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Final Score</div>
+                            </div>
+                            <div style={{ padding: '1.5rem', background: 'rgba(99,102,241,0.07)', borderRadius: 16, border: '1px solid rgba(99,102,241,0.2)' }}>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                                    <span>⚡</span>
+                                    {result.percentage >= 80 ? 25 : result.percentage >= 50 ? 15 : 5}
+                                </div>
+                                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>XP Earned</div>
                             </div>
                         </div>
 
@@ -757,6 +780,33 @@ export default function TakeAssessment() {
                         </div>
                     </div>
                 </div>
+
+                {/* XP Toast */}
+                {toastMessage && (
+                    <div style={{
+                        position: 'fixed',
+                        bottom: '2rem',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 99999,
+                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                        color: 'white',
+                        padding: '0.85rem 1.75rem',
+                        borderRadius: '999px',
+                        fontSize: '1rem',
+                        fontWeight: 700,
+                        boxShadow: '0 8px 32px rgba(99,102,241,0.45)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem'
+                    }}>
+                        <span style={{ fontSize: '1.4rem' }}>⚡</span>
+                        <div>
+                            <div style={{ fontSize: '1rem', fontWeight: 800 }}>{toastMessage.text}</div>
+                            {toastMessage.reason && <div style={{ fontSize: '0.78rem', opacity: 0.85, marginTop: '0.1rem' }}>{toastMessage.reason}</div>}
+                        </div>
+                    </div>
+                )}
             </div>
         )
     }
