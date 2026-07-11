@@ -705,6 +705,13 @@ export default function TakeAssessment() {
 
             // Update course progress
             updateOverallProgress(assessment.course_id)
+
+            // If submitted due to violations, navigate back to course after 3 seconds
+            if (isAuto || violationCount >= 3) {
+                setTimeout(() => {
+                    navigate(`/student/courses/${assessment.course_id}`, { state: { tab: 'assessments' } })
+                }, 3000)
+            }
         } catch (err) {
             setError(err.message)
         } finally {
@@ -1012,7 +1019,7 @@ export default function TakeAssessment() {
                 {/* Show Submit on last question OR when violations maxed */}
                 {(currentIdx === questions.length - 1 || violationCount >= 3) && (
                     <button
-                        onClick={handleSubmit}
+                        onClick={() => handleSubmit(violationCount >= 3)}
                         disabled={submitting || (timeLeft !== null && timeLeft > 60 && violationCount < 3)}
                         className="btn-primary"
                         style={{
