@@ -1422,7 +1422,11 @@ export default function CodingManagement() {
                                             name="difficulty"
                                             className="form-input"
                                             value={formData.difficulty}
-                                            onChange={e => setFormData({ ...formData, difficulty: e.target.value })}
+                                            onChange={e => {
+                                                const d = e.target.value
+                                                const suggestedXp = d === 'hard' ? 30 : d === 'medium' ? 20 : 15
+                                                setFormData({ ...formData, difficulty: d, xp_reward: suggestedXp })
+                                            }}
                                         >
                                             {DIFFICULTIES.map(d => (
                                                 <option key={d} value={d}>{d.toUpperCase()}</option>
@@ -1430,15 +1434,23 @@ export default function CodingManagement() {
                                         </select>
                                     </div>
                                     <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="xp_reward" className="form-label">XP Reward</label>
+                                        <label htmlFor="xp_reward" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                            <span style={{ color: '#f59e0b' }}>⚡</span> XP Reward
+                                        </label>
                                         <input
                                             id="xp_reward"
                                             name="xp_reward"
                                             type="number"
+                                            min="1"
+                                            max="500"
                                             className="form-input"
                                             value={formData.xp_reward}
                                             onChange={e => setFormData({ ...formData, xp_reward: Number.parseInt(e.target.value) || 15 })}
+                                            style={{ borderColor: 'rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.04)' }}
                                         />
+                                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                            Easy: 15 · Medium: 20 · Hard: 30 (auto-filled)
+                                        </div>
                                     </div>
                                     <div style={{ gridColumn: 'span 1' }}>
                                         <label htmlFor="week_number" className="form-label">Week</label>
@@ -1868,8 +1880,16 @@ export default function CodingManagement() {
                             {c.title}
                         </h3>
                         {renderLockedGroups(c.id)}
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                             <BookOpen size={12} /> {c.courses?.title} • {c.difficulty.toUpperCase()}
+                            <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                                background: 'rgba(245,158,11,0.1)', color: '#d97706',
+                                border: '1px solid rgba(245,158,11,0.25)', borderRadius: '999px',
+                                padding: '0.15rem 0.55rem', fontSize: '0.72rem', fontWeight: 700
+                            }}>
+                                ⚡ {c.xp_reward || 15} XP
+                            </span>
                         </div>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, height: '2.5rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>
                             {c.description || 'No description provided.'}
