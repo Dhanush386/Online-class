@@ -265,11 +265,12 @@ export function WorkspaceLeftPanel({
             )}
 
             {challenge.note && (
-                <div style={{ marginBottom: '1.5rem', background: '#fefce8', padding: '1rem', borderRadius: 8, border: '1px solid #fef08a' }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ca8a04', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        ⚠️ Note
-                    </h4>
-                    <div style={{ fontSize: '0.85rem', color: '#854d0e', whiteSpace: 'pre-wrap' }}>{challenge.note}</div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
+                        <strong>Note:</strong><br/>
+                        {challenge.note}
+                    </div>
+                    <hr style={{ margin: '1rem 0', border: 'none', borderTop: '1px solid var(--card-border)' }} />
                 </div>
             )}
 
@@ -282,25 +283,25 @@ export function WorkspaceLeftPanel({
 
             {challenge.target_visual_url && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Target Visual Output (Legacy)</h4>
-                    <img src={challenge.target_visual_url} alt="Target Output" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--card-border)' }} />
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Refer to the below image.</p>
+                    <img src={challenge.target_visual_url} alt="Target Output" style={{ maxWidth: '100%', display: 'block' }} />
                 </div>
             )}
             
             
             {challenge.resources && challenge.resources.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Resources</h4>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>Resources</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {challenge.resources.map((res, i) => {
                             if (typeof res === 'string') {
                                 const isImg = res.match(/\.(jpeg|jpg|gif|png)$/) != null;
                                 return (
-                                    <div key={i} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    <div key={i} style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                                         {isImg ? (
                                             <>
-                                                <p style={{ marginBottom: '0.5rem' }}>URL: {res}</p>
-                                                <img src={res} alt="Resource" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--card-border)' }} />
+                                                <p style={{ marginBottom: '1rem' }}>URL: {res}</p>
+                                                <img src={res} alt="Resource" style={{ maxWidth: '100%' }} />
                                             </>
                                         ) : (
                                             <a href={res} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }}>{res}</a>
@@ -309,11 +310,11 @@ export function WorkspaceLeftPanel({
                                 );
                             } else if (res && typeof res === 'object') {
                                 return (
-                                    <div key={i} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                        {res.description && <p style={{ marginBottom: '0.5rem' }}>{res.description}</p>}
-                                        {res.url && <p style={{ marginBottom: '0.5rem' }}>URL: {res.url}</p>}
+                                    <div key={i} style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                                        {res.description && <p style={{ marginBottom: '1rem' }}>{res.description}</p>}
+                                        {res.url && <p style={{ marginBottom: '1rem' }}>URL: {res.url}</p>}
                                         {res.url && res.url.match(/\.(jpeg|jpg|gif|png)$/) && (
-                                            <img src={res.url} alt="Resource" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--card-border)' }} />
+                                            <img src={res.url} alt="Resource" style={{ maxWidth: '100%' }} />
                                         )}
                                     </div>
                                 );
@@ -326,16 +327,16 @@ export function WorkspaceLeftPanel({
 
             {challenge.css_colors && challenge.css_colors.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>CSS Colors used:</h4>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>CSS Colors used:</p>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                         {challenge.css_colors.map((color, i) => {
                             if (typeof color === 'string') {
-                                return <ul key={i} style={{ margin: '0.25rem 0 0.5rem 1.5rem' }}><li>{color}</li></ul>;
+                                return <ul key={i} style={{ margin: '0.25rem 0 0.5rem 1.5rem', paddingLeft: '1rem' }}><li style={{ listStyleType: 'disc' }}>{color}</li></ul>;
                             } else if (color && typeof color === 'object') {
                                 return (
-                                    <div key={i} style={{ marginBottom: '0.5rem' }}>
-                                        <p style={{ marginBottom: '0.25rem' }}>{color.label || color.name || 'Color'}:</p>
-                                        <ul style={{ margin: '0 0 0 1.5rem' }}><li>{color.value || color.color}</li></ul>
+                                    <div key={i} style={{ marginBottom: '1rem' }}>
+                                        <p style={{ marginBottom: '0.5rem' }}>{color.label || color.name || 'Color'}:</p>
+                                        <ul style={{ margin: '0 0 0 1.5rem', paddingLeft: '1rem' }}><li style={{ listStyleType: 'disc' }}>{color.value || color.color}</li></ul>
                                     </div>
                                 );
                             }
@@ -347,10 +348,10 @@ export function WorkspaceLeftPanel({
 
             {challenge.css_fonts && challenge.css_fonts.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>CSS Font families used:</h4>
-                    <ul style={{ margin: '0 0 0 1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>CSS Font families used:</p>
+                    <ul style={{ margin: '0 0 0 1.5rem', paddingLeft: '1rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                         {challenge.css_fonts.map((font, i) => (
-                            <li key={i}>{typeof font === 'string' ? font : font.name || font.value || ''}</li>
+                            <li key={i} style={{ listStyleType: 'disc', marginBottom: '0.5rem' }}>{typeof font === 'string' ? font : font.name || font.value || ''}</li>
                         ))}
                     </ul>
                 </div>
@@ -412,8 +413,9 @@ export function WorkspaceLeftPanel({
 
             {challenge.concepts_review && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>📚 Concepts Review</h4>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '1rem', borderRadius: 8 }}>{challenge.concepts_review}</div>
+                    <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid var(--card-border)' }} />
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>Concepts Review</p>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{challenge.concepts_review}</div>
                 </div>
             )}
 
