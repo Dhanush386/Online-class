@@ -1489,6 +1489,7 @@ export default function CodingManagement() {
                                                     <label className="form-label">Constraints</label>
                                                     <textarea rows={3} className="form-input" value={formData.constraints} onChange={e => setFormData({...formData, constraints: e.target.value})} />
                                                 </div>
+                                                {formData.language === 'html' && renderHtmlSpecificOptions()}
                                                 <StandardTestCases formData={formData} setFormData={setFormData} />
                                             </>
                                         )}
