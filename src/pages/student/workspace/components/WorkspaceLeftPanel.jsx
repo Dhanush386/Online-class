@@ -450,13 +450,6 @@ export function WorkspaceLeftPanel({
                 </div>
             )}
 
-            {/* Testcases Section */}
-            {result && result.testResults && (
-                <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1.25rem' }}>Testcases</h4>
-                    {renderTestCases()}
-                </div>
-            )}
         </div>
     )
 
