@@ -66,37 +66,43 @@ export function WorkspaceLeftPanel({
                                 </div>
                             );
                         }
-                        if (tcData.description || isWebTc) {
-                            return (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    {typeLabel && (
-                                        <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.1rem 0.4rem', background: typeColor, color: typeColor === '#f59e0b' ? '#000' : '#fff', borderRadius: 4, flexShrink: 0 }}>{typeLabel}</span>
-                                    )}
-                                    <span style={{ fontSize: '0.85rem', color: textColor, lineHeight: 1.5, fontWeight: 500 }}>{tcData.description || tc.description}</span>
-                                </div>
-                            );
+                        const hasDesc = tcData.description || tc.description || isWebTc;
+                        const hasIO = tcData.input || tcData.expected_output || tcData.input_image_url || tcData.output_image_url;
+
+                        if (!hasDesc && !hasIO) {
+                            return <span style={{ fontSize: '0.85rem', color: textColor, lineHeight: 1.5, fontWeight: 500 }}>Test Case {idx + 1}</span>;
                         }
-                        if (tcData.input || tcData.expected_output || tcData.input_image_url || tcData.output_image_url) {
-                            return (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', padding: '0.5rem 0' }}>
-                                    {(tcData.input || tcData.input_image_url) && (
-                                        <div>
-                                            <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Input {idx + 1}</h5>
-                                            {tcData.input && <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', marginBottom: tcData.input_image_url ? '0.5rem' : 0 }}>{tcData.input}</div>}
-                                            {tcData.input_image_url && <img src={tcData.input_image_url} alt="Input" style={{ maxWidth: '100%', borderRadius: 6, border: '1px solid var(--card-border)' }} />}
-                                        </div>
-                                    )}
-                                    {(tcData.expected_output || tcData.output_image_url) && (
-                                        <div>
-                                            <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Output {idx + 1}</h5>
-                                            {tcData.expected_output && <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', marginBottom: tcData.output_image_url ? '0.5rem' : 0 }}>{tcData.expected_output}</div>}
-                                            {tcData.output_image_url && <img src={tcData.output_image_url} alt="Output" style={{ maxWidth: '100%', borderRadius: 6, border: '1px solid var(--card-border)' }} />}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        }
-                        return <span style={{ fontSize: '0.85rem', color: textColor, lineHeight: 1.5, fontWeight: 500 }}>Test Case {idx + 1}</span>;
+
+                        return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                                {hasDesc && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        {typeLabel && (
+                                            <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.1rem 0.4rem', background: typeColor, color: typeColor === '#f59e0b' ? '#000' : '#fff', borderRadius: 4, flexShrink: 0 }}>{typeLabel}</span>
+                                        )}
+                                        <span style={{ fontSize: '0.85rem', color: textColor, lineHeight: 1.5, fontWeight: 500 }}>{tcData.description || tc.description}</span>
+                                    </div>
+                                )}
+                                {hasIO && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', padding: hasDesc ? '0.5rem 0 0 0' : '0.5rem 0' }}>
+                                        {(tcData.input || tcData.input_image_url) && (
+                                            <div>
+                                                <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Input {idx + 1}</h5>
+                                                {tcData.input && <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', marginBottom: tcData.input_image_url ? '0.5rem' : 0 }}>{tcData.input}</div>}
+                                                {tcData.input_image_url && <img src={tcData.input_image_url} alt="Input" style={{ maxWidth: '100%', borderRadius: 6, border: '1px solid var(--card-border)' }} />}
+                                            </div>
+                                        )}
+                                        {(tcData.expected_output || tcData.output_image_url) && (
+                                            <div>
+                                                <h5 style={{ margin: '0 0 0.85rem 0', fontSize: '1rem', fontWeight: 400, color: 'var(--text-primary)' }}>Sample Output {idx + 1}</h5>
+                                                {tcData.expected_output && <div style={{ background: 'var(--bg-base)', padding: '1rem', borderRadius: 6, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', marginBottom: tcData.output_image_url ? '0.5rem' : 0 }}>{tcData.expected_output}</div>}
+                                                {tcData.output_image_url && <img src={tcData.output_image_url} alt="Output" style={{ maxWidth: '100%', borderRadius: 6, border: '1px solid var(--card-border)' }} />}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
                     };
 
                     const renderTestCaseCard = (tc, idx) => {

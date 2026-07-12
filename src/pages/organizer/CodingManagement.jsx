@@ -436,59 +436,61 @@ function StandardTestCases({ formData, setFormData }) {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', paddingTop: '0.85rem', borderTop: '1px dashed #e2e8f0' }}>
                             {['input_image_url', 'output_image_url'].map(field => (
                                 <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' }}>
-                                        {field === 'input_image_url' ? 'Input Design Mockup' : 'Target Result Image'}
-                                    </span>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <div style={{ 
-                                            width: 60, 
-                                            height: 60, 
-                                            borderRadius: 8, 
-                                            background: '#f1f5f9', 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
-                                            justifyContent: 'center',
-                                            overflow: 'hidden',
-                                            border: '1px solid #e2e8f0',
-                                            flexShrink: 0
-                                        }}>
-                                            {tc[field] ? (
-                                                <img src={tc[field]} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            ) : (
-                                                <ImageIcon size={20} color="#cbd5e1" />
-                                            )}
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
-                                            <input
-                                                type="text"
-                                                className="form-input"
-                                                placeholder="Image URL"
-                                                value={tc[field] || ''}
-                                                onChange={e => handleUpdateTestCase(idx, field, e.target.value)}
-                                                style={{ fontSize: '0.85rem', flex: 1 }}
-                                            />
-                                            <label style={{ 
-                                                cursor: 'pointer', 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
-                                                justifyContent: 'center', 
-                                                background: '#f8fafc', 
-                                                border: '1px solid #e2e8f0', 
-                                                borderRadius: '8px', 
-                                                padding: '0 0.85rem',
-                                                color: 'var(--text-muted)',
-                                                transition: 'all 0.2s'
-                                            }} title="Upload from desktop">
-                                                <input 
-                                                    type="file" 
-                                                    accept="image/*" 
-                                                    style={{ display: 'none' }}
-                                                    onChange={e => handleTCImageUpload(e, idx, field)}
-                                                />
-                                                <Upload size={16} />
-                                            </label>
-                                        </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' }}>
+                                            {field === 'input_image_url' ? 'Input Design Mockup' : 'Target Result Image'}
+                                        </span>
+                                        {tc[field] && (
+                                            <button 
+                                                type="button" 
+                                                onClick={() => handleUpdateTestCase(idx, field, '')}
+                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: 0 }}
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
                                     </div>
+                                    
+                                    <label style={{ 
+                                        position: 'relative',
+                                        width: '100%', 
+                                        height: 120, 
+                                        borderRadius: 8, 
+                                        background: '#f8fafc', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        overflow: 'hidden',
+                                        border: '1px dashed #cbd5e1',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}>
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            style={{ display: 'none' }}
+                                            onChange={e => handleTCImageUpload(e, idx, field)}
+                                        />
+                                        {tc[field] ? (
+                                            <>
+                                                <img src={tc[field]} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                <div 
+                                                    style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }} 
+                                                    onMouseEnter={e => e.currentTarget.style.opacity = 1} 
+                                                    onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                                                >
+                                                    <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <Upload size={16} /> Change Image
+                                                    </span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
+                                                <Upload size={24} color="#94a3b8" />
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Click to upload</span>
+                                            </div>
+                                        )}
+                                    </label>
                                 </div>
                             ))}
                         </div>
