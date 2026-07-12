@@ -1443,6 +1443,18 @@ export default function CodingManagement() {
                                             <textarea rows={3} className="form-input" value={typeof formData.expected_outputs === 'string' ? formData.expected_outputs : JSON.stringify(formData.expected_outputs, null, 2)} onChange={e => setFormData({...formData, expected_outputs: e.target.value})} />
                                         </div>
                                         <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Resources (JSON Array)</label>
+                                            <textarea rows={3} className="form-input" value={typeof formData.resources === 'string' ? formData.resources : JSON.stringify(formData.resources, null, 2)} onChange={e => setFormData({...formData, resources: e.target.value})} placeholder='[{"description": "Use this background image", "url": "https://..."}]' />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">CSS Colors (JSON Array)</label>
+                                            <textarea rows={3} className="form-input" value={typeof formData.css_colors === 'string' ? formData.css_colors : JSON.stringify(formData.css_colors, null, 2)} onChange={e => setFormData({...formData, css_colors: e.target.value})} placeholder='[{"label": "Background color for button", "value": "orange"}]' />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">CSS Fonts (JSON Array)</label>
+                                            <textarea rows={2} className="form-input" value={typeof formData.css_fonts === 'string' ? formData.css_fonts : JSON.stringify(formData.css_fonts, null, 2)} onChange={e => setFormData({...formData, css_fonts: e.target.value})} placeholder='["Roboto"]' />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
                                             <label className="form-label">Target Visual URL (Legacy)</label>
                                             <input type="url" className="form-input" value={formData.target_visual_url} onChange={e => setFormData({...formData, target_visual_url: e.target.value})} />
                                         </div>
