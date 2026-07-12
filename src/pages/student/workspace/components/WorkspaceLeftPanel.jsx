@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
 import { FileText, HelpCircle, MessageSquare, CheckCircle2, Lock, XCircle, Info, Code as CodeIcon } from 'lucide-react'
 import CodingDiscussions from '../../../../components/CodingDiscussions'
+import ReactMarkdown from 'react-markdown'
 
 import { useState } from 'react';
 export function WorkspaceLeftPanel({
@@ -218,7 +219,9 @@ export function WorkspaceLeftPanel({
                     })}
                 </div>
             )}
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '2rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{currentQuestion.problem_statement}</div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '2rem', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                <ReactMarkdown>{currentQuestion.problem_statement}</ReactMarkdown>
+            </div>
 
             {currentQuestion.image_url && (
                 <div style={{ marginBottom: '1.5rem' }}>
@@ -284,6 +287,75 @@ export function WorkspaceLeftPanel({
                 </div>
             )}
             
+            
+            {challenge.resources && challenge.resources.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Resources</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {challenge.resources.map((res, i) => {
+                            if (typeof res === 'string') {
+                                const isImg = res.match(/\.(jpeg|jpg|gif|png)$/) != null;
+                                return (
+                                    <div key={i} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                        {isImg ? (
+                                            <>
+                                                <p style={{ marginBottom: '0.5rem' }}>URL: {res}</p>
+                                                <img src={res} alt="Resource" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--card-border)' }} />
+                                            </>
+                                        ) : (
+                                            <a href={res} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }}>{res}</a>
+                                        )}
+                                    </div>
+                                );
+                            } else if (res && typeof res === 'object') {
+                                return (
+                                    <div key={i} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                        {res.description && <p style={{ marginBottom: '0.5rem' }}>{res.description}</p>}
+                                        {res.url && <p style={{ marginBottom: '0.5rem' }}>URL: {res.url}</p>}
+                                        {res.url && res.url.match(/\.(jpeg|jpg|gif|png)$/) && (
+                                            <img src={res.url} alt="Resource" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--card-border)' }} />
+                                        )}
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {challenge.css_colors && challenge.css_colors.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>CSS Colors used:</h4>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        {challenge.css_colors.map((color, i) => {
+                            if (typeof color === 'string') {
+                                return <ul key={i} style={{ margin: '0.25rem 0 0.5rem 1.5rem' }}><li>{color}</li></ul>;
+                            } else if (color && typeof color === 'object') {
+                                return (
+                                    <div key={i} style={{ marginBottom: '0.5rem' }}>
+                                        <p style={{ marginBottom: '0.25rem' }}>{color.label || color.name || 'Color'}:</p>
+                                        <ul style={{ margin: '0 0 0 1.5rem' }}><li>{color.value || color.color}</li></ul>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {challenge.css_fonts && challenge.css_fonts.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>CSS Font families used:</h4>
+                    <ul style={{ margin: '0 0 0 1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        {challenge.css_fonts.map((font, i) => (
+                            <li key={i}>{typeof font === 'string' ? font : font.name || font.value || ''}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
             {challenge.expected_outputs && typeof challenge.expected_outputs === 'object' && Object.keys(challenge.expected_outputs).some(k => challenge.expected_outputs[k]) && (
                 <div style={{ marginBottom: '1.5rem' }}>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Expected Outputs</h4>

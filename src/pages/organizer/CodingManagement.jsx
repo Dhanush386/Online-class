@@ -1442,17 +1442,65 @@ export default function CodingManagement() {
                                             <label className="form-label">Expected Outputs (JSON)</label>
                                             <textarea rows={3} className="form-input" value={typeof formData.expected_outputs === 'string' ? formData.expected_outputs : JSON.stringify(formData.expected_outputs, null, 2)} onChange={e => setFormData({...formData, expected_outputs: e.target.value})} />
                                         </div>
-                                        <div style={{ marginBottom: '1rem' }}>
-                                            <label className="form-label">Resources (JSON Array)</label>
-                                            <textarea rows={3} className="form-input" value={typeof formData.resources === 'string' ? formData.resources : JSON.stringify(formData.resources, null, 2)} onChange={e => setFormData({...formData, resources: e.target.value})} placeholder='[{"description": "Use this background image", "url": "https://..."}]' />
+                                        <div style={{ marginBottom: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <label className="form-label" style={{ margin: 0 }}>Resources</label>
+                                                <button type="button" onClick={() => setFormData(p => ({ ...p, resources: [...(Array.isArray(p.resources) ? p.resources : []), { description: '', url: '' }] }))} className="btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>+ Add Resource</button>
+                                            </div>
+                                            {(Array.isArray(formData.resources) ? formData.resources : []).map((res, i) => (
+                                                <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                    <input type="text" className="form-input" placeholder="Description (e.g. Use this background image)" value={res.description || (typeof res === 'string' ? res : '')} onChange={e => {
+                                                        const arr = [...formData.resources];
+                                                        arr[i] = typeof arr[i] === 'string' ? e.target.value : { ...arr[i], description: e.target.value };
+                                                        setFormData({ ...formData, resources: arr });
+                                                    }} />
+                                                    <input type="url" className="form-input" placeholder="URL" value={res.url || ''} onChange={e => {
+                                                        const arr = [...formData.resources];
+                                                        arr[i] = typeof arr[i] === 'string' ? { description: arr[i], url: e.target.value } : { ...arr[i], url: e.target.value };
+                                                        setFormData({ ...formData, resources: arr });
+                                                    }} />
+                                                    <button type="button" onClick={() => setFormData({ ...formData, resources: formData.resources.filter((_, idx) => idx !== i) })} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 0.5rem' }}>✕</button>
+                                                </div>
+                                            ))}
                                         </div>
-                                        <div style={{ marginBottom: '1rem' }}>
-                                            <label className="form-label">CSS Colors (JSON Array)</label>
-                                            <textarea rows={3} className="form-input" value={typeof formData.css_colors === 'string' ? formData.css_colors : JSON.stringify(formData.css_colors, null, 2)} onChange={e => setFormData({...formData, css_colors: e.target.value})} placeholder='[{"label": "Background color for button", "value": "orange"}]' />
+
+                                        <div style={{ marginBottom: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <label className="form-label" style={{ margin: 0 }}>CSS Colors</label>
+                                                <button type="button" onClick={() => setFormData(p => ({ ...p, css_colors: [...(Array.isArray(p.css_colors) ? p.css_colors : []), { label: '', value: '' }] }))} className="btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>+ Add Color</button>
+                                            </div>
+                                            {(Array.isArray(formData.css_colors) ? formData.css_colors : []).map((color, i) => (
+                                                <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                    <input type="text" className="form-input" placeholder="Label (e.g. Background color)" value={color.label || (typeof color === 'string' ? color : '')} onChange={e => {
+                                                        const arr = [...formData.css_colors];
+                                                        arr[i] = typeof arr[i] === 'string' ? e.target.value : { ...arr[i], label: e.target.value };
+                                                        setFormData({ ...formData, css_colors: arr });
+                                                    }} />
+                                                    <input type="text" className="form-input" placeholder="Value (e.g. orange)" value={color.value || ''} onChange={e => {
+                                                        const arr = [...formData.css_colors];
+                                                        arr[i] = typeof arr[i] === 'string' ? { label: arr[i], value: e.target.value } : { ...arr[i], value: e.target.value };
+                                                        setFormData({ ...formData, css_colors: arr });
+                                                    }} />
+                                                    <button type="button" onClick={() => setFormData({ ...formData, css_colors: formData.css_colors.filter((_, idx) => idx !== i) })} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 0.5rem' }}>✕</button>
+                                                </div>
+                                            ))}
                                         </div>
-                                        <div style={{ marginBottom: '1rem' }}>
-                                            <label className="form-label">CSS Fonts (JSON Array)</label>
-                                            <textarea rows={2} className="form-input" value={typeof formData.css_fonts === 'string' ? formData.css_fonts : JSON.stringify(formData.css_fonts, null, 2)} onChange={e => setFormData({...formData, css_fonts: e.target.value})} placeholder='["Roboto"]' />
+
+                                        <div style={{ marginBottom: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <label className="form-label" style={{ margin: 0 }}>CSS Fonts</label>
+                                                <button type="button" onClick={() => setFormData(p => ({ ...p, css_fonts: [...(Array.isArray(p.css_fonts) ? p.css_fonts : []), ''] }))} className="btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>+ Add Font</button>
+                                            </div>
+                                            {(Array.isArray(formData.css_fonts) ? formData.css_fonts : []).map((font, i) => (
+                                                <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                    <input type="text" className="form-input" placeholder="Font Name (e.g. Roboto)" value={font.name || (typeof font === 'string' ? font : '')} onChange={e => {
+                                                        const arr = [...formData.css_fonts];
+                                                        arr[i] = e.target.value;
+                                                        setFormData({ ...formData, css_fonts: arr });
+                                                    }} />
+                                                    <button type="button" onClick={() => setFormData({ ...formData, css_fonts: formData.css_fonts.filter((_, idx) => idx !== i) })} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 0.5rem' }}>✕</button>
+                                                </div>
+                                            ))}
                                         </div>
                                         <div style={{ marginBottom: '1rem' }}>
                                             <label className="form-label">Target Visual URL (Legacy)</label>
