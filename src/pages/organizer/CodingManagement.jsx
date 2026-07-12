@@ -19,7 +19,7 @@ const LANGUAGES = [
     { id: 'sql', name: 'SQL (SQLite)', icon: '💾' }
 ]
 
-const DIFFICULTIES = ['easy', 'medium', 'hard']
+const DIFFICULTIES = ['beginner', 'easy', 'medium', 'hard', 'advanced', 'expert']
 
 // Organizer Coding Management Page
 
@@ -30,9 +30,13 @@ const getTabColor = (t) => {
 };
 
 const getDifficultyColor = (diff) => {
+    if (diff === 'beginner') return '#06b6d4';
     if (diff === 'easy') return '#10b981';
     if (diff === 'medium') return '#f59e0b';
-    return '#ef4444';
+    if (diff === 'hard') return '#ef4444';
+    if (diff === 'advanced') return '#8b5cf6';
+    if (diff === 'expert') return '#dc2626';
+    return '#6b7280';
 };
 
 const getRiskBg = (score) => {
@@ -738,18 +742,28 @@ export default function CodingManagement() {
     const [webTab, setWebTab] = useState('html')
     const [wcTab, setWcTab] = useState('html')
 
+    const [wizardStep, setWizardStep] = useState(1);
+    const [statusTab, setStatusTab] = useState('all');
     const [formData, setFormData] = useState({
         title: '', description: '', problem_statement: '',
         course_id: '', language: 'python', difficulty: 'easy',
         starter_code: '', solution_code: '', constraints: '', input_format: '', output_format: '',
-        xp_reward: 15, open_time: getDefaultUnlockTime(), close_time: '',
+        xp_reward: 15, coin_reward: 0, estimated_minutes: 15, open_time: getDefaultUnlockTime(), close_time: '',
         target_visual_url: '', allowed_assets: '',
         week_number: 1, day_of_week: 1,
         is_combined: false,
         reference_iframe_url: '',
         web_testcases: { html: [], css: [], js: [] },
         sub_questions: [{ id: 'q1', title: '', problem_statement: '', starter_code: '', xp_reward: 15, test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }] }],
-        test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }]
+        test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }],
+        
+        status: 'published', admin_notes: '', challenge_version: 1,
+        learning_objectives: [], learning_outcomes: [], tags: [], skills: [], difficulty_score: 50,
+        note: '', resources: [], challenge_assets: [], css_colors: [], css_fonts: [], concepts_review: '',
+        expected_outputs: { desktop: '', tablet: '', mobile: '', gif: '', dark: '', light: '' },
+        video_explanation_url: '',
+        hints: [], common_mistakes: [], acceptance_criteria: [], submission_checklist: [],
+        prerequisites: [], related_challenges: [], ai_metadata: {}, evaluation_prompt: ''
     })
 
     const [groups, setGroups] = useState([])
@@ -1037,6 +1051,9 @@ export default function CodingManagement() {
                 input_format: formData.input_format,
                 output_format: formData.output_format,
                 xp_reward: formData.xp_reward,
+                coin_reward: formData.coin_reward || 0,
+                estimated_minutes: formData.estimated_minutes || 15,
+                difficulty_score: formData.difficulty_score || 50,
                 week_number: formData.week_number,
                 day_of_week: formData.day_of_week,
                 target_visual_url: formData.target_visual_url,
@@ -1050,10 +1067,41 @@ export default function CodingManagement() {
                 allowed_assets: (formData.allowed_assets || '').split('\n').map(l => l.trim()).filter(Boolean),
                 reference_iframe_url: formData.language === 'html' ? (formData.reference_iframe_url || null) : null,
                 required_keywords: null,
-                web_testcases: hasWebTc ? cleanWebTc : null
+                web_testcases: hasWebTc ? cleanWebTc : null,
+                
+                status: formData.status || 'published',
+                admin_notes: formData.admin_notes || '',
+                learning_objectives: formData.learning_objectives || [],
+                learning_outcomes: formData.learning_outcomes || [],
+                tags: formData.tags || [],
+                skills: formData.skills || [],
+                note: formData.note || '',
+                resources: formData.resources || [],
+                challenge_assets: formData.challenge_assets || [],
+                css_colors: formData.css_colors || [],
+                css_fonts: formData.css_fonts || [],
+                concepts_review: formData.concepts_review || '',
+                expected_outputs: formData.expected_outputs || { desktop: '', tablet: '', mobile: '', gif: '', dark: '', light: '' },
+                video_explanation_url: formData.video_explanation_url || '',
+                hints: formData.hints || [],
+                common_mistakes: formData.common_mistakes || [],
+                acceptance_criteria: formData.acceptance_criteria || [],
+                submission_checklist: formData.submission_checklist || [],
+                prerequisites: formData.prerequisites || [],
+                related_challenges: formData.related_challenges || [],
+                ai_metadata: formData.ai_metadata || {},
+                evaluation_prompt: formData.evaluation_prompt || ''
             }
-
+            
             if (editingId) {
+                // If editing a published challenge, bump version
+                if (payload.status === 'published') {
+                    const currentChallenge = challenges.find(c => c.id === editingId);
+                    if (currentChallenge) {
+                        payload.challenge_version = (currentChallenge.challenge_version || 1) + 1;
+                    }
+                }
+
                 const { error } = await supabase.from('coding_challenges').update(payload).eq('id', editingId)
                 if (error) throw error
             } else {
@@ -1128,7 +1176,8 @@ export default function CodingManagement() {
             problem_statement: c.problem_statement, course_id: c.course_id || '', language: c.language || 'python', difficulty: c.difficulty || 'easy',
             starter_code: initialStarterCode, solution_code: c.solution_code || '', constraints: c.constraints || '',
             input_format: c.input_format || '', output_format: c.output_format || '',
-            xp_reward: c.xp_reward || 15,
+            xp_reward: c.xp_reward || 15, coin_reward: c.coin_reward || 0,
+            estimated_minutes: c.estimated_minutes || 15, difficulty_score: c.difficulty_score || 50,
             open_time: toLocalInput(c.open_time),
             close_time: toLocalInput(c.close_time),
             target_visual_url: c.target_visual_url || '',
@@ -1139,7 +1188,19 @@ export default function CodingManagement() {
             week_number: c.week_number || 1,
             day_of_week: c.day_of_week || 1,
             reference_iframe_url: c.reference_iframe_url || '',
-            web_testcases: loadedWebTc
+            web_testcases: loadedWebTc,
+            
+            status: c.status || 'published', admin_notes: c.admin_notes || '', challenge_version: c.challenge_version || 1,
+            learning_objectives: c.learning_objectives || [], learning_outcomes: c.learning_outcomes || [],
+            tags: c.tags || [], skills: c.skills || [],
+            note: c.note || '', resources: c.resources || [], challenge_assets: c.challenge_assets || [],
+            css_colors: c.css_colors || [], css_fonts: c.css_fonts || [], concepts_review: c.concepts_review || '',
+            expected_outputs: c.expected_outputs || { desktop: '', tablet: '', mobile: '', gif: '', dark: '', light: '' },
+            video_explanation_url: c.video_explanation_url || '',
+            hints: c.hints || [], common_mistakes: c.common_mistakes || [],
+            acceptance_criteria: c.acceptance_criteria || [], submission_checklist: c.submission_checklist || [],
+            prerequisites: c.prerequisites || [], related_challenges: c.related_challenges || [],
+            ai_metadata: c.ai_metadata || {}, evaluation_prompt: c.evaluation_prompt || ''
         })
         setShowModal(true)
     }
@@ -1163,10 +1224,12 @@ export default function CodingManagement() {
         setError('')
     }
 
-    const filteredChallenges = challenges.filter(c =>
-        c.title.toLowerCase().includes(search.toLowerCase()) ||
-        c.courses?.title?.toLowerCase().includes(search.toLowerCase())
-    )
+    const filteredChallenges = challenges.filter(c => {
+        const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase()) ||
+                              c.courses?.title?.toLowerCase().includes(search.toLowerCase());
+        const matchesTab = statusTab === 'all' || (c.status || 'published') === statusTab;
+        return matchesSearch && matchesTab;
+    })
 
 
     const renderAccessControlModal = () => {
@@ -1236,304 +1299,259 @@ export default function CodingManagement() {
         <HtmlSpecificOptions formData={formData} setFormData={setFormData} wcTab={wcTab} setWcTab={setWcTab} />
     );
 
-    const renderNormalModeFields = () => (
-        <>
-            <div style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="problem-statement" className="form-label">Problem Statement (Markdown supported)</label>
-                <textarea id="problem-statement" name="problem_statement" className="form-input" rows={4} placeholder="Describe the problem clearly..." value={formData.problem_statement} onChange={e => setFormData(p => ({ ...p, problem_statement: e.target.value }))} required style={{ resize: 'vertical' }} />
-            </div>
-
-            <div className="stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                <div>
-                    <div htmlFor="starter-code" className="form-label">Starter Code</div>
-                    {formData.language === 'html' ? (
-                        <div style={{ background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
-                            <div style={{ display: 'flex', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--card-border)' }}>
-                                <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'var(--primary-500)' : 'transparent', color: webTab === 'html' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
-                                <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'var(--primary-500)' : 'transparent', color: webTab === 'css' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
-                                <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'var(--primary-500)' : 'transparent', color: webTab === 'js' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
-                            </div>
-                            <div style={{ height: '180px', background: 'var(--bg-base)' }}>
-                                {webTab === 'html' && (
-                                    <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="Initial HTML..." />
-                                )}
-                                {webTab === 'css' && (
-                                    <CodeEditor value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} language="css" placeholder="Initial CSS..." />
-                                )}
-                                {webTab === 'js' && (
-                                    <CodeEditor value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} language="js" placeholder="Initial JS..." />
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ height: '180px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
-                            <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} placeholder="Initial code..." />
-                        </div>
-                    )}
-                </div>
-                <div>
-                    <label htmlFor="constraints" className="form-label">Constraints</label>
-                    <textarea id="constraints" name="constraints" className="form-input" rows={6} placeholder="e.g. 1 <= N <= 10^5" value={formData.constraints} onChange={e => setFormData(p => ({ ...p, constraints: e.target.value }))} style={{ resize: 'none' }} />
-                </div>
-            </div>
-
-            <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Solution Code (Optional)</div>
-                <div style={{ height: '180px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
-                    <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} placeholder="Correct answer..." />
-                </div>
-            </div>
-
-            {/* Open / Close Time */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                <div>
-                    <label htmlFor="open-time" className="form-label">Open Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                    <div style={{ position: 'relative' }}>
-                        <Calendar size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input id="open-time" name="open_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
-                            value={formData.open_time}
-                            onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
-                        />
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="close-time" className="form-label">Close Time <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                    <div style={{ position: 'relative' }}>
-                        <Clock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input id="close-time" name="close_time" type="datetime-local" className="form-input" style={{ paddingLeft: '2.2rem' }}
-                            value={formData.close_time}
-                            min={formData.open_time || undefined}
-                            onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
-                        />
-                    </div>
-                    {formData.open_time && formData.close_time && (() => {
-                        const mins = Math.round((new Date(formData.close_time) - new Date(formData.open_time)) / 60000)
-                        return mins > 0 ? <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600, marginTop: '0.3rem' }}>⏱ {mins} min window</div> : null
-                    })()}
-                </div>
-            </div>
-
-            <div style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="target-visual" className="form-label">Target Visual Output (URL) <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                <input
-                    id="target-visual"
-                    name="target_visual_url"
-                    type="text"
-                    className="form-input"
-                    placeholder="Link to an image or video for the student to replicate"
-                    value={formData.target_visual_url}
-                    onChange={e => setFormData(p => ({ ...p, target_visual_url: e.target.value }))}
-                />
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Useful for HTML/CSS challenges where students need a visual goal.</p>
-            </div>
-
-            {/* ── Reference iFrame & Required Keywords (HTML only) ── */}
-            {formData.language === 'html' && renderHtmlSpecificOptions()}
-
-            <div style={{ marginBottom: '1.5rem' }}>
-                <label htmlFor="allowed-assets" className="form-label">Allowed Assets <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                <textarea
-                    id="allowed-assets"
-                    name="allowed_assets"
-                    className="form-input"
-                    rows={3}
-                    placeholder="List links (one per line) students can copy-paste (images, fonts, etc.)"
-                    value={formData.allowed_assets}
-                    onChange={e => setFormData(p => ({ ...p, allowed_assets: e.target.value }))}
-                />
-            </div>
-
-            <StandardTestCases formData={formData} setFormData={setFormData} />
-        </>
-    );
 
     const renderChallengeModal = () => {
         const renderSubmitButtonText = () => {
             if (saving) return 'Saving...';
             if (editingId) return <><Save size={18} /> Update</>;
-            return <><Plus size={18} /> Create Challenge</>;
+            return <><Save size={18} /> Publish Challenge</>;
         };
+
+        const renderStepIndicator = () => (
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--card-border)', paddingBottom: '1rem', overflowX: 'auto' }}>
+                {[
+                    { s: 1, label: 'Basic Info' },
+                    { s: 2, label: 'Description' },
+                    { s: 3, label: 'Code & Tests' },
+                    { s: 4, label: 'Guidance & AI' },
+                    { s: 5, label: 'Preview' }
+                ].map(step => (
+                    <button
+                        key={step.s}
+                        type="button"
+                        onClick={() => setWizardStep(step.s)}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            background: wizardStep === step.s ? '#6366f1' : 'transparent',
+                            color: wizardStep === step.s ? 'white' : 'var(--text-muted)',
+                            border: '1px solid',
+                            borderColor: wizardStep === step.s ? '#6366f1' : 'var(--card-border)',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        {step.s}. {step.label}
+                    </button>
+                ))}
+            </div>
+        );
+
         return (
             <>
-            {/* Modal */}
-            {
-                showModal && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                        <div className="glass-card animate-scale-in" style={{ width: '90%', maxWidth: 800, maxHeight: '90vh', padding: 0, display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                    {editingId ? 'Edit Challenge' : 'Create New Coding Challenge'}
-                                </h2>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    {editingId && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const c = challenges.find(ch => ch.id === editingId)
-                                                if (c) setLockingResource(c)
-                                            }}
-                                            className="btn-secondary"
-                                            style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', gap: '0.4rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)' }}
-                                        >
-                                            <Clock size={14} /> Access Control
-                                        </button>
-                                    )}
-                                    <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                        <X size={20} />
-                                    </button>
-                                </div>
+            {showModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                    <div className="glass-card animate-scale-in" style={{ width: '95%', maxWidth: 1000, height: '90vh', padding: 0, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                {editingId ? 'Edit Challenge (Wizard)' : 'Create New Coding Challenge (Wizard)'}
+                            </h2>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                    <X size={20} />
+                                </button>
                             </div>
+                        </div>
 
-                            <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
+                        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+                            <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
+                                {renderStepIndicator()}
+                                
                                 {error && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, marginBottom: '1.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
                                         <AlertCircle size={18} /> {error}
                                     </div>
                                 )}
 
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: globalThis.innerWidth <= 600 ? '1fr' : '1.5fr 1fr 1fr',
-                                    gap: '1rem',
-                                    marginBottom: '1.25rem'
-                                }}>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="course-id" className="form-label">Course</label>
-                                        <select
-                                            id="course-id"
-                                            name="course_id"
-                                            className="form-input"
-                                            value={formData.course_id}
-                                            onChange={e => setFormData(p => ({ ...p, course_id: e.target.value }))}
-                                            required
-                                        >
-                                            <option value="">Select Course</option>
-                                            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                                        </select>
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="language" className="form-label">Language</label>
-                                        <select id="language" name="language" className="form-input" value={formData.language} onChange={e => setFormData(p => ({ ...p, language: e.target.value }))} required>
-                                            {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.icon} {l.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="difficulty" className="form-label">Difficulty</label>
-                                        <select
-                                            id="difficulty"
-                                            name="difficulty"
-                                            className="form-input"
-                                            value={formData.difficulty}
-                                            onChange={e => {
-                                                const d = e.target.value
-                                                const suggestedXp = d === 'hard' ? 30 : d === 'medium' ? 20 : 15
-                                                setFormData({ ...formData, difficulty: d, xp_reward: suggestedXp })
-                                            }}
-                                        >
-                                            {DIFFICULTIES.map(d => (
-                                                <option key={d} value={d}>{d.toUpperCase()}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="xp_reward" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                            <span style={{ color: '#f59e0b' }}>⚡</span> XP Reward
-                                        </label>
-                                        <input
-                                            id="xp_reward"
-                                            name="xp_reward"
-                                            type="number"
-                                            min="1"
-                                            max="500"
-                                            className="form-input"
-                                            value={formData.xp_reward}
-                                            onChange={e => setFormData({ ...formData, xp_reward: Number.parseInt(e.target.value) || 15 })}
-                                            style={{ borderColor: 'rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.04)' }}
-                                        />
-                                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                            Easy: 15 · Medium: 20 · Hard: 30 (auto-filled)
+                                {wizardStep === 1 && (
+                                    <div className="animate-fade-in">
+                                        <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Step 1: Basic Info</h3>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                            <div style={{ gridColumn: 'span 3' }}>
+                                                <label className="form-label">Challenge Title</label>
+                                                <input required className="form-input" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">Course</label>
+                                                <select required className="form-input" value={formData.course_id} onChange={e => setFormData({...formData, course_id: e.target.value})}>
+                                                    <option value="">Select Course</option>
+                                                    {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="form-label">Language</label>
+                                                <select required className="form-input" value={formData.language} onChange={e => setFormData({...formData, language: e.target.value})}>
+                                                    {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="form-label">Difficulty</label>
+                                                <select className="form-input" value={formData.difficulty} onChange={e => setFormData({...formData, difficulty: e.target.value})}>
+                                                    {DIFFICULTIES.map(d => <option key={d} value={d}>{d}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="form-label">XP Reward</label>
+                                                <input type="number" className="form-input" value={formData.xp_reward} onChange={e => setFormData({...formData, xp_reward: Number(e.target.value)})} />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">Coin Reward</label>
+                                                <input type="number" className="form-input" value={formData.coin_reward} onChange={e => setFormData({...formData, coin_reward: Number(e.target.value)})} />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">Estimated Time (mins)</label>
+                                                <input type="number" className="form-input" value={formData.estimated_minutes} onChange={e => setFormData({...formData, estimated_minutes: Number(e.target.value)})} />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">Status</label>
+                                                <select className="form-input" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                                                    <option value="draft">Draft</option>
+                                                    <option value="published">Published</option>
+                                                    <option value="archived">Archived</option>
+                                                </select>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', paddingTop: '1.5rem' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                    <input type="checkbox" checked={formData.is_combined} onChange={e => setFormData({ ...formData, is_combined: e.target.checked })} style={{ width: '1.2rem', height: '1.2rem' }} />
+                                                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Combined Challenge (Multi-Part)</span>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="week_number" className="form-label">Week</label>
-                                        <input
-                                            id="week_number"
-                                            name="week_number"
-                                            type="number"
-                                            className="form-input"
-                                            min="1"
-                                            value={formData.week_number}
-                                            onChange={e => setFormData({ ...formData, week_number: Number.parseInt(e.target.value) || 1 })}
-                                            required
-                                        />
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1' }}>
-                                        <label htmlFor="day_of_week" className="form-label">Day of Week</label>
-                                        <select
-                                            id="day_of_week"
-                                            name="day_of_week"
-                                            className="form-input"
-                                            value={formData.day_of_week}
-                                            onChange={e => setFormData({ ...formData, day_of_week: Number.parseInt(e.target.value) || 1 })}
-                                            required
-                                        >
-                                            <option value="1">Monday</option>
-                                            <option value="2">Tuesday</option>
-                                            <option value="3">Wednesday</option>
-                                            <option value="4">Thursday</option>
-                                            <option value="5">Friday</option>
-                                            <option value="6">Saturday</option>
-                                            <option value="7">Sunday</option>
-                                        </select>
-                                    </div>
-                                    <div style={{ gridColumn: 'span 1', display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                            <input 
-                                                type="checkbox" 
-                                                checked={formData.is_combined} 
-                                                onChange={e => setFormData({ ...formData, is_combined: e.target.checked })} 
-                                                style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
-                                            />
-                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>Combined Challenge (Multi-Part)</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div style={{ marginBottom: '1.25rem' }}>
-                                    <label htmlFor="challenge-title-input" className="form-label">Challenge Title</label>
-                                    <input
-                                        id="challenge-title-input"
-                                        name="title"
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="e.g. Reverse a String"
-                                        value={formData.title}
-                                        onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
-                                        required
-                                    />
-                                </div>
-
-                                {formData.is_combined ? (
-                                    <SubQuestions formData={formData} setFormData={setFormData} />
-                                ) : (
-                                    renderNormalModeFields()
                                 )}
 
-                                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
-                                    <button type="button" onClick={() => setShowModal(false)} className="btn-secondary" style={{ padding: '0.6rem 1.25rem' }}>Cancel</button>
-                                    <button type="submit" className="btn-primary" disabled={saving} style={{ padding: '0.6rem 1.5rem', gap: '0.5rem' }}>
-                                        {renderSubmitButtonText()}
-                                    </button>
+                                {wizardStep === 2 && (
+                                    <div className="animate-fade-in">
+                                        <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Step 2: Description & Content</h3>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Problem Statement (Markdown supported)</label>
+                                            <textarea rows={6} className="form-input" required value={formData.problem_statement} onChange={e => setFormData({...formData, problem_statement: e.target.value})} style={{ resize: 'vertical' }} />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Note (Highlight)</label>
+                                            <textarea rows={3} className="form-input" value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} placeholder="e.g. Note: Do not change the function signature." />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Video Explanation URL</label>
+                                            <input type="url" className="form-input" value={formData.video_explanation_url} onChange={e => setFormData({...formData, video_explanation_url: e.target.value})} placeholder="e.g. YouTube link" />
+                                        </div>
+                                        {/* Simplified arrays for Phase 1 - just using JSON string editing for complex fields to save time, organizer can edit JSON directly */}
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Expected Outputs (JSON)</label>
+                                            <textarea rows={3} className="form-input" value={typeof formData.expected_outputs === 'string' ? formData.expected_outputs : JSON.stringify(formData.expected_outputs, null, 2)} onChange={e => setFormData({...formData, expected_outputs: e.target.value})} />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Target Visual URL (Legacy)</label>
+                                            <input type="url" className="form-input" value={formData.target_visual_url} onChange={e => setFormData({...formData, target_visual_url: e.target.value})} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {wizardStep === 3 && (
+                                    <div className="animate-fade-in">
+                                        <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Step 3: Code & Tests</h3>
+                                        {formData.is_combined ? (
+                                            <SubQuestions formData={formData} setFormData={setFormData} />
+                                        ) : (
+                                            <>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                                    <div>
+                                                        <label className="form-label">Starter Code</label>
+                                                        {formData.language === 'html' ? (
+                                                            <div style={{ height: '200px', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
+                                                                <div style={{ display: 'flex', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--card-border)' }}>
+                                                                    <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'var(--primary-500)' : 'transparent', color: webTab === 'html' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
+                                                                    <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'var(--primary-500)' : 'transparent', color: webTab === 'css' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
+                                                                    <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'var(--primary-500)' : 'transparent', color: webTab === 'js' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
+                                                                </div>
+                                                                <div style={{ height: '180px' }}>
+                                                                    {webTab === 'html' && <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" />}
+                                                                    {webTab === 'css' && <CodeEditor value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} language="css" />}
+                                                                    {webTab === 'js' && <CodeEditor value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} language="js" />}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ height: '200px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
+                                                                <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <label className="form-label">Solution Code</label>
+                                                        <div style={{ height: '200px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
+                                                            <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="form-label">Constraints</label>
+                                                    <textarea rows={3} className="form-input" value={formData.constraints} onChange={e => setFormData({...formData, constraints: e.target.value})} />
+                                                </div>
+                                                <StandardTestCases formData={formData} setFormData={setFormData} />
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+
+                                {wizardStep === 4 && (
+                                    <div className="animate-fade-in">
+                                        <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Step 4: Guidance & AI</h3>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Hints (JSON array of level 1-4 and text)</label>
+                                            <textarea rows={4} className="form-input" value={typeof formData.hints === 'string' ? formData.hints : JSON.stringify(formData.hints, null, 2)} onChange={e => setFormData({...formData, hints: e.target.value})} />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Common Mistakes (JSON array of strings)</label>
+                                            <textarea rows={3} className="form-input" value={typeof formData.common_mistakes === 'string' ? formData.common_mistakes : JSON.stringify(formData.common_mistakes)} onChange={e => setFormData({...formData, common_mistakes: e.target.value})} />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Concepts Review (Markdown)</label>
+                                            <textarea rows={4} className="form-input" value={formData.concepts_review} onChange={e => setFormData({...formData, concepts_review: e.target.value})} />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="form-label">Admin Notes (Hidden from students)</label>
+                                            <textarea rows={3} className="form-input" value={formData.admin_notes} onChange={e => setFormData({...formData, admin_notes: e.target.value})} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {wizardStep === 5 && (
+                                    <div className="animate-fade-in">
+                                        <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Step 5: Preview & Publish</h3>
+                                        <div style={{ background: '#f8fafc', padding: '2rem', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                                            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>The challenge is ready to be {formData.status === 'published' ? 'published' : 'saved as ' + formData.status}.</p>
+                                            <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>{formData.title || 'Untitled Challenge'}</p>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Difficulty: {formData.difficulty} • XP: {formData.xp_reward} • Time: {formData.estimated_minutes}m</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                                <div>
+                                    {wizardStep > 1 && (
+                                        <button type="button" onClick={() => setWizardStep(s => s - 1)} className="btn-secondary" style={{ padding: '0.5rem 1.25rem' }}>Back</button>
+                                    )}
                                 </div>
-                            </form>
-                        </div>
+                                <div style={{ display: 'flex', gap: '0.85rem' }}>
+                                    {wizardStep < 5 ? (
+                                        <button type="button" onClick={() => setWizardStep(s => s + 1)} className="btn-primary" style={{ padding: '0.5rem 1.25rem' }}>Next Step</button>
+                                    ) : (
+                                        <button type="submit" className="btn-primary" disabled={saving} style={{ padding: '0.5rem 1.5rem', background: formData.status === 'published' ? '#10b981' : '#f59e0b', border: 'none', color: 'white' }}>
+                                            {renderSubmitButtonText()}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                )
-            }
+                </div>
+            )}
             </>
         );
     };
-
     const renderAIModal = () => {
         return (
             <>
@@ -1964,6 +1982,27 @@ export default function CodingManagement() {
             {mainTab === 'challenges' ? (
                 <>
                     {/* Filters & Search */}
+                    <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--card-border)' }}>
+                    {['all', 'published', 'draft', 'archived'].map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setStatusTab(tab)}
+                            style={{
+                                padding: '0.4rem 1rem',
+                                background: statusTab === tab ? '#6366f1' : 'transparent',
+                                color: statusTab === tab ? '#fff' : 'var(--text-muted)',
+                                border: 'none',
+                                borderRadius: '20px',
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                textTransform: 'capitalize'
+                            }}
+                        >
+                            {tab}
+                        </button>
+                    ))}
+                </div>
                     <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ flex: 1, position: 'relative' }}>
                     <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />

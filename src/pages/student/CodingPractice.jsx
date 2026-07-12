@@ -10,9 +10,13 @@ import { useNavigate } from 'react-router-dom'
 
 
 function getDifficultyColor(difficulty) {
+    if (difficulty === 'beginner') return '#06b6d4'
     if (difficulty === 'easy') return '#10b981'
     if (difficulty === 'medium') return '#f59e0b'
-    return '#ef4444'
+    if (difficulty === 'hard') return '#ef4444'
+    if (difficulty === 'advanced') return '#8b5cf6'
+    if (difficulty === 'expert') return '#dc2626'
+    return '#6b7280'
 }
 
 export default function CodingPractice() {
@@ -57,6 +61,7 @@ export default function CodingPractice() {
             supabase.from('coding_challenges')
                 .select('*, courses(title)')
                 .in('course_id', enrolledIds)
+                .eq('status', 'published')
                 .order('created_at', { ascending: false }),
             supabase.from('coding_submissions').select('*').eq('student_id', profile.id),
             supabase.from('group_members').select('group_id').eq('student_id', profile.id),
@@ -215,7 +220,16 @@ export default function CodingPractice() {
                         }}>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%' }}>
-                                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#1e40af' }}>Q{filtered.indexOf(c) + 1}: {c.title}</div>
+                                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#1e40af', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {lockStatus.locked && <Lock size={16} style={{ color: '#ef4444' }} />}
+                                    Q{filtered.indexOf(c) + 1}: {c.title}
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    {c.estimated_minutes && <span>⏱ {c.estimated_minutes}m</span>}
+                                    {c.coin_reward > 0 && <span style={{ color: '#eab308' }}>🪙 {c.coin_reward}</span>}
+                                    {(c.tags || []).map(t => <span key={t} style={{ background: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: 4 }}>#{t}</span>)}
+                                    {(c.skills || []).map(s => <span key={s} style={{ background: '#eff6ff', color: '#3b82f6', padding: '0.1rem 0.4rem', borderRadius: 4 }}>{s}</span>)}
+                                </div>
                                 {userGroupIds.length > 0 && (
                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
                                         {memberships.filter(m => {

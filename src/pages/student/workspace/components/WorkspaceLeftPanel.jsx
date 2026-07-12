@@ -2,6 +2,7 @@ import PropTypes from 'prop-types'
 import { FileText, HelpCircle, MessageSquare, CheckCircle2, Lock, XCircle, Info, Code as CodeIcon } from 'lucide-react'
 import CodingDiscussions from '../../../../components/CodingDiscussions'
 
+import { useState } from 'react';
 export function WorkspaceLeftPanel({
     leftTab,
     setLeftTab,
@@ -24,6 +25,7 @@ export function WorkspaceLeftPanel({
     currentTestCases,
     result
 }) {
+    const [unlockedHints, setUnlockedHints] = useState(0);
     const renderTestCases = () => {
         let effectiveTcs = flatWebTcs || currentTestCases;
         
@@ -247,14 +249,102 @@ export function WorkspaceLeftPanel({
                 </div>
             )}
 
+
+            {challenge.learning_objectives && challenge.learning_objectives.length > 0 && (
+                <div style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        🎯 Learning Objectives
+                    </h4>
+                    <ul style={{ paddingLeft: '1.5rem', margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        {challenge.learning_objectives.map((obj, i) => <li key={i}>{obj}</li>)}
+                    </ul>
+                </div>
+            )}
+
+            {challenge.note && (
+                <div style={{ marginBottom: '1.5rem', background: '#fefce8', padding: '1rem', borderRadius: 8, border: '1px solid #fef08a' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ca8a04', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        ⚠️ Note
+                    </h4>
+                    <div style={{ fontSize: '0.85rem', color: '#854d0e', whiteSpace: 'pre-wrap' }}>{challenge.note}</div>
+                </div>
+            )}
+
+            {challenge.video_explanation_url && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>📺 Video Explanation</h4>
+                    <a href={challenge.video_explanation_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#3b82f6', textDecoration: 'underline' }}>Watch Video</a>
+                </div>
+            )}
+
             {challenge.target_visual_url && (
-                <div style={{ marginBottom: '2rem' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.85rem', color: '#3b82f6' }}>Refer to the below image.</p>
-                    <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid var(--card-border)', background: 'var(--bg-base)' }}>
-                        <img src={challenge.target_visual_url} alt="Goal" style={{ width: '100%', display: 'block' }} />
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Target Visual Output (Legacy)</h4>
+                    <img src={challenge.target_visual_url} alt="Target Output" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--card-border)' }} />
+                </div>
+            )}
+            
+            {challenge.expected_outputs && typeof challenge.expected_outputs === 'object' && Object.keys(challenge.expected_outputs).some(k => challenge.expected_outputs[k]) && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Expected Outputs</h4>
+                    {challenge.expected_outputs.desktop && (
+                        <div style={{ marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Desktop:</span>
+                            <img src={challenge.expected_outputs.desktop} alt="Desktop" style={{ maxWidth: '100%', marginTop: '0.25rem', borderRadius: 8, border: '1px solid var(--card-border)' }} />
+                        </div>
+                    )}
+                    {challenge.expected_outputs.mobile && (
+                        <div style={{ marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Mobile:</span>
+                            <img src={challenge.expected_outputs.mobile} alt="Mobile" style={{ maxWidth: '100%', marginTop: '0.25rem', borderRadius: 8, border: '1px solid var(--card-border)' }} />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {challenge.hints && challenge.hints.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        💡 Hints
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {challenge.hints.map((hint, idx) => {
+                            const isUnlocked = unlockedHints > idx;
+                            let levelName = 'Concept';
+                            if (hint.level === 2) levelName = 'Logic';
+                            if (hint.level === 3) levelName = 'Pseudocode';
+                            if (hint.level === 4) levelName = 'Almost-Solution';
+                            
+                            return (
+                                <div key={idx} style={{ padding: '1rem', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isUnlocked ? '0.5rem' : 0 }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Hint {idx + 1}: {levelName || hint.type}</span>
+                                        {!isUnlocked && (
+                                            <button 
+                                                onClick={() => setUnlockedHints(idx + 1)}
+                                                style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                                            >
+                                                Unlock Hint
+                                            </button>
+                                        )}
+                                    </div>
+                                    {isUnlocked && (
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{hint.text}</div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
+
+            {challenge.concepts_review && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>📚 Concepts Review</h4>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '1rem', borderRadius: 8 }}>{challenge.concepts_review}</div>
+                </div>
+            )}
+
 
             {/* ── Reference iFrame (HTML challenges only) ── */}
             {referenceIframeUrl?.startsWith('https://') && (
