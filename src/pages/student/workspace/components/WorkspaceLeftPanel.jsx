@@ -25,8 +25,17 @@ export function WorkspaceLeftPanel({
     result
 }) {
     const renderTestCases = () => {
-        const effectiveTcs = flatWebTcs || currentTestCases
-        const cases = result?.testResults || effectiveTcs
+        let effectiveTcs = flatWebTcs || currentTestCases;
+        
+        if (flatWebTcs && currentTestCases?.length) {
+            effectiveTcs = effectiveTcs.map((tc, idx) => ({
+                ...tc,
+                input_image_url: tc.input_image_url || currentTestCases[idx]?.input_image_url,
+                output_image_url: tc.output_image_url || currentTestCases[idx]?.output_image_url
+            }));
+        }
+        
+        const cases = result?.testResults || effectiveTcs;
         const total = cases?.length || 0
         const hasResults = !!(result?.testResults?.length)
         const passedCount = hasResults ? cases.filter(t => t.passed).length : 0
