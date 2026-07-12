@@ -674,12 +674,13 @@ sys.stdin = StringIO(test_input)
                     setResult({
                         status: 'error',
                         message: `Submission blocked — ${failedTcs.length} testcase${failedTcs.length > 1 ? 's' : ''} failed.\nFix the highlighted tests and try again.`,
-                        testResults: tcResults
+                        testResults: tcResults,
+                        isSubmit: true
                     })
                     setSubmitting(false)
                     return
                 }
-                setResult({ status: 'success', message: `✅ All ${tcResults.length} testcases passed!`, testResults: tcResults })
+                setResult({ status: 'success', message: `✅ All ${tcResults.length} testcases passed!`, testResults: tcResults, isSubmit: true })
 
                 await recordSubmission({
                     challenge, challengeId, profile, currentQuestion, isCombined: false,
@@ -698,7 +699,7 @@ sys.stdin = StringIO(test_input)
                 challenge, currentTestCases, genericCode, getVisualSimilarity, initPyodide
             });
 
-            setResult({ status: overallPassed ? 'success' : 'error', message: overallPassed ? 'Success: All tests passed!' : 'Error: Some tests failed', testResults })
+            setResult({ status: overallPassed ? 'success' : 'error', message: overallPassed ? 'Success: All tests passed!' : 'Error: Some tests failed', testResults, isSubmit: true })
             
             if (overallPassed && !canBypass) {
                 await recordSubmission({
