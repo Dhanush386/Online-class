@@ -347,7 +347,7 @@ export default function CodeWorkspace() {
     const isReadOnly = attemptCount >= MAX_ATTEMPTS && !canBypass
     const [isStarted, setIsStarted] = useState(false)
 
-    const [timeLeft, setTimeLeft] = useState(30 * 60)
+
     const [hasRequestedHelp, setHasRequestedHelp] = useState(false)
     const [hasUnlockedAnswer, setHasUnlockedAnswer] = useState(false)
     const [showUnlockModal, setShowUnlockModal] = useState(false)
@@ -401,20 +401,7 @@ export default function CodeWorkspace() {
         setResult(null);
     }
 
-    useEffect(() => {
-        if (!challengeId) return;
-        const savedEndTime = localStorage.getItem(`challenge_endTime_${challengeId}`);
-        if (savedEndTime) {
-            const remaining = Math.floor((Number.parseInt(savedEndTime) - Date.now()) / 1000);
-            if (remaining > 0) {
-                setTimeLeft(remaining);
-                if (canBypass) setIsStarted(true);
-            } else {
-                setTimeLeft(0);
-                if (canBypass) setIsStarted(true);
-            }
-        }
-    }, [challengeId, canBypass]);
+
 
     const enterFullScreen = async () => {
         const elem = document.documentElement
@@ -427,9 +414,6 @@ export default function CodeWorkspace() {
         }
         setIsStarted(true)
         setRequiresReentry(false)
-        if (!localStorage.getItem(`challenge_endTime_${challengeId}`)) {
-            localStorage.setItem(`challenge_endTime_${challengeId}`, Date.now() + 30 * 60 * 1000);
-        }
 
         try {
             await supabase.from('coding_sessions').insert({
@@ -491,22 +475,7 @@ export default function CodeWorkspace() {
         }
     };
 
-    useEffect(() => {
-        if (!isStarted || canBypass || hasUnlockedAnswer) return
-        const interval = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    clearInterval(interval)
-                    if (hasRequestedHelp && !hasUnlockedAnswer) {
-                        setShowUnlockModal(true)
-                    }
-                    return 0
-                }
-                return prev - 1
-            })
-        }, 1000)
-        return () => clearInterval(interval)
-    }, [isStarted, canBypass, hasUnlockedAnswer, hasRequestedHelp])
+
 
     const formatTime = (secs) => {
         const m = Math.floor(secs / 60).toString().padStart(2, '0')
@@ -768,7 +737,7 @@ sys.stdin = StringIO(test_input)
                 challenge={challenge}
                 isStarted={isStarted}
                 violationCount={violationCount}
-                timeLeft={timeLeft}
+
                 formatTime={formatTime}
             />
 
@@ -802,6 +771,7 @@ sys.stdin = StringIO(test_input)
                     currentSubIndex={currentSubIndex}
                     hasRequestedHelp={hasRequestedHelp}
                     setHasRequestedHelp={setHasRequestedHelp}
+                    setShowUnlockModal={setShowUnlockModal}
                     hasUnlockedAnswer={hasUnlockedAnswer}
                     challengeId={challengeId}
                     htmlCode={htmlCode}

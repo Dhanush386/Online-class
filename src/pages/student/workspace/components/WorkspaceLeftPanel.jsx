@@ -1,9 +1,9 @@
 import PropTypes from 'prop-types'
-import { FileText, HelpCircle, MessageSquare, CheckCircle2, Lock, XCircle, Info, Code as CodeIcon } from 'lucide-react'
+import { FileText, HelpCircle, MessageSquare, CheckCircle2, Lock, XCircle, Info, Code as CodeIcon, Clock } from 'lucide-react'
 import CodingDiscussions from '../../../../components/CodingDiscussions'
 import ReactMarkdown from 'react-markdown'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 export function WorkspaceLeftPanel({
     leftTab,
     setLeftTab,
@@ -15,6 +15,7 @@ export function WorkspaceLeftPanel({
     currentSubIndex,
     hasRequestedHelp,
     setHasRequestedHelp,
+    setShowUnlockModal,
     hasUnlockedAnswer,
     challengeId,
     htmlCode,
@@ -27,6 +28,39 @@ export function WorkspaceLeftPanel({
     result
 }) {
     const [unlockedHints, setUnlockedHints] = useState(0);
+    const [helpTimer, setHelpTimer] = useState(null);
+
+    useEffect(() => {
+        if (hasRequestedHelp && !hasUnlockedAnswer) {
+            const key = `help_timer_${challengeId}`;
+            const savedTime = localStorage.getItem(key);
+            
+            if (!savedTime) {
+                const endTime = Date.now() + 10 * 60 * 1000;
+                localStorage.setItem(key, endTime.toString());
+                setHelpTimer(10 * 60);
+            } else {
+                const remaining = Math.max(0, Math.floor((Number.parseInt(savedTime) - Date.now()) / 1000));
+                setHelpTimer(remaining);
+            }
+        }
+    }, [hasRequestedHelp, hasUnlockedAnswer, challengeId]);
+
+    useEffect(() => {
+        let interval;
+        if (hasRequestedHelp && !hasUnlockedAnswer && helpTimer !== null && helpTimer > 0) {
+            interval = setInterval(() => {
+                setHelpTimer(prev => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [hasRequestedHelp, hasUnlockedAnswer, helpTimer]);
+
+    const formatHelpTime = (secs) => {
+        const m = Math.floor(secs / 60).toString().padStart(2, '0');
+        const s = (secs % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
     const renderTestCases = () => {
         let effectiveTcs = flatWebTcs || currentTestCases;
         
@@ -477,11 +511,18 @@ export function WorkspaceLeftPanel({
                             <pre style={{ background: '#ecfdf5', padding: '1rem', borderRadius: 6, color: '#064e3b', overflowX: 'auto', fontSize: '0.8rem' }}>
                                 {(isCombined ? currentQuestion.solution_code : challenge.solution_code) || "No solution provided by organizer."}
                             </pre>
-                            <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#6ee7b7' }}>You will not receive XP for this challenge.</p>
+                            <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#6ee7b7' }}>You will not receive XP and coins for this challenge.</p>
                         </div>
                     ) : (
-                        <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8 }}>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>If you are still stuck when the timer expires, you will have the option to unlock the correct answer. Note that unlocking the answer forfeits XP for this challenge.</p>
+                        <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>You can unlock the correct answer if you are stuck. Note that unlocking the answer forfeits XP and coins for this challenge.</p>
+                            {helpTimer !== null && helpTimer > 0 ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#f59e0b', fontWeight: 600 }}>
+                                    <Clock size={16} className="animate-pulse" /> Unlock available in {formatHelpTime(helpTimer)}
+                                </div>
+                            ) : (
+                                <button onClick={() => setShowUnlockModal(true)} className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Unlock Answer</button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -544,6 +585,7 @@ WorkspaceLeftPanel.propTypes = {
     currentSubIndex: PropTypes.number,
     hasRequestedHelp: PropTypes.bool,
     setHasRequestedHelp: PropTypes.func,
+    setShowUnlockModal: PropTypes.func,
     hasUnlockedAnswer: PropTypes.bool,
     challengeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     htmlCode: PropTypes.string,

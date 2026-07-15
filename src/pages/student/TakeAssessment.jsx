@@ -462,41 +462,7 @@ export default function TakeAssessment() {
         return `${m}:${s}`
     }
 
-    const timerSubmittedRef = useRef(false)
-    useEffect(() => {
-        if (!isStarted || submitted || !assessment) return;
 
-        const duration = assessment?.duration || 30;
-        const endTimeKey = `assessment_endTime_${assessmentId}`;
-        
-        const updateTimer = () => {
-            const savedEndTime = localStorage.getItem(endTimeKey);
-            if (!savedEndTime) {
-                const end = Date.now() + duration * 60 * 1000;
-                localStorage.setItem(endTimeKey, end.toString());
-                setTimeLeft(duration * 60);
-                return;
-            }
-            const remaining = Math.floor((Number.parseInt(savedEndTime) - Date.now()) / 1000);
-            if (remaining <= 0 && !timerSubmittedRef.current) {
-                setTimeLeft(0);
-                timerSubmittedRef.current = true;
-                setIsAutoSubmitted(true);
-                // Use ref to call latest handleSubmit, with delay for React to flush
-                setTimeout(() => {
-                    if (handleSubmitRef.current) {
-                        handleSubmitRef.current(true);
-                    }
-                }, 200);
-            } else if (remaining > 0) {
-                setTimeLeft(remaining);
-            }
-        };
-
-        updateTimer();
-        const timer = setInterval(updateTimer, 1000);
-        return () => clearInterval(timer);
-    }, [isStarted, submitted, assessmentId, assessment]);
 
     useEffect(() => {
         if (assessmentId) loadData()
@@ -635,11 +601,7 @@ export default function TakeAssessment() {
     }
 
     async function handleSubmit(isAuto = false) {
-        // Allow auto-submit anytime; allow manual submit in last minute OR when violations maxed
-        if (!isAuto && timeLeft !== null && timeLeft > 60 && violationCount < 3) {
-            alert('Submission is only allowed during the last 1 minute of the assessment.')
-            return
-        }
+        // Allow auto-submit and manual submit anytime
 
         if (!isAuto && Object.keys(answers).length < questions.length) {
             if (!confirm('You haven\'t answered all questions. Submit anyway?')) return
@@ -930,23 +892,7 @@ export default function TakeAssessment() {
                 {profile && <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontWeight: 600 }}>Student: {profile.full_name || profile.name || 'Unknown'}</div>}
             </div>
             <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                {timeLeft !== null && (
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.4rem', 
-                        color: timeLeft <= 60 ? '#ef4444' : 'var(--text-secondary)', 
-                        fontSize: '0.85rem', 
-                        fontWeight: 700,
-                        background: timeLeft <= 60 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.08)',
-                        padding: '0.3rem 0.6rem',
-                        borderRadius: 6,
-                        border: timeLeft <= 60 ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(99, 102, 241, 0.15)'
-                    }}>
-                        <Clock size={14} className={timeLeft <= 60 ? 'animate-pulse' : ''} />
-                        {formatTime(timeLeft)}
-                    </div>
-                )}
+
                 {violationCount > 0 && (
                     <div style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 700, background: '#fef2f2', padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid #fee2e2' }}>
                         Violations: {violationCount}/3
@@ -1038,7 +984,7 @@ export default function TakeAssessment() {
                 {(currentIdx === questions.length - 1 || violationCount >= 3) && (
                     <button
                         onClick={() => handleSubmit(violationCount >= 3)}
-                        disabled={submitting || (timeLeft !== null && timeLeft > 60 && violationCount < 3)}
+                        disabled={submitting}
                         className="btn-primary"
                         style={{
                             gap: '0.5rem', padding: '0.85rem 2rem',
@@ -1048,12 +994,7 @@ export default function TakeAssessment() {
                         {submitting ? 'Submitting...' : <><Send size={18} /> {violationCount >= 3 ? 'Submit Now (Violations)' : 'Submit Assessment'}</>}
                     </button>
                 )}
-                {timeLeft !== null && timeLeft > 60 && violationCount < 3 && currentIdx === questions.length - 1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600 }}>
-                        <Clock size={12} className="animate-pulse" />
-                        <span>Enabled in {formatTime(timeLeft - 60)}</span>
-                    </div>
-                )}
+
                 {/* Show Next Question when not on last question */}
                 {currentIdx !== questions.length - 1 && violationCount < 3 && (
                     <button

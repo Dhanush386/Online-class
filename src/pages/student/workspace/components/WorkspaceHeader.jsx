@@ -8,8 +8,7 @@ export function WorkspaceHeader({
     challenge,
     isStarted,
     violationCount,
-    timeLeft,
-    formatTime
+
 }) {
     return (
         <header style={{ height: 48, background: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', padding: '0 1rem' }}>
@@ -23,11 +22,7 @@ export function WorkspaceHeader({
                     </div>
                 )}
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{challenge?.title}</span>
-                {isStarted && !canBypass && (
-                    <div style={{ padding: '4px 10px', background: '#e2e8f0', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: timeLeft <= 300 ? '#ef4444' : 'var(--text-primary)' }}>
-                        <Clock size={14} /> {formatTime(timeLeft)}
-                    </div>
-                )}
+
                 <div style={{ padding: '2px 8px', background: '#10b981', borderRadius: 4, fontSize: '0.85rem', fontWeight: 800 }}>VER 7.1</div>
             </div>
         </header>
@@ -42,6 +37,6 @@ WorkspaceHeader.propTypes = {
     }),
     isStarted: PropTypes.bool,
     violationCount: PropTypes.number,
-    timeLeft: PropTypes.number,
+
     formatTime: PropTypes.func
 }

@@ -79,9 +79,9 @@ export function WorkspaceOutput({
                     <AlertCircle size={48} color="#f59e0b" style={{ margin: '0 auto 1rem' }} />
                     <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>Time's Up!</h2>
                     <p style={{ color: 'var(--card-border)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.5 }}>
-                        The 30-minute timer has expired. Since you requested help, you can now unlock the correct answer. 
+                        You are about to unlock the correct answer. 
                         <br/><br/>
-                        <strong style={{ color: '#f87171' }}>Warning:</strong> Unlocking the answer means you will not earn any XP for this challenge.
+                        <strong style={{ color: '#f87171' }}>Warning:</strong> Unlocking the answer means you will not earn any XP and coins for this challenge.
                     </p>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                         <button onClick={() => setShowUnlockModal(false)} style={{ padding: '0.5rem 1.5rem', background: 'transparent', border: '1px solid var(--text-muted)', color: 'var(--card-border)', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
