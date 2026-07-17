@@ -740,7 +740,9 @@ export default function CodingManagement() {
     const [search, setSearch] = useState('')
     const [editingId, setEditingId] = useState(null)
     const [starterWebCode, setStarterWebCode] = useState({ html: '', css: '', js: '' })
+    const [solutionWebCode, setSolutionWebCode] = useState({ html: '', css: '', js: '' })
     const [webTab, setWebTab] = useState('html')
+    const [solutionWebTab, setSolutionWebTab] = useState('html')
     const [wcTab, setWcTab] = useState('html')
 
     const [wizardStep, setWizardStep] = useState(1);
@@ -1081,11 +1083,17 @@ export default function CodingManagement() {
 
         try {
             let finalStarterCode = formData.starter_code
+            let finalSolutionCode = formData.solution_code
             if (formData.language === 'html') {
                 finalStarterCode = JSON.stringify({
                     html: starterWebCode.html,
                     css: starterWebCode.css,
                     js: starterWebCode.js
+                })
+                finalSolutionCode = JSON.stringify({
+                    html: solutionWebCode.html,
+                    css: solutionWebCode.css,
+                    js: solutionWebCode.js
                 })
             }
 
@@ -1104,7 +1112,7 @@ export default function CodingManagement() {
                 course_id: formData.course_id,
                 language: formData.language,
                 difficulty: formData.difficulty,
-                solution_code: formData.solution_code,
+                solution_code: finalSolutionCode,
                 constraints: formData.constraints,
                 input_format: formData.input_format,
                 output_format: formData.output_format,
@@ -1208,6 +1216,21 @@ export default function CodingManagement() {
                     js: ''
                 })
             }
+            try {
+                const parsedSol = JSON.parse(c.solution_code || '{}')
+                setSolutionWebCode({
+                    html: parsedSol.html || '',
+                    css: parsedSol.css || '',
+                    js: parsedSol.js || ''
+                })
+            } catch (e) {
+                console.warn('Failed to parse solution web code JSON, falling back to raw html', e);
+                setSolutionWebCode({
+                    html: c.solution_code || '',
+                    css: '',
+                    js: ''
+                })
+            }
         }
 
         let is_combined = false;
@@ -1278,6 +1301,7 @@ export default function CodingManagement() {
             test_cases: [{ input: '', expected_output: '', is_hidden: false, input_image_url: '', output_image_url: '' }]
         })
         setStarterWebCode({ html: '', css: '', js: '' })
+        setSolutionWebCode({ html: '', css: '', js: '' })
         setEditingId(null)
         setError('')
     }
@@ -1624,9 +1648,24 @@ export default function CodingManagement() {
                                                     </div>
                                                     <div>
                                                         <label className="form-label">Solution Code</label>
-                                                        <div style={{ height: '200px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
-                                                            <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} />
-                                                        </div>
+                                                        {formData.language === 'html' ? (
+                                                            <div style={{ background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
+                                                                <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)' }}>
+                                                                    <button type="button" onClick={() => setSolutionWebTab('html')} style={{ padding: '0.4rem 1rem', background: solutionWebTab === 'html' ? 'var(--primary-500)' : 'transparent', color: solutionWebTab === 'html' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
+                                                                    <button type="button" onClick={() => setSolutionWebTab('css')} style={{ padding: '0.4rem 1rem', background: solutionWebTab === 'css' ? 'var(--primary-500)' : 'transparent', color: solutionWebTab === 'css' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
+                                                                    <button type="button" onClick={() => setSolutionWebTab('js')} style={{ padding: '0.4rem 1rem', background: solutionWebTab === 'js' ? 'var(--primary-500)' : 'transparent', color: solutionWebTab === 'js' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
+                                                                </div>
+                                                                <div style={{ height: '180px' }}>
+                                                                    {solutionWebTab === 'html' && <CodeEditor value={solutionWebCode.html} onChange={e => setSolutionWebCode(p => ({ ...p, html: e.target.value }))} language="html" />}
+                                                                    {solutionWebTab === 'css' && <CodeEditor value={solutionWebCode.css} onChange={e => setSolutionWebCode(p => ({ ...p, css: e.target.value }))} language="css" />}
+                                                                    {solutionWebTab === 'js' && <CodeEditor value={solutionWebCode.js} onChange={e => setSolutionWebCode(p => ({ ...p, js: e.target.value }))} language="js" />}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ height: '200px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
+                                                                <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div style={{ marginBottom: '1rem' }}>
