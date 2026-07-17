@@ -253,12 +253,12 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                                                 value={tc.description || ''} onChange={e => handleUpdateCss(idx, 'description', e.target.value)} />
                                         </div>
                                         <div>
-                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR *</div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR</div>
                                             <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder=".container"
                                                 value={tc.selector || ''} onChange={e => handleUpdateCss(idx, 'selector', e.target.value)} />
                                         </div>
                                         <div>
-                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS PROPERTY *</div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS PROPERTY</div>
                                             <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="display"
                                                 value={tc.property || ''} onChange={e => handleUpdateCss(idx, 'property', e.target.value)} />
                                         </div>
@@ -1099,9 +1099,9 @@ export default function CodingManagement() {
 
             // Build web_testcases — filter out empty entries
             const cleanWebTc = formData.language === 'html' ? {
-                html: (formData.web_testcases?.html || []).filter(t => t.selector?.trim()),
-                css:  (formData.web_testcases?.css  || []).filter(t => t.selector?.trim() && t.property?.trim()),
-                js:   (formData.web_testcases?.js   || []).filter(t => t.keyword?.trim())
+                html: (formData.web_testcases?.html || []).filter(t => t.description?.trim() || t.selector?.trim()),
+                css:  (formData.web_testcases?.css  || []).filter(t => t.description?.trim() || t.selector?.trim() || t.property?.trim()),
+                js:   (formData.web_testcases?.js   || []).filter(t => t.description?.trim() || t.keyword?.trim())
             } : null
             const hasWebTc = cleanWebTc && (cleanWebTc.html.length || cleanWebTc.css.length || cleanWebTc.js.length)
 
@@ -1493,6 +1493,14 @@ export default function CodingManagement() {
                                                     <option value="published">Published</option>
                                                     <option value="archived">Archived</option>
                                                 </select>
+                                            </div>
+                                            <div>
+                                                <label className="form-label">Week Number</label>
+                                                <input type="number" min="1" className="form-input" value={formData.week_number} onChange={e => setFormData({...formData, week_number: Number(e.target.value)})} />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">Day of Week (1-7)</label>
+                                                <input type="number" min="1" max="7" className="form-input" value={formData.day_of_week} onChange={e => setFormData({...formData, day_of_week: Number(e.target.value)})} />
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', paddingTop: '1.5rem' }}>
                                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>

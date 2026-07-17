@@ -23,6 +23,10 @@ const runHtmlTestcases = (htmlTestcases, htmlCode) => {
     const results = []
     for (const tc of (htmlTestcases || [])) {
         try {
+            if (!tc.selector) {
+                results.push({ description: tc.description || 'Manual Check', passed: true, type: 'html', expected: 'Informational', actual: 'Auto-passed' })
+                continue
+            }
             const parser = new DOMParser()
             const doc = parser.parseFromString(htmlCode, 'text/html')
             const found = doc.querySelectorAll(tc.selector)
@@ -41,6 +45,16 @@ const isValidCssValue = (val) => {
 }
 
 const evaluateCssTestCase = (tc, iframeRef) => {
+    if (!tc.selector || !tc.property) {
+        return { 
+            description: tc.description || 'Manual Check', 
+            passed: true, 
+            type: 'css', 
+            expected: 'Informational', 
+            actual: 'Auto-passed' 
+        }
+    }
+
     const iDoc = iframeRef.current?.contentDocument
     const iWin = iframeRef.current?.contentWindow
     
@@ -103,6 +117,10 @@ const runJsTestcases = (jsTestcases, jsCode) => {
     const results = []
     for (const tc of (jsTestcases || [])) {
         try {
+            if (!tc.keyword) {
+                results.push({ description: tc.description || 'Manual Check', passed: true, type: 'js', expected: 'Informational', actual: 'Auto-passed' })
+                continue
+            }
             const escapedKeyword = tc.keyword.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
             const pattern = new RegExp(String.raw`\b${escapedKeyword}\b`, 'i')
             const passed = pattern.test(jsCode)
