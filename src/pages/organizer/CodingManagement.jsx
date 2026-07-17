@@ -8,6 +8,7 @@ import { Plus, Code, Trash2, Edit2, X, Save, AlertCircle, BookOpen, Search, Cale
 import ProctoringReportModal from '../../components/organizer/ProctoringReportModal'
 import OrganizerCodingDiscussions from '../../components/OrganizerCodingDiscussions'
 import { toLocalInput, toISOWithOffset, getDefaultUnlockTime } from '../../lib/dateUtils'
+import ReactMarkdown from 'react-markdown'
 
 const LANGUAGES = [
     { id: 'html', name: 'HTML/CSS/JS (Web)', icon: '🌐' },
@@ -165,7 +166,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                 </div>
 
                 {/* Tab Bar */}
-                <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                <div style={{ display: 'flex', borderBottom: '1px solid var(--card-border)', background: 'var(--bg-base)' }}>
                     {[
                         { id: 'html', label: 'HTML DOM', icon: '🏷', color: '#ef4444', desc: 'Check elements exist' },
                         { id: 'css',  label: 'CSS Style', icon: '🎨', color: '#3b82f6', desc: 'Check computed styles' },
@@ -404,7 +405,7 @@ function StandardTestCases({ formData, setFormData }) {
     }
 
     return (
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
+        <div style={{ border: '1px solid var(--card-border)', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: 'var(--bg-base)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Test Cases</h4>
                 <button type="button" onClick={handleAddTestCase} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
@@ -460,7 +461,7 @@ function StandardTestCases({ formData, setFormData }) {
                                         width: '100%', 
                                         height: 120, 
                                         borderRadius: 8, 
-                                        background: '#f8fafc', 
+                                        background: 'var(--bg-base)', 
                                         display: 'flex', 
                                         alignItems: 'center', 
                                         justifyContent: 'center',
@@ -677,7 +678,7 @@ function SubQuestions({ formData, setFormData }) {
     }
 
     return (
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: '#f8fafc' }}>
+        <div style={{ border: '1px solid var(--card-border)', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem', background: 'var(--bg-base)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sub-Questions</h4>
                 <button type="button" onClick={handleAddQuestion} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
@@ -797,6 +798,63 @@ export default function CodingManagement() {
     const [submissionsSearch, setSubmissionsSearch] = useState('')
     const [proctorSessionsMap, setProctorSessionsMap] = useState({})
     const [viewingReportSession, setViewingReportSession] = useState(null)
+    const [isUploadingImage, setIsUploadingImage] = useState(false)
+    const [previewProblem, setPreviewProblem] = useState(false)
+
+    async function handleImageUpload(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        try {
+            setIsUploadingImage(true);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${crypto.randomUUID().split("-")[0]}.${fileExt}`;
+            const filePath = `${profile.id}/coding-images/${fileName}`;
+            
+            const { error } = await supabase.storage.from('study-materials').upload(filePath, file, { cacheControl: '3600', upsert: false });
+            if (error) throw error;
+            
+            const { data: { publicUrl } } = supabase.storage.from('study-materials').getPublicUrl(filePath);
+            
+            setFormData(prev => ({
+                ...prev,
+                problem_statement: prev.problem_statement ? `${prev.problem_statement}\n\n![Image](${publicUrl})` : `![Image](${publicUrl})`
+            }));
+        } catch (err) {
+            console.error('Error uploading image:', err);
+            alert('Failed to upload image: ' + err.message);
+        } finally {
+            setIsUploadingImage(false);
+            e.target.value = null;
+        }
+    }
+
+    async function handleResourceImageUpload(e, i) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        try {
+            setIsUploadingImage(true);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${crypto.randomUUID().split("-")[0]}.${fileExt}`;
+            const filePath = `${profile.id}/coding-images/${fileName}`;
+            
+            const { error } = await supabase.storage.from('study-materials').upload(filePath, file, { cacheControl: '3600', upsert: false });
+            if (error) throw error;
+            
+            const { data: { publicUrl } } = supabase.storage.from('study-materials').getPublicUrl(filePath);
+            
+            const arr = [...formData.resources];
+            arr[i] = typeof arr[i] === 'string' ? { description: arr[i], url: publicUrl } : { ...arr[i], url: publicUrl };
+            setFormData({ ...formData, resources: arr });
+        } catch (err) {
+            console.error('Error uploading resource image:', err);
+            alert('Failed to upload image: ' + err.message);
+        } finally {
+            setIsUploadingImage(false);
+            e.target.value = null;
+        }
+    }
 
     async function loadSubmissions(challenge) {
         setViewingSubmissions(challenge)
@@ -1283,7 +1341,7 @@ export default function CodingManagement() {
                                     )}
                                 </div>
                             </div>
-                            <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid var(--card-border)', textAlign: 'right' }}>
+                            <div style={{ padding: '1rem 1.5rem', background: 'var(--bg-base)', borderTop: '1px solid var(--card-border)', textAlign: 'right' }}>
                                 <button onClick={() => setLockingResource(null)} className="btn-secondary" style={{ fontSize: '0.85rem' }}>Done</button>
                             </div>
                         </div>
@@ -1426,8 +1484,28 @@ export default function CodingManagement() {
                                     <div className="animate-fade-in">
                                         <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Step 2: Description & Content</h3>
                                         <div style={{ marginBottom: '1rem' }}>
-                                            <label className="form-label">Problem Statement (Markdown supported)</label>
-                                            <textarea rows={6} className="form-input" required value={formData.problem_statement} onChange={e => setFormData({...formData, problem_statement: e.target.value})} style={{ resize: 'vertical' }} />
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                    <label className="form-label" style={{ margin: 0 }}>Problem Statement</label>
+                                                    <div style={{ display: 'flex', background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', borderRadius: 6, overflow: 'hidden' }}>
+                                                        <button type="button" onClick={() => setPreviewProblem(false)} style={{ padding: '0.2rem 0.8rem', fontSize: '0.75rem', background: !previewProblem ? 'var(--primary-500, #6366f1)' : 'transparent', color: !previewProblem ? '#fff' : 'var(--text-muted)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Write</button>
+                                                        <button type="button" onClick={() => setPreviewProblem(true)} style={{ padding: '0.2rem 0.8rem', fontSize: '0.75rem', background: previewProblem ? 'var(--primary-500, #6366f1)' : 'transparent', color: previewProblem ? '#fff' : 'var(--text-muted)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Preview</button>
+                                                    </div>
+                                                </div>
+                                                <label className="btn-secondary" style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', margin: 0 }}>
+                                                    {isUploadingImage ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+                                                    {isUploadingImage ? 'Uploading...' : 'Add Image'}
+                                                    <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={isUploadingImage} />
+                                                </label>
+                                            </div>
+                                            {previewProblem ? (
+                                                <div className="markdown-preview" style={{ minHeight: '144px', padding: '0.75rem', border: '1px solid var(--card-border)', borderRadius: 8, background: 'var(--bg-base)', overflowY: 'auto', fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.6, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                                                    <style>{'.markdown-preview img { max-width: 100%; border-radius: 8px; border: 1px solid var(--card-border); margin-top: 1rem; margin-bottom: 1rem; }'}</style>
+                                                    {formData.problem_statement ? <ReactMarkdown>{formData.problem_statement}</ReactMarkdown> : <span style={{ color: 'var(--text-muted)' }}>Nothing to preview</span>}
+                                                </div>
+                                            ) : (
+                                                <textarea rows={6} className="form-input" required value={formData.problem_statement} onChange={e => setFormData({...formData, problem_statement: e.target.value})} style={{ resize: 'vertical' }} />
+                                            )}
                                         </div>
                                         <div style={{ marginBottom: '1rem' }}>
                                             <label className="form-label">Note (Highlight)</label>
@@ -1442,29 +1520,35 @@ export default function CodingManagement() {
                                             <label className="form-label">Expected Outputs (JSON)</label>
                                             <textarea rows={3} className="form-input" value={typeof formData.expected_outputs === 'string' ? formData.expected_outputs : JSON.stringify(formData.expected_outputs, null, 2)} onChange={e => setFormData({...formData, expected_outputs: e.target.value})} />
                                         </div>
-                                        <div style={{ marginBottom: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
+                                        <div style={{ marginBottom: '1rem', background: 'var(--bg-base)', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                 <label className="form-label" style={{ margin: 0 }}>Resources</label>
                                                 <button type="button" onClick={() => setFormData(p => ({ ...p, resources: [...(Array.isArray(p.resources) ? p.resources : []), { description: '', url: '' }] }))} className="btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>+ Add Resource</button>
                                             </div>
                                             {(Array.isArray(formData.resources) ? formData.resources : []).map((res, i) => (
-                                                <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
                                                     <input type="text" className="form-input" placeholder="Description (e.g. Use this background image)" value={res.description || (typeof res === 'string' ? res : '')} onChange={e => {
                                                         const arr = [...formData.resources];
                                                         arr[i] = typeof arr[i] === 'string' ? e.target.value : { ...arr[i], description: e.target.value };
                                                         setFormData({ ...formData, resources: arr });
                                                     }} />
-                                                    <input type="url" className="form-input" placeholder="URL" value={res.url || ''} onChange={e => {
-                                                        const arr = [...formData.resources];
-                                                        arr[i] = typeof arr[i] === 'string' ? { description: arr[i], url: e.target.value } : { ...arr[i], url: e.target.value };
-                                                        setFormData({ ...formData, resources: arr });
-                                                    }} />
+                                                    <div style={{ display: 'flex', flex: 1, gap: '0.5rem', alignItems: 'center' }}>
+                                                        <input type="url" className="form-input" placeholder="URL" style={{ flex: 1 }} value={res.url || ''} onChange={e => {
+                                                            const arr = [...formData.resources];
+                                                            arr[i] = typeof arr[i] === 'string' ? { description: arr[i], url: e.target.value } : { ...arr[i], url: e.target.value };
+                                                            setFormData({ ...formData, resources: arr });
+                                                        }} />
+                                                        <label className="btn-secondary" style={{ padding: '0 0.5rem', height: '100%', minHeight: '38px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', margin: 0, flexShrink: 0 }}>
+                                                            {isUploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                                                            <input type="file" accept="image/*" onChange={(e) => handleResourceImageUpload(e, i)} style={{ display: 'none' }} disabled={isUploadingImage} />
+                                                        </label>
+                                                    </div>
                                                     <button type="button" onClick={() => setFormData({ ...formData, resources: formData.resources.filter((_, idx) => idx !== i) })} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 0.5rem' }}>✕</button>
                                                 </div>
                                             ))}
                                         </div>
 
-                                        <div style={{ marginBottom: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
+                                        <div style={{ marginBottom: '1rem', background: 'var(--bg-base)', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                 <label className="form-label" style={{ margin: 0 }}>CSS Colors</label>
                                                 <button type="button" onClick={() => setFormData(p => ({ ...p, css_colors: [...(Array.isArray(p.css_colors) ? p.css_colors : []), { label: '', value: '' }] }))} className="btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>+ Add Color</button>
@@ -1486,7 +1570,7 @@ export default function CodingManagement() {
                                             ))}
                                         </div>
 
-                                        <div style={{ marginBottom: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
+                                        <div style={{ marginBottom: '1rem', background: 'var(--bg-base)', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                 <label className="form-label" style={{ margin: 0 }}>CSS Fonts</label>
                                                 <button type="button" onClick={() => setFormData(p => ({ ...p, css_fonts: [...(Array.isArray(p.css_fonts) ? p.css_fonts : []), ''] }))} className="btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>+ Add Font</button>
@@ -1581,7 +1665,7 @@ export default function CodingManagement() {
                                 {wizardStep === 5 && (
                                     <div className="animate-fade-in">
                                         <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Step 5: Preview & Publish</h3>
-                                        <div style={{ background: '#f8fafc', padding: '2rem', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                                        <div style={{ background: 'var(--bg-base)', padding: '2rem', borderRadius: 12, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>The challenge is ready to be {formData.status === 'published' ? 'published' : 'saved as ' + formData.status}.</p>
                                             <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>{formData.title || 'Untitled Challenge'}</p>
                                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Difficulty: {formData.difficulty} • XP: {formData.xp_reward} • Time: {formData.estimated_minutes}m</p>
@@ -1590,7 +1674,7 @@ export default function CodingManagement() {
                                 )}
                             </div>
                             
-                            <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                            <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-base)' }}>
                                 <div>
                                     {wizardStep > 1 && (
                                         <button type="button" onClick={() => setWizardStep(s => s - 1)} className="btn-secondary" style={{ padding: '0.5rem 1.25rem' }}>Back</button>
@@ -1673,7 +1757,7 @@ export default function CodingManagement() {
                                     <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Review Generated Challenges</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {generatedChallenges.map((c, idx) => (
-                                            <div key={c.title || `gen-${idx}`} style={{ padding: '1rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                            <div key={c.title || `gen-${idx}`} style={{ padding: '1rem', background: 'var(--bg-base)', borderRadius: 12, border: '1px solid var(--card-border)' }}>
                                                 <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                                                     <span>{idx + 1}. {c.title}</span>
                                                     <span style={{ fontSize: '0.7rem', background: '#e2e8f0', padding: '0.2rem 0.5rem', borderRadius: 4 }}>{c.language} • {c.difficulty}</span>
@@ -1745,7 +1829,7 @@ export default function CodingManagement() {
                     .map((sub, idx) => {
                         const passed = sub.status === 'accepted'
                         return (
-                            <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+                            <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? 'var(--bg-base)' : 'transparent', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
                                 onMouseEnter={handleSubmissionMouseEnter}
                                 onMouseLeave={handleSubmissionMouseLeave}
                             >
@@ -1826,16 +1910,16 @@ export default function CodingManagement() {
                         </div>
 
                         {/* Summary Stats */}
-                        <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', background: '#f8fafc' }}>
-                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                        <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', background: 'var(--bg-base)' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#6366f1' }}>{submissionsStats.total}</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Submissions</div>
                             </div>
-                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{submissionsStats.avgScore} XP</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Avg Score</div>
                             </div>
-                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{submissionsStats.passed}/{submissionsStats.total}</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Accepted</div>
                             </div>
@@ -1862,7 +1946,7 @@ export default function CodingManagement() {
                         </div>
 
                         {/* Footer */}
-                        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
+                        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--card-border)', background: 'var(--bg-base)', display: 'flex', justifyContent: 'flex-end' }}>
                             <button onClick={() => setViewingSubmissions(null)} className="btn-secondary" style={{ fontSize: '0.85rem' }}>Close</button>
                         </div>
                     </div>
@@ -1975,9 +2059,9 @@ export default function CodingManagement() {
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, height: '2.5rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>
                             {c.description || 'No description provided.'}
                         </p>
-                        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.test_cases?.length || 0} Test Cases</span>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ borderTop: '1px solid var(--sidebar-border)', paddingTop: '0.85rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.85rem' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{c.test_cases?.length || 0} Test Cases</span>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                 <button
                                     onClick={() => loadSubmissions(c)}
                                     className="btn-primary"

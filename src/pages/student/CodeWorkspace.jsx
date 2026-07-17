@@ -592,20 +592,7 @@ export default function CodeWorkspace() {
         setResult({ status: 'running', message: 'Running code...' })
         if (challenge.language === 'html') {
             updatePreview()
-            if (hasWebTcs) {
-                const tcResults = await runWebTestcases()
-                const passed = tcResults.filter(r => r.passed).length
-                const allPassed = tcResults.every(r => r.passed)
-                setResult({
-                    status: allPassed ? 'success' : 'warning',
-                    message: allPassed
-                        ? `✅ All ${tcResults.length} testcases passed!`
-                        : `🔍 ${passed}/${tcResults.length} passed — fix the failing tests before submitting.`,
-                    testResults: tcResults
-                })
-            } else {
-                setResult({ status: 'success', message: 'Rendered successfully ✓' })
-            }
+            setResult({ status: 'success', message: 'Rendered successfully ✓' })
         } else if (challenge.language.startsWith('python')) {
             try {
                 setResult({ status: 'running', message: 'Initializing Python Engine (this takes a few seconds on the first run)...' })

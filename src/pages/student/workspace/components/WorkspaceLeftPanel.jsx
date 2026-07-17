@@ -329,26 +329,27 @@ export function WorkspaceLeftPanel({
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {challenge.resources.map((res, i) => {
                             if (typeof res === 'string') {
-                                const isImg = res.match(/\.(jpeg|jpg|gif|png)$/) != null;
+                                const isImg = res.match(/\.(jpeg|jpg|gif|png|webp|svg)(\?.*)?$/i) != null;
                                 return (
                                     <div key={i} style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                                         {isImg ? (
-                                            <>
-                                                <p style={{ marginBottom: '1rem' }}>URL: {res}</p>
-                                                <img src={res} alt="Resource" style={{ maxWidth: '100%' }} />
-                                            </>
+                                            <img src={res} alt="Resource" style={{ maxWidth: '100%', borderRadius: '8px', border: '1px solid var(--card-border)' }} />
                                         ) : (
-                                            <a href={res} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }}>{res}</a>
+                                            <a href={res} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline', wordBreak: 'break-all' }}>{res}</a>
                                         )}
                                     </div>
                                 );
                             } else if (res && typeof res === 'object') {
+                                const isImg = res.url && res.url.match(/\.(jpeg|jpg|gif|png|webp|svg)(\?.*)?$/i) != null;
                                 return (
-                                    <div key={i} style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                                        {res.description && <p style={{ marginBottom: '1rem' }}>{res.description}</p>}
-                                        {res.url && <p style={{ marginBottom: '1rem' }}>URL: {res.url}</p>}
-                                        {res.url && res.url.match(/\.(jpeg|jpg|gif|png)$/) && (
-                                            <img src={res.url} alt="Resource" style={{ maxWidth: '100%' }} />
+                                    <div key={i} style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>
+                                        {res.description && <p style={{ marginBottom: '0.5rem', fontWeight: 600 }}>{res.description}</p>}
+                                        {res.url && (
+                                            isImg ? (
+                                                <img src={res.url} alt={res.description || "Resource"} style={{ maxWidth: '100%', borderRadius: '8px', border: '1px solid var(--card-border)' }} />
+                                            ) : (
+                                                <a href={res.url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline', wordBreak: 'break-all', display: 'inline-block' }}>View Resource</a>
+                                            )
                                         )}
                                     </div>
                                 );

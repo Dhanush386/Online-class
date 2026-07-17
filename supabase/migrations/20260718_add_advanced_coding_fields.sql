@@ -1,0 +1,23 @@
+-- Add missing fields to coding_challenges table for the advanced coding wizard
+ALTER TABLE public.coding_challenges
+    ADD COLUMN IF NOT EXISTS admin_notes TEXT,
+    ADD COLUMN IF NOT EXISTS learning_objectives JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS learning_outcomes JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS skills JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS note TEXT,
+    ADD COLUMN IF NOT EXISTS resources JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS challenge_assets JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS css_colors JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS css_fonts JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS concepts_review TEXT,
+    ADD COLUMN IF NOT EXISTS expected_outputs JSONB DEFAULT '{"desktop": "", "tablet": "", "mobile": "", "gif": "", "dark": "", "light": ""}'::jsonb,
+    ADD COLUMN IF NOT EXISTS video_explanation_url TEXT,
+    ADD COLUMN IF NOT EXISTS hints JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS common_mistakes JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS acceptance_criteria JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS submission_checklist JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS prerequisites JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS related_challenges JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS ai_metadata JSONB DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS evaluation_prompt TEXT;

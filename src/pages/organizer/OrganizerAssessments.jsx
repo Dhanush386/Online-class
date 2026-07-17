@@ -357,7 +357,7 @@ export default function OrganizerAssessments() {
                                 <Eye size={16} /> View Student Marks
                             </button>
                         </div>
-                        <div style={{ padding: '0.85rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
+                        <div style={{ padding: '0.85rem 1.5rem', borderTop: '1px solid var(--card-border)', background: 'var(--bg-base)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                 <Calendar size={12} /> {a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No due date'}
                             </span>
@@ -396,7 +396,7 @@ export default function OrganizerAssessments() {
         const avatarBg    = passed ? '#ecfdf5' : '#fef2f2'
         const avatarColor = passed ? '#059669' : '#dc2626'
         return (
-            <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr 0.5fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? '#f8fafc' : 'white', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
+            <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr 0.5fr', gap: '1rem', padding: '0.85rem', borderRadius: 10, background: idx % 2 === 0 ? 'var(--bg-base)' : 'transparent', alignItems: 'center', border: '1px solid transparent', transition: 'all 0.15s ease' }}
                 onMouseEnter={e => e.currentTarget.style.border = '1px solid #6366f130'}
                 onMouseLeave={e => e.currentTarget.style.border = '1px solid transparent'}
             >
@@ -555,7 +555,7 @@ export default function OrganizerAssessments() {
                                 )}
                             </div>
                         </div>
-                        <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid var(--card-border)', textAlign: 'right' }}>
+                        <div style={{ padding: '1rem 1.5rem', background: 'var(--bg-base)', borderTop: '1px solid var(--card-border)', textAlign: 'right' }}>
                             <button onClick={() => setLockingResource(null)} className="btn-secondary" style={{ fontSize: '0.85rem' }}>Done</button>
                         </div>
                     </div>
@@ -754,16 +754,16 @@ export default function OrganizerAssessments() {
                         </div>
 
                         {/* Summary Stats */}
-                        <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', background: '#f8fafc' }}>
-                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                        <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem', borderBottom: '1px solid var(--card-border)', background: 'var(--bg-base)' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#6366f1' }}>{marksStats.total}</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Submissions</div>
                             </div>
-                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{marksStats.avgScore}%</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Avg Score</div>
                             </div>
-                            <div style={{ flex: 1, padding: '0.85rem', background: 'white', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
+                            <div style={{ flex: 1, padding: '0.85rem', background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--card-border)', textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{marksStats.passed}/{marksStats.total}</div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Passed (≥50%)</div>
                             </div>
@@ -790,7 +790,7 @@ export default function OrganizerAssessments() {
                         </div>
 
                         {/* Footer */}
-                        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--card-border)', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
+                        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--card-border)', background: 'var(--bg-base)', display: 'flex', justifyContent: 'flex-end' }}>
                             <button onClick={() => setViewingMarks(null)} className="btn-secondary" style={{ fontSize: '0.85rem' }}>Close</button>
                         </div>
                     </div>
