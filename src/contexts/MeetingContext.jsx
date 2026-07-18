@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { useNavigate, useLocation, useBlocker } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Room, RoomEvent, Track } from 'livekit-client'
 import { useAuth } from './AuthContext'
 import FloatingMeetingWidget from '../components/FloatingMeetingWidget'
@@ -1058,7 +1059,6 @@ export function MeetingProvider({ children }) {
                     </div>
                 </div>
             )}
-            </AnimatePresence>
 
             {/* Logout Guard */}
             <AnimatePresence>
