@@ -2067,7 +2067,7 @@ function processHostCommand(msg, room, toast, onLeave, setters) {
     }
 }
 
-function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters) {
+function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters, states) {
     const {
         setReactions,
         setRaisedHands,
@@ -2084,7 +2084,7 @@ function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters) {
         if (!room) return
         const decoder = new TextDecoder()
 
-        const handleDataReceived = (payload) => {
+        const handleDataReceived = (payload, participant) => {
             try {
                 const msg = JSON.parse(decoder.decode(payload))
 
@@ -2093,16 +2093,29 @@ function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters) {
                 } else if (msg.type === 'hand_raise') {
                     processHandRaise(msg, room, setRaisedHands)
                 } else if (msg.type === 'host_command' && !isOrganizer) {
-                    processHostCommand(msg, room, toast, onLeave, {
-                        setMicLocked,
-                        setVideoLocked,
-                        setScreenShareLocked,
-                        setChatLocked,
-                        setHandsLocked,
-                        setHandRaised,
-                        setReactionsDisabled,
-                        setRaisedHands
+                    processHostCommand(msg, room, toast, onLeave, setters)
+                } else if (msg.type === 'request_sync' && isOrganizer) {
+                    const syncMsg = JSON.stringify({
+                        type: 'sync_state',
+                        locks: {
+                            micLocked: states.micLocked,
+                            videoLocked: states.videoLocked,
+                            screenShareLocked: states.screenShareLocked,
+                            chatLocked: states.chatLocked,
+                            handsLocked: states.handsLocked,
+                            reactionsDisabled: states.reactionsDisabled
+                        }
                     })
+                    const encoder = new TextEncoder()
+                    const target = participant && participant.identity ? [participant.identity] : []
+                    room.localParticipant.publishData(encoder.encode(syncMsg), { reliable: true }, target)
+                } else if (msg.type === 'sync_state' && !isOrganizer) {
+                    setters.setMicLocked(msg.locks.micLocked)
+                    setters.setVideoLocked(msg.locks.videoLocked)
+                    setters.setScreenShareLocked(msg.locks.screenShareLocked)
+                    setters.setChatLocked(msg.locks.chatLocked)
+                    setters.setHandsLocked(msg.locks.handsLocked)
+                    setters.setReactionsDisabled(msg.locks.reactionsDisabled)
                 }
             } catch (error) {
                 console.error("Caught exception processing data:", error)
@@ -2111,12 +2124,7 @@ function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters) {
 
         room.on(RoomEvent.DataReceived, handleDataReceived)
         return () => room.off(RoomEvent.DataReceived, handleDataReceived)
-    }, [
-        room, isOrganizer, toast, onLeave,
-        setReactions, setRaisedHands, setMicLocked, setVideoLocked,
-        setScreenShareLocked, setChatLocked, setHandsLocked, setHandRaised,
-        setReactionsDisabled
-    ])
+    }, [room, isOrganizer, toast, onLeave, setters, states])
 }
 
 function useParticipantSystemMessages(room, isOrganizer, videoDataId, profileId) {
@@ -2684,7 +2692,24 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         setHandsLocked,
         setHandRaised,
         setReactionsDisabled
+    }, {
+        micLocked, videoLocked, screenShareLocked, chatLocked, handsLocked, reactionsDisabled
     })
+
+    // Request Sync on Join for Students
+    useEffect(() => {
+        if (!room || isOrganizer) return
+        const timer = setTimeout(() => {
+            try {
+                const msg = JSON.stringify({ type: 'request_sync' })
+                const encoder = new TextEncoder()
+                room.localParticipant.publishData(encoder.encode(msg), { reliable: true })
+            } catch (e) {
+                console.error("Failed to request sync", e)
+            }
+        }, 1500)
+        return () => clearTimeout(timer)
+    }, [room, isOrganizer])
 
     const lastReactionTime = useRef(0)
     const reactionIdCounter = useRef(0)
