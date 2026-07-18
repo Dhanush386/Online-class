@@ -151,7 +151,7 @@ export default function StudentLayout() {
 
   async function handleSignOut() { 
     if (requestNavigation('/login')) { return; }
-    await signOut(); navigate('/login') 
+    navigate('/login') 
   }
 
   const inClassroomOnMobile = isMobile && location.pathname.includes('/classroom/')

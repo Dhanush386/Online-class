@@ -145,7 +145,7 @@ export default function OrganizerLayout() {
     if (requestNavigation('/login')) {
       return;
     }
-    await signOut(); navigate('/login') 
+    navigate('/login') 
   }
 
   const inClassroomOnMobile = isMobile && location.pathname.includes('/classroom/')
