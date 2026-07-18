@@ -499,6 +499,49 @@ export function WorkspaceLeftPanel({
         <CodingDiscussions challengeId={challengeId} currentCode={challenge?.language === 'html' ? {html: htmlCode, css: cssCode, js: jsCode} : genericCode} />
     )
 
+
+    const renderSolution = () => {
+        const rawSolution = (isCombined ? currentQuestion.solution_code : challenge.solution_code)
+        if (!rawSolution) return <p style={{ color: '#064e3b', fontSize: '0.85rem' }}>No solution provided by organizer.</p>
+
+        try {
+            const isWeb = challenge?.type === 'web' || currentQuestion?.type === 'web'
+            if (isWeb) {
+                const parsed = JSON.parse(rawSolution)
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.75rem' }}>
+                        {parsed.html && (
+                            <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#059669', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HTML</div>
+                                <pre style={{ background: 'rgba(255,255,255,0.5)', padding: '0.75rem', borderRadius: 6, color: '#064e3b', overflowX: 'auto', fontSize: '0.8rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>{parsed.html}</pre>
+                            </div>
+                        )}
+                        {parsed.css && (
+                            <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#059669', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CSS</div>
+                                <pre style={{ background: 'rgba(255,255,255,0.5)', padding: '0.75rem', borderRadius: 6, color: '#064e3b', overflowX: 'auto', fontSize: '0.8rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>{parsed.css}</pre>
+                            </div>
+                        )}
+                        {parsed.js && (
+                            <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#059669', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>JavaScript</div>
+                                <pre style={{ background: 'rgba(255,255,255,0.5)', padding: '0.75rem', borderRadius: 6, color: '#064e3b', overflowX: 'auto', fontSize: '0.8rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>{parsed.js}</pre>
+                            </div>
+                        )}
+                    </div>
+                )
+            }
+        } catch (e) {
+            // Fallback
+        }
+
+        return (
+            <pre style={{ background: 'rgba(255,255,255,0.5)', padding: '1rem', borderRadius: 6, color: '#064e3b', overflowX: 'auto', fontSize: '0.8rem', marginTop: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                {rawSolution}
+            </pre>
+        )
+    }
+
     const renderHelpTab = () => (
         <div style={{ color: 'var(--card-border)', fontSize: '0.9rem', lineHeight: 1.6 }}>
             {hasRequestedHelp ? (
@@ -509,9 +552,7 @@ export function WorkspaceLeftPanel({
                     {hasUnlockedAnswer ? (
                         <div style={{ marginTop: '2rem', padding: '1rem', background: '#d1fae5', border: '1px solid #10b981', borderRadius: 8 }}>
                             <h4 style={{ color: '#10b981', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle2 size={16} /> Solution Unlocked</h4>
-                            <pre style={{ background: '#ecfdf5', padding: '1rem', borderRadius: 6, color: '#064e3b', overflowX: 'auto', fontSize: '0.8rem' }}>
-                                {(isCombined ? currentQuestion.solution_code : challenge.solution_code) || "No solution provided by organizer."}
-                            </pre>
+                            {renderSolution()}
                             <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#6ee7b7' }}>You will not receive XP and coins for this challenge.</p>
                         </div>
                     ) : (
