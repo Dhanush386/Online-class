@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { MeetingProvider } from './contexts/MeetingContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -197,16 +197,20 @@ function AppInner() {
   )
 }
 
+const AppInnerWrapper = () => (
+  <AuthProvider>
+    <ToastProvider>
+      <ErrorBoundary>
+        <AppInner />
+      </ErrorBoundary>
+    </ToastProvider>
+  </AuthProvider>
+)
+
+const router = createBrowserRouter([
+  { path: "*", Component: AppInnerWrapper }
+])
+
 export default function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <ErrorBoundary>
-            <AppInner />
-          </ErrorBoundary>
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  )
+  return <RouterProvider router={router} />
 }
