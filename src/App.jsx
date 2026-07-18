@@ -7,39 +7,6 @@ import { ToastProvider } from './components/Toast'
 import ErrorBoundary from './components/ErrorBoundary'
 import PWAInstallBanner from './components/shared/PWAInstallBanner'
 import CustomCursor from './components/cursor/CustomCursor'
-import { motion, AnimatePresence } from 'framer-motion'
-
-// ── Global Logout Guard ───────────────────────────────────────────────────────
-function GlobalLogoutGuard() {
-  const { user, signOut } = useAuth()
-  
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      !!user && nextLocation.pathname === '/login' && currentLocation.pathname !== '/login'
-  )
-
-  const handleConfirm = async () => {
-    if (signOut) await signOut()
-    blocker.proceed()
-  }
-
-  return (
-    <AnimatePresence>
-      {blocker.state === 'blocked' && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: 'var(--bg-base)', padding: '1.5rem', borderRadius: 12, width: '90%', maxWidth: 400 }}>
-                <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Sign Out?</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Are you sure you want to sign out of your account?</p>
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button onClick={() => blocker.reset()} className="btn-secondary" style={{ padding: '0.5rem 1rem' }}>Cancel</button>
-                    <button onClick={handleConfirm} className="btn-primary" style={{ padding: '0.5rem 1rem', background: '#ef4444' }}>Sign Out</button>
-                </div>
-            </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
 
 // ── Page loader shown while lazy chunks are fetching ──────────────────────────
 function PageLoader() {
@@ -162,7 +129,6 @@ function AppInner() {
     <MeetingProvider>
       <CustomCursor />
       <PWAInstallBanner />
-      <GlobalLogoutGuard />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public */}

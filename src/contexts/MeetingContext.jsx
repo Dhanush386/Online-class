@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useRef, useCallback, useEffect, us
 import PropTypes from 'prop-types'
 import { useNavigate, useLocation, useBlocker } from 'react-router-dom'
 import { Room, RoomEvent, Track } from 'livekit-client'
+import { useAuth } from './AuthContext'
 import FloatingMeetingWidget from '../components/FloatingMeetingWidget'
 import SessionAnalyticsModal from '../components/organizer/SessionAnalyticsModal'
 import { supabase } from '../lib/supabase'
@@ -899,21 +900,31 @@ export function MeetingProvider({ children }) {
         return false // Let navigation proceed normally
     }, [meeting.isActive, meeting.isMinimized, location.pathname])
 
-    // ── Browser Back Button Interception ──
+    const { user, signOut } = useAuth()
+    const [showLogoutGuard, setShowLogoutGuard] = useState(false)
+
+    // ── Global Browser Navigation Interception ──
     const blocker = useBlocker(
-        ({ currentLocation, nextLocation }) =>
-            meeting.isActive &&
-            !meeting.isMinimized &&
-            currentLocation.pathname.includes('/classroom/') &&
-            nextLocation.pathname !== currentLocation.pathname
+        ({ currentLocation, nextLocation }) => {
+            const isClassroom = meeting.isActive && !meeting.isMinimized && currentLocation.pathname.includes('/classroom/') && nextLocation.pathname !== currentLocation.pathname
+            const isLogout = !!user && nextLocation.pathname === '/login' && currentLocation.pathname !== '/login'
+            return isClassroom || isLogout
+        }
     )
 
     useEffect(() => {
         if (blocker.state === 'blocked') {
-            pendingNavigationRef.current = blocker.location.pathname
-            setShowNavGuard(true)
+            const isLogout = blocker.location.pathname === '/login'
+            const isClassroom = meeting.isActive && !meeting.isMinimized && location.pathname.includes('/classroom/')
+            
+            if (isLogout && !isClassroom) {
+                setShowLogoutGuard(true)
+            } else {
+                pendingNavigationRef.current = blocker.location.pathname
+                setShowNavGuard(true)
+            }
         }
-    }, [blocker.state, blocker.location])
+    }, [blocker.state, blocker.location, meeting.isActive, meeting.isMinimized, location.pathname])
 
     // Update nav guard leave to handle blocker
     const handleNavGuardLeave = useCallback(() => {
@@ -934,6 +945,17 @@ export function MeetingProvider({ children }) {
         }
         pendingNavigationRef.current = null
     }, [blocker])
+
+    const handleLogoutConfirm = async () => {
+        if (signOut) await signOut()
+        setShowLogoutGuard(false)
+        if (blocker.state === 'blocked') blocker.proceed()
+    }
+
+    const handleLogoutCancel = () => {
+        setShowLogoutGuard(false)
+        if (blocker.state === 'blocked') blocker.reset()
+    }
 
     // ── Browser close/refresh warning ──
     useEffect(() => {
@@ -1036,6 +1058,23 @@ export function MeetingProvider({ children }) {
                     </div>
                 </div>
             )}
+            </AnimatePresence>
+
+            {/* Logout Guard */}
+            <AnimatePresence>
+                {showLogoutGuard && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ background: 'var(--bg-base)', padding: '1.5rem', borderRadius: 12, width: '90%', maxWidth: 400 }}>
+                            <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Sign Out?</h3>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Are you sure you want to sign out of your account?</p>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                <button onClick={handleLogoutCancel} className="btn-secondary" style={{ padding: '0.5rem 1rem' }}>Cancel</button>
+                                <button onClick={handleLogoutConfirm} className="btn-primary" style={{ padding: '0.5rem 1rem', background: '#ef4444' }}>Sign Out</button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </MeetingContext.Provider>
     )
 }
