@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useBlocker } from 'react-router-dom'
 import { Room, RoomEvent, Track } from 'livekit-client'
 import FloatingMeetingWidget from '../components/FloatingMeetingWidget'
 import SessionAnalyticsModal from '../components/organizer/SessionAnalyticsModal'
@@ -889,15 +889,6 @@ export function MeetingProvider({ children }) {
         pendingNavigationRef.current = null
     }, [])
 
-    const handleNavGuardLeave = useCallback(() => {
-        endMeeting()
-        setShowNavGuard(false)
-        if (pendingNavigationRef.current) {
-            navigate(pendingNavigationRef.current)
-            pendingNavigationRef.current = null
-        }
-    }, [endMeeting, navigate])
-
     // Exposed: used by layout nav links to trigger guard
     const requestNavigation = useCallback((targetPath) => {
         if (meeting.isActive && !meeting.isMinimized && location.pathname.includes('/classroom/')) {
@@ -907,6 +898,42 @@ export function MeetingProvider({ children }) {
         }
         return false // Let navigation proceed normally
     }, [meeting.isActive, meeting.isMinimized, location.pathname])
+
+    // ── Browser Back Button Interception ──
+    const blocker = useBlocker(
+        ({ currentLocation, nextLocation }) =>
+            meeting.isActive &&
+            !meeting.isMinimized &&
+            currentLocation.pathname.includes('/classroom/') &&
+            nextLocation.pathname !== currentLocation.pathname
+    )
+
+    useEffect(() => {
+        if (blocker.state === 'blocked') {
+            pendingNavigationRef.current = blocker.location.pathname
+            setShowNavGuard(true)
+        }
+    }, [blocker.state, blocker.location])
+
+    // Update nav guard leave to handle blocker
+    const handleNavGuardLeave = useCallback(() => {
+        endMeeting()
+        setShowNavGuard(false)
+        if (blocker.state === 'blocked') {
+            blocker.proceed()
+        } else if (pendingNavigationRef.current) {
+            navigate(pendingNavigationRef.current)
+            pendingNavigationRef.current = null
+        }
+    }, [endMeeting, navigate, blocker])
+
+    const handleNavGuardCancel = useCallback(() => {
+        setShowNavGuard(false)
+        if (blocker.state === 'blocked') {
+            blocker.reset()
+        }
+        pendingNavigationRef.current = null
+    }, [blocker])
 
     // ── Browser close/refresh warning ──
     useEffect(() => {
