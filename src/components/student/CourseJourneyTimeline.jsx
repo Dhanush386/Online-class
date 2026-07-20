@@ -278,6 +278,8 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                 } else if (!hasCurrent) {
                     status = 'current';
                     hasCurrent = true;
+                } else {
+                    status = (course?.sequential_unlock !== false) ? 'locked' : 'available';
                 }
                 return { ...item, status };
             }).sort((a, b) => {
