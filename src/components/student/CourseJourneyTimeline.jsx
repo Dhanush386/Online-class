@@ -133,7 +133,7 @@ function CourseJourneyItem({ item, onModuleAction }) {
     )
 }
 
-export default function CourseJourneyTimeline({ course, sessions, challenges, courseResources, assessments, progress, getScheduleDate, onModuleAction }) {
+export default function CourseJourneyTimeline({ course, sessions, challenges, courseResources, assessments, progress, getScheduleDate, onModuleAction, isWeekLocked }) {
     const [expandedWeek, setExpandedWeek] = useState(1)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     
@@ -212,6 +212,9 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                 if (!recorded) actualType = 'live';
             }
             let isLocked = item.isLocked || false;
+            if (isWeekLocked && isWeekLocked(weekNum)) {
+                isLocked = true;
+            }
             const itemDate = item.open_time || item.scheduled_time || item.start_time;
             if (itemDate && new Date(itemDate) > new Date()) {
                 isLocked = true;

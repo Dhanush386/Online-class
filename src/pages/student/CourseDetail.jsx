@@ -131,7 +131,7 @@ export default function CourseDetail() {
 
     // Journey Engine hooks
     const {
-        weeks, getScheduleDate, refreshProgress
+        weeks, getScheduleDate, refreshProgress, isWeekLocked
     } = useWeeklyCourse(courseId)
     const { awardXp, toastMessage } = useXpAward()
 
@@ -818,6 +818,7 @@ export default function CourseDetail() {
                             coding_submissions: codingSubmissions
                         }}
                         getScheduleDate={getScheduleDate}
+                        isWeekLocked={isWeekLocked}
                         onModuleAction={(type, module) => {
                             const content = module._content;
                             if (!content) return;
