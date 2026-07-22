@@ -131,9 +131,7 @@ export default function StudentManagement() {
     async function cleanStudentCourseData(studentId, courseId) {
         try {
             await supabase.from('video_progress').delete().eq('student_id', studentId).eq('course_id', courseId)
-            await supabase.from('student_course_progress').delete().eq('student_id', studentId).eq('course_id', courseId)
             await supabase.from('student_week_progress').delete().eq('student_id', studentId).eq('course_id', courseId)
-            await supabase.from('student_day_progress').delete().eq('student_id', studentId).eq('course_id', courseId)
 
             const { data: courseAssessments } = await supabase
                 .from('assessments')
