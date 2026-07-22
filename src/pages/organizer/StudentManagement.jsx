@@ -122,9 +122,50 @@ export default function StudentManagement() {
     const [maxDay, setMaxDay] = useState(1)
     const [viewingProfileId, setViewingProfileId] = useState(null)
 
+    const [resetProgressOnAssign, setResetProgressOnAssign] = useState(false)
+
     useEffect(() => {
         if (profile?.id) loadData()
     }, [profile])
+
+    async function cleanStudentCourseData(studentId, courseId) {
+        try {
+            await supabase.from('video_progress').delete().eq('student_id', studentId).eq('course_id', courseId)
+            await supabase.from('student_course_progress').delete().eq('student_id', studentId).eq('course_id', courseId)
+            await supabase.from('student_week_progress').delete().eq('student_id', studentId).eq('course_id', courseId)
+            await supabase.from('student_day_progress').delete().eq('student_id', studentId).eq('course_id', courseId)
+
+            const { data: courseAssessments } = await supabase
+                .from('assessments')
+                .select('id')
+                .eq('course_id', courseId)
+
+            if (courseAssessments && courseAssessments.length > 0) {
+                const assessmentIds = courseAssessments.map(a => a.id)
+                await supabase
+                    .from('assessment_submissions')
+                    .delete()
+                    .eq('student_id', studentId)
+                    .in('assessment_id', assessmentIds)
+            }
+
+            const { data: courseChallenges } = await supabase
+                .from('coding_challenges')
+                .select('id')
+                .eq('course_id', courseId)
+
+            if (courseChallenges && courseChallenges.length > 0) {
+                const challengeIds = courseChallenges.map(c => c.id)
+                await supabase
+                    .from('coding_submissions')
+                    .delete()
+                    .eq('student_id', studentId)
+                    .in('challenge_id', challengeIds)
+            }
+        } catch (err) {
+            console.error('Error cleaning up student course data:', err)
+        }
+    }
 
     async function loadData(silent = false) {
         if (!silent) setLoading(true)
@@ -239,6 +280,10 @@ export default function StudentManagement() {
         setError('')
 
         try {
+            if (resetProgressOnAssign) {
+                await cleanStudentCourseData(assigningTo.id, selectedCourse)
+            }
+
             // 1. Create enrollment
             const { error: enrollError } = await supabase
                 .from('enrollments')
@@ -253,6 +298,7 @@ export default function StudentManagement() {
             }
 
             // 2. Create initial progress record
+            await supabase.from('progress').delete().eq('student_id', assigningTo.id).eq('course_id', selectedCourse)
             const { error: progressError } = await supabase.from('progress').insert({
                 student_id: assigningTo.id,
                 course_id: selectedCourse,
@@ -264,6 +310,7 @@ export default function StudentManagement() {
 
             setAssigningTo(null)
             setSelectedCourse('')
+            setResetProgressOnAssign(false)
             loadData(true)
         } catch (err) {
             setError(err.message || 'Failed to assign course')
@@ -273,10 +320,20 @@ export default function StudentManagement() {
     }
 
     async function handleRemoveCourse(studentId, courseId) {
-        if (!globalThis.confirm('Are you sure you want to remove this course assignment? This will also clear the student\'s progress for this course.')) return
+        if (!globalThis.confirm('Are you sure you want to remove this course assignment?')) return
+
+        const shouldResetHistory = globalThis.confirm(
+            'Do you also want to PERMANENTLY CLEAR all past submission history (quizzes, coding challenges, watched videos) for this course?\n\n' +
+            '• Click OK to remove course AND wipe past submissions (fresh start if re-assigned).\n' +
+            '• Click Cancel to remove course while keeping past submission history.'
+        )
 
         setSaving(true)
         try {
+            if (shouldResetHistory) {
+                await cleanStudentCourseData(studentId, courseId)
+            }
+
             // 1. Delete enrollment
             const { error: enrollError } = await supabase
                 .from('enrollments')
@@ -286,7 +343,7 @@ export default function StudentManagement() {
 
             if (enrollError) throw enrollError
 
-            // 2. Delete progress
+            // 2. Delete progress summary
             const { error: progressError } = await supabase
                 .from('progress')
                 .delete()
@@ -736,7 +793,10 @@ export default function StudentManagement() {
             <StudentModals
                 assigningTo={assigningTo} setAssigningTo={setAssigningTo}
                 courses={courses} selectedCourse={selectedCourse}
-                setSelectedCourse={setSelectedCourse} saving={saving}
+                setSelectedCourse={setSelectedCourse}
+                resetProgressOnAssign={resetProgressOnAssign}
+                setResetProgressOnAssign={setResetProgressOnAssign}
+                saving={saving}
                 handleAssignCourse={handleAssignCourse}
                 managingGroup={managingGroup} setManagingGroup={setManagingGroup}
                 students={students} groupMembers={groupMembers}
@@ -1235,7 +1295,8 @@ StudentsList.propTypes = {
 }
 
 function StudentModals({
-    assigningTo, setAssigningTo, courses, selectedCourse, setSelectedCourse, saving, handleAssignCourse,
+    assigningTo, setAssigningTo, courses, selectedCourse, setSelectedCourse,
+    resetProgressOnAssign, setResetProgressOnAssign, saving, handleAssignCourse,
     managingGroup, setManagingGroup, students, groupMembers, togglingMember, toggleMembership,
     schedulingGroup, setSchedulingGroup, maxDay, dayAccess, handleUpdateDayAccess,
     viewingProfileId, setViewingProfileId
@@ -1257,7 +1318,7 @@ function StudentModals({
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{assigningTo.email}</div>
                             </div>
                             <form onSubmit={handleAssignCourse}>
-                                <div className="form-group" style={{ marginBottom: '2rem' }}>
+                                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
                                     <label htmlFor="course-assign-select" className="form-label" style={{ marginBottom: '0.85rem' }}>Select Course</label>
                                     <div style={{ position: 'relative' }}>
                                         <BookOpen size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -1277,6 +1338,16 @@ function StudentModals({
                                         </select>
                                         <ChevronDown size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                                     </div>
+                                </div>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={resetProgressOnAssign}
+                                            onChange={(e) => setResetProgressOnAssign(e.target.checked)}
+                                        />
+                                        <span>Reset previous activity history if re-assigned</span>
+                                    </label>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'flex-end' }}>
                                     <button type="button" className="btn-secondary" onClick={() => setAssigningTo(null)} disabled={saving}>Cancel</button>
