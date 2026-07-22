@@ -137,6 +137,17 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
     const [expandedWeek, setExpandedWeek] = useState(1)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     
+    // Calculate Drip Day Limit (Day-wise pattern) based on enrollment
+    const currentAccessibleAbsoluteDay = useMemo(() => {
+        const enrollmentDate = progress?.created_at ? new Date(progress.created_at) : (course?.start_date ? new Date(course.start_date) : new Date());
+        const enrollDay = new Date(enrollmentDate);
+        enrollDay.setHours(0, 0, 0, 0);
+        const todayDay = new Date();
+        todayDay.setHours(0, 0, 0, 0);
+        const daysSinceEnrollment = Math.floor((todayDay - enrollDay) / (1000 * 60 * 60 * 24));
+        return Math.max(1, daysSinceEnrollment + 1);
+    }, [progress?.created_at, course?.start_date]);
+
     const totalWeeks = course?.duration_weeks || 12
 
     const flatAssessments = useMemo(() => [
@@ -215,6 +226,16 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
             if (isWeekLocked && isWeekLocked(weekNum)) {
                 isLocked = true;
             }
+
+            // Enforce Day-wise pattern (drip content) if sequential unlock is enabled
+            if (course?.sequential_unlock !== false) {
+                const itemDow = item.day_of_week || item.day_number || item.day || 1;
+                const itemAbsoluteDay = (weekNum - 1) * 7 + itemDow;
+                if (itemAbsoluteDay > currentAccessibleAbsoluteDay) {
+                    isLocked = true;
+                }
+            }
+
             const itemDate = item.open_time || item.scheduled_time || item.start_time;
             if (itemDate && new Date(itemDate) > new Date()) {
                 isLocked = true;
