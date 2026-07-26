@@ -310,6 +310,7 @@ export default function CodePlayground() {
     const handleLoad = (snippet) => {
         if (globalThis.confirm(`Load "${snippet.title}"? Your current code will be overwritten.`)) {
             setLanguage(snippet.language)
+            setHasRunWeb(false)
             if (snippet.language === 'html') {
                 try {
                     const parsed = JSON.parse(snippet.code)
@@ -379,8 +380,11 @@ export default function CodePlayground() {
         }
     }
 
+    const [hasRunWeb, setHasRunWeb] = useState(false)
+
     const handleLanguageChange = (newLang) => {
         setLanguage(newLang)
+        setHasRunWeb(false)
         if (newLang === 'html') {
             setHtmlCode(STARTER_CODE.html)
             setCssCode(STARTER_CODE.css)
@@ -393,11 +397,11 @@ export default function CodePlayground() {
 
     const handleReset = () => {
         if (globalThis.confirm('Reset current code to starter template?')) {
+            setHasRunWeb(false)
             if (language === 'html') {
                 setHtmlCode(STARTER_CODE.html)
                 setCssCode(STARTER_CODE.css)
                 setJsCode(STARTER_CODE.js)
-                updatePreview()
             } else {
                 setCode(STARTER_CODE[language] || '')
                 setResult(null)
@@ -437,16 +441,12 @@ export default function CodePlayground() {
         }
     }, [getCombinedWebCode])
 
-    // Update iframe preview when web code changes or run is triggered
-    useEffect(() => {
-        if (language === 'html') {
-            updatePreview()
-        }
-    }, [language, updatePreview])
-
     const runCode = async () => {
         if (language === 'html') {
-            updatePreview()
+            setHasRunWeb(true)
+            setTimeout(() => {
+                updatePreview()
+            }, 50)
             return
         }
 
@@ -841,16 +841,24 @@ export default function CodePlayground() {
                     }}
                 >
                     {language === 'html' ? (
-                        <iframe
-                            ref={iframeRef}
-                            title="live-preview"
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                border: 'none',
-                                background: '#ffffff'
-                            }}
-                        />
+                        hasRunWeb ? (
+                            <iframe
+                                ref={iframeRef}
+                                title="live-preview"
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    background: '#ffffff'
+                                }}
+                            />
+                        ) : (
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0b0f19', color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>
+                                <Play size={44} style={{ opacity: 0.3, marginBottom: '1rem', color: '#3b82f6' }} />
+                                <p style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc', marginBottom: '0.4rem' }}>Output Preview</p>
+                                <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Click "▶ Run Code" to generate and display the output preview here.</p>
+                            </div>
+                        )
                     ) : (
                         <div style={{ flex: 1, background: '#0b0f19', padding: '1.25rem', overflowY: 'auto' }}>
                             <ResultView result={result} language={language} />
