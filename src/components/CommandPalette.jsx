@@ -115,6 +115,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
     <>
       {/* Trigger button (shown in header) */}
       <button
+        type="button"
         onClick={openPalette}
         className="btn-icon hide-mobile"
         title="Command Palette (Ctrl+K)"
@@ -220,6 +221,7 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                           const isActive = flatIdx === index
                           return (
                             <motion.button
+                              type="button"
                               key={cmd.id}
                               onClick={() => runCommand(cmd)}
                               onMouseEnter={() => setIndex(flatIdx)}

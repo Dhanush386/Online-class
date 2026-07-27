@@ -118,7 +118,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
     if (view === 'create') {
         return (
             <div className="animate-fade-in" style={{ padding: '0.5rem' }}>
-                <button onClick={() => setView('list')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+                <button type="button" onClick={() => setView('list')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
                     <ChevronLeft size={16} /> Back to Discussions
                 </button>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#fff' }}>Start a New Thread</h3>
@@ -144,7 +144,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
     if (view === 'thread' && activeThread) {
         return (
             <div className="animate-fade-in" style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <button onClick={() => setView('list')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+                <button type="button" onClick={() => setView('list')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
                     <ChevronLeft size={16} /> Back
                 </button>
                 
@@ -202,7 +202,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
         <div className="animate-fade-in" style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MessageSquare size={18} /> Discussions</h3>
-                <button onClick={() => setView('create')} style={{ padding: '0.4rem 0.8rem', borderRadius: 6, background: '#3b82f6', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button type="button" onClick={() => setView('create')} style={{ padding: '0.4rem 0.8rem', borderRadius: 6, background: '#3b82f6', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Plus size={14} /> New Thread
                 </button>
             </div>
@@ -216,6 +216,7 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                 ) : (
                     discussions.map(d => (
                         <button 
+                            type="button"
                             key={d.id} 
                             onClick={() => { setActiveThread(d); setView('thread') }} 
                             style={{ display: 'block', width: '100%', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', padding: '1rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', cursor: 'pointer', transition: 'all 0.2s ease', ':hover': { borderColor: 'var(--text-secondary)' } }}

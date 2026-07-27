@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation, createBrowserRouter, RouterProvider, useBlocker } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { MeetingProvider } from './contexts/MeetingContext'
 import { ProtectedRoute } from './components/ProtectedRoute'

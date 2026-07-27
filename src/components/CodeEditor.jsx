@@ -222,9 +222,10 @@ const CodeEditor = ({
                         boxSizing: 'border-box'
                     }}
                 >
-                    {lines.map((_, i) => (
-                        <div key={i}>{i + 1}</div>
-                    ))}
+                    {lines.map((_, i) => {
+                        const lineNum = i + 1
+                        return <div key={`line-${lineNum}`}>{lineNum}</div>
+                    })}
                 </div>
             )}
 
