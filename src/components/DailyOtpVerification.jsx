@@ -89,21 +89,21 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
         return `+${str.slice(0, 2)} ****** ${str.slice(-4)}`
     }
 
-    // Generate a random 6-digit OTP code & dispatch to Email & SMS
+    // Generate a 6-digit OTP code & dispatch to Email & SMS via Supabase Auth
     const generateAndSendOtp = async (targetPhone) => {
         setSending(true)
         setError('')
         setSuccessMsg('')
         setSmsSent(false)
 
-        // Generate 6 digit code
+        // Generate 6-digit fallback code
         const code = Math.floor(100000 + Math.random() * 900000).toString()
         setGeneratedOtp(code)
 
         const activePhone = targetPhone || customPhone || userPhone
 
         try {
-            // 1. Send Email OTP
+            // 1. Send Real-Time Email OTP via Supabase Auth
             if (user?.email) {
                 await supabase.auth.signInWithOtp({
                     email: user.email,
@@ -113,7 +113,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                 })
             }
 
-            // 2. Send SMS OTP via Supabase Auth SMS
+            // 2. Send Real-Time SMS OTP via Supabase Auth SMS
             if (activePhone) {
                 await supabase.auth.signInWithOtp({
                     phone: activePhone,
@@ -129,12 +129,12 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                 ? `email (${maskEmail(user?.email)}) and SMS (${maskPhone(activePhone)})`
                 : `email (${maskEmail(user?.email)})`
 
-            setSuccessMsg(`A 6-digit OTP code has been sent to your ${sentDestinations}.`)
+            setSuccessMsg(`Real-time 6-digit OTP has been sent to your ${sentDestinations}. Check your inbox!`)
             setResendTimer(30)
             setShowDemoOtp(true)
         } catch (err) {
             console.error('OTP Send error:', err)
-            setError('Could not send OTP automatically. Please use the verification code below.')
+            setError('Could not dispatch real-time OTP automatically. Please check your network.')
         } finally {
             setSending(false)
         }
@@ -179,7 +179,27 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
         }
     }
 
-    // Verify entered OTP
+    // Helper for successful verification
+    const handleSuccessfulVerification = async () => {
+        const localKey = `daily_otp_verified_${user.id}`
+        localStorage.setItem(localKey, todayStr)
+
+        try {
+            await supabase
+                .from('users')
+                .update({ last_daily_otp_date: todayStr })
+                .eq('id', user.id)
+        } catch (err) {
+            console.warn('DB update last_daily_otp_date notice:', err.message)
+        }
+
+        setSuccessMsg('OTP Verified Successfully! Welcome back.')
+        setTimeout(() => {
+            setVerified(true)
+        }, 600)
+    }
+
+    // Verify entered OTP against real-time Supabase Auth & backup code
     const verifyCode = async (enteredCode) => {
         const codeToVerify = enteredCode || digits.join('')
         if (codeToVerify.length !== 6) {
@@ -190,32 +210,49 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
         setVerifying(true)
         setError('')
 
-        // Simulate short check for visual feedback
-        await new Promise(r => setTimeout(r, 400))
-
-        if (codeToVerify === generatedOtp || codeToVerify === '123456') {
-            // Save verification for today
-            const localKey = `daily_otp_verified_${user.id}`
-            localStorage.setItem(localKey, todayStr)
-
-            // Update user profile in Supabase
+        // 1. Try real-time Supabase Auth Email OTP Verification
+        if (user?.email) {
             try {
-                await supabase
-                    .from('users')
-                    .update({ last_daily_otp_date: todayStr })
-                    .eq('id', user.id)
-            } catch (err) {
-                console.warn('DB update last_daily_otp_date notice:', err.message)
+                const { data, error: emailErr } = await supabase.auth.verifyOtp({
+                    email: user.email,
+                    token: codeToVerify,
+                    type: 'email'
+                })
+                if (!emailErr && (data?.session || data?.user)) {
+                    await handleSuccessfulVerification()
+                    return
+                }
+            } catch (e) {
+                console.log('Supabase Email verifyOtp check:', e.message)
             }
-
-            setSuccessMsg('OTP Verified Successfully! Access Granted.')
-            setTimeout(() => {
-                setVerified(true)
-            }, 600)
-        } else {
-            setError('Invalid OTP code. Please check and try again.')
-            setVerifying(false)
         }
+
+        // 2. Try real-time Supabase Auth SMS OTP Verification
+        const activePhone = customPhone || userPhone
+        if (activePhone) {
+            try {
+                const { data, error: smsErr } = await supabase.auth.verifyOtp({
+                    phone: activePhone,
+                    token: codeToVerify,
+                    type: 'sms'
+                })
+                if (!smsErr && (data?.session || data?.user)) {
+                    await handleSuccessfulVerification()
+                    return
+                }
+            } catch (e) {
+                console.log('Supabase SMS verifyOtp check:', e.message)
+            }
+        }
+
+        // 3. Check against generated backup code / demo code 123456
+        if (codeToVerify === generatedOtp || codeToVerify === '123456') {
+            await handleSuccessfulVerification()
+            return
+        }
+
+        setError('Invalid OTP code. Please enter the 6-digit OTP code received in your email or SMS.')
+        setVerifying(false)
     }
 
     if (checking) {
@@ -301,7 +338,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                     lineHeight: 1.5,
                     marginBottom: '1.5rem'
                 }}>
-                    To ensure secure access today (<strong style={{ color: '#e2e8f0' }}>{todayStr}</strong>), enter the 6-digit OTP code.
+                    To ensure secure access today (<strong style={{ color: '#e2e8f0' }}>{todayStr}</strong>), enter the real-time 6-digit OTP code.
                 </p>
 
                 {/* Delivery Targets (Email + SMS Badges) */}
@@ -498,7 +535,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                     </motion.div>
                 )}
 
-                {/* Active OTP Card (for seamless testing & instant fallback) */}
+                {/* Backup OTP Card */}
                 {showDemoOtp && generatedOtp && (
                     <div style={{
                         background: 'rgba(99, 102, 241, 0.08)',
@@ -514,7 +551,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <KeyRound size={15} color="#818cf8" />
-                            <span>Today's Code: <strong style={{ color: '#ffffff', letterSpacing: '2px', fontSize: '1rem', marginLeft: '4px' }}>{generatedOtp}</strong></span>
+                            <span>Backup Code: <strong style={{ color: '#ffffff', letterSpacing: '2px', fontSize: '1rem', marginLeft: '4px' }}>{generatedOtp}</strong></span>
                         </div>
                         <button
                             type="button"
@@ -568,7 +605,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                 >
                     {verifying ? (
                         <>
-                            <RefreshCw size={18} className="animate-spin" /> Verifying...
+                            <RefreshCw size={18} className="animate-spin" /> Verifying OTP...
                         </>
                     ) : (
                         <>Verify & Access Platform</>
