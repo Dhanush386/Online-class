@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import PropTypes from 'prop-types'
+import DailyOtpVerification from './DailyOtpVerification'
 
 function LoadingView() {
     return (
@@ -101,7 +102,11 @@ export function ProtectedRoute({ children, requiredRole }) {
         if (studentRedirect) return studentRedirect
     }
 
-    return children
+    return (
+        <DailyOtpVerification user={user} profile={profile} signOut={signOut}>
+            {children}
+        </DailyOtpVerification>
+    )
 }
 
 ProfileSyncIssue.propTypes = {
