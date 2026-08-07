@@ -1,7 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import PropTypes from 'prop-types'
-import DailyOtpVerification from './DailyOtpVerification'
 
 function LoadingView() {
     return (
@@ -23,13 +22,17 @@ function ProfileSyncIssue({ signOut }) {
         <div style={{ padding: '2rem', textAlign: 'center', background: '#0a0d1a', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="glass-card" style={{ padding: '2rem', maxWidth: 400 }}>
                 <div style={{ width: 64, height: 64, background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>⚠️</div>
-                <h2 style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 700 }}>Profile Sync Issue</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                    We found your account but couldn't determine your role or load your profile.
-                    Try refreshing the page or signing out and back in.
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Profile Synchronization Issue</h2>
+                <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+                    We could not retrieve your user profile or role correctly. Please try signing out and logging back in.
                 </p>
-                <button onClick={() => globalThis.location.reload()} className="btn-primary" style={{ width: '100%', marginBottom: '0.85rem' }}>Refresh Page</button>
-                <button onClick={() => signOut()} className="btn-secondary" style={{ width: '100%' }}>Sign Out</button>
+                <button
+                    onClick={signOut}
+                    className="btn btn-primary"
+                    style={{ width: '100%' }}
+                >
+                    Sign Out & Retry
+                </button>
             </div>
         </div>
     )
@@ -39,13 +42,18 @@ function PendingApproval({ signOut }) {
     return (
         <div style={{ padding: '2rem', textAlign: 'center', background: '#0a0d1a', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="glass-card" style={{ padding: '2rem', maxWidth: 400 }}>
-                <div style={{ width: 64, height: 64, background: 'rgba(245,158,11,0.1)', color: '#f59e0b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>⏳</div>
-                <h2 style={{ color: 'white', marginBottom: '1rem', fontWeight: 700 }}>Pending Approval</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                    Your account has been created successfully. An organizer must review and approve your registration before you can access the platform.
+                <div style={{ width: 64, height: 64, background: 'rgba(234,179,8,0.1)', color: '#eab308', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>⏳</div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Account Pending Approval</h2>
+                <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+                    Your student account is currently pending approval from the organizer. Please check back later.
                 </p>
-                <button onClick={() => globalThis.location.reload()} className="btn-primary" style={{ width: '100%', marginBottom: '0.85rem' }}>Refresh Status</button>
-                <button onClick={() => signOut()} className="btn-secondary" style={{ width: '100%' }}>Sign Out</button>
+                <button
+                    onClick={signOut}
+                    className="btn btn-secondary"
+                    style={{ width: '100%' }}
+                >
+                    Sign Out
+                </button>
             </div>
         </div>
     )
@@ -56,27 +64,47 @@ function AccessDeclined({ signOut }) {
         <div style={{ padding: '2rem', textAlign: 'center', background: '#0a0d1a', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="glass-card" style={{ padding: '2rem', maxWidth: 400 }}>
                 <div style={{ width: 64, height: 64, background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>❌</div>
-                <h2 style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 700 }}>Access Declined</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                    Your registration has been declined by an organizer. Please contact support if you believe this is an error.
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Access Request Declined</h2>
+                <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+                    Your access request to this platform has been declined by the administrator.
                 </p>
-                <button onClick={() => signOut()} className="btn-secondary" style={{ width: '100%' }}>Sign Out</button>
+                <button
+                    onClick={signOut}
+                    className="btn btn-secondary"
+                    style={{ width: '100%' }}
+                >
+                    Sign Out
+                </button>
             </div>
         </div>
     )
 }
 
 function getRoleRedirectPath(requiredRole, isAdmin, isStudent) {
-    if (requiredRole === 'organizer' && !isAdmin) return "/student"
-    if (requiredRole === 'student' && !isStudent && !isAdmin) return "/organizer"
+    if (requiredRole === 'admin' && !isAdmin) return '/dashboard'
+    if (requiredRole === 'student' && !isStudent) return '/organizer/dashboard'
     return null
 }
 
-function handleStudentState(profile, isProfileComplete, isExpired, pathname, signOut) {
+function handleStudentState(profile, isProfileComplete, isExpired, currentPath, signOut) {
     if (profile.status === 'pending') return <PendingApproval signOut={signOut} />
-    if (profile.status === 'rejected') return <AccessDeclined signOut={signOut} />
-    if (!isProfileComplete && pathname !== '/student/profile') return <Navigate to="/student/profile" replace />
-    if (isExpired && pathname !== '/student/renew') return <Navigate to="/student/renew" replace />
+    if (profile.status === 'declined') return <AccessDeclined signOut={signOut} />
+    if (profile.status !== 'approved') return <AccessDeclined signOut={signOut} />
+
+    if (!isProfileComplete) {
+        if (currentPath !== '/complete-profile') return <Navigate to="/complete-profile" replace />
+        return null
+    }
+
+    if (isExpired) {
+        if (currentPath !== '/renew-access') return <Navigate to="/renew-access" replace />
+        return null
+    }
+
+    if (currentPath === '/complete-profile' || currentPath === '/renew-access') {
+        return <Navigate to="/dashboard" replace />
+    }
+
     return null
 }
 
@@ -102,11 +130,7 @@ export function ProtectedRoute({ children, requiredRole }) {
         if (studentRedirect) return studentRedirect
     }
 
-    return (
-        <DailyOtpVerification user={user} profile={profile} signOut={signOut}>
-            {children}
-        </DailyOtpVerification>
-    )
+    return children
 }
 
 ProfileSyncIssue.propTypes = {
