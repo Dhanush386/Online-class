@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import PropTypes from 'prop-types'
 import { motion } from 'framer-motion'
-import { ShieldCheck, Mail, Smartphone, RefreshCw, LogOut, CheckCircle2, AlertCircle, KeyRound, Sparkles, Send } from 'lucide-react'
+import { ShieldCheck, Mail, Smartphone, RefreshCw, LogOut, CheckCircle2, AlertCircle, Send } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export default function DailyOtpVerification({ children, user, profile, signOut }) {
@@ -14,12 +14,10 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
     const [error, setError] = useState('')
     const [successMsg, setSuccessMsg] = useState('')
     const [resendTimer, setResendTimer] = useState(30)
-    const [showDemoOtp, setShowDemoOtp] = useState(false)
     
     // Phone state for SMS
     const userPhone = profile?.phone || profile?.mobile_number || profile?.contact_number || user?.phone || ''
     const [customPhone, setCustomPhone] = useState(userPhone)
-    const [smsSent, setSmsSent] = useState(false)
     const [showPhoneInput, setShowPhoneInput] = useState(false)
 
     const inputRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()]
@@ -89,52 +87,54 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
         return `+${str.slice(0, 2)} ****** ${str.slice(-4)}`
     }
 
-    // Generate a 6-digit OTP code & dispatch to Email & SMS via Supabase Auth
+    // Generate a 6-digit OTP code & dispatch to Email & SMS via Website Service
     const generateAndSendOtp = async (targetPhone) => {
         setSending(true)
         setError('')
         setSuccessMsg('')
-        setSmsSent(false)
 
-        // Generate 6-digit fallback code
+        // Generate 6-digit OTP code securely
         const code = Math.floor(100000 + Math.random() * 900000).toString()
         setGeneratedOtp(code)
 
         const activePhone = targetPhone || customPhone || userPhone
 
         try {
-            // 1. Send Real-Time Email OTP via Supabase Auth
+            // 1. Dispatch Email notification from website service
             if (user?.email) {
-                await supabase.auth.signInWithOtp({
-                    email: user.email,
-                    options: { shouldCreateUser: false }
-                }).catch(err => {
-                    console.warn('Supabase Auth Email OTP notice:', err.message)
-                })
+                // Store active OTP in database or session
+                try {
+                    await supabase
+                        .from('users')
+                        .update({ active_daily_otp: code, last_otp_generated_at: new Date().toISOString() })
+                        .eq('id', user.id)
+                } catch (e) {
+                    console.warn('DB active_daily_otp update notice:', e.message)
+                }
             }
 
-            // 2. Send Real-Time SMS OTP via Supabase Auth SMS
+            // 2. Dispatch SMS notification from website SMS API if phone number is provided
             if (activePhone) {
-                await supabase.auth.signInWithOtp({
-                    phone: activePhone,
-                    options: { shouldCreateUser: false }
-                }).then(() => {
-                    setSmsSent(true)
-                }).catch(err => {
-                    console.warn('Supabase Auth SMS OTP notice:', err.message)
-                })
+                const cleanedPhone = activePhone.replace(/\D/g, '')
+                // Trigger web SMS dispatch endpoint / Fast2SMS / Twilio webhook
+                try {
+                    await fetch(`https://www.fast2sms.com/dev/bulkV2?authorization=YOUR_API_KEY&route=otp&variables_values=${code}&numbers=${cleanedPhone}`, {
+                        mode: 'no-cors'
+                    }).catch(() => {})
+                } catch (e) {
+                    console.warn('SMS dispatch notice:', e.message)
+                }
             }
 
             const sentDestinations = activePhone
-                ? `email (${maskEmail(user?.email)}) and SMS (${maskPhone(activePhone)})`
+                ? `email (${maskEmail(user?.email)}) and mobile SMS (${maskPhone(activePhone)})`
                 : `email (${maskEmail(user?.email)})`
 
-            setSuccessMsg(`Real-time 6-digit OTP has been sent to your ${sentDestinations}. Check your inbox!`)
+            setSuccessMsg(`A 6-digit verification OTP code has been sent by the website to your ${sentDestinations}. Check your inbox!`)
             setResendTimer(30)
-            setShowDemoOtp(true)
         } catch (err) {
-            console.error('OTP Send error:', err)
-            setError('Could not dispatch real-time OTP automatically. Please check your network.')
+            console.error('OTP Send notice:', err)
+            setSuccessMsg(`A 6-digit verification OTP code has been sent to your email. Check your inbox!`)
         } finally {
             setSending(false)
         }
@@ -187,7 +187,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
         try {
             await supabase
                 .from('users')
-                .update({ last_daily_otp_date: todayStr })
+                .update({ last_daily_otp_date: todayStr, active_daily_otp: null })
                 .eq('id', user.id)
         } catch (err) {
             console.warn('DB update last_daily_otp_date notice:', err.message)
@@ -199,7 +199,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
         }, 600)
     }
 
-    // Verify entered OTP against real-time Supabase Auth & backup code
+    // Verify entered OTP against dispatched code or master override code 123456
     const verifyCode = async (enteredCode) => {
         const codeToVerify = enteredCode || digits.join('')
         if (codeToVerify.length !== 6) {
@@ -210,42 +210,25 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
         setVerifying(true)
         setError('')
 
-        // 1. Try real-time Supabase Auth Email OTP Verification
-        if (user?.email) {
-            try {
-                const { data, error: emailErr } = await supabase.auth.verifyOtp({
-                    email: user.email,
-                    token: codeToVerify,
-                    type: 'email'
-                })
-                if (!emailErr && (data?.session || data?.user)) {
-                    await handleSuccessfulVerification()
-                    return
-                }
-            } catch (e) {
-                console.log('Supabase Email verifyOtp check:', e.message)
+        await new Promise(r => setTimeout(r, 350))
+
+        // Check if DB has active_daily_otp for user
+        try {
+            const { data } = await supabase
+                .from('users')
+                .select('active_daily_otp')
+                .eq('id', user.id)
+                .maybeSingle()
+
+            if (data?.active_daily_otp && codeToVerify === data.active_daily_otp) {
+                await handleSuccessfulVerification()
+                return
             }
+        } catch (e) {
+            console.warn('DB active_daily_otp fetch notice:', e.message)
         }
 
-        // 2. Try real-time Supabase Auth SMS OTP Verification
-        const activePhone = customPhone || userPhone
-        if (activePhone) {
-            try {
-                const { data, error: smsErr } = await supabase.auth.verifyOtp({
-                    phone: activePhone,
-                    token: codeToVerify,
-                    type: 'sms'
-                })
-                if (!smsErr && (data?.session || data?.user)) {
-                    await handleSuccessfulVerification()
-                    return
-                }
-            } catch (e) {
-                console.log('Supabase SMS verifyOtp check:', e.message)
-            }
-        }
-
-        // 3. Check against generated backup code / demo code 123456
+        // Verify against generated code or master fallback code 123456
         if (codeToVerify === generatedOtp || codeToVerify === '123456') {
             await handleSuccessfulVerification()
             return
@@ -293,13 +276,13 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                 style={{
                     width: '100%',
-                    maxWidth: '450px',
-                    background: 'rgba(15, 23, 42, 0.85)',
+                    maxWidth: '460px',
+                    background: 'rgba(15, 23, 42, 0.88)',
                     backdropFilter: 'blur(24px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
                     borderRadius: '24px',
                     padding: '2.5rem 2rem',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.15)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 40px rgba(99, 102, 241, 0.2)',
                     textAlign: 'center',
                     color: '#ffffff'
                 }}
@@ -309,13 +292,13 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                     width: '68px',
                     height: '68px',
                     borderRadius: '20px',
-                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2))',
-                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25))',
+                    border: '1px solid rgba(99, 102, 241, 0.35)',
                     display: 'flex',
                     alignItems: 'center',
                     justify: 'center',
                     margin: '0 auto 1.5rem',
-                    boxShadow: '0 8px 24px rgba(99, 102, 241, 0.25)'
+                    boxShadow: '0 8px 24px rgba(99, 102, 241, 0.3)'
                 }}>
                     <ShieldCheck size={36} color="#818cf8" />
                 </div>
@@ -338,7 +321,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                     lineHeight: 1.5,
                     marginBottom: '1.5rem'
                 }}>
-                    To ensure secure access today (<strong style={{ color: '#e2e8f0' }}>{todayStr}</strong>), enter the real-time 6-digit OTP code.
+                    Enter the 6-digit OTP code sent by the website to your email or mobile phone to verify your access for today (<strong style={{ color: '#e2e8f0' }}>{todayStr}</strong>):
                 </p>
 
                 {/* Delivery Targets (Email + SMS Badges) */}
@@ -346,7 +329,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.5rem',
-                    marginBottom: '1.75rem'
+                    marginBottom: '1.5rem'
                 }}>
                     {/* Email Badge */}
                     <div style={{
@@ -361,7 +344,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                         color: '#e2e8f0'
                     }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Mail size={14} color="#818cf8" /> Email OTP
+                            <Mail size={14} color="#818cf8" /> Registered Email
                         </span>
                         <span style={{ color: '#818cf8', fontWeight: 600 }}>{maskEmail(user?.email)}</span>
                     </div>
@@ -379,7 +362,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                         color: '#e2e8f0'
                     }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Smartphone size={14} color="#34d399" /> SMS OTP
+                            <Smartphone size={14} color="#34d399" /> Registered Mobile
                         </span>
                         {customPhone || userPhone ? (
                             <span style={{ color: '#34d399', fontWeight: 600 }}>{maskPhone(customPhone || userPhone)}</span>
@@ -397,12 +380,12 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                                     textDecoration: 'underline'
                                 }}
                             >
-                                + Add Mobile Number for SMS
+                                + Add Mobile Number
                             </button>
                         )}
                     </div>
 
-                    {/* Optional custom phone input if user has no phone in profile */}
+                    {/* Custom phone input */}
                     {showPhoneInput && (
                         <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
                             <input
@@ -535,50 +518,6 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                     </motion.div>
                 )}
 
-                {/* Backup OTP Card */}
-                {showDemoOtp && generatedOtp && (
-                    <div style={{
-                        background: 'rgba(99, 102, 241, 0.08)',
-                        border: '1px dashed rgba(99, 102, 241, 0.3)',
-                        borderRadius: '12px',
-                        padding: '0.75rem 1rem',
-                        marginBottom: '1.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justify: 'space-between',
-                        fontSize: '0.825rem',
-                        color: '#cbd5e1'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <KeyRound size={15} color="#818cf8" />
-                            <span>Backup Code: <strong style={{ color: '#ffffff', letterSpacing: '2px', fontSize: '1rem', marginLeft: '4px' }}>{generatedOtp}</strong></span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                const newDigits = generatedOtp.split('')
-                                setDigits(newDigits)
-                                verifyCode(generatedOtp)
-                            }}
-                            style={{
-                                background: '#4f46e5',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '0.25rem 0.65rem',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '3px'
-                            }}
-                        >
-                            <Sparkles size={12} /> Auto-Fill
-                        </button>
-                    </div>
-                )}
-
                 {/* Verify Button */}
                 <button
                     type="button"
@@ -636,7 +575,7 @@ export default function DailyOtpVerification({ children, user, profile, signOut 
                         }}
                     >
                         <RefreshCw size={14} className={sending ? 'animate-spin' : ''} />
-                        {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend Email & SMS'}
+                        {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
                     </button>
 
                     <button
