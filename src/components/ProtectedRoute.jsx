@@ -81,8 +81,8 @@ function AccessDeclined({ signOut }) {
 }
 
 function getRoleRedirectPath(requiredRole, isAdmin, isStudent) {
-    if (requiredRole === 'admin' && !isAdmin) return '/dashboard'
-    if (requiredRole === 'student' && !isStudent) return '/organizer/dashboard'
+    if (requiredRole === 'organizer' && !isAdmin) return '/student'
+    if (requiredRole === 'student' && !isStudent && !isAdmin) return '/organizer'
     return null
 }
 
@@ -102,7 +102,7 @@ function handleStudentState(profile, isProfileComplete, isExpired, currentPath, 
     }
 
     if (currentPath === '/complete-profile' || currentPath === '/renew-access') {
-        return <Navigate to="/dashboard" replace />
+        return <Navigate to="/student" replace />
     }
 
     return null
