@@ -83,6 +83,7 @@ export default function StudentLayout() {
   const [notifications,   setNotifications]   = useState([])
   const [unreadCount,     setUnreadCount]     = useState(0)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
   const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
 
   const rankInfo = getRankInfo(stats?.xp || 0)
@@ -97,6 +98,25 @@ export default function StudentLayout() {
     globalThis.addEventListener('resize', h)
     return () => globalThis.removeEventListener('resize', h)
   }, [])
+
+  // Intercept browser back button on student dashboard to prompt Sign Out confirmation
+  useEffect(() => {
+    const isDashboard = location.pathname === '/student' || location.pathname === '/student/'
+    if (!isDashboard) return
+
+    window.history.pushState(null, '', location.pathname)
+
+    const handlePopState = (e) => {
+      e.preventDefault()
+      setShowSignOutConfirm(true)
+      window.history.pushState(null, '', location.pathname)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [location.pathname])
 
   useEffect(() => {
     if (profile?.id) {
@@ -338,6 +358,81 @@ export default function StudentLayout() {
       </div>
 
       {!location.pathname.includes('/classroom/') && <AIChatbot />}
+
+      {/* Sign Out Confirmation Modal */}
+      <AnimatePresence>
+        {showSignOutConfirm && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 99999,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '1.5rem'
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              style={{
+                width: '100%', maxWidth: '400px',
+                background: 'var(--bg-overlay, #0f172a)',
+                border: '1px solid var(--sidebar-border, rgba(255,255,255,0.12))',
+                borderRadius: '20px',
+                padding: '1.75rem',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                textAlign: 'center',
+                color: '#ffffff'
+              }}
+            >
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 1rem'
+              }}>
+                <LogOut size={28} />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#ffffff' }}>
+                Sign Out Confirmation
+              </h3>
+              <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                Are you sure you want to sign out of your Student account? You will need your password to log back in.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowSignOutConfirm(false)}
+                  style={{
+                    flex: 1, padding: '0.75rem', borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: '#ffffff', fontWeight: 600, cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSignOutConfirm(false)
+                    handleSignOut()
+                  }}
+                  style={{
+                    flex: 1, padding: '0.75rem', borderRadius: '12px',
+                    background: '#ef4444', border: 'none',
+                    color: '#ffffff', fontWeight: 700, cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)'
+                  }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
