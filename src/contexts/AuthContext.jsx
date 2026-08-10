@@ -226,6 +226,8 @@ export function AuthProvider({ children }) {
         setUser(null)
         setProfile(null)
         setStats({ xp: 0, coins: 0, solved: 0, streak: 0, completedCourses: [] })
+        sessionStorage.clear()
+        window.location.replace('/login')
     }, [])
 
     const value = useMemo(() => ({

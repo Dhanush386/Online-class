@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import PropTypes from 'prop-types'
 
 function LoadingView() {
@@ -111,6 +113,24 @@ function handleStudentState(profile, isProfileComplete, isExpired, currentPath, 
 export function ProtectedRoute({ children, requiredRole }) {
     const { user, profile, loading, signOut, isProfileComplete, isExpired } = useAuth()
     const location = useLocation()
+
+    // Prevent viewing cached protected pages via browser Back/Forward buttons after logout
+    useEffect(() => {
+        const handleBackForwardCheck = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) {
+                window.location.replace('/login')
+            }
+        }
+
+        window.addEventListener('pageshow', handleBackForwardCheck)
+        window.addEventListener('popstate', handleBackForwardCheck)
+
+        return () => {
+            window.removeEventListener('pageshow', handleBackForwardCheck)
+            window.removeEventListener('popstate', handleBackForwardCheck)
+        }
+    }, [])
 
     if (loading) return <LoadingView />
     if (!user) return <Navigate to="/login" state={{ from: location }} replace />
