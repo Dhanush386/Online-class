@@ -123,12 +123,19 @@ export function ProtectedRoute({ children, requiredRole }) {
             }
         }
 
+        const handlePageHide = () => {
+            // Cleanly close real-time WebSockets before page enters Back-Forward Cache
+            supabase.removeAllChannels()
+        }
+
         window.addEventListener('pageshow', handleBackForwardCheck)
         window.addEventListener('popstate', handleBackForwardCheck)
+        window.addEventListener('pagehide', handlePageHide)
 
         return () => {
             window.removeEventListener('pageshow', handleBackForwardCheck)
             window.removeEventListener('popstate', handleBackForwardCheck)
+            window.removeEventListener('pagehide', handlePageHide)
         }
     }, [])
 
