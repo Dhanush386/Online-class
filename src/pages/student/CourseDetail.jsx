@@ -813,14 +813,39 @@ export default function CourseDetail() {
 
 
 
-            {/* Live Interactive Classes Section */}
+            {/* Live Interactive Classes Section (Today's & Upcoming Live Classes Only) */}
             {(() => {
+                const now = new Date()
+
                 const liveClasses = (sessions || []).filter(v => {
                     const isRecorded = v.video_url && (
                         v.video_url.includes('supabase.co/storage') || 
                         v.video_url.includes('drive.google.com')
                     ) && !v.scheduled_time
-                    return !isRecorded || v.is_live
+
+                    // Ignore recorded videos
+                    if (isRecorded) return false
+
+                    // If explicitly marked as live right now, always show
+                    if (v.is_live) return true
+
+                    // Only show if scheduled and NOT yet completed
+                    if (v.scheduled_time) {
+                        const startTime = new Date(v.scheduled_time)
+                        const durationMins = v.duration_minutes || 60
+                        const endTime = new Date(startTime.getTime() + durationMins * 60 * 1000)
+
+                        // If class has already ended/completed, don't show it
+                        if (now > endTime) return false
+
+                        return true
+                    }
+
+                    return false
+                }).sort((a, b) => {
+                    const timeA = a.scheduled_time ? new Date(a.scheduled_time).getTime() : 0
+                    const timeB = b.scheduled_time ? new Date(b.scheduled_time).getTime() : 0
+                    return timeA - timeB
                 })
 
                 if (liveClasses.length === 0) return null
@@ -841,67 +866,91 @@ export default function CourseDetail() {
                                     display: 'inline-block', boxShadow: '0 0 10px #ef4444'
                                 }} />
                                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <Radio size={20} color="#ef4444" /> Live Interactive Classes
+                                    <Radio size={20} color="#ef4444" /> Live & Upcoming Classes
                                 </h3>
                             </div>
                             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.12)', padding: '0.25rem 0.6rem', borderRadius: 8 }}>
-                                {liveClasses.length} {liveClasses.length === 1 ? 'Class' : 'Classes'} Scheduled
+                                {liveClasses.length} {liveClasses.length === 1 ? 'Class' : 'Classes'} Available
                             </span>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-                            {liveClasses.map((liveClass) => (
-                                <div key={liveClass.id} style={{
-                                    background: 'var(--card-bg, #ffffff)',
-                                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                                    borderRadius: '12px',
-                                    padding: '1.25rem',
-                                    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                                    gap: '1rem',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
-                                }}>
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '0.2rem 0.5rem', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                <Radio size={12} /> Live Session
-                                            </span>
-                                            {liveClass.scheduled_time && (
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                    <Clock size={12} /> {new Date(liveClass.scheduled_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                                                </span>
+                            {liveClasses.map((liveClass) => {
+                                const startTime = liveClass.scheduled_time ? new Date(liveClass.scheduled_time) : null
+                                const durationMins = liveClass.duration_minutes || 60
+                                const endTime = startTime ? new Date(startTime.getTime() + durationMins * 60 * 1000) : null
+                                const isLiveNow = liveClass.is_live || (startTime && endTime && now >= startTime && now <= endTime)
+                                const isToday = startTime && (
+                                    startTime.getFullYear() === now.getFullYear() &&
+                                    startTime.getMonth() === now.getMonth() &&
+                                    startTime.getDate() === now.getDate()
+                                )
+
+                                return (
+                                    <div key={liveClass.id} style={{
+                                        background: 'var(--card-bg, #ffffff)',
+                                        border: isLiveNow ? '1.5px solid #ef4444' : '1px solid rgba(239, 68, 68, 0.2)',
+                                        borderRadius: '12px',
+                                        padding: '1.25rem',
+                                        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                                        gap: '1rem',
+                                        boxShadow: isLiveNow ? '0 4px 20px rgba(239, 68, 68, 0.15)' : '0 4px 12px rgba(0,0,0,0.03)'
+                                    }}>
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.3rem' }}>
+                                                {isLiveNow ? (
+                                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ffffff', background: '#ef4444', padding: '0.2rem 0.55rem', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: '0 2px 8px rgba(239,68,68,0.4)' }}>
+                                                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ffffff', display: 'inline-block' }} />
+                                                        LIVE NOW
+                                                    </span>
+                                                ) : isToday ? (
+                                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', padding: '0.2rem 0.55rem', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                        <Clock size={12} /> Today at {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.12)', padding: '0.2rem 0.55rem', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                        <Calendar size={12} /> {startTime ? startTime.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Upcoming'}
+                                                    </span>
+                                                )}
+                                                {liveClass.duration_minutes && (
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                                        {liveClass.duration_minutes} Mins
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                                                {liveClass.title}
+                                            </h4>
+                                            {liveClass.description && (
+                                                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                                                    {liveClass.description}
+                                                </p>
                                             )}
                                         </div>
-                                        <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                                            {liveClass.title}
-                                        </h4>
-                                        {liveClass.description && (
-                                            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                                                {liveClass.description}
-                                            </p>
-                                        )}
-                                    </div>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.75rem', borderTop: '1px solid var(--card-border)' }}>
-                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                                            {liveClass.duration_minutes ? `${liveClass.duration_minutes} Mins` : 'Live Class'}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '0.75rem', borderTop: '1px solid var(--card-border)' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate(`/student/classroom/${liveClass.id}`)}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                                    padding: '0.55rem 1.1rem', borderRadius: 8,
+                                                    background: isLiveNow
+                                                        ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                                                        : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                                                    color: '#ffffff', fontWeight: 700, fontSize: '0.85rem',
+                                                    border: 'none', cursor: 'pointer',
+                                                    boxShadow: isLiveNow
+                                                        ? '0 4px 12px rgba(239, 68, 68, 0.4)'
+                                                        : '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                                }}
+                                            >
+                                                <Radio size={14} /> {isLiveNow ? 'Join Live Class' : 'Enter Classroom'}
+                                            </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => navigate(`/student/classroom/${liveClass.id}`)}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: '0.4rem',
-                                                padding: '0.5rem 1rem', borderRadius: 8,
-                                                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                                                color: '#ffffff', fontWeight: 700, fontSize: '0.85rem',
-                                                border: 'none', cursor: 'pointer',
-                                                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)'
-                                            }}
-                                        >
-                                            <Radio size={14} /> Join Live Class
-                                        </button>
                                     </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </div>
                 )
