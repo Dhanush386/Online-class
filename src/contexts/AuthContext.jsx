@@ -73,6 +73,21 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true)
     const [isExpired, setIsExpired] = useState(false)
 
+    const clearAuthStorage = () => {
+        try {
+            localStorage.removeItem('learnova-auth-token')
+            localStorage.removeItem('supabase.auth.token')
+            Object.keys(localStorage).forEach(key => {
+                if (key.includes('auth-token') || key.startsWith('sb-')) {
+                    localStorage.removeItem(key)
+                }
+            })
+            sessionStorage.clear()
+        } catch (e) {
+            // Ignore storage errors
+        }
+    }
+
     useEffect(() => {
         // Simple and robust initial check
         async function initAuth() {
@@ -80,10 +95,10 @@ export function AuthProvider({ children }) {
                 const { data: { session }, error } = await supabase.auth.getSession()
                 
                 if (error) {
-                    console.warn('Initial session recovery failed:', error.message)
-                    // If refresh token is invalid, clear everything cleanly
-                    if (error.message?.includes('refresh_token') || error.message?.includes('not found')) {
-                        await supabase.auth.signOut()
+                    // If refresh token is invalid or not found, clear stale tokens silently
+                    if (error.message?.includes('refresh_token') || error.message?.includes('not found') || error.message?.includes('Invalid Refresh Token')) {
+                        clearAuthStorage()
+                        await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
                     }
                 }
 
@@ -92,21 +107,27 @@ export function AuthProvider({ children }) {
                     await fetchProfile(session.user.id)
                 } else {
                     // One-time retry for slow PWA storage (helpful on mobile)
-                    await new Promise(r => setTimeout(r, 800))
+                    await new Promise(r => setTimeout(r, 600))
                     const { data: { session: retry }, error: retryError } = await supabase.auth.getSession()
                     
                     if (retry?.user) {
                         setUser(retry.user)
                         await fetchProfile(retry.user.id)
                     } else {
-                        if (retryError?.message?.includes('refresh_token')) {
-                            localStorage.removeItem('supabase.auth.token')
+                        if (retryError?.message?.includes('refresh_token') || retryError?.message?.includes('not found')) {
+                            clearAuthStorage()
+                            await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
                         }
                         setLoading(false)
                     }
                 }
             } catch (err) {
-                console.error('Auth init error:', err)
+                if (err?.message?.includes('refresh_token') || err?.message?.includes('not found')) {
+                    clearAuthStorage()
+                    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+                } else {
+                    console.error('Auth init error:', err)
+                }
                 setLoading(false)
             }
         }

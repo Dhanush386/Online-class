@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Clock, ExternalLink, Calendar, X, Lock, FileText, Edit2, Plus, List, Trash2, Save } from 'lucide-react'
+import { Clock, ExternalLink, Calendar, X, Lock, FileText, Edit2, Plus, List, Trash2, Save, Radio, Video, Zap } from 'lucide-react'
 import ReactPlayer from 'react-player'
 import SplitViewer from '../../components/shared/SplitViewer'
 import WeeklyCompletionModal from '../../components/student/WeeklyCompletionModal'
@@ -15,6 +15,17 @@ const MAX_ATTEMPTS = 1
 const ASSESS_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
 
 const checkItemLocked = (item, type, { lockedCodingIds, lockedAssessIds, lockedMaterialIds, groupDayAccess, now }) => {
+    // Live class videos should NEVER be locked for students
+    if (type === 'video' || type === 'live') {
+        const isRecorded = item.video_url && (
+            item.video_url.includes('supabase.co/storage') || 
+            item.video_url.includes('drive.google.com') ||
+            !item.video_url.startsWith('http')
+        )
+        // If it is a live class / meeting link, it is always unlocked
+        if (!isRecorded) return false
+    }
+
     if (type === 'coding' && lockedCodingIds.includes(item.id)) return true
     if (type === 'assessment' && lockedAssessIds.includes(item.id)) return true
     if (type === 'resource' && lockedMaterialIds.includes(item.id)) return true
@@ -801,6 +812,100 @@ export default function CourseDetail() {
             )}
 
 
+
+            {/* Live Interactive Classes Section */}
+            {(() => {
+                const liveClasses = (sessions || []).filter(v => {
+                    const isRecorded = v.video_url && (
+                        v.video_url.includes('supabase.co/storage') || 
+                        v.video_url.includes('drive.google.com')
+                    ) && !v.scheduled_time
+                    return !isRecorded || v.is_live
+                })
+
+                if (liveClasses.length === 0) return null
+
+                return (
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        borderRadius: '16px',
+                        padding: '1.5rem',
+                        marginBottom: '1.5rem',
+                        boxShadow: '0 8px 24px rgba(239, 68, 68, 0.08)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <span style={{
+                                    width: 10, height: 10, borderRadius: '50%', background: '#ef4444',
+                                    display: 'inline-block', boxShadow: '0 0 10px #ef4444'
+                                }} />
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Radio size={20} color="#ef4444" /> Live Interactive Classes
+                                </h3>
+                            </div>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.12)', padding: '0.25rem 0.6rem', borderRadius: 8 }}>
+                                {liveClasses.length} {liveClasses.length === 1 ? 'Class' : 'Classes'} Scheduled
+                            </span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+                            {liveClasses.map((liveClass) => (
+                                <div key={liveClass.id} style={{
+                                    background: 'var(--card-bg, #ffffff)',
+                                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                                    borderRadius: '12px',
+                                    padding: '1.25rem',
+                                    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                                    gap: '1rem',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                                }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '0.2rem 0.5rem', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <Radio size={12} /> Live Session
+                                            </span>
+                                            {liveClass.scheduled_time && (
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                    <Clock size={12} /> {new Date(liveClass.scheduled_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                                            {liveClass.title}
+                                        </h4>
+                                        {liveClass.description && (
+                                            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                                                {liveClass.description}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.75rem', borderTop: '1px solid var(--card-border)' }}>
+                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                            {liveClass.duration_minutes ? `${liveClass.duration_minutes} Mins` : 'Live Class'}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate(`/student/classroom/${liveClass.id}`)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                                padding: '0.5rem 1rem', borderRadius: 8,
+                                                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                                                color: '#ffffff', fontWeight: 700, fontSize: '0.85rem',
+                                                border: 'none', cursor: 'pointer',
+                                                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)'
+                                            }}
+                                        >
+                                            <Radio size={14} /> Join Live Class
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )
+            })()}
 
             {/* Course Journey Timeline */}
             {weeks.length > 0 && (

@@ -223,22 +223,28 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                 if (!recorded) actualType = 'live';
             }
             let isLocked = item.isLocked || false;
-            if (isWeekLocked && isWeekLocked(weekNum)) {
-                isLocked = true;
-            }
 
-            // Enforce Day-wise pattern (drip content) if sequential unlock is enabled
-            if (course?.sequential_unlock !== false) {
-                const itemDow = item.day_of_week || item.day_number || item.day || 1;
-                const itemAbsoluteDay = (weekNum - 1) * 7 + itemDow;
-                if (itemAbsoluteDay > currentAccessibleAbsoluteDay) {
+            // Live classes should NEVER be locked for students
+            if (actualType === 'live') {
+                isLocked = false;
+            } else {
+                if (isWeekLocked && isWeekLocked(weekNum)) {
                     isLocked = true;
                 }
-            }
 
-            const itemDate = item.open_time || item.scheduled_time || item.start_time;
-            if (itemDate && new Date(itemDate) > new Date()) {
-                isLocked = true;
+                // Enforce Day-wise pattern (drip content) if sequential unlock is enabled
+                if (course?.sequential_unlock !== false) {
+                    const itemDow = item.day_of_week || item.day_number || item.day || 1;
+                    const itemAbsoluteDay = (weekNum - 1) * 7 + itemDow;
+                    if (itemAbsoluteDay > currentAccessibleAbsoluteDay) {
+                        isLocked = true;
+                    }
+                }
+
+                const itemDate = item.open_time || item.scheduled_time || item.start_time;
+                if (itemDate && new Date(itemDate) > new Date()) {
+                    isLocked = true;
+                }
             }
             
             topicsMap[topic].push({ 
@@ -284,6 +290,9 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
 
                 if (completed) {
                     status = 'completed';
+                } else if (item.type === 'live') {
+                    // Live classes are ALWAYS unlocked and directly accessible!
+                    status = 'available';
                 } else if (item.isLocked) {
                     const itemTime = item.open_time || item.scheduled_time || item.start_time;
                     if (itemTime) {
