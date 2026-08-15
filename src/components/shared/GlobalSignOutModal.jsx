@@ -13,33 +13,31 @@ export default function GlobalSignOutModal() {
   const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
   const roleName = isOrganizer ? 'Organizer' : 'Student'
 
-  // Intercept browser back button on root dashboard pages
+  // Intercept browser back button on all authenticated routes
   useEffect(() => {
     if (!user) return
 
-    const isDashboardRoot = 
-      location.pathname === '/organizer' || 
-      location.pathname === '/organizer/' ||
-      location.pathname === '/student' || 
-      location.pathname === '/student/'
+    const isClassroom = location.pathname.includes('/classroom/')
+    if (isClassroom) return // Live classroom has its own meeting guard
 
-    if (!isDashboardRoot) return
+    const isAuthRoute = location.pathname.startsWith('/organizer') || location.pathname.startsWith('/student')
+    if (!isAuthRoute) return
 
     // Push dummy state so browser back button triggers popstate instead of exiting
     try {
-      window.history.pushState({ ...window.history.state, __dashboardTrap: true }, '', location.pathname)
+      window.history.pushState({ ...window.history.state, __appActive: true }, '', location.pathname)
     } catch (e) {
       console.warn("History push failed:", e)
     }
 
     const handlePopState = (e) => {
       e.preventDefault()
-      setIsOpen(true)
       try {
-        window.history.pushState({ ...window.history.state, __dashboardTrap: true }, '', location.pathname)
+        window.history.pushState({ ...window.history.state, __appActive: true }, '', location.pathname)
       } catch (err) {
         console.warn("History push failed:", err)
       }
+      setIsOpen(true)
     }
 
     window.addEventListener('popstate', handlePopState)

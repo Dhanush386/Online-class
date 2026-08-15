@@ -6,6 +6,8 @@ import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Zap, BookOpen, Trop
 import AnimatedBackground from '../../components/background/AnimatedBackground'
 import learnovaLogo from '../../assets/learnova-logo.png'
 
+import { useAuth } from '../../contexts/AuthContext'
+
 const FEATURES = [
   { icon: BookOpen, title: 'Smart Learning', desc: 'AI-powered course recommendations tailored to your pace.' },
   { icon: Zap,      title: 'Live Classes',   desc: 'Real-time interactive sessions with screen sharing.' },
@@ -15,6 +17,7 @@ const FEATURES = [
 
 export default function Login() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [email,       setEmail]       = useState('')
   const [password,    setPassword]    = useState('')
   const [showPass,    setShowPass]    = useState(false)
@@ -23,11 +26,18 @@ export default function Login() {
   const [featureIdx,  setFeatureIdx]  = useState(0)
   const [remember,    setRemember]    = useState(false)
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true })
+    }
+  }, [user, navigate])
+
   // Rotate feature card
   useEffect(() => {
     const id = setInterval(() => setFeatureIdx(i => (i + 1) % FEATURES.length), 3500)
     return () => clearInterval(id)
-  })
+  }, [])
 
   async function handleLogin(e) {
     e.preventDefault()
@@ -36,7 +46,7 @@ export default function Login() {
     try {
       const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
       if (err) throw err
-      navigate('/')
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.')
     } finally {
