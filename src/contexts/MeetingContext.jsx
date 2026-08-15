@@ -936,17 +936,6 @@ export function MeetingProvider({ children }) {
         pendingNavigationRef.current = null
     }, [blocker])
 
-    const handleLogoutConfirm = async () => {
-        if (signOut) await signOut()
-        setShowLogoutGuard(false)
-        if (blocker.state === 'blocked') blocker.proceed()
-    }
-
-    const handleLogoutCancel = () => {
-        setShowLogoutGuard(false)
-        if (blocker.state === 'blocked') blocker.reset()
-    }
-
     // ── Browser close/refresh warning ──
     useEffect(() => {
         if (!meeting.isActive && !meeting.isUploading) return
@@ -1048,22 +1037,6 @@ export function MeetingProvider({ children }) {
                     </div>
                 </div>
             )}
-
-            {/* Logout Guard */}
-            <AnimatePresence>
-                {showLogoutGuard && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ background: 'var(--bg-base)', padding: '1.5rem', borderRadius: 12, width: '90%', maxWidth: 400 }}>
-                            <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Sign Out?</h3>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Are you sure you want to sign out of your account?</p>
-                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                <button onClick={handleLogoutCancel} className="btn-secondary" style={{ padding: '0.5rem 1rem' }}>Cancel</button>
-                                <button onClick={handleLogoutConfirm} className="btn-primary" style={{ padding: '0.5rem 1rem', background: '#ef4444' }}>Sign Out</button>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </MeetingContext.Provider>
     )
 }
