@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { ToastProvider } from './components/Toast'
 import ErrorBoundary from './components/ErrorBoundary'
 import PWAInstallBanner from './components/shared/PWAInstallBanner'
+import GlobalSignOutModal from './components/shared/GlobalSignOutModal'
 import CustomCursor from './components/cursor/CustomCursor'
 
 // ── Page loader shown while lazy chunks are fetching ──────────────────────────
@@ -129,6 +130,7 @@ function AppInner() {
     <MeetingProvider>
       <CustomCursor />
       <PWAInstallBanner />
+      <GlobalSignOutModal />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public */}

@@ -902,30 +902,19 @@ export function MeetingProvider({ children }) {
     }, [meeting.isActive, meeting.isMinimized, location.pathname])
 
     const { user, signOut } = useAuth()
-    const [showLogoutGuard, setShowLogoutGuard] = useState(false)
-
-    // ── Global Browser Navigation Interception ──
+    // ── Global Browser Navigation Interception for Classroom ──
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) => {
-            const isClassroom = meeting.isActive && !meeting.isMinimized && currentLocation.pathname.includes('/classroom/') && nextLocation.pathname !== currentLocation.pathname
-            const isLogout = !!user && nextLocation.pathname === '/login' && currentLocation.pathname !== '/login'
-            return isClassroom || isLogout
+            return meeting.isActive && !meeting.isMinimized && currentLocation.pathname.includes('/classroom/') && nextLocation.pathname !== currentLocation.pathname
         }
     )
 
     useEffect(() => {
         if (blocker.state === 'blocked') {
-            const isLogout = blocker.location.pathname === '/login'
-            const isClassroom = meeting.isActive && !meeting.isMinimized && location.pathname.includes('/classroom/')
-            
-            if (isLogout && !isClassroom) {
-                setShowLogoutGuard(true)
-            } else {
-                pendingNavigationRef.current = blocker.location.pathname
-                setShowNavGuard(true)
-            }
+            pendingNavigationRef.current = blocker.location.pathname
+            setShowNavGuard(true)
         }
-    }, [blocker.state, blocker.location, meeting.isActive, meeting.isMinimized, location.pathname])
+    }, [blocker.state, blocker.location])
 
     // Update nav guard leave to handle blocker
     const handleNavGuardLeave = useCallback(() => {
