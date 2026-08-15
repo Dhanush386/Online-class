@@ -1134,7 +1134,22 @@ function HostControlsTab({ room, videoId, participants, chatLocked, setChatLocke
     const sendHostCommand = (command, extra = {}) => {
         const msg = JSON.stringify({ type: 'host_command', command, ...extra });
         const encoder = new TextEncoder();
-        room.localParticipant.publishData(encoder.encode(msg), { reliable: true });
+        try {
+            room.localParticipant.publishData(encoder.encode(msg), { reliable: true });
+        } catch (e) {
+            console.error("Failed to publish LiveKit data:", e);
+        }
+        try {
+            // Also broadcast via Supabase Realtime for 100% guaranteed delivery to all students
+            const channel = supabase.channel(`classroom-locks-${videoId}`);
+            channel.send({
+                type: 'broadcast',
+                event: 'host_command',
+                payload: { type: 'host_command', command, ...extra }
+            });
+        } catch (e) {
+            console.error("Failed to broadcast host command via Supabase:", e);
+        }
     };
 
     const handleMuteAll = () => sendHostCommand('mute_all');
@@ -1562,18 +1577,29 @@ ScreenShareButton.propTypes = {
 }
 
 // ─── Reactions Button ───────────────────────────────────────────────────────
-function ReactionsButton({ reactionsDisabled, showReactionPicker, setShowReactionPicker, onSendReaction, btnStyle }) {
+// ─── Reactions Button ───────────────────────────────────────────────────────
+function ReactionsButton({ isOrganizer, reactionsDisabled, showReactionPicker, setShowReactionPicker, onSendReaction, btnStyle, toast }) {
+    const isReactionsBlocked = !isOrganizer && reactionsDisabled
     return (
         <div style={{ position: 'relative' }}>
-            <button onClick={() => !reactionsDisabled && setShowReactionPicker(!showReactionPicker)}
+            <button 
+                onClick={() => {
+                    if (isReactionsBlocked) {
+                        toast?.error('🔒 Reactions are disabled by the instructor')
+                        return
+                    }
+                    setShowReactionPicker(!showReactionPicker)
+                }}
                 style={{
                     ...btnStyle(true),
                     background: showReactionPicker ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
-                    ...(reactionsDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
-                }} title={reactionsDisabled ? 'Reactions disabled by instructor' : 'Send Reaction'}>
-                <Smile size={20} />
+                    ...(isReactionsBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+                }} 
+                title={isReactionsBlocked ? 'Reactions disabled by instructor' : 'Send Reaction'}
+            >
+                {isReactionsBlocked ? <Lock size={20} /> : <Smile size={20} />}
             </button>
-            {showReactionPicker && !reactionsDisabled && (
+            {showReactionPicker && !isReactionsBlocked && (
                 <ReactionPicker onSelect={onSendReaction} onClose={() => setShowReactionPicker(false)} />
             )}
         </div>
@@ -1581,15 +1607,17 @@ function ReactionsButton({ reactionsDisabled, showReactionPicker, setShowReactio
 }
 
 ReactionsButton.propTypes = {
+    isOrganizer: PropTypes.bool.isRequired,
     reactionsDisabled: PropTypes.bool.isRequired,
     showReactionPicker: PropTypes.bool.isRequired,
     setShowReactionPicker: PropTypes.func.isRequired,
     onSendReaction: PropTypes.func.isRequired,
-    btnStyle: PropTypes.func.isRequired
+    btnStyle: PropTypes.func.isRequired,
+    toast: PropTypes.object
 }
 
 // ─── Hand Raise Button ──────────────────────────────────────────────────────
-function HandRaiseButton({ isOrganizer, handsLocked, handRaised, onToggleHand, raisedHandsCount, btnStyle }) {
+function HandRaiseButton({ isOrganizer, handsLocked, handRaised, onToggleHand, raisedHandsCount, btnStyle, toast }) {
     const isHandBlocked = !isOrganizer && handsLocked && !handRaised
 
     let title = 'Raise Hand'
@@ -1601,9 +1629,11 @@ function HandRaiseButton({ isOrganizer, handsLocked, handRaised, onToggleHand, r
 
     return (
         <button onClick={() => {
-            if (!isHandBlocked) {
-                onToggleHand();
+            if (isHandBlocked) {
+                toast?.error('🔒 Hand raising is locked by the instructor')
+                return
             }
+            onToggleHand();
         }} style={{
             ...btnStyle(true),
             background: handRaised ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)',
@@ -1611,7 +1641,7 @@ function HandRaiseButton({ isOrganizer, handsLocked, handRaised, onToggleHand, r
             position: 'relative',
             ...(isHandBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
         }} title={title}>
-            <Hand size={20} />
+            {isHandBlocked ? <Lock size={20} /> : <Hand size={20} />}
             {raisedHandsCount > 0 && (
                 <span style={{
                     position: 'absolute', top: -4, right: -4,
@@ -1630,13 +1660,15 @@ HandRaiseButton.propTypes = {
     handRaised: PropTypes.bool.isRequired,
     onToggleHand: PropTypes.func.isRequired,
     raisedHandsCount: PropTypes.number.isRequired,
-    btnStyle: PropTypes.func.isRequired
+    btnStyle: PropTypes.func.isRequired,
+    toast: PropTypes.object
 }
 
 // ─── Control Bar ─────────────────────────────────────────────────────────────
 function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHandsCount, reactionsDisabled, micLocked, videoLocked, screenShareLocked, handsLocked, onSendReaction, onToggleHand }) {
     const { isMobile } = useDeviceOrientation()
     const localParticipant = useLocalParticipant()
+    const toast = useToast()
     const [isMicOn, setIsMicOn] = useState(true)
     const [isCamOn, setIsCamOn] = useState(true)
     const [isScreenSharing, setIsScreenSharing] = useState(false)
@@ -1659,25 +1691,59 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
         }
     }, [lp, lp?.isMicrophoneEnabled, lp?.isCameraEnabled, lp?.isScreenShareEnabled])
 
+    // Immediately shut off student tracks when lock turns ON
+    useEffect(() => {
+        if (!isOrganizer && micLocked && lp && lp.isMicrophoneEnabled) {
+            lp.setMicrophoneEnabled(false)
+            setIsMicOn(false)
+        }
+    }, [isOrganizer, micLocked, lp])
+
+    useEffect(() => {
+        if (!isOrganizer && videoLocked && lp && lp.isCameraEnabled) {
+            lp.setCameraEnabled(false)
+            setIsCamOn(false)
+        }
+    }, [isOrganizer, videoLocked, lp])
+
+    useEffect(() => {
+        if (!isOrganizer && screenShareLocked && lp && lp.isScreenShareEnabled) {
+            lp.setScreenShareEnabled(false)
+            setIsScreenSharing(false)
+        }
+    }, [isOrganizer, screenShareLocked, lp])
+
     const toggleMic = async () => {
         if (!lp) return
-        const cannotUnmute = !isOrganizer && micLocked && !isMicOn
+        if (!isOrganizer && micLocked && !isMicOn) {
+            toast.error('🔒 Microphone is locked by the instructor')
+            return
+        }
         const forceMuted = !isOrganizer && !isMicOn && Date.now() < forceMutedUntil
-        if (cannotUnmute || forceMuted) return
+        if (forceMuted) {
+            toast.error('🔒 You are temporarily muted by the instructor')
+            return
+        }
         await lp.setMicrophoneEnabled(!isMicOn)
         setIsMicOn(!isMicOn)
     }
 
     const toggleCam = async () => {
         if (!lp) return
-        if (!isOrganizer && videoLocked && !isCamOn) return
+        if (!isOrganizer && videoLocked && !isCamOn) {
+            toast.error('🔒 Camera is locked by the instructor')
+            return
+        }
         await lp.setCameraEnabled(!isCamOn)
         setIsCamOn(!isCamOn)
     }
 
     const toggleScreen = async () => {
         if (!lp) return
-        if (!isOrganizer && screenShareLocked && !isScreenSharing) return
+        if (!isOrganizer && screenShareLocked && !isScreenSharing) {
+            toast.error('🔒 Screen sharing is locked by the instructor')
+            return
+        }
         try {
             await lp.setScreenShareEnabled(!isScreenSharing)
             setIsScreenSharing(!isScreenSharing)
@@ -1755,11 +1821,13 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
 
             {/* Reactions */}
             <ReactionsButton
+                isOrganizer={isOrganizer}
                 reactionsDisabled={reactionsDisabled}
                 showReactionPicker={showReactionPicker}
                 setShowReactionPicker={setShowReactionPicker}
                 onSendReaction={onSendReaction}
                 btnStyle={btnStyle}
+                toast={toast}
             />
 
             {/* Minimize */}
@@ -1775,6 +1843,7 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
                 onToggleHand={onToggleHand}
                 raisedHandsCount={raisedHandsCount}
                 btnStyle={btnStyle}
+                toast={toast}
             />
 
             {/* Leave */}
@@ -2067,7 +2136,7 @@ function processHostCommand(msg, room, toast, onLeave, setters) {
     }
 }
 
-function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters, states) {
+function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters, states, videoId) {
     const {
         setReactions,
         setRaisedHands,
@@ -2116,6 +2185,12 @@ function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters, states) 
                     setters.setChatLocked(msg.locks.chatLocked)
                     setters.setHandsLocked(msg.locks.handsLocked)
                     setters.setReactionsDisabled(msg.locks.reactionsDisabled)
+                    const lp = room.localParticipant
+                    if (lp) {
+                        if (msg.locks.micLocked) lp.setMicrophoneEnabled(false)
+                        if (msg.locks.videoLocked) lp.setCameraEnabled(false)
+                        if (msg.locks.screenShareLocked) lp.setScreenShareEnabled(false)
+                    }
                 }
             } catch (error) {
                 console.error("Caught exception processing data:", error)
@@ -2123,8 +2198,23 @@ function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters, states) 
         }
 
         room.on(RoomEvent.DataReceived, handleDataReceived)
-        return () => room.off(RoomEvent.DataReceived, handleDataReceived)
-    }, [room, isOrganizer, toast, onLeave, setters, states])
+
+        // Supabase Realtime channel for reliable lock broadcast fallback
+        let locksChannel = null
+        if (videoId) {
+            locksChannel = supabase.channel(`classroom-locks-${videoId}`)
+            locksChannel.on('broadcast', { event: 'host_command' }, ({ payload }) => {
+                if (!isOrganizer && payload) {
+                    processHostCommand(payload, room, toast, onLeave, setters)
+                }
+            }).subscribe()
+        }
+
+        return () => {
+            room.off(RoomEvent.DataReceived, handleDataReceived)
+            if (locksChannel) supabase.removeChannel(locksChannel)
+        }
+    }, [room, isOrganizer, toast, onLeave, setters, states, videoId])
 }
 
 function useParticipantSystemMessages(room, isOrganizer, videoDataId, profileId) {
@@ -2694,7 +2784,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
         setReactionsDisabled
     }, {
         micLocked, videoLocked, screenShareLocked, chatLocked, handsLocked, reactionsDisabled
-    })
+    }, videoData?.id)
 
     // Request Sync on Join for Students
     useEffect(() => {
