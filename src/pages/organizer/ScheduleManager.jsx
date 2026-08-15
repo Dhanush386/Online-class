@@ -443,7 +443,7 @@ export default function ScheduleManager() {
                                                 <button
                                                     onClick={() => handleViewAttendance(v)}
                                                     className="btn-secondary"
-                                                    style={{ padding: '0.65rem 1rem', fontSize: '0.85rem', background: 'white' }}
+                                                    style={{ padding: '0.65rem 1rem', fontSize: '0.85rem' }}
                                                 >
                                                     <Users size={15} /> Attendance
                                                 </button>
@@ -690,8 +690,8 @@ export default function ScheduleManager() {
                                                                                     justify: 'space-between',
                                                                                     padding: '1rem',
                                                                                     borderRadius: '10px',
-                                                                                    background: 'white',
-                                                                                    border: '1px solid #e2e8f0'
+                                                                                    background: 'var(--card-bg)',
+                                                                                    border: '1px solid var(--card-border)'
                                                                                 }}
                                                                             >
                                                                                 <div style={{ flex: '1 1 240px' }}>
