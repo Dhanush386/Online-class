@@ -274,7 +274,7 @@ export default function StudentLayout() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100dvh', background: 'var(--bg-primary)' }}>
+    <div style={{ display: 'flex', height: '100dvh', background: 'var(--bg-base)' }}>
       {/* ── Mobile Menu Overlay ── */}
       <AnimatePresence>
         {!inClassroomOnMobile && isMobile && mobileMenuOpen && (

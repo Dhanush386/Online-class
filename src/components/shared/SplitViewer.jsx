@@ -130,22 +130,34 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
             animation: 'fadeIn 0.3s ease-out'
         }}>
             {/* Header */}
-            <div style={{ height: '60px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
-                    <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{title}</h2>
+            <div style={{ 
+                height: isMobile ? '52px' : '60px', 
+                background: 'rgba(255,255,255,0.05)', 
+                borderBottom: '1px solid rgba(255,255,255,0.1)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                padding: isMobile ? '0 1rem' : '0 1.5rem',
+                gap: '0.5rem'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981', flexShrink: 0 }} />
+                    <h2 style={{ color: 'white', fontSize: isMobile ? '0.95rem' : '1.1rem', fontWeight: 700, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h2>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', background: 'rgba(255,255,255,0.05)', padding: '0.4rem 0.8rem', borderRadius: 20 }}>
-                        <Lock size={12} /> Secured Session
-                    </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                    {!isMobile && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', background: 'rgba(255,255,255,0.05)', padding: '0.4rem 0.8rem', borderRadius: 20 }}>
+                            <Lock size={12} /> Secured Session
+                        </div>
+                    )}
                     <button 
                         onClick={onClose} 
-                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '0.6rem', cursor: 'pointer', color: 'white', display: 'flex', transition: 'background 0.2s' }}
+                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '0.5rem', cursor: 'pointer', color: 'white', display: 'flex', transition: 'background 0.2s' }}
                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                        title="Close Viewer"
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
                 </div>
             </div>
@@ -161,22 +173,20 @@ export default function SplitViewer({ videoUrl, slideUrl, videoType, title, onCl
                 }}
             >
                 {isMobile ? (
-                    <div style={{ flex: 1, position: 'relative', background: '#000', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ flex: 1, position: 'relative' }}>
-                            {loadingVideo ? (
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
-                                    <div style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                                    <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>Securing connection...</span>
-                                </div>
-                            ) : (
-                                <VideoPlayer 
-                                    videoUrl={videoUrl} 
-                                    videoType={videoType} 
-                                    onEnded={onEnded} 
-                                    title={title}
-                                />
-                            )}
-                        </div>
+                    <div style={{ flex: 1, position: 'relative', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                        {loadingVideo ? (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '1rem' }}>
+                                <div style={{ width: 40, height: 40, border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>Loading video...</span>
+                            </div>
+                        ) : (
+                            <VideoPlayer 
+                                videoUrl={videoUrl} 
+                                videoType={videoType} 
+                                onEnded={onEnded} 
+                                title={title}
+                            />
+                        )}
                     </div>
                 ) : (
                     <>
@@ -266,20 +276,15 @@ function VideoPlayer({ videoUrl, videoType, onEnded, title }) {
     if (!videoUrl) return null;
 
     if (videoType === 'drive-iframe') {
-        const isMobileDevice = typeof globalThis !== 'undefined' && globalThis.innerWidth < 768;
         return (
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <iframe
                     src={videoUrl}
                     style={{ 
-                        position: 'absolute', 
-                        top: 0, 
-                        left: 0, 
+                        width: '100%', 
+                        height: '100%', 
                         border: 'none',
-                        width: isMobileDevice ? '200%' : '100%',
-                        height: isMobileDevice ? '200%' : '100%',
-                        transform: isMobileDevice ? 'scale(0.5)' : 'none',
-                        transformOrigin: '0 0'
+                        display: 'block'
                     }}
                     allow="autoplay; fullscreen"
                     allowFullScreen
@@ -290,24 +295,27 @@ function VideoPlayer({ videoUrl, videoType, onEnded, title }) {
     }
 
     return (
-        <ReactPlayer
-            url={videoUrl}
-            controls
-            playing={true}
-            width="100%"
-            height="100%"
-            style={{ position: 'absolute', top: 0, left: 0 }}
-            onEnded={onEnded}
-            config={{
-                file: {
-                    attributes: {
-                        controlsList: 'nodownload',
-                        disablePictureInPicture: true,
-                        onContextMenu: e => e.preventDefault()
+        <div style={{ width: '100%', height: '100%', position: 'relative', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ReactPlayer
+                url={videoUrl}
+                controls
+                playing={true}
+                width="100%"
+                height="100%"
+                style={{ position: 'absolute', top: 0, left: 0 }}
+                onEnded={onEnded}
+                config={{
+                    file: {
+                        attributes: {
+                            controlsList: 'nodownload',
+                            disablePictureInPicture: true,
+                            onContextMenu: e => e.preventDefault(),
+                            playsInline: true
+                        }
                     }
-                }
-            }}
-        />
+                }}
+            />
+        </div>
     );
 }
 

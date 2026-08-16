@@ -89,45 +89,35 @@ export function AuthProvider({ children }) {
     }
 
     useEffect(() => {
-        // Simple and robust initial check
+        // Robust initial check with graceful handling of expired refresh tokens
         async function initAuth() {
             try {
                 const { data: { session }, error } = await supabase.auth.getSession()
                 
                 if (error) {
-                    // If refresh token is invalid or not found, clear stale tokens silently
-                    if (error.message?.includes('refresh_token') || error.message?.includes('not found') || error.message?.includes('Invalid Refresh Token')) {
-                        clearAuthStorage()
-                        await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-                    }
+                    // Stale or invalid refresh token found in storage
+                    clearAuthStorage()
+                    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+                    setUser(null)
+                    setProfile(null)
+                    setLoading(false)
+                    return
                 }
 
                 if (session?.user) {
                     setUser(session.user)
                     await fetchProfile(session.user.id)
                 } else {
-                    // One-time retry for slow PWA storage (helpful on mobile)
-                    await new Promise(r => setTimeout(r, 600))
-                    const { data: { session: retry }, error: retryError } = await supabase.auth.getSession()
-                    
-                    if (retry?.user) {
-                        setUser(retry.user)
-                        await fetchProfile(retry.user.id)
-                    } else {
-                        if (retryError?.message?.includes('refresh_token') || retryError?.message?.includes('not found')) {
-                            clearAuthStorage()
-                            await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-                        }
-                        setLoading(false)
-                    }
+                    setUser(null)
+                    setProfile(null)
+                    setLoading(false)
                 }
             } catch (err) {
-                if (err?.message?.includes('refresh_token') || err?.message?.includes('not found')) {
-                    clearAuthStorage()
-                    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-                } else {
-                    console.error('Auth init error:', err)
-                }
+                // Clear any stale local auth tokens on failure
+                clearAuthStorage()
+                await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+                setUser(null)
+                setProfile(null)
                 setLoading(false)
             }
         }
@@ -135,13 +125,13 @@ export function AuthProvider({ children }) {
         initAuth()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (session?.user) {
-                setUser(session.user)
-                fetchProfile(session.user.id)
-            } else {
+            if (event === 'SIGNED_OUT' || !session) {
                 setUser(null)
                 setProfile(null)
                 setLoading(false)
+            } else if (session?.user) {
+                setUser(session.user)
+                fetchProfile(session.user.id)
             }
         })
 

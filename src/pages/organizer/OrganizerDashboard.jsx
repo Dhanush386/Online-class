@@ -172,19 +172,18 @@ export default function OrganizerDashboard() {
                                         <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(226,232,240,0.5)" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                                 <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-body)' }} axisLine={false} tickLine={false} />
                                 <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
                                 <Tooltip
                                     contentStyle={{
-                                        background: 'rgba(255,255,255,0.95)',
-                                        backdropFilter: 'blur(12px)',
-                                        border: '1px solid rgba(226,232,240,0.7)',
+                                        background: '#161b28',
+                                        border: '1px solid rgba(255,255,255,0.1)',
                                         borderRadius: 12,
-                                        color: 'var(--text-primary)',
+                                        color: '#f8fafc',
                                         fontSize: '0.82rem',
                                         fontFamily: 'var(--font-body)',
-                                        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
                                     }}
                                 />
                                 <Area type="monotone" dataKey="uploads" stroke="#6366f1" strokeWidth={2.5} fill="url(#chartGrad)" dot={{ r: 3, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }} />
