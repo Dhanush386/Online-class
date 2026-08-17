@@ -3,7 +3,8 @@ import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { ClipboardList, Calendar, ChevronRight, Eye, Lock } from 'lucide-react'
+import { ClipboardList, Calendar, ChevronRight, Eye, Lock, Monitor } from 'lucide-react'
+import { useDeviceType } from '../../hooks/useDeviceType'
 
 const TABS = ['daily', 'weekly', 'final']
 const TAB_LABELS = { daily: 'Daily Assessment', weekly: 'Weekly Assessment', final: 'Final Assessment' }
@@ -239,14 +240,36 @@ export default function Assessments() {
         load()
     }, [profile])
 
+    const { isMobile, isTablet } = useDeviceType()
     const items = assessments[tab]
 
     return (
         <div className="animate-fade-in">
-            <div style={{ marginBottom: '2rem' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Assessments</h1>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Track your daily, weekly, and final evaluations</p>
             </div>
+
+            {(isMobile || isTablet) && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.85rem 1rem',
+                    background: 'rgba(99, 102, 241, 0.08)',
+                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                    borderRadius: 12,
+                    marginBottom: '1.5rem',
+                    color: '#c7d2fe',
+                    fontSize: '0.85rem',
+                    lineHeight: 1.4,
+                }}>
+                    <Monitor size={20} style={{ color: '#818cf8', flexShrink: 0 }} />
+                    <div>
+                        <strong style={{ color: '#ffffff' }}>Laptop or Desktop Required:</strong> AI proctored assessments and fullscreen exams must be taken on a laptop or desktop computer.
+                    </div>
+                </div>
+            )}
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.75rem', background: '#f1f5f9', padding: '0.375rem', borderRadius: 12, border: '1px solid var(--card-border)', width: 'fit-content' }}>

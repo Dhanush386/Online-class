@@ -23,10 +23,10 @@ export default function MobileBlocker() {
                     <Monitor size={32} color="#3b82f6" />
                 </div>
 
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.85rem' }}>Desktop Required</h1>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.85rem' }}>Laptop or Desktop Required</h1>
                 
                 <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '2rem' }}>
-                    This feature is designed for laptops and desktop computers to provide the best experience.
+                    Assessments and coding exercises require a <strong>laptop or desktop computer</strong> for full-screen AI proctoring, webcam monitoring, and code editor support.
                 </p>
 
                 <div style={{ width: '100%', background: '#0f172a', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'left' }}>
