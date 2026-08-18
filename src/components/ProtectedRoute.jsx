@@ -90,20 +90,14 @@ function getRoleRedirectPath(requiredRole, isAdmin, isStudent) {
 
 function handleStudentState(profile, isProfileComplete, isExpired, currentPath, signOut) {
     if (profile.status === 'pending') return <PendingApproval signOut={signOut} />
-    if (profile.status === 'declined') return <AccessDeclined signOut={signOut} />
-    if (profile.status !== 'approved') return <AccessDeclined signOut={signOut} />
-
-    if (!isProfileComplete) {
-        if (currentPath !== '/complete-profile') return <Navigate to="/complete-profile" replace />
-        return null
-    }
+    if (profile.status === 'declined' || profile.status === 'blocked') return <AccessDeclined signOut={signOut} />
 
     if (isExpired) {
-        if (currentPath !== '/renew-access') return <Navigate to="/renew-access" replace />
+        if (currentPath !== '/student/renew') return <Navigate to="/student/renew" replace />
         return null
     }
 
-    if (currentPath === '/complete-profile' || currentPath === '/renew-access') {
+    if (currentPath === '/student/renew' && !isExpired) {
         return <Navigate to="/student" replace />
     }
 
