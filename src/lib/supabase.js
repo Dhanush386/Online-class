@@ -7,6 +7,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Supabase URL or Anon Key is missing! Check your environment variables.')
 }
 
+// Proactively sanitize stale/corrupted auth tokens before Supabase initialization
+try {
+    const rawToken = globalThis.localStorage?.getItem('learnova-auth-token')
+    if (rawToken) {
+        const parsed = JSON.parse(rawToken)
+        if (!parsed || typeof parsed !== 'object' || (!parsed.access_token && !parsed.refresh_token)) {
+            globalThis.localStorage?.removeItem('learnova-auth-token')
+        }
+    }
+} catch {
+    try { globalThis.localStorage?.removeItem('learnova-auth-token') } catch {}
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         persistSession: true,
