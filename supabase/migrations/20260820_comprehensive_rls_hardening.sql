@@ -41,17 +41,14 @@ AS $$
   );
 $$;
 
--- 4. Helper function: Check if user owns or is assigned to a course
+-- 4. Helper function: Check if user is staff for courses
 CREATE OR REPLACE FUNCTION public.is_organizer_for_course(target_course_id uuid)
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
 AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.courses
-    WHERE id = target_course_id AND (created_by = auth.uid() OR public.is_admin())
-  );
+  SELECT public.is_staff();
 $$;
 
 -- 5. Helper function: Check active student enrollment
@@ -67,7 +64,7 @@ AS $$
   );
 $$;
 
--- 6. Helper function: Check if an assessment is within BOTH its start and closing time windows
+-- 6. Helper function: Check if an assessment is within open/due time window
 CREATE OR REPLACE FUNCTION public.is_assessment_time_open(target_assessment_id uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -77,7 +74,7 @@ AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.assessments
     WHERE id = target_assessment_id 
-      AND (scheduled_date IS NULL OR scheduled_date <= now() + interval '5 minutes')
+      AND (open_time IS NULL OR open_time <= now() + interval '5 minutes')
       AND (due_date IS NULL OR due_date >= now())
   );
 $$;
@@ -85,7 +82,6 @@ $$;
 -- ============================================================================
 -- INTEGRITY: ATTEMPT & VOTE UNIQUE CONSTRAINTS
 -- ============================================================================
--- 1. Prevent duplicate submissions per assessment per student at DB level
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -98,7 +94,6 @@ EXCEPTION
   WHEN others THEN NULL;
 END $$;
 
--- 2. Prevent duplicate votes per poll per user at DB level
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -190,7 +185,6 @@ CREATE POLICY "assessments_manage" ON public.assessments
   FOR ALL USING (public.is_staff())
   WITH CHECK (public.is_staff());
 
--- TIME-GATED EXAM QUESTIONS (Enrolled students within active start & due dates)
 DROP POLICY IF EXISTS "assessment_questions_select" ON public.assessment_questions;
 CREATE POLICY "assessment_questions_select" ON public.assessment_questions
   FOR SELECT USING (
@@ -216,7 +210,6 @@ CREATE POLICY "assessment_submissions_select" ON public.assessment_submissions
     OR public.is_staff()
   );
 
--- SUBMISSION INSERT POLICY (Enforces student ownership + open time window + enrollment)
 DROP POLICY IF EXISTS "assessment_submissions_insert" ON public.assessment_submissions;
 CREATE POLICY "assessment_submissions_insert" ON public.assessment_submissions
   FOR INSERT WITH CHECK (
@@ -231,7 +224,6 @@ CREATE POLICY "assessment_submissions_insert" ON public.assessment_submissions
     OR public.is_admin()
   );
 
--- Explicitly block UPDATE on submissions so answers cannot be modified post-submission
 DROP POLICY IF EXISTS "assessment_submissions_update" ON public.assessment_submissions;
 CREATE POLICY "assessment_submissions_update" ON public.assessment_submissions
   FOR UPDATE USING (public.is_admin());
@@ -422,7 +414,6 @@ CREATE POLICY "support_messages_all" ON public.support_messages
   )
   WITH CHECK (sender_id = auth.uid() OR public.is_staff());
 
--- STRICT PRIVILEGE GATE: Only true Administrators (main_admin / sub_admin) can manage organizer invites
 DROP POLICY IF EXISTS "organizer_invites_admin" ON public.organizer_invites;
 CREATE POLICY "organizer_invites_admin" ON public.organizer_invites
   FOR ALL USING (public.is_admin())
