@@ -79,11 +79,16 @@ export default function Register() {
         return () => clearTimeout(timer)
     }, [form.email, form.role])
 
-    // 1. Send OTP to user email
+    // 1. Send OTP to user email using Confirm Signup template
     const handleSendOtp = async () => {
         const cleanEmail = form.email.trim().toLowerCase()
         if (!cleanEmail || !cleanEmail.includes('@')) {
             setError('Please enter a valid email address first')
+            return
+        }
+
+        if (!form.password || form.password.length < 6) {
+            setError('Please enter a password (min. 6 characters) before requesting OTP')
             return
         }
 
@@ -93,38 +98,46 @@ export default function Register() {
         setResendSuccess(false)
 
         try {
-            // If password is already typed (>=6 chars), do standard signup to reserve user with password
-            if (form.password && form.password.length >= 6) {
-                await signUp({
+            // Call signUp with the Confirm Signup template
+            let signupSuccess = false
+            try {
+                const data = await signUp({
                     email: cleanEmail,
                     password: form.password,
                     name: form.name.trim() || 'Student',
                     role: form.role
                 })
-            } else {
-                // Otherwise send OTP via Supabase OTP service
-                const { error: otpErr } = await supabase.auth.signInWithOtp({
-                    email: cleanEmail,
-                    options: {
-                        shouldCreateUser: true,
-                        data: { name: form.name.trim() || 'Student', role: form.role }
+                signupSuccess = true
+            } catch (err) {
+                // If user is already registered in auth.users (e.g. unverified or resending)
+                if (err.message && (err.message.toLowerCase().includes('already registered') || err.message.toLowerCase().includes('already exists'))) {
+                    // Resend confirmation OTP
+                    const { error: resendErr } = await supabase.auth.resend({
+                        type: 'signup',
+                        email: cleanEmail
+                    })
+                    if (resendErr) {
+                        // If resend says already confirmed
+                        if (resendErr.message && resendErr.message.toLowerCase().includes('already confirmed')) {
+                            throw new Error('This account is already verified! Please sign in.')
+                        }
+                        throw resendErr
                     }
-                })
-                if (otpErr) throw otpErr
+                    signupSuccess = true
+                } else {
+                    throw err
+                }
             }
 
-            setOtpSent(true)
-            setCanResend(false)
-            setCountdown(60)
-            setOtp(['', '', '', '', '', ''])
-            setTimeout(() => inputRefs.current[0]?.focus(), 150)
-        } catch (err) {
-            // If already registered or error
-            if (err.message && err.message.toLowerCase().includes('already registered')) {
-                setError('This email is already registered. Please sign in instead.')
-            } else {
-                setError(err.message || 'Failed to send OTP code. Please check email address.')
+            if (signupSuccess) {
+                setOtpSent(true)
+                setCanResend(false)
+                setCountdown(60)
+                setOtp(['', '', '', '', '', ''])
+                setTimeout(() => inputRefs.current[0]?.focus(), 150)
             }
+        } catch (err) {
+            setError(err.message || 'Failed to send OTP code. Please check your Supabase SMTP / Email settings.')
         } finally {
             setSendingOtp(false)
         }
@@ -175,27 +188,12 @@ export default function Register() {
         setVerifyingOtp(true)
         setOtpError('')
         try {
-            // Verify with signup or email type
-            let verified = false
-            try {
-                const { error: err1 } = await supabase.auth.verifyOtp({
-                    email: cleanEmail,
-                    token,
-                    type: 'signup'
-                })
-                if (!err1) verified = true
-            } catch {
-                // fallback to email type
-            }
-
-            if (!verified) {
-                const { error: err2 } = await supabase.auth.verifyOtp({
-                    email: cleanEmail,
-                    token,
-                    type: 'email'
-                })
-                if (err2) throw err2
-            }
+            const { error: err } = await supabase.auth.verifyOtp({
+                email: cleanEmail,
+                token,
+                type: 'signup'
+            })
+            if (err) throw err
 
             setIsEmailVerified(true)
             setOtpError('')
@@ -224,19 +222,14 @@ export default function Register() {
         setError('')
 
         try {
-            // Update password & metadata for the verified session
-            const { error: updateErr } = await supabase.auth.updateUser({
+            // Update profile metadata for the verified session
+            await supabase.auth.updateUser({
                 password: form.password,
                 data: {
                     name: cleanName,
                     role: form.role
                 }
             })
-
-            if (updateErr) {
-                // If no active session, try signing up directly
-                await signUp({ ...form, email: cleanEmail, name: cleanName })
-            }
 
             if (['organizer', 'main_admin', 'sub_admin'].includes(form.role)) {
                 await supabase.from('organizer_invites').delete().eq('email', cleanEmail)
@@ -245,7 +238,7 @@ export default function Register() {
             const isAdmin = ['organizer', 'sub_admin', 'main_admin'].includes(form.role)
             navigate(isAdmin ? '/organizer' : '/student', { replace: true })
         } catch (err) {
-            setError(err.message || 'Registration failed. Please try again.')
+            setError(err.message || 'Registration completed. Please sign in.')
         } finally {
             setLoading(false)
         }
@@ -439,6 +432,23 @@ export default function Register() {
                                     onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                                     style={{ paddingLeft: '2.5rem' }} required
                                 />
+                            </div>
+                        </div>
+
+                        {/* Password */}
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="reg-pass">Password</label>
+                            <div style={{ position: 'relative' }}>
+                                <Lock size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                                <input
+                                    id="reg-pass" type={showPassword ? 'text' : 'password'} autoComplete="new-password" className="form-input"
+                                    placeholder="Min. 6 characters" value={form.password}
+                                    onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                                    style={{ paddingLeft: '2.5rem', paddingRight: '2.75rem' }} required
+                                />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.2rem', display: 'flex' }}>
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
                             </div>
                         </div>
 
@@ -637,23 +647,6 @@ export default function Register() {
                             )}
                         </AnimatePresence>
 
-                        {/* Password */}
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="reg-pass">Password</label>
-                            <div style={{ position: 'relative' }}>
-                                <Lock size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-                                <input
-                                    id="reg-pass" type={showPassword ? 'text' : 'password'} autoComplete="new-password" className="form-input"
-                                    placeholder="Min. 6 characters" value={form.password}
-                                    onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                                    style={{ paddingLeft: '2.5rem', paddingRight: '2.75rem' }} required
-                                />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.2rem', display: 'flex' }}>
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
-                            </div>
-                        </div>
-
                         {/* ── REGISTER SUBMIT BUTTON (Disabled until OTP verified) ── */}
                         <div style={{ marginTop: '0.5rem' }}>
                             <motion.button
@@ -697,7 +690,7 @@ export default function Register() {
 
                             {!isEmailVerified && (
                                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.5rem' }}>
-                                    🔒 Click <strong>"Send OTP"</strong> next to email & enter the 6-digit code to enable this button.
+                                    🔒 Enter details, click <strong>"Send OTP"</strong> & enter the 6-digit code to enable this button.
                                 </p>
                             )}
                         </div>
