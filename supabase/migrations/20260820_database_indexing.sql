@@ -26,8 +26,8 @@ CREATE INDEX IF NOT EXISTS idx_live_attendance_video_student
   ON public.live_attendance(video_id, student_id);
 CREATE INDEX IF NOT EXISTS idx_live_poll_votes_poll_student 
   ON public.live_poll_votes(poll_id, student_id);
-CREATE INDEX IF NOT EXISTS idx_live_chat_messages_room_time 
-  ON public.live_chat_messages(room_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_live_chat_messages_video_time 
+  ON public.live_chat_messages(video_id, created_at DESC);
 
 -- 5. Support & Progress Telemetry
 CREATE INDEX IF NOT EXISTS idx_support_messages_student 
