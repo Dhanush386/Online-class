@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Key, Mail, Lock, CheckCircle, ArrowLeft, Send } from 'lucide-react'
 
+import AnimatedBackground from '../../components/background/AnimatedBackground'
+
 export default function ForgotPassword() {
     const navigate = useNavigate()
     const [email, setEmail] = useState('')
@@ -85,7 +87,6 @@ export default function ForgotPassword() {
             if (updateError) throw updateError
 
             setSuccess(true)
-            // Sign out the user so they can log in normally, as verifyOtp creates a session
             await supabase.auth.signOut()
             setTimeout(() => navigate('/login'), 2500)
 
@@ -102,13 +103,14 @@ export default function ForgotPassword() {
     }
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', padding: '1.5rem' }}>
-            <div className="glass-card animate-scale-up" style={{ width: '100%', maxWidth: 420, padding: '2.5rem' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+            <AnimatedBackground variant="auth" />
+            <div className="glass-card animate-scale-up" style={{ width: '100%', maxWidth: 420, padding: '2.5rem', position: 'relative', zIndex: 1 }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <div style={{ width: 56, height: 56, background: 'rgba(99,102,241,0.1)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-                        <Key size={28} color="#6366f1" />
+                    <div style={{ width: 56, height: 56, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                        <Key size={28} color="var(--primary-400)" />
                     </div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Reset Password</h1>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>Reset Password</h1>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
                         {otpSent ? "Enter the OTP sent to your email and your new password." : "Enter your email to receive a password reset OTP."}
                     </p>
@@ -122,7 +124,7 @@ export default function ForgotPassword() {
                 ) : (
                     <form onSubmit={otpSent ? handleResetPassword : handleSendOtp} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         {error && (
-                            <div style={{ background: '#fef2f2', color: '#ef4444', padding: '0.85rem 1rem', borderRadius: 8, fontSize: '0.85rem', border: '1px solid #fee2e2' }}>
+                            <div style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626', padding: '0.85rem 1rem', borderRadius: 10, fontSize: '0.85rem', border: '1px solid rgba(239,68,68,0.2)' }}>
                                 {error}
                             </div>
                         )}
@@ -161,17 +163,17 @@ export default function ForgotPassword() {
                                             style={{ paddingLeft: '2.5rem', letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 700 }}
                                         />
                                     </div>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span>Check your inbox (and spam folder) for the OTP.</span>
+                                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>Check your inbox/spam for the OTP.</span>
                                         <button 
                                             type="button" 
                                             onClick={handleResendOtp}
                                             disabled={resendCooldown > 0 || loading}
                                             style={{ 
                                                 background: 'none', border: 'none', padding: 0, 
-                                                color: resendCooldown > 0 ? 'var(--text-muted)' : '#6366f1', 
+                                                color: resendCooldown > 0 ? 'var(--text-muted)' : 'var(--primary-400)', 
                                                 cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
-                                                fontWeight: 600, fontSize: '0.85rem'
+                                                fontWeight: 600, fontSize: '0.82rem'
                                             }}
                                         >
                                             {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
@@ -202,13 +204,13 @@ export default function ForgotPassword() {
                             type="submit"
                             disabled={loading}
                             className="btn-primary"
-                            style={{ padding: '0.875rem', marginTop: '0.5rem', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                            style={{ height: 48, marginTop: '0.5rem', fontSize: '0.95rem', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700 }}
                         >
                             {getButtonText()}
                         </button>
 
                         <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-                            <Link to="/login" style={{ fontSize: '0.85rem', color: '#6366f1', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Link to="/login" style={{ fontSize: '0.85rem', color: 'var(--primary-400)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                                 <ArrowLeft size={14} /> Back to Login
                             </Link>
                         </div>
