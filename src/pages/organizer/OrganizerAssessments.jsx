@@ -129,7 +129,9 @@ export default function OrganizerAssessments() {
 
     async function handleSubmit(e) {
         e.preventDefault()
+        if (!formData.title?.trim()) { setError('Please enter an assessment title'); return }
         if (!formData.course_id) { setError('Please select a course'); return }
+        if (!formData.due_date) { setError('Please specify a due date deadline for this assessment'); return }
 
         setSaving(true)
         setError('')
