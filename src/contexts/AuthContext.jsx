@@ -59,6 +59,25 @@ async function signUp({ email, password, name, role }) {
     return data
 }
 
+async function verifyOtp({ email, token, type = 'signup' }) {
+    const { data, error } = await supabase.auth.verifyOtp({
+        email: (email || '').trim().toLowerCase(),
+        token: (token || '').trim(),
+        type
+    })
+    if (error) throw error
+    return data
+}
+
+async function resendOtp({ email, type = 'signup' }) {
+    const { data, error } = await supabase.auth.resend({
+        email: (email || '').trim().toLowerCase(),
+        type
+    })
+    if (error) throw error
+    return data
+}
+
 async function signIn({ email, password }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email: (email || '').trim().toLowerCase(), password })
     if (error) throw error
@@ -242,7 +261,7 @@ export function AuthProvider({ children }) {
     }, [])
 
     const value = useMemo(() => ({
-        user, profile, role: profile?.role, loading, signUp, signIn, signOut,
+        user, profile, role: profile?.role, loading, signUp, verifyOtp, resendOtp, signIn, signOut,
         fetchProfile, isProfileComplete, stats, isExpired,
         refreshStats: () => profile?.id && loadAchievementStats(profile.id),
         refreshProfileStatus: () => user?.id && fetchProfile(user.id)
