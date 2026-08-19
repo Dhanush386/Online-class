@@ -29,17 +29,6 @@ const isMulti = (q) => {
     return false
 }
 
-const getCorrectArray = (q) => {
-    try {
-        if (q?.correct_answer?.startsWith('[') && q?.correct_answer?.endsWith(']')) {
-            return JSON.parse(q.correct_answer)
-        }
-        return [q.correct_answer]
-    } catch {
-        return [q.correct_answer]
-    }
-}
-
 export default function TakeAssessment() {
     const { assessmentId } = useParams()
     const { profile, user } = useAuth()
@@ -442,25 +431,39 @@ export default function TakeAssessment() {
 
         if (!sessionId) {
             try {
-                const { data: sessionData } = await supabase.from('proctoring_sessions').insert({
-                    student_id: profile.id,
-                    assessment_id: assessmentId,
-                    status: 'active'
-                }).select().single();
+                // Server-side device validation & cryptographically signed session token issuance
+                const { data: sessionResp, error: rpcErr } = await supabase.rpc('start_exam_session', {
+                    p_assessment_id: assessmentId,
+                    p_user_agent: navigator.userAgent,
+                    p_viewport_width: window.innerWidth,
+                    p_viewport_height: window.innerHeight,
+                    p_touch_points: navigator.maxTouchPoints || 0
+                })
                 
-                if (sessionData) {
-                    setSessionId(sessionData.id);
+                if (rpcErr) {
+                    if (rpcErr.code === '22023') {
+                        alert('Mobile devices are blocked. Proctored exams must be taken on a desktop or laptop.')
+                    } else if (rpcErr.code === '23505') {
+                        alert('You have already submitted an attempt for this assessment.')
+                    } else {
+                        alert('Could not start verified exam session: ' + (rpcErr.message || 'Verification failed.'))
+                    }
+                    navigate('/student/assessments')
+                    return
+                }
+                
+                if (sessionResp) {
+                    setSessionId(sessionResp.sessionId)
+                    sessionIdRef.current = sessionResp.sessionId
+                    sessionTokenRef.current = sessionResp.sessionToken
                 }
             } catch (err) {
-                console.error('Error starting proctoring session:', err);
+                console.error('Error starting proctoring session:', err)
+                alert('Failed to establish verified exam session. Please refresh and retry.')
+                navigate('/student/assessments')
+                return
             }
         }
-    }
-
-    const formatTime = (secs) => {
-        const m = Math.floor(secs / 60).toString().padStart(2, '0')
-        const s = (secs % 60).toString().padStart(2, '0')
-        return `${m}:${s}`
     }
 
 
@@ -651,7 +654,7 @@ export default function TakeAssessment() {
                 moduleType: 'quiz',
                 reason: `${assessment.title} — ${scorePercent}%`,
                 isFirstAttempt: true,
-                metadata: { score: correctCount, total: questions.length, percentage: scorePercent }
+                metadata: { score: finalScore, total: finalTotal, percentage: scorePercent }
             })
 
             // Update course progress
