@@ -26,7 +26,8 @@ export default function ForgotPassword() {
 
     const handleSendOtp = async (e) => {
         e.preventDefault()
-        if (!email) {
+        const cleanEmail = email.trim().toLowerCase()
+        if (!cleanEmail) {
             setError("Please enter your email first.")
             return
         }
@@ -34,7 +35,17 @@ export default function ForgotPassword() {
         setError(null)
 
         try {
-            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase())
+            const { data: limitCheck } = await supabase.rpc('check_otp_rate_limit', {
+                p_email: cleanEmail,
+                p_max_per_hour: 5
+            })
+            if (limitCheck && !limitCheck.allowed) {
+                setError(limitCheck.message || 'Too many requests. Please wait before requesting another verification code.')
+                setLoading(false)
+                return
+            }
+
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail)
             if (resetError) throw resetError
             
             setOtpSent(true)
@@ -48,11 +59,22 @@ export default function ForgotPassword() {
     }
 
     const handleResendOtp = async () => {
-        if (resendCooldown > 0 || !email) return
+        const cleanEmail = email.trim().toLowerCase()
+        if (resendCooldown > 0 || !cleanEmail) return
         setLoading(true)
         setError(null)
         try {
-            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase())
+            const { data: limitCheck } = await supabase.rpc('check_otp_rate_limit', {
+                p_email: cleanEmail,
+                p_max_per_hour: 5
+            })
+            if (limitCheck && !limitCheck.allowed) {
+                setError(limitCheck.message || 'Too many requests. Please wait before requesting another verification code.')
+                setLoading(false)
+                return
+            }
+
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail)
             if (resetError) throw resetError
             setResendCooldown(60)
             setError(null)

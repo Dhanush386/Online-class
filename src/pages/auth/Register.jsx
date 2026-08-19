@@ -98,6 +98,17 @@ export default function Register() {
         setResendSuccess(false)
 
         try {
+            // Check rate limit
+            const { data: limitCheck } = await supabase.rpc('check_otp_rate_limit', {
+                p_email: cleanEmail,
+                p_max_per_hour: 5
+            })
+            if (limitCheck && !limitCheck.allowed) {
+                setError(limitCheck.message || 'Too many requests. Please wait before requesting another verification code.')
+                setSendingOtp(false)
+                return
+            }
+
             let signupSuccess = false
             try {
                 await signUp({
