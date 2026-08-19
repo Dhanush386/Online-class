@@ -267,7 +267,7 @@ export default function Login() {
           ].map(({ value, label }) => (
             <div key={label}>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.4rem', color: 'var(--text-primary)' }}>{value}</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>{l}</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>{label}</div>
             </div>
           ))}
         </div>

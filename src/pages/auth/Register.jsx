@@ -261,10 +261,10 @@ export default function Register() {
 
                 {/* Stats */}
                 <div style={{ display: 'flex', gap: '2rem' }}>
-                    {[{ n: '10K+', l: 'Students' }, { n: '200+', l: 'Courses' }, { n: '98%', l: 'Satisfaction' }].map(({ n, l }) => (
-                        <div key={l}>
-                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.5rem', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>{n}</div>
-                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>{l}</div>
+                    {[{ value: '10K+', label: 'Students' }, { value: '200+', label: 'Courses' }, { value: '98%', label: 'Satisfaction' }].map(({ value, label }) => (
+                        <div key={label}>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.5rem', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>{value}</div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>{label}</div>
                         </div>
                     ))}
                 </div>
