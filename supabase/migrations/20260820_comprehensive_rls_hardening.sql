@@ -158,7 +158,7 @@ CREATE POLICY "enrollments_manage" ON public.enrollments
 -- 3. ASSESSMENTS, TIME-GATED QUESTIONS & SUBMISSION POLICIES
 -- ============================================================================
 ALTER TABLE public.assessments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.assessment_questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.assessment_submissions ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "assessments_select" ON public.assessments;
@@ -173,21 +173,22 @@ CREATE POLICY "assessments_manage" ON public.assessments
   FOR ALL USING (public.is_staff())
   WITH CHECK (public.is_staff());
 
-DROP POLICY IF EXISTS "assessment_questions_select" ON public.assessment_questions;
-CREATE POLICY "assessment_questions_select" ON public.assessment_questions
+-- TIME-GATED QUESTIONS (Enrolled students within active start & due dates)
+DROP POLICY IF EXISTS "questions_select" ON public.questions;
+CREATE POLICY "questions_select" ON public.questions
   FOR SELECT USING (
     public.is_staff() 
     OR (
       EXISTS (
         SELECT 1 FROM public.assessments a 
-        WHERE a.id = assessment_questions.assessment_id AND public.is_enrolled(a.course_id)
+        WHERE a.id = questions.assessment_id AND public.is_enrolled(a.course_id)
       )
       AND public.is_assessment_time_open(assessment_id)
     )
   );
 
-DROP POLICY IF EXISTS "assessment_questions_manage" ON public.assessment_questions;
-CREATE POLICY "assessment_questions_manage" ON public.assessment_questions
+DROP POLICY IF EXISTS "questions_manage" ON public.questions;
+CREATE POLICY "questions_manage" ON public.questions
   FOR ALL USING (public.is_staff())
   WITH CHECK (public.is_staff());
 
