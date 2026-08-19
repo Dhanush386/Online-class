@@ -98,10 +98,9 @@ export default function Register() {
         setResendSuccess(false)
 
         try {
-            // Call signUp with the Confirm Signup template
             let signupSuccess = false
             try {
-                const data = await signUp({
+                await signUp({
                     email: cleanEmail,
                     password: form.password,
                     name: form.name.trim() || 'Student',
@@ -109,17 +108,19 @@ export default function Register() {
                 })
                 signupSuccess = true
             } catch (err) {
-                // If user is already registered in auth.users (e.g. unverified or resending)
-                if (err.message && (err.message.toLowerCase().includes('already registered') || err.message.toLowerCase().includes('already exists'))) {
-                    // Resend confirmation OTP
+                const msg = (err.message || '').toLowerCase()
+                const isExistingUser = err.status === 422 || err.code === 'user_already_exists' || msg.includes('already') || msg.includes('exists') || msg.includes('registered')
+
+                if (isExistingUser) {
+                    // Try resending confirmation OTP for unverified user
                     const { error: resendErr } = await supabase.auth.resend({
                         type: 'signup',
                         email: cleanEmail
                     })
                     if (resendErr) {
-                        // If resend says already confirmed
-                        if (resendErr.message && resendErr.message.toLowerCase().includes('already confirmed')) {
-                            throw new Error('This account is already verified! Please sign in.')
+                        const resendMsg = (resendErr.message || '').toLowerCase()
+                        if (resendMsg.includes('confirmed') || resendMsg.includes('verified') || resendMsg.includes('already')) {
+                            throw new Error('This email is already registered and verified. Please sign in below!')
                         }
                         throw resendErr
                     }
