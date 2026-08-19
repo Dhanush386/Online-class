@@ -394,14 +394,15 @@ CREATE POLICY "support_tickets_all" ON public.support_tickets
 DROP POLICY IF EXISTS "support_messages_all" ON public.support_messages;
 CREATE POLICY "support_messages_all" ON public.support_messages
   FOR ALL USING (
-    sender_id = auth.uid() 
+    student_id = auth.uid() 
+    OR organizer_id = auth.uid()
     OR public.is_staff()
-    OR EXISTS (
-      SELECT 1 FROM public.support_tickets st
-      WHERE st.id = support_messages.ticket_id AND st.student_id = auth.uid()
-    )
   )
-  WITH CHECK (sender_id = auth.uid() OR public.is_staff());
+  WITH CHECK (
+    student_id = auth.uid() 
+    OR organizer_id = auth.uid()
+    OR public.is_staff()
+  );
 
 DROP POLICY IF EXISTS "organizer_invites_admin" ON public.organizer_invites;
 CREATE POLICY "organizer_invites_admin" ON public.organizer_invites
