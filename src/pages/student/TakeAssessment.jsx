@@ -67,9 +67,10 @@ export default function TakeAssessment() {
     // Proctoring Risk Engine & Session States
     const [sessionId, setSessionId] = useState(null)
     const [riskScore, setRiskScore] = useState(0)
+    const sessionIdRef = useRef(null)
+    const sessionTokenRef = useRef(null)
     const riskScoreRef = useRef(0)
     const violationCountRef = useRef(0)
-    const sessionIdRef = useRef(null)
     const lastViolationTimes = useRef({})
     const hasTabSwitched = useRef(false)
     const handleSubmitRef = useRef(null)
@@ -601,72 +602,47 @@ export default function TakeAssessment() {
     }
 
     async function handleSubmit(isAuto = false) {
-        // Allow auto-submit and manual submit anytime
-
         if (!isAuto && Object.keys(answers).length < questions.length) {
             if (!confirm('You haven\'t answered all questions. Submit anyway?')) return
         }
 
         setSubmitting(true)
         try {
-            let correctCount = 0
-            const submissionAnswers = questions.map(q => {
-                const selected = answers[q.id] || (isMulti(q) ? [] : '')
-                
-                let isCorrect = false
-                const correctArr = getCorrectArray(q)
-                if (isMulti(q)) {
-                    const selectedArr = Array.isArray(selected) ? selected : [selected]
-                    isCorrect = correctArr.length === selectedArr.length && 
-                               correctArr.every(opt => selectedArr.includes(opt))
-                } else {
-                    isCorrect = correctArr.includes(selected)
-                }
+            const rawAnswers = questions.map(q => ({
+                question_id: q.id,
+                selected_option: answers[q.id] || (isMulti(q) ? [] : '')
+            }))
 
-                if (isCorrect) correctCount++
-                return {
-                    question_id: q.id,
-                    selected_option: selected,
-                    is_correct: isCorrect
-                }
+            // Fail-closed server-side grading and token submission
+            if (!sessionTokenRef.current || !sessionIdRef.current) {
+                throw new Error('Active exam session token not found. Please refresh and restart.')
+            }
+
+            const { data: submitResp, error: tokenErr } = await supabase.rpc('submit_assessment_with_token', {
+                p_assessment_id: assessmentId,
+                p_session_id: sessionIdRef.current,
+                p_session_token: sessionTokenRef.current,
+                p_answers: rawAnswers
             })
 
-            const { error: sErr } = await supabase
-                .from('assessment_submissions')
-                .insert({
-                    assessment_id: assessmentId,
-                    student_id: profile.id,
-                    score: correctCount,
-                    total_questions: questions.length,
-                    answers: submissionAnswers
-                })
-
-            if (sErr) {
-                console.error("Supabase insert error details:", sErr);
-                // Ignore duplicate submission errors (23505 = unique_violation)
-                if (sErr.code !== '23505') throw sErr
+            if (tokenErr) {
+                if (tokenErr.code !== '23505') throw tokenErr
             }
 
-            // Finalize the proctoring session in DB
-            if (sessionIdRef.current) {
-                await supabase.from('proctoring_sessions')
-                    .update({
-                        end_time: new Date().toISOString(),
-                        status: riskScoreRef.current >= 100 ? 'flagged' : 'completed'
-                    })
-                    .eq('id', sessionIdRef.current);
-            }
+            const finalScore = submitResp?.score ?? 0
+            const finalTotal = submitResp?.total ?? questions.length
+            const finalPct = submitResp?.percentage ?? Math.round((finalScore / (finalTotal || 1)) * 100)
 
             setResult({
-                score: correctCount,
-                total: questions.length,
-                percentage: Math.round((correctCount / questions.length) * 100)
+                score: finalScore,
+                total: finalTotal,
+                percentage: finalPct
             })
             setSubmitted(true)
             localStorage.removeItem(`assessment_endTime_${assessmentId}`)
 
-            // Award XP based on score
-            const scorePercent = Math.round((correctCount / questions.length) * 100)
+            // Award XP based on server-verified score
+            const scorePercent = finalPct
             const xpEventType = getQuizEventType(scorePercent)
             await awardXp({
                 eventType: xpEventType,
