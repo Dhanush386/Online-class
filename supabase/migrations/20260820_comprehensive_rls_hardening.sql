@@ -94,18 +94,6 @@ EXCEPTION
   WHEN others THEN NULL;
 END $$;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'uq_live_poll_user_vote'
-  ) THEN
-    ALTER TABLE public.live_poll_votes 
-    ADD CONSTRAINT uq_live_poll_user_vote UNIQUE (poll_id, user_id);
-  END IF;
-EXCEPTION
-  WHEN others THEN NULL;
-END $$;
-
 -- ============================================================================
 -- 1. USERS & PROFILES
 -- ============================================================================
@@ -132,12 +120,12 @@ CREATE POLICY "users_update_policy" ON public.users
 
 DROP POLICY IF EXISTS "student_profiles_select" ON public.student_profiles;
 CREATE POLICY "student_profiles_select" ON public.student_profiles
-  FOR SELECT USING (user_id = auth.uid() OR public.is_staff());
+  FOR SELECT USING (student_id = auth.uid() OR public.is_staff());
 
 DROP POLICY IF EXISTS "student_profiles_upsert" ON public.student_profiles;
 CREATE POLICY "student_profiles_upsert" ON public.student_profiles
-  FOR ALL USING (user_id = auth.uid() OR public.is_admin())
-  WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  FOR ALL USING (student_id = auth.uid() OR public.is_admin())
+  WITH CHECK (student_id = auth.uid() OR public.is_admin());
 
 -- ============================================================================
 -- 2. COURSES & ENROLLMENTS
@@ -285,8 +273,8 @@ CREATE POLICY "live_attendance_upsert" ON public.live_attendance
 
 DROP POLICY IF EXISTS "live_notes_owner" ON public.live_class_notes;
 CREATE POLICY "live_notes_owner" ON public.live_class_notes
-  FOR ALL USING (user_id = auth.uid() OR student_id = auth.uid())
-  WITH CHECK (user_id = auth.uid() OR student_id = auth.uid());
+  FOR ALL USING (updated_by = auth.uid() OR public.is_staff())
+  WITH CHECK (updated_by = auth.uid() OR public.is_staff());
 
 DROP POLICY IF EXISTS "live_chat_select" ON public.live_chat_messages;
 CREATE POLICY "live_chat_select" ON public.live_chat_messages
@@ -294,7 +282,7 @@ CREATE POLICY "live_chat_select" ON public.live_chat_messages
 
 DROP POLICY IF EXISTS "live_chat_insert" ON public.live_chat_messages;
 CREATE POLICY "live_chat_insert" ON public.live_chat_messages
-  FOR INSERT WITH CHECK (user_id = auth.uid() OR sender_id = auth.uid());
+  FOR INSERT WITH CHECK (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "live_chat_reactions_all" ON public.live_chat_reactions;
 CREATE POLICY "live_chat_reactions_all" ON public.live_chat_reactions
@@ -312,8 +300,8 @@ CREATE POLICY "live_polls_manage" ON public.live_polls
 
 DROP POLICY IF EXISTS "live_poll_votes_all" ON public.live_poll_votes;
 CREATE POLICY "live_poll_votes_all" ON public.live_poll_votes
-  FOR ALL USING (user_id = auth.uid() OR public.is_staff())
-  WITH CHECK (user_id = auth.uid() OR public.is_staff());
+  FOR ALL USING (student_id = auth.uid() OR public.is_staff())
+  WITH CHECK (student_id = auth.uid() OR public.is_staff());
 
 -- ============================================================================
 -- 6. CODING CHALLENGES, SUBMISSIONS & DISCUSSIONS
@@ -343,7 +331,7 @@ CREATE POLICY "coding_submissions_insert" ON public.coding_submissions
 DROP POLICY IF EXISTS "coding_discussions_all" ON public.coding_discussions;
 CREATE POLICY "coding_discussions_all" ON public.coding_discussions
   FOR ALL USING (auth.uid() IS NOT NULL)
-  WITH CHECK (user_id = auth.uid() OR public.is_staff());
+  WITH CHECK (student_id = auth.uid() OR public.is_staff());
 
 DROP POLICY IF EXISTS "coding_discussion_replies_all" ON public.coding_discussion_replies;
 CREATE POLICY "coding_discussion_replies_all" ON public.coding_discussion_replies
@@ -399,8 +387,8 @@ ALTER TABLE public.organizer_invites ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "support_tickets_all" ON public.support_tickets;
 CREATE POLICY "support_tickets_all" ON public.support_tickets
-  FOR ALL USING (user_id = auth.uid() OR student_id = auth.uid() OR public.is_staff())
-  WITH CHECK (user_id = auth.uid() OR student_id = auth.uid() OR public.is_staff());
+  FOR ALL USING (student_id = auth.uid() OR public.is_staff())
+  WITH CHECK (student_id = auth.uid() OR public.is_staff());
 
 DROP POLICY IF EXISTS "support_messages_all" ON public.support_messages;
 CREATE POLICY "support_messages_all" ON public.support_messages
@@ -409,7 +397,7 @@ CREATE POLICY "support_messages_all" ON public.support_messages
     OR public.is_staff()
     OR EXISTS (
       SELECT 1 FROM public.support_tickets st
-      WHERE st.id = support_messages.ticket_id AND (st.user_id = auth.uid() OR st.student_id = auth.uid())
+      WHERE st.id = support_messages.ticket_id AND st.student_id = auth.uid()
     )
   )
   WITH CHECK (sender_id = auth.uid() OR public.is_staff());
