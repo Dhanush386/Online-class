@@ -194,6 +194,7 @@ export function AuthProvider({ children }) {
                 } else {
                     setIsProfileComplete(true)
                 }
+                return data
             } else {
                 // Fallback profile if public.users row is not yet initialized
                 const authUser = (await supabase.auth.getUser())?.data?.user
@@ -212,8 +213,10 @@ export function AuthProvider({ children }) {
                 
                 // Ensure profile is written to public.users
                 const { data: insertedUser } = await supabase.from('users').upsert(fallbackProfile).select().maybeSingle()
-                setProfile(insertedUser || fallbackProfile)
+                const finalProfile = insertedUser || fallbackProfile
+                setProfile(finalProfile)
                 setIsProfileComplete(fallbackRole !== 'student')
+                return finalProfile
             }
         } catch (err) {
             console.error('fetchProfile error:', err)

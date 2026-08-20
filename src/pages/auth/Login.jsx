@@ -20,7 +20,7 @@ const FEATURES = [
 
 export default function Login() {
   const navigate = useNavigate()
-  const { user, verifyOtp, resendOtp, fetchProfile } = useAuth()
+  const { user, profile, verifyOtp, resendOtp, fetchProfile } = useAuth()
   const [email,       setEmail]       = useState('')
   const [password,    setPassword]    = useState('')
   const [showPass,    setShowPass]    = useState(false)
@@ -42,9 +42,11 @@ export default function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/', { replace: true })
+      const role = profile?.role || user.user_metadata?.role || 'student'
+      const target = ['organizer', 'sub_admin', 'main_admin'].includes(role) ? '/organizer' : '/student'
+      navigate(target, { replace: true })
     }
-  }, [user, navigate])
+  }, [user, profile, navigate])
 
   // Rotate feature card
   useEffect(() => {
@@ -88,9 +90,13 @@ export default function Login() {
         throw err
       }
       if (data?.user?.id) {
-        await fetchProfile(data.user.id)
+        const prof = await fetchProfile(data.user.id)
+        const role = prof?.role || data.user.user_metadata?.role || 'student'
+        const target = ['organizer', 'sub_admin', 'main_admin'].includes(role) ? '/organizer' : '/student'
+        navigate(target, { replace: true })
+      } else {
+        navigate('/student', { replace: true })
       }
-      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.')
     } finally {
