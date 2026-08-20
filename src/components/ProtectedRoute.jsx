@@ -133,7 +133,7 @@ export function ProtectedRoute({ children, requiredRole }) {
         }
     }, [])
 
-    if (loading) return <LoadingView />
+    if (loading || (user && !profile)) return <LoadingView />
     if (!user) return <Navigate to="/login" state={{ from: location }} replace />
 
     const isAdmin = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)

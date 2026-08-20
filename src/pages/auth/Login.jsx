@@ -20,7 +20,7 @@ const FEATURES = [
 
 export default function Login() {
   const navigate = useNavigate()
-  const { user, verifyOtp, resendOtp } = useAuth()
+  const { user, verifyOtp, resendOtp, fetchProfile } = useAuth()
   const [email,       setEmail]       = useState('')
   const [password,    setPassword]    = useState('')
   const [showPass,    setShowPass]    = useState(false)
@@ -74,7 +74,7 @@ export default function Login() {
     setLoading(true)
     setError('')
     try {
-      const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+      const { data, error: err } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
       if (err) {
         if (err.message && err.message.toLowerCase().includes('email not confirmed')) {
           setShowOtp(true)
@@ -86,6 +86,9 @@ export default function Login() {
           return
         }
         throw err
+      }
+      if (data?.user?.id) {
+        await fetchProfile(data.user.id)
       }
       navigate('/', { replace: true })
     } catch (err) {

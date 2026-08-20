@@ -150,6 +150,7 @@ export function AuthProvider({ children }) {
                 setLoading(false)
             } else if (session?.user) {
                 setUser(session.user)
+                setLoading(true)
                 fetchProfile(session.user.id)
             }
         })
