@@ -193,6 +193,26 @@ export function AuthProvider({ children }) {
                 } else {
                     setIsProfileComplete(true)
                 }
+            } else {
+                // Fallback profile if public.users row is not yet initialized
+                const authUser = (await supabase.auth.getUser())?.data?.user
+                const fallbackRole = authUser?.user_metadata?.role || 'student'
+                const fallbackName = authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'User'
+                
+                const fallbackProfile = {
+                    id: userId,
+                    email: authUser?.email,
+                    name: fallbackName,
+                    role: fallbackRole,
+                    status: 'active',
+                    xp: 0,
+                    coins: 0
+                }
+                
+                // Ensure profile is written to public.users
+                const { data: insertedUser } = await supabase.from('users').upsert(fallbackProfile).select().maybeSingle()
+                setProfile(insertedUser || fallbackProfile)
+                setIsProfileComplete(fallbackRole !== 'student')
             }
         } catch (err) {
             console.error('fetchProfile error:', err)

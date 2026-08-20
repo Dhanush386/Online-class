@@ -84,13 +84,18 @@ const AIStudyAssistant  = lazy(() => import('./pages/student/AIStudyAssistant'))
 function HomeRedirect() {
   const { user, profile, loading } = useAuth()
   const location = useLocation()
+  const [timedOut, setTimedOut] = useState(false)
 
-  // Wait if AuthContext is initializing, OR if we have a user but are still fetching their profile
-  if (loading || (user && !profile)) return <PageLoader />
+  useEffect(() => {
+    const t = setTimeout(() => setTimedOut(true), 1500)
+    return () => clearTimeout(t)
+  }, [])
+
+  if (loading && !timedOut) return <PageLoader />
 
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
 
-  const role = profile?.role || 'student'
+  const role = profile?.role || user?.user_metadata?.role || 'student'
   if (['organizer', 'sub_admin', 'main_admin'].includes(role)) {
     return <Navigate to="/organizer" replace />
   }
