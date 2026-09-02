@@ -76,7 +76,8 @@ export default function OrganizerMockInterviews() {
   const fetchSessions = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      // First attempt querying with recording metadata
+      let { data, error } = await supabase
         .from('mock_interview_sessions')
         .select(`
           id,
@@ -98,6 +99,32 @@ export default function OrganizerMockInterviews() {
           )
         `)
         .order('created_at', { ascending: false })
+
+      // Resilient fallback if recording_url column has not been added via SQL migration yet
+      if (error && (error.code === '42703' || error.message?.includes('recording_url'))) {
+        const fallback = await supabase
+          .from('mock_interview_sessions')
+          .select(`
+            id,
+            student_id,
+            track,
+            question_count,
+            status,
+            started_at,
+            completed_at,
+            overall_score,
+            created_at,
+            users:student_id (
+              id,
+              name,
+              email,
+              avatar_url
+            )
+          `)
+          .order('created_at', { ascending: false })
+        data = fallback.data
+        error = fallback.error
+      }
 
       if (error) throw error
       setSessions(data || [])
