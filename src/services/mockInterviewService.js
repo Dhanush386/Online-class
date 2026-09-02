@@ -2,39 +2,47 @@ import { supabase } from '../lib/supabase'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY?.trim()
 
+const GEMINI_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-pro'
+]
+
 /**
- * Call Gemini AI Flash model directly
+ * Call Gemini AI Flash model with resilient model fallback
  */
 async function callGemini(prompt, isJson = false) {
   if (!GEMINI_API_KEY) {
     return null
   }
 
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          ...(isJson ? { responseMimeType: 'application/json' } : {})
-        }
+  for (const model of GEMINI_MODELS) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            ...(isJson ? { responseMimeType: 'application/json' } : {})
+          }
+        })
       })
-    })
 
-    if (!res.ok) {
-      console.warn('Gemini API call failed with status:', res.status)
-      return null
+      if (res.ok) {
+        const data = await res.json()
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+        if (text) return text
+      } else {
+        console.warn(`Gemini model ${model} returned status: ${res.status}, trying next model...`)
+      }
+    } catch (err) {
+      console.warn(`Gemini model ${model} fetch error:`, err)
     }
-
-    const data = await res.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-    return text || null
-  } catch (err) {
-    console.warn('Gemini fetch error:', err)
-    return null
   }
+
+  return null
 }
 
 /**
