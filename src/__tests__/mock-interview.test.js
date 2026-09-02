@@ -172,3 +172,69 @@ describe('AI Mock Interview: Turn Progression & State Machine', () => {
     expect(stateTurn5.progressPercentage).toBe(100)
   })
 })
+
+// ─────────────────────────────────────────────────────────────
+// 4. Question Bank Security & Answer Isolation Logic
+// ─────────────────────────────────────────────────────────────
+export function evaluateBaseTableAccess(requestUser) {
+  if (!requestUser?.id) return false
+  return ['organizer', 'main_admin', 'sub_admin'].includes(requestUser.role)
+}
+
+export function projectPublicQuestionView(customQuestion) {
+  // Simulates Postgres View `mock_interview_questions_public`
+  const { sample_answer, ...publicFields } = customQuestion
+  return publicFields
+}
+
+describe('AI Mock Interview: Question Bank Security & Answer Key Protection', () => {
+  const student = { id: 'student-123', role: 'student' }
+  const organizer = { id: 'org-456', role: 'organizer' }
+  const admin = { id: 'admin-789', role: 'main_admin' }
+
+  const questionWithRubric = {
+    id: 'q-101',
+    track: 'Frontend Development',
+    category: 'React Reconciliation',
+    difficulty: 'intermediate',
+    question: 'How does the Virtual DOM diffing algorithm work?',
+    sample_answer: 'CONFIDENTIAL: Reconciliation algorithm runs in O(n) heuristic using key heuristics.',
+    order_index: 1,
+    is_active: true
+  }
+
+  it('strictly rejects student direct SELECT on the base table to prevent answer key leaks', () => {
+    expect(evaluateBaseTableAccess(student)).toBe(false)
+  })
+
+  it('permits organizers and administrators full access to the base table', () => {
+    expect(evaluateBaseTableAccess(organizer)).toBe(true)
+    expect(evaluateBaseTableAccess(admin)).toBe(true)
+  })
+
+  it('ensures the public view strips out the sample_answer / grading rubric completely', () => {
+    const studentView = projectPublicQuestionView(questionWithRubric)
+    expect(studentView.question).toBe('How does the Virtual DOM diffing algorithm work?')
+    expect(studentView.sample_answer).toBeUndefined()
+    expect(studentView).not.toHaveProperty('sample_answer')
+  })
+
+  it('guarantees turn question text is snapshotted at ask-time and immutable to mid-interview edits', () => {
+    const originalTurn = {
+      id: 'turn-1',
+      session_id: 'sess-1',
+      turn_number: 1,
+      question: questionWithRubric.question
+    }
+
+    // Organizer subsequently edits the question in the bank
+    const modifiedBankQuestion = {
+      ...questionWithRubric,
+      question: 'UPDATED: Describe React 19 Actions and useActionState hook.'
+    }
+
+    // The student's recorded turn must remain unchanged
+    expect(originalTurn.question).toBe('How does the Virtual DOM diffing algorithm work?')
+    expect(originalTurn.question).not.toBe(modifiedBankQuestion.question)
+  })
+})

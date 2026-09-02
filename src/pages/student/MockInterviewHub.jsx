@@ -56,6 +56,7 @@ export default function MockInterviewHub() {
   const [courseTopics, setCourseTopics] = useState([])
   const [starting, setStarting] = useState(false)
   const [setupError, setSetupError] = useState(null)
+  const [customQuestionCounts, setCustomQuestionCounts] = useState({})
 
   // History state
   const [sessions, setSessions] = useState([])
@@ -100,6 +101,31 @@ export default function MockInterviewHub() {
 
         if (sessErr) throw sessErr
         setSessions(sessData || [])
+
+        // 3. Fetch Curated Question Counts from public view (never exposes sample_answer)
+        try {
+          const { data: qData } = await supabase
+            .from('mock_interview_questions_public')
+            .select('track')
+          if (qData && qData.length > 0) {
+            const counts = {}
+            qData.forEach(item => {
+              counts[item.track] = (counts[item.track] || 0) + 1
+            })
+            setCustomQuestionCounts(counts)
+          } else {
+            // Local fallback
+            const raw = localStorage.getItem('mock_interview_custom_questions')
+            if (raw) {
+              const list = JSON.parse(raw)
+              const counts = {}
+              list.filter(q => q.is_active).forEach(item => {
+                counts[item.track] = (counts[item.track] || 0) + 1
+              })
+              setCustomQuestionCounts(counts)
+            }
+          }
+        } catch { /* no-op */ }
       } catch (err) {
         console.error('Error loading interview hub data:', err)
       } finally {
@@ -277,6 +303,25 @@ export default function MockInterviewHub() {
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: '0.5rem 0' }}>
                   {t.description}
                 </p>
+
+                {customQuestionCounts[t.id] > 0 && (
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <span style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: t.color,
+                      background: `${t.color}18`,
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      🎯 {customQuestionCounts[t.id]} Curated Questions by Instructor
+                    </span>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.5rem' }}>
                   {t.sampleTopics.slice(0, 3).map((topic, i) => (
                     <span key={i} style={{ fontSize: '0.72rem', background: 'var(--bg-elevated)', padding: '2px 7px', borderRadius: '4px', color: 'var(--text-secondary)' }}>
