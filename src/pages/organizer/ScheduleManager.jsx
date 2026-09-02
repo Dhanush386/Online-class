@@ -814,8 +814,33 @@ export default function ScheduleManager() {
                                 <input id="edit-recording-duration" name="recording_duration_mins" type="number" step="0.1" className="form-input" placeholder="e.g. 45" value={editVideo.recording_duration_mins || ''} onChange={e => setEditVideo(p => ({ ...p, recording_duration_mins: e.target.value }))} />
                             </div>
                             <div>
-                                <label htmlFor="edit-url" className="form-label">Meeting URL (Google Meet / Zoom)</label>
-                                <input id="edit-url" name="video_url" type="url" className="form-input" placeholder="https://meet.google.com/..." value={editVideo.video_url || ''} onChange={e => setEditVideo(p => ({ ...p, video_url: e.target.value }))} />
+                                <label htmlFor="edit-url" className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>Meeting Classroom</span>
+                                    {(!editVideo.video_url || editVideo.video_url.includes('classroom') || editVideo.video_url.includes('learnova')) && (
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--primary-600)', fontWeight: 700 }}>
+                                            ✨ Built-in Learnova Classroom Active
+                                        </span>
+                                    )}
+                                </label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input 
+                                        id="edit-url" 
+                                        name="video_url" 
+                                        type="text" 
+                                        className="form-input" 
+                                        placeholder="learnova-classroom://internal (or paste Google Meet / Zoom link)" 
+                                        value={editVideo.video_url || ''} 
+                                        onChange={e => setEditVideo(p => ({ ...p, video_url: e.target.value }))} 
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setEditVideo(p => ({ ...p, video_url: 'learnova-classroom://internal' }))}
+                                        style={{ whiteSpace: 'nowrap', fontSize: '0.78rem', padding: '0.4rem 0.75rem' }}
+                                    >
+                                        <Sparkles size={13} /> Reset to Built-in
+                                    </button>
+                                </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div>

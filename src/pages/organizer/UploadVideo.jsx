@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { Video, Link, Calendar, Clock, FolderOpen, CheckCircle, AlertCircle, Plus, Upload, PlayCircle, Radio, ArrowLeft, X } from 'lucide-react'
+import { Video, Link, Calendar, Clock, FolderOpen, CheckCircle, AlertCircle, Plus, Upload, PlayCircle, Radio, ArrowLeft, X, Sparkles } from 'lucide-react'
 import { toISOWithOffset } from '../../lib/dateUtils'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -11,6 +11,7 @@ export default function ScheduleLiveClass() {
     const navigate = useNavigate()
     const [courses, setCourses] = useState([])
     const [mode, setMode] = useState('live') // 'live', 'upload', or 'link'
+    const [livePlatformType, setLivePlatformType] = useState('internal') // 'internal' | 'external'
     const [form, setForm] = useState({
         course_id: '', title: '', description: '',
         meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '',
@@ -84,7 +85,13 @@ export default function ScheduleLiveClass() {
         setError('')
         try {
             let finalUrl = form.meeting_url
-            if (mode === 'upload') finalUrl = await uploadVideoFile(selectedFile)
+            if (mode === 'live') {
+                if (livePlatformType === 'internal') {
+                    finalUrl = 'learnova-classroom://internal'
+                }
+            } else if (mode === 'upload') {
+                finalUrl = await uploadVideoFile(selectedFile)
+            }
 
             let durationMins = Number.parseInt(form.duration_minutes) || null
             if (mode === 'live' && form.scheduled_time && form.end_time) {
@@ -144,12 +151,93 @@ export default function ScheduleLiveClass() {
     const renderMediaFields = () => {
         if (mode === 'live') {
             return (
-                <div>
-                    <label htmlFor="meeting-link" className="form-label">Meeting Link</label>
-                    <div style={{ position: 'relative' }}>
-                        <Link size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input id="meeting-link" name="meeting_url" type="url" className="form-input" placeholder="https://meet.google.com/abc-defg-hij" value={form.meeting_url} onChange={e => setForm(p => ({ ...p, meeting_url: e.target.value }))} style={{ paddingLeft: '2.5rem' }} required />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* Platform Selector Buttons */}
+                    <div style={{ display: 'flex', gap: '0.75rem', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', border: '1px solid var(--sidebar-border)' }}>
+                        <button
+                            type="button"
+                            onClick={() => setLivePlatformType('internal')}
+                            style={{
+                                flex: 1,
+                                padding: '0.6rem 1rem',
+                                border: 'none',
+                                borderRadius: '8px',
+                                background: livePlatformType === 'internal' ? 'var(--card-bg)' : 'transparent',
+                                color: livePlatformType === 'internal' ? 'var(--primary-600)' : 'var(--text-muted)',
+                                fontWeight: livePlatformType === 'internal' ? 700 : 500,
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.4rem',
+                                boxShadow: livePlatformType === 'internal' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            <Sparkles size={16} /> Built-in Live Classroom
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setLivePlatformType('external')}
+                            style={{
+                                flex: 1,
+                                padding: '0.6rem 1rem',
+                                border: 'none',
+                                borderRadius: '8px',
+                                background: livePlatformType === 'external' ? 'var(--card-bg)' : 'transparent',
+                                color: livePlatformType === 'external' ? 'var(--primary-600)' : 'var(--text-muted)',
+                                fontWeight: livePlatformType === 'external' ? 700 : 500,
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.4rem',
+                                boxShadow: livePlatformType === 'external' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            <Link size={16} /> External Meeting Link
+                        </button>
                     </div>
+
+                    {livePlatformType === 'internal' ? (
+                        <div style={{
+                            padding: '1.25rem',
+                            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08))',
+                            border: '1px solid rgba(99, 102, 241, 0.25)',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.5rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-600)', fontWeight: 700, fontSize: '0.95rem' }}>
+                                <Radio size={18} /> Built-in Learnova Classroom
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                No Google Meet / Zoom link required! Students and teachers will join the interactive in-app live classroom directly in their browser tab with live video, collaborative notes, polls, live chat, and automated attendance.
+                            </p>
+                        </div>
+                    ) : (
+                        <div>
+                            <label htmlFor="meeting-link" className="form-label">External Meeting Link (Google Meet / Zoom / Teams)</label>
+                            <div style={{ position: 'relative' }}>
+                                <Link size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input 
+                                    id="meeting-link" 
+                                    name="meeting_url" 
+                                    type="url" 
+                                    className="form-input" 
+                                    placeholder="https://meet.google.com/abc-defg-hij" 
+                                    value={form.meeting_url} 
+                                    onChange={e => setForm(p => ({ ...p, meeting_url: e.target.value }))} 
+                                    style={{ paddingLeft: '2.5rem' }} 
+                                    required={livePlatformType === 'external'} 
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             )
         }
