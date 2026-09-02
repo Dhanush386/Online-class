@@ -608,10 +608,10 @@ export default function OrganizerMockInterviews() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div>
                       <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                        Student Webcam Recording
+                        Student Screen & Webcam Recording
                       </h4>
                       <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.2rem 0 0' }}>
-                        Recorded during the mock interview session for verification and assessment audit.
+                        Combined screen capture & webcam picture-in-picture recorded during the mock interview for verification.
                       </p>
                     </div>
 

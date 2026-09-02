@@ -30,13 +30,16 @@ export default function MockInterviewSession() {
 
   // Video recording states
   const [cameraActive, setCameraActive] = useState(false)
+  const [screenShared, setScreenShared] = useState(false)
   const [uploadingRecording, setUploadingRecording] = useState(false)
 
   const chatEndRef = useRef(null)
   const videoRef = useRef(null)
   const mediaStreamRef = useRef(null)
+  const screenStreamRef = useRef(null)
   const mediaRecorderRef = useRef(null)
   const recordedChunksRef = useRef([])
+  const compositeCleanupRef = useRef(null)
 
   // Scroll chat to bottom
   const scrollToBottom = () => {
@@ -108,61 +111,133 @@ export default function MockInterviewSession() {
     loadSession()
   }, [sessionId, profile?.id])
 
-  // Initialize Camera & Video Recording
-  useEffect(() => {
-    if (session?.status !== 'in_progress') return
+  // Start composite screen + camera recorder
+  const initCompositeRecording = (camStream, scrStream) => {
+    recordedChunksRef.current = []
 
-    let active = true
-
-    async function startCameraAndRecording() {
+    if (!scrStream) {
+      // Fallback: Record Camera directly
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-          audio: true
-        })
-
-        if (!active) {
-          stream.getTracks().forEach(t => t.stop())
-          return
-        }
-
-        mediaStreamRef.current = stream
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-        }
-        setCameraActive(true)
-
-        // Initialize MediaRecorder
-        recordedChunksRef.current = []
         const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
           ? 'video/webm;codecs=vp8,opus'
           : 'video/webm'
-
-        const recorder = new MediaRecorder(stream, { mimeType })
+        const recorder = new MediaRecorder(camStream, { mimeType })
         recorder.ondataavailable = (event) => {
           if (event.data && event.data.size > 0) {
             recordedChunksRef.current.push(event.data)
           }
         }
-        recorder.start(2000) // capture chunks every 2s
+        recorder.start(2000)
         mediaRecorderRef.current = recorder
-      } catch (camErr) {
-        console.warn('Camera/Mic permission denied or unavailable:', camErr)
+      } catch (e) {
+        console.warn('Recorder init error:', e)
       }
+      return
     }
 
-    startCameraAndRecording()
+    // Composite Screen + Camera PIP
+    const screenVid = document.createElement('video')
+    screenVid.srcObject = scrStream
+    screenVid.muted = true
+    screenVid.playsInline = true
+    screenVid.play().catch(e => console.debug(e))
 
+    const camVid = document.createElement('video')
+    camVid.srcObject = camStream
+    camVid.muted = true
+    camVid.playsInline = true
+    camVid.play().catch(e => console.debug(e))
+
+    const canvas = document.createElement('canvas')
+    canvas.width = 1280
+    canvas.height = 720
+    const ctx = canvas.getContext('2d')
+
+    let isRecording = true
+
+    const renderLoop = () => {
+      if (!isRecording) return
+
+      // 1. Draw Screen feed full canvas
+      try {
+        ctx.drawImage(screenVid, 0, 0, canvas.width, canvas.height)
+      } catch {
+        ctx.fillStyle = '#0a0d14'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+      }
+
+      // 2. Draw Camera PIP in bottom-right corner
+      const pipW = 280
+      const pipH = 210
+      const pipX = canvas.width - pipW - 20
+      const pipY = canvas.height - pipH - 20
+
+      ctx.fillStyle = '#000000'
+      ctx.fillRect(pipX - 2, pipY - 2, pipW + 4, pipH + 4)
+      ctx.strokeStyle = '#6366f1'
+      ctx.lineWidth = 3
+      ctx.strokeRect(pipX - 2, pipY - 2, pipW + 4, pipH + 4)
+
+      try {
+        ctx.drawImage(camVid, pipX, pipY, pipW, pipH)
+      } catch (camDrawErr) {
+        console.debug('Camera frame draw error:', camDrawErr)
+      }
+
+      // Badge on PIP
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.9)'
+      ctx.fillRect(pipX + 8, pipY + 8, 70, 20)
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 10px sans-serif'
+      ctx.fillText('● REC ON', pipX + 14, pipY + 22)
+
+      requestAnimationFrame(renderLoop)
+    }
+
+    renderLoop()
+
+    const compositeStream = canvas.captureStream(25)
+
+    // Merge audio tracks
+    camStream.getAudioTracks().forEach(t => compositeStream.addTrack(t))
+    scrStream.getAudioTracks().forEach(t => compositeStream.addTrack(t))
+
+    try {
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+        ? 'video/webm;codecs=vp8,opus'
+        : 'video/webm'
+      const recorder = new MediaRecorder(compositeStream, { mimeType })
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunksRef.current.push(event.data)
+        }
+      }
+      recorder.start(2000)
+      mediaRecorderRef.current = recorder
+    } catch (e) {
+      console.warn('Composite recorder start error:', e)
+    }
+
+    compositeCleanupRef.current = () => {
+      isRecording = false
+    }
+  }
+
+  // Cleanup media streams upon exit
+  useEffect(() => {
     return () => {
-      active = false
+      if (compositeCleanupRef.current) compositeCleanupRef.current()
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         try { mediaRecorderRef.current.stop() } catch (err) { console.debug('Media recorder stop error:', err) }
       }
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop())
       }
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach(track => track.stop())
+      }
     }
-  }, [session?.status, session?.id])
+  }, [])
 
   // Ensure stream is attached to video element when it mounts
   useEffect(() => {
@@ -430,29 +505,32 @@ export default function MockInterviewSession() {
             <button
               onClick={async () => {
                 try {
-                  const stream = await navigator.mediaDevices.getUserMedia({
+                  // 1. Request Camera & Mic
+                  const camStream = await navigator.mediaDevices.getUserMedia({
                     video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
                     audio: true
                   })
-                  mediaStreamRef.current = stream
+                  mediaStreamRef.current = camStream
                   if (videoRef.current) {
-                    videoRef.current.srcObject = stream
+                    videoRef.current.srcObject = camStream
                   }
+
+                  // 2. Request Screen Share for Dual Recording
+                  let scrStream = null
+                  try {
+                    scrStream = await navigator.mediaDevices.getDisplayMedia({
+                      video: { cursor: 'always' },
+                      audio: false
+                    })
+                    screenStreamRef.current = scrStream
+                    setScreenShared(true)
+                  } catch (scrErr) {
+                    console.info('Screen share skipped or denied, recording camera directly:', scrErr)
+                  }
+
+                  // 3. Initialize Composite Recorder
+                  initCompositeRecording(camStream, scrStream)
                   setCameraActive(true)
-
-                  recordedChunksRef.current = []
-                  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-                    ? 'video/webm;codecs=vp8,opus'
-                    : 'video/webm'
-
-                  const recorder = new MediaRecorder(stream, { mimeType })
-                  recorder.ondataavailable = (event) => {
-                    if (event.data && event.data.size > 0) {
-                      recordedChunksRef.current.push(event.data)
-                    }
-                  }
-                  recorder.start(2000)
-                  mediaRecorderRef.current = recorder
                 } catch (err) {
                   alert('Please grant camera and microphone permissions in your browser to proceed with the mock interview.')
                   console.error(err)
@@ -461,7 +539,7 @@ export default function MockInterviewSession() {
               className="btn-primary"
               style={{ flex: 2, padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
             >
-              <Video size={18} /> Enable Camera & Start Interview
+              <Video size={18} /> Enable Camera & Screen Recording
             </button>
           </div>
         </div>
@@ -551,9 +629,9 @@ export default function MockInterviewSession() {
             borderRadius: '6px'
           }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: cameraActive ? '#ef4444' : '#94a3b8', animation: cameraActive ? 'pulse 1.5s infinite' : 'none' }} />
-            {cameraActive ? 'REC ON' : 'CAMERA OFF'}
+            {cameraActive ? (screenShared ? 'SCREEN + CAM REC' : 'CAM REC ON') : 'CAMERA OFF'}
           </div>
-          <span>Interview video is recorded and auto-deleted after <strong>24 hours</strong>.</span>
+          <span>Interview screen & video are recorded and auto-deleted after <strong>24 hours</strong>.</span>
         </div>
 
         {uploadingRecording && (
