@@ -2167,9 +2167,70 @@ function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters, states, 
         setReactionsDisabled
     } = setters
 
+    const statesRef = useRef(states)
+    useEffect(() => {
+        statesRef.current = states
+    }, [states])
+
     useEffect(() => {
         if (!room) return
         const decoder = new TextDecoder()
+
+        const applyLocksObject = (locks) => {
+            if (!locks || isOrganizer) return
+            setMicLocked(!!locks.micLocked)
+            setVideoLocked(!!locks.videoLocked)
+            setScreenShareLocked(!!locks.screenShareLocked)
+            setChatLocked(!!locks.chatLocked)
+            setHandsLocked(!!locks.handsLocked)
+            setReactionsDisabled(!!locks.reactionsDisabled)
+            const lp = room.localParticipant
+            if (lp) {
+                if (locks.micLocked) lp.setMicrophoneEnabled(false)
+                if (locks.videoLocked) lp.setCameraEnabled(false)
+                if (locks.screenShareLocked) lp.setScreenShareEnabled(false)
+            }
+        }
+
+        const applyLocksFromParticipant = (p) => {
+            if (!p || isOrganizer) return
+            try {
+                const meta = JSON.parse(p.metadata || '{}')
+                if (meta.classroom_locks) {
+                    applyLocksObject(meta.classroom_locks)
+                }
+            } catch (e) {
+                console.error("Caught exception processing participant locks:", e)
+            }
+        }
+
+        // 1. Immediately scan existing remote participants for organizer locks upon joining/rejoining
+        if (!isOrganizer) {
+            room.remoteParticipants.forEach(p => applyLocksFromParticipant(p))
+        }
+
+        const handleMetadataChanged = (prevMetadata, participant) => {
+            if (!isOrganizer) {
+                applyLocksFromParticipant(participant)
+            }
+        }
+        room.on(RoomEvent.ParticipantMetadataChanged, handleMetadataChanged)
+
+        // 2. Organizer proactively sends current locks directly to any newly connected participant
+        const handleParticipantConnected = (participant) => {
+            if (isOrganizer && participant?.identity) {
+                const syncMsg = JSON.stringify({
+                    type: 'sync_state',
+                    locks: statesRef.current
+                })
+                const encoder = new TextEncoder()
+                room.localParticipant.publishData(encoder.encode(syncMsg), {
+                    reliable: true,
+                    destinationIdentities: [participant.identity]
+                })
+            }
+        }
+        room.on(RoomEvent.ParticipantConnected, handleParticipantConnected)
 
         const handleDataReceived = (payload, participant) => {
             try {
@@ -2184,31 +2245,16 @@ function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters, states, 
                 } else if (msg.type === 'request_sync' && isOrganizer) {
                     const syncMsg = JSON.stringify({
                         type: 'sync_state',
-                        locks: {
-                            micLocked: states.micLocked,
-                            videoLocked: states.videoLocked,
-                            screenShareLocked: states.screenShareLocked,
-                            chatLocked: states.chatLocked,
-                            handsLocked: states.handsLocked,
-                            reactionsDisabled: states.reactionsDisabled
-                        }
+                        locks: statesRef.current
                     })
                     const encoder = new TextEncoder()
-                    const target = participant && participant.identity ? [participant.identity] : []
-                    room.localParticipant.publishData(encoder.encode(syncMsg), { reliable: true }, target)
+                    const dest = participant?.identity ? [participant.identity] : undefined
+                    room.localParticipant.publishData(encoder.encode(syncMsg), {
+                        reliable: true,
+                        destinationIdentities: dest
+                    })
                 } else if (msg.type === 'sync_state' && !isOrganizer) {
-                    setters.setMicLocked(msg.locks.micLocked)
-                    setters.setVideoLocked(msg.locks.videoLocked)
-                    setters.setScreenShareLocked(msg.locks.screenShareLocked)
-                    setters.setChatLocked(msg.locks.chatLocked)
-                    setters.setHandsLocked(msg.locks.handsLocked)
-                    setters.setReactionsDisabled(msg.locks.reactionsDisabled)
-                    const lp = room.localParticipant
-                    if (lp) {
-                        if (msg.locks.micLocked) lp.setMicrophoneEnabled(false)
-                        if (msg.locks.videoLocked) lp.setCameraEnabled(false)
-                        if (msg.locks.screenShareLocked) lp.setScreenShareEnabled(false)
-                    }
+                    applyLocksObject(msg.locks)
                 }
             } catch (error) {
                 console.error("Caught exception processing data:", error)
@@ -2217,22 +2263,49 @@ function useRoomDataChannel(room, isOrganizer, toast, onLeave, setters, states, 
 
         room.on(RoomEvent.DataReceived, handleDataReceived)
 
-        // Supabase Realtime channel for reliable lock broadcast fallback
+        // 3. Supabase Realtime channel for reliable lock broadcast & sync fallback
         let locksChannel = null
         if (videoId) {
             locksChannel = supabase.channel(`classroom-locks-${videoId}`)
-            locksChannel.on('broadcast', { event: 'host_command' }, ({ payload }) => {
-                if (!isOrganizer && payload) {
-                    processHostCommand(payload, room, toast, onLeave, setters)
-                }
-            }).subscribe()
+            locksChannel
+                .on('broadcast', { event: 'host_command' }, ({ payload }) => {
+                    if (!isOrganizer && payload) {
+                        processHostCommand(payload, room, toast, onLeave, setters)
+                    }
+                })
+                .on('broadcast', { event: 'sync_state' }, ({ payload }) => {
+                    if (!isOrganizer && payload?.locks) {
+                        applyLocksObject(payload.locks)
+                    }
+                })
+                .on('broadcast', { event: 'request_sync' }, () => {
+                    if (isOrganizer) {
+                        locksChannel.send({
+                            type: 'broadcast',
+                            event: 'sync_state',
+                            payload: { locks: statesRef.current }
+                        })
+                    }
+                })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED' && !isOrganizer) {
+                        // Immediately request current lock state on channel join/reconnect
+                        locksChannel.send({
+                            type: 'broadcast',
+                            event: 'request_sync',
+                            payload: {}
+                        })
+                    }
+                })
         }
 
         return () => {
             room.off(RoomEvent.DataReceived, handleDataReceived)
+            room.off(RoomEvent.ParticipantMetadataChanged, handleMetadataChanged)
+            room.off(RoomEvent.ParticipantConnected, handleParticipantConnected)
             if (locksChannel) supabase.removeChannel(locksChannel)
         }
-    }, [room, isOrganizer, toast, onLeave, setters, states, videoId])
+    }, [room, isOrganizer, toast, onLeave, setters, videoId])
 }
 
 function useParticipantSystemMessages(room, isOrganizer, videoDataId, profileId) {
@@ -2776,17 +2849,79 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     }, [sidebarTab, sidebarOpen])
 
 
-    // ── New Feature State ──
+    // ── Feature Locks State ──
     const [reactions, setReactions] = useState([])
     const [handRaised, setHandRaised] = useState(false)
-    const [micLocked, setMicLocked] = useState(false)
-    const [videoLocked, setVideoLocked] = useState(false)
-    const [screenShareLocked, setScreenShareLocked] = useState(false)
-    const [handsLocked, setHandsLocked] = useState(false)
-    const [reactionsDisabled, setReactionsDisabled] = useState(false)
-    const [chatLocked, setChatLocked] = useState(false)
+    const [micLocked, setMicLocked] = useState(() => {
+        if (!isOrganizer || !videoId) return false
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(`classroom_locks_${videoId}`) || '{}')
+            return !!saved.micLocked
+        } catch { return false }
+    })
+    const [videoLocked, setVideoLocked] = useState(() => {
+        if (!isOrganizer || !videoId) return false
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(`classroom_locks_${videoId}`) || '{}')
+            return !!saved.videoLocked
+        } catch { return false }
+    })
+    const [screenShareLocked, setScreenShareLocked] = useState(() => {
+        if (!isOrganizer || !videoId) return false
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(`classroom_locks_${videoId}`) || '{}')
+            return !!saved.screenShareLocked
+        } catch { return false }
+    })
+    const [handsLocked, setHandsLocked] = useState(() => {
+        if (!isOrganizer || !videoId) return false
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(`classroom_locks_${videoId}`) || '{}')
+            return !!saved.handsLocked
+        } catch { return false }
+    })
+    const [reactionsDisabled, setReactionsDisabled] = useState(() => {
+        if (!isOrganizer || !videoId) return false
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(`classroom_locks_${videoId}`) || '{}')
+            return !!saved.reactionsDisabled
+        } catch { return false }
+    })
+    const [chatLocked, setChatLocked] = useState(() => {
+        if (!isOrganizer || !videoId) return false
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(`classroom_locks_${videoId}`) || '{}')
+            return !!saved.chatLocked
+        } catch { return false }
+    })
     const [announcementText, setAnnouncementText] = useState('')
     const [raisedHands, setRaisedHands] = useState({}) // { identity: { name, raisedAt } } — data channel fallback
+
+    // Sync Organizer's active locks to LiveKit Participant Metadata and SessionStorage
+    useEffect(() => {
+        if (!room || !isOrganizer) return
+        try {
+            const meta = JSON.parse(room.localParticipant.metadata || '{}')
+            const locksPayload = {
+                micLocked,
+                videoLocked,
+                screenShareLocked,
+                chatLocked,
+                handsLocked,
+                reactionsDisabled,
+                updatedAt: Date.now()
+            }
+            room.localParticipant.setMetadata(JSON.stringify({
+                ...meta,
+                classroom_locks: locksPayload
+            }))
+            if (videoId) {
+                sessionStorage.setItem(`classroom_locks_${videoId}`, JSON.stringify(locksPayload))
+            }
+        } catch (e) {
+            console.error("Failed to sync locks to metadata:", e)
+        }
+    }, [room, isOrganizer, micLocked, videoLocked, screenShareLocked, chatLocked, handsLocked, reactionsDisabled, videoId])
 
     // System Messages for Join/Leave
     useParticipantSystemMessages(room, isOrganizer, videoData?.id, profile?.id)
@@ -2809,7 +2944,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
     // Request Sync on Join for Students
     useEffect(() => {
         if (!room || isOrganizer) return
-        const timer = setTimeout(() => {
+        const sendReq = () => {
             try {
                 const msg = JSON.stringify({ type: 'request_sync' })
                 const encoder = new TextEncoder()
@@ -2817,8 +2952,13 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
             } catch (e) {
                 console.error("Failed to request sync", e)
             }
-        }, 1500)
-        return () => clearTimeout(timer)
+        }
+        const timer1 = setTimeout(sendReq, 100)
+        const timer2 = setTimeout(sendReq, 1200)
+        return () => {
+            clearTimeout(timer1)
+            clearTimeout(timer2)
+        }
     }, [room, isOrganizer])
 
     const lastReactionTime = useRef(0)
