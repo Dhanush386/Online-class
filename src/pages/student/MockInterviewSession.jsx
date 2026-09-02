@@ -369,6 +369,105 @@ export default function MockInterviewSession() {
     )
   }
 
+  // Mandatory Camera Access Screen
+  if (!cameraActive) {
+    return (
+      <div style={{ maxWidth: 640, margin: '2rem auto', padding: '0 1rem' }}>
+        <div className="glass-card" style={{ padding: '2.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
+          <div style={{
+            width: 72, height: 72,
+            borderRadius: '20px',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(239, 68, 68, 0.2))',
+            border: '2px solid rgba(99, 102, 241, 0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--primary-600)'
+          }}>
+            <Video size={36} />
+          </div>
+
+          <div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+              Camera & Face Verification Required
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.5, margin: 0 }}>
+              To ensure mock interview integrity and provide authentic video feedback for instructor verification, your camera must remain enabled with your face clearly visible throughout the entire session.
+            </p>
+          </div>
+
+          <div style={{
+            width: '100%',
+            padding: '1rem',
+            background: 'var(--bg-elevated)',
+            borderRadius: '12px',
+            border: '1px solid var(--sidebar-border)',
+            textAlign: 'left',
+            fontSize: '0.85rem',
+            color: 'var(--text-secondary)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CheckCircle size={16} color="#10b981" /> Ensure your face is centered and well-lit.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CheckCircle size={16} color="#10b981" /> Speak clearly into your microphone when answering.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CheckCircle size={16} color="#10b981" /> Video is recorded securely and auto-deleted after 24 hours.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', width: '100%', marginTop: '0.5rem' }}>
+            <button
+              onClick={() => navigate('/student/mock-interview')}
+              className="btn-secondary"
+              style={{ flex: 1, padding: '0.75rem' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+                    audio: true
+                  })
+                  mediaStreamRef.current = stream
+                  if (videoRef.current) {
+                    videoRef.current.srcObject = stream
+                  }
+                  setCameraActive(true)
+
+                  recordedChunksRef.current = []
+                  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+                    ? 'video/webm;codecs=vp8,opus'
+                    : 'video/webm'
+
+                  const recorder = new MediaRecorder(stream, { mimeType })
+                  recorder.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                      recordedChunksRef.current.push(event.data)
+                    }
+                  }
+                  recorder.start(2000)
+                  mediaRecorderRef.current = recorder
+                } catch (err) {
+                  alert('Please grant camera and microphone permissions in your browser to proceed with the mock interview.')
+                  console.error(err)
+                }
+              }}
+              className="btn-primary"
+              style={{ flex: 2, padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+            >
+              <Video size={18} /> Enable Camera & Start Interview
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const totalQuestions = session?.question_count || 5
   const progressPercent = Math.min(100, Math.round(((currentTurnNumber - 1) / totalQuestions) * 100))
 
