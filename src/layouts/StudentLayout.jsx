@@ -13,6 +13,7 @@ import {
   ChevronDown, Sparkles, Bot
 } from 'lucide-react'
 import AIChatbot from '../components/shared/AIChatbot'
+import ThemeSelector from '../components/shared/ThemeSelector'
 import learnovaLogo from '../assets/learnova-logo.png'
 import CommandPalette from '../components/CommandPalette'
 import { Avatar, ProgressRing } from '../design-system'
@@ -407,6 +408,8 @@ function StudentHeader({
         )}
 
         <CommandPalette role="student" onSignOut={handleSignOut} />
+
+        <ThemeSelector />
 
         <button onClick={() => { if (requestNavigation('/student/achievements')) { return; } navigate('/student/achievements'); }} className="btn-icon hide-mobile" title="Achievements">
           <Award size={16} color="var(--secondary-500)" />

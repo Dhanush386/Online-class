@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation, createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { MeetingProvider } from './contexts/MeetingContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ToastProvider } from './components/Toast'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -210,13 +211,15 @@ function AppInner() {
 }
 
 const AppInnerWrapper = () => (
-  <AuthProvider>
-    <ToastProvider>
-      <ErrorBoundary>
-        <AppInner />
-      </ErrorBoundary>
-    </ToastProvider>
-  </AuthProvider>
+  <ThemeProvider>
+    <AuthProvider>
+      <ToastProvider>
+        <ErrorBoundary>
+          <AppInner />
+        </ErrorBoundary>
+      </ToastProvider>
+    </AuthProvider>
+  </ThemeProvider>
 )
 
 const router = createBrowserRouter([

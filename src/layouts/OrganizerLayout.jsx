@@ -13,6 +13,7 @@ import {
   Bot
 } from 'lucide-react'
 import AIChatbot from '../components/shared/AIChatbot'
+import ThemeSelector from '../components/shared/ThemeSelector'
 import learnovaLogo from '../assets/learnova-logo.png'
 import CommandPalette from '../components/CommandPalette'
 import { Avatar } from '../design-system'
@@ -364,6 +365,9 @@ function OrganizerHeader({
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         {/* Command Palette */}
         <CommandPalette role="organizer" onSignOut={handleSignOut} />
+
+        {/* Theme Selector */}
+        <ThemeSelector />
 
         {/* Notifications */}
         <div style={{ position: 'relative' }}>
