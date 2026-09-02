@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { supabase } from '../../lib/supabase'
+import { getLiveKitToken } from '../../lib/livekitToken'
 import { useAuth } from '../../contexts/AuthContext'
 import { useMeeting } from '../../contexts/MeetingContext'
 import { useToast } from '../../components/Toast'
@@ -3284,14 +3285,17 @@ export default function LiveClassroom() {
         async function fetchToken() {
             try {
                 const roomName = `learnova-class-${videoData.id}`
-                const { data, error } = await supabase.functions.invoke('livekit-token', {
-                    body: { roomName }
+                const token = await getLiveKitToken({
+                    roomName,
+                    identity: profile?.id,
+                    name: profile?.name,
+                    role: profile?.role,
+                    isOrganizer
                 })
-                if (error) throw error
-                if (data?.error) throw new Error(`Server Error: ${data.error}`)
-                if (data?.token) {
-                    setLivekitToken(data.token)
-                    startMeeting({ token: data.token, videoId, videoData, isOrganizer })
+
+                if (token) {
+                    setLivekitToken(token)
+                    startMeeting({ token, videoId, videoData, isOrganizer })
                 } else {
                     throw new Error('No token returned')
                 }
@@ -3302,7 +3306,7 @@ export default function LiveClassroom() {
         }
 
         fetchToken()
-    }, [videoData, isOrganizer, instructorPresent, joinStatus, livekitToken, startMeeting, videoId])
+    }, [videoData, isOrganizer, instructorPresent, joinStatus, livekitToken, startMeeting, videoId, profile])
 
     // ── Loading State ──
     if (loading) {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Room, LocalVideoTrack, LocalAudioTrack, Track, RoomEvent } from 'livekit-client';
 import { supabase } from '../lib/supabase';
+import { getLiveKitToken } from '../lib/livekitToken';
 
 const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'wss://meet.learnova.com';
 
@@ -29,12 +30,16 @@ export function useLiveKitProctoring(assessmentId, studentId, isScreenSharing = 
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) return;
 
-                const response = await supabase.functions.invoke('livekit-token', {
-                    body: { roomName, proctoringMode: true }
+                const token = await getLiveKitToken({
+                    roomName,
+                    identity: studentId,
+                    role: 'student',
+                    isOrganizer: false,
+                    proctoringMode: true
                 });
 
-                if (!response.data?.token) {
-                    console.error('[LiveKit Proctoring] Failed to get token. Response:', response);
+                if (!token) {
+                    console.error('[LiveKit Proctoring] Failed to get token.');
                     return;
                 }
 
@@ -46,15 +51,17 @@ export function useLiveKitProctoring(assessmentId, studentId, isScreenSharing = 
                 });
                 roomRef.current = room;
 
-                // Register connection quality listener
-                room.on(RoomEvent.ConnectionQualityChanged, (participant, quality) => {
-                    if (participant === room.localParticipant) {
-                        const qualityStr = typeof quality === 'string' ? quality : String(quality);
-                        setConnectionQuality(qualityStr.toLowerCase());
-                    }
+                // Handle events
+                room.on(RoomEvent.ConnectionQualityChanged, (quality) => {
+                    if (isMounted) setConnectionQuality(quality);
                 });
 
-                await room.connect(LIVEKIT_URL, response.data.token);
+                room.on(RoomEvent.Disconnected, () => {
+                    if (isMounted) setIsConnected(false);
+                });
+
+                // Connect to LiveKit Room
+                await room.connect(LIVEKIT_URL, token);
                 if (!isMounted) return;
 
                 setIsConnected(true);

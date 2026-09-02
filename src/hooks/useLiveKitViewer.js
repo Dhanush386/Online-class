@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
 import { supabase } from '../lib/supabase';
+import { getLiveKitToken } from '../lib/livekitToken';
 
 const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'wss://meet.learnova.com';
 
@@ -28,53 +29,51 @@ export function useLiveKitViewer(assessmentId) {
 
     const handleTrackSubscribed = useCallback((track, publication, participant) => {
         const studentId = participant.identity;
-        
-        if (track.kind === 'audio') {
-            track.attach();
+        console.log(`[LiveKit Viewer] Subscribed to ${track.kind} track from student:`, studentId);
+
+        if (track.kind === 'video') {
+            const mediaStream = new MediaStream([track.mediaStreamTrack]);
+            setLiveStreams(prev => ({
+                ...prev,
+                [studentId]: mediaStream
+            }));
+        } else if (track.kind === 'audio') {
+            const audioElement = track.attach();
+            audioElement.style.display = 'none';
+            document.body.appendChild(audioElement);
             console.log('[LiveKit Viewer] Audio track attached and playing for:', studentId);
         }
-        
-        setLiveStreams(prev => {
-            const currentStream = prev[studentId] || new MediaStream();
-            if (!currentStream.getTracks().includes(track.mediaStreamTrack)) {
-                currentStream.addTrack(track.mediaStreamTrack);
-            }
-            return { ...prev, [studentId]: currentStream };
-        });
     }, []);
 
     const handleTrackUnsubscribed = useCallback((track, publication, participant) => {
         const studentId = participant.identity;
-        
-        if (track.kind === 'audio') {
-            track.detach();
+        console.log(`[LiveKit Viewer] Unsubscribed from ${track.kind} track for student:`, studentId);
+
+        if (track.kind === 'video') {
+            setLiveStreams(prev => {
+                const next = { ...prev };
+                delete next[studentId];
+                return next;
+            });
+        } else if (track.kind === 'audio') {
+            track.detach().forEach(el => el.remove());
             console.log('[LiveKit Viewer] Audio track detached for:', studentId);
         }
-        
-        setLiveStreams(prev => {
-            const currentStream = prev[studentId];
-            if (currentStream) {
-                const newStream = new MediaStream(currentStream.getTracks().filter(t => t.id !== track.mediaStreamTrack.id));
-                if (newStream.getTracks().length === 0) {
-                    const next = { ...prev };
-                    delete next[studentId];
-                    return next;
-                }
-                return { ...prev, [studentId]: newStream };
-            }
-            return prev;
-        });
     }, []);
 
     const handleParticipantDisconnected = useCallback((participant) => {
+        const studentId = participant.identity;
+        console.log('[LiveKit Viewer] Student disconnected:', studentId);
+
         setLiveStreams(prev => {
             const next = { ...prev };
-            delete next[participant.identity];
+            delete next[studentId];
             return next;
         });
+
         setConnectionQualities(prev => {
             const next = { ...prev };
-            delete next[participant.identity];
+            delete next[studentId];
             return next;
         });
     }, []);
@@ -91,12 +90,16 @@ export function useLiveKitViewer(assessmentId) {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) return;
 
-                const response = await supabase.functions.invoke('livekit-token', {
-                    body: { roomName, proctoringMode: true }
+                const token = await getLiveKitToken({
+                    roomName,
+                    identity: session.user?.id,
+                    role: 'organizer',
+                    isOrganizer: true,
+                    proctoringMode: true
                 });
 
-                if (!response.data?.token) {
-                    console.error('[LiveKit Viewer] Failed to get token. Response:', response);
+                if (!token) {
+                    console.error('[LiveKit Viewer] Failed to get token.');
                     return;
                 }
 
@@ -118,7 +121,7 @@ export function useLiveKitViewer(assessmentId) {
                 room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
 
                 // 3. Connect to Room
-                await room.connect(LIVEKIT_URL, response.data.token);
+                await room.connect(LIVEKIT_URL, token);
                 if (!isMounted) return;
                 
                 setIsConnected(true);
