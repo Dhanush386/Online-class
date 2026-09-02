@@ -21,15 +21,15 @@ const removeReactionFromMessage = (messages, oldReaction) => messages.map(m => {
 });
 
 const getMessageBackground = (isMine, isInstructor) => {
-    if (isMine) return '#6366f1';
+    if (isMine) return 'var(--primary-600)';
     if (isInstructor) return 'rgba(99,102,241,0.15)';
-    return 'rgba(255,255,255,0.08)';
+    return 'var(--bg-elevated)';
 };
 
 const getMessageBorder = (isMine, isInstructor) => {
     if (isMine) return 'none';
     if (isInstructor) return '1px solid rgba(99,102,241,0.3)';
-    return 'none';
+    return '1px solid var(--sidebar-border)';
 };
 
 function SystemMessage({ isAnnouncement, message }) {
@@ -159,7 +159,7 @@ function MessageItem({ msg, profile, isOrganizer, reactionPickerMsgId, setReacti
                 <div 
                     style={{ 
                         background: getMessageBackground(isMine, isInstructor),
-                        color: 'white',
+                        color: isMine ? '#ffffff' : 'var(--text-primary)',
                         padding: '0.5rem 0.85rem',
                         borderRadius: 12,
                         borderTopRightRadius: isMine ? 2 : 12,
@@ -382,23 +382,23 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, onNewMessag
     }
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'rgba(15,23,42,0.5)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--card-bg)' }}>
             {/* Pinned Messages Area */}
             {pinnedMessages.length > 0 && (
                 <div style={{ 
                     padding: '0.85rem', 
                     background: 'rgba(99, 102, 241, 0.1)', 
-                    borderBottom: '1px solid rgba(99, 102, 241, 0.2)' 
+                    borderBottom: '1px solid var(--sidebar-border)' 
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, color: '#818cf8', fontSize: '0.85rem', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, color: 'var(--primary-600)', fontSize: '0.85rem', fontWeight: 600 }}>
                         <Pin size={12} /> Pinned
                     </div>
                     {pinnedMessages.map(msg => (
                         <div key={msg.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                            <p style={{ margin: 0, color: 'white', fontSize: '0.85rem' }}>{msg.message}</p>
+                            <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.85rem' }}>{msg.message}</p>
                             {isOrganizer && (
-                                <button onClick={() => togglePin(msg.id, true)} style={{ background: 'transparent', border: 'none', color: '#818cf8', cursor: 'pointer', padding: 4 }}>
-                                    <Pin size={12} fill="#818cf8" />
+                                <button onClick={() => togglePin(msg.id, true)} style={{ background: 'transparent', border: 'none', color: 'var(--primary-600)', cursor: 'pointer', padding: 4 }}>
+                                    <Pin size={12} fill="currentColor" />
                                 </button>
                             )}
                         </div>
@@ -430,7 +430,7 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, onNewMessag
             </div>
 
             {/* Input Area */}
-            <div style={{ padding: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15,23,42,0.95)' }}>
+            <div style={{ padding: '0.85rem', borderTop: '1px solid var(--sidebar-border)', background: 'var(--card-bg)' }}>
                 {chatLocked && !isOrganizer ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#ef4444', fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}>
                         <ShieldAlert size={14} /> Chat is locked by instructor
@@ -445,9 +445,9 @@ export default function LiveChat({ videoId, isOrganizer, chatLocked, onNewMessag
                             disabled={sending}
                             style={{
                                 flex: 1,
-                                background: 'rgba(255,255,255,0.05)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                color: 'white',
+                                background: 'var(--bg-elevated)',
+                                border: '1px solid var(--sidebar-border)',
+                                color: 'var(--text-primary)',
                                 padding: '0.5rem 0.85rem',
                                 borderRadius: 8,
                                 outline: 'none',

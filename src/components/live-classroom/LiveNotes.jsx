@@ -136,7 +136,7 @@ export default function LiveNotes({ videoId, isOrganizer, channel }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>Class Notes</h3>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Class Notes</h3>
                 {isOrganizer && (
                     <button 
                         onClick={handleManualSave}
@@ -173,10 +173,10 @@ export default function LiveNotes({ videoId, isOrganizer, channel }) {
                 style={{
                     flex: 1,
                     width: '100%',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--sidebar-border)',
                     borderRadius: '8px',
-                    color: 'white',
+                    color: 'var(--text-primary)',
                     padding: '1rem',
                     fontSize: '0.95rem',
                     fontFamily: 'monospace',

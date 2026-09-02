@@ -184,7 +184,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1rem', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>Live Polls</h3>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Live Polls</h3>
                 {isOrganizer && !isCreating && (
                     <button 
                         onClick={() => setIsCreating(true)}
@@ -196,10 +196,10 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
             </div>
 
             {isCreating && (
-                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ background: 'var(--bg-elevated)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--sidebar-border)' }}>
                     <input 
                         type="text" placeholder="Poll Question" value={newQuestion} onChange={e => setNewQuestion(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: 'white', borderRadius: '4px', outline: 'none' }}
+                        style={{ width: '100%', padding: '0.6rem', marginBottom: '0.6rem', background: 'var(--bg-surface)', border: '1px solid var(--sidebar-border)', color: 'var(--text-primary)', borderRadius: '6px', outline: 'none' }}
                     />
                     {newOptions.map((optObj, i) => (
                         <div key={optObj.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
@@ -220,18 +220,18 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                                     opts[i] = { ...opts[i], text: e.target.value }; 
                                     setNewOptions(opts);
                                 }}
-                                style={{ flex: 1, padding: '0.5rem', background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: 'white', borderRadius: '4px', outline: 'none' }}
+                                style={{ flex: 1, padding: '0.5rem', background: 'var(--bg-surface)', border: '1px solid var(--sidebar-border)', color: 'var(--text-primary)', borderRadius: '6px', outline: 'none' }}
                             />
                             {i > 1 && (
                                 <button onClick={() => setNewOptions(newOptions.filter((_, idx) => idx !== i))} style={{ background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer' }}>X</button>
                             )}
                         </div>
                     ))}
-                    <button onClick={() => setNewOptions([...newOptions, { id: crypto.randomUUID(), text: '' }])} style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', marginBottom: '1rem' }}>+ Add Option</button>
+                    <button onClick={() => setNewOptions([...newOptions, { id: crypto.randomUUID(), text: '' }])} style={{ color: 'var(--primary-600)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', marginBottom: '1rem', fontWeight: 600 }}>+ Add Option</button>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                         <Clock size={14} /> Timer:
-                        <select value={timerSeconds} onChange={e => setTimerSeconds(Number(e.target.value))} style={{ background: 'var(--text-primary)', color: 'white', border: '1px solid var(--card-border)', padding: '0.2rem', borderRadius: '4px', outline: 'none' }}>
+                        <select value={timerSeconds} onChange={e => setTimerSeconds(Number(e.target.value))} style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--sidebar-border)', padding: '0.3rem', borderRadius: '4px', outline: 'none' }}>
                             <option value={30}>30s</option>
                             <option value={60}>60s</option>
                             <option value={120}>2 mins</option>
@@ -239,10 +239,18 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button onClick={handleCreatePoll} disabled={creating} style={{ flex: 1, background: '#10b981', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer' }}>
-                            {creating ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Launch Poll'}
+                        <button 
+                            onClick={handleCreatePoll} 
+                            style={{ flex: 1, background: '#10b981', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                        >
+                            Launch Poll
                         </button>
-                        <button onClick={() => setIsCreating(false)} style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--card-border)', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+                        <button 
+                            onClick={() => setIsCreating(false)} 
+                            style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', padding: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                        >
+                            Cancel
+                        </button>
                     </div>
                 </div>
             )}
@@ -254,14 +262,15 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                     const totalVotes = Object.values(voteCounts[poll.id] || {}).reduce((a, b) => a + b, 0);
 
                     return (
-                        <div key={poll.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '1rem' }}>
+                        <div key={poll.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', borderRadius: '8px', padding: '1rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                                <h4 style={{ margin: 0, color: 'white', fontSize: '0.95rem' }}>{poll.question}</h4>
-                                <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '12px', background: isEnded ? 'rgba(255,255,255,0.1)' : 'rgba(16, 185, 129, 0.2)', color: isEnded ? 'var(--text-muted)' : '#10b981' }}>
+                                <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem' }}>{poll.question}</h4>
+                                <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '12px', background: isEnded ? 'rgba(100,116,139,0.15)' : 'rgba(16, 185, 129, 0.2)', color: isEnded ? 'var(--text-muted)' : '#10b981' }}>
                                     {isEnded ? 'Closed' : 'Active'}
                                 </span>
                             </div>
-                                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
                                 {poll.options.map((opt) => {
                                     const votes = voteCounts[poll.id]?.[opt] || 0;
                                     const percentage = totalVotes === 0 ? 0 : Math.round((votes / totalVotes) * 100);
@@ -271,7 +280,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                                         const isCorrectAnswer = poll.correct_option === opt;
                                         const isWrongVote = isMyVote && poll.correct_option && !isCorrectAnswer;
                                         
-                                        let barColor = 'rgba(255,255,255,0.1)';
+                                        let barColor = 'rgba(99, 102, 241, 0.15)';
                                         let checkColor = 'var(--text-muted)';
                                         
                                         if (isCorrectAnswer) {
@@ -285,9 +294,9 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                                             checkColor = '#6366f1';
                                         }
                                         return (
-                                            <div key={opt} style={{ position: 'relative', background: 'rgba(0,0,0,0.3)', borderRadius: '4px', overflow: 'hidden' }}>
+                                            <div key={opt} style={{ position: 'relative', background: 'var(--bg-surface)', border: '1px solid var(--sidebar-border)', borderRadius: '4px', overflow: 'hidden' }}>
                                                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${percentage}%`, background: barColor, transition: 'width 0.5s' }} />
-                                                <div style={{ position: 'relative', padding: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'white' }}>
+                                                <div style={{ position: 'relative', padding: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                                                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                         {(isMyVote || isCorrectAnswer) && <CheckCircle2 size={14} color={checkColor} />}
                                                         {opt}
@@ -303,11 +312,7 @@ export default function LivePolls({ videoId, isOrganizer, channel }) {
                                         <button 
                                             key={opt} 
                                             onClick={() => handleVote(poll.id, opt)}
-                                            style={{ padding: '0.6rem', background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: 'white', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem', transition: 'background 0.2s' }}
-                                            onMouseOver={(e) => e.target.style.background = 'var(--card-border)'}
-                                            onFocus={(e) => e.target.style.background = 'var(--card-border)'}
-                                            onMouseOut={(e) => e.target.style.background = 'var(--text-primary)'}
-                                            onBlur={(e) => e.target.style.background = 'var(--text-primary)'}
+                                            style={{ padding: '0.6rem', background: 'var(--bg-surface)', border: '1px solid var(--sidebar-border)', color: 'var(--text-primary)', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem', transition: 'background 0.2s' }}
                                         >
                                             {opt}
                                         </button>

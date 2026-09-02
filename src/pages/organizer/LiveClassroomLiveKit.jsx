@@ -1754,24 +1754,27 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
     }
 
     const btnStyle = (active, danger) => {
-        let background = 'rgba(239,68,68,0.15)';
-        let color = '#ef4444';
+        let background = 'var(--bg-elevated)';
+        let color = 'var(--text-secondary)';
         let boxShadow = 'none';
 
         if (danger) {
             background = '#ef4444';
             color = 'white';
             boxShadow = '0 4px 15px rgba(239,68,68,0.4)';
-        } else if (active) {
-            background = 'rgba(255,255,255,0.1)';
-            color = 'white';
+        } else if (!active) {
+            background = 'rgba(239,68,68,0.15)';
+            color = '#ef4444';
+        } else {
+            background = 'var(--bg-elevated)';
+            color = 'var(--text-primary)';
         }
 
         return {
             width: 48,
             height: 48,
             borderRadius: '50%',
-            border: 'none',
+            border: '1px solid var(--sidebar-border)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -1787,8 +1790,8 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
         <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '0.5rem' : '0.85rem',
             padding: isMobile ? '0.85rem 1rem' : '1rem 2rem',
-            background: 'rgba(15,23,42,0.95)',
-            borderTop: '1px solid rgba(255,255,255,0.05)',
+            background: 'var(--card-bg)',
+            borderTop: '1px solid var(--sidebar-border)',
         }}>
             {/* Recording Controls (Organizer Only) */}
             <RecordingControls isOrganizer={isOrganizer} isMobile={isMobile} />
@@ -2302,8 +2305,8 @@ function RoomTopBar({ videoTitle, isOrganizer, isMobile, isFullScreen, sidebarOp
     return (
         <div style={{
             padding: '0.85rem 1.5rem',
-            background: 'rgba(15, 23, 42, 0.95)',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            background: 'var(--card-bg)',
+            borderBottom: '1px solid var(--sidebar-border)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10,
             backdropFilter: 'blur(12px)'
         }}>
@@ -2316,7 +2319,7 @@ function RoomTopBar({ videoTitle, isOrganizer, isMobile, isFullScreen, sidebarOp
                     <Video size={16} color="white" />
                 </div>
                 <div>
-                    <h1 style={{ color: 'white', fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>
+                    <h1 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>
                         {videoTitle}
                     </h1>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', margin: 0 }}>
@@ -2328,8 +2331,8 @@ function RoomTopBar({ videoTitle, isOrganizer, isMobile, isFullScreen, sidebarOp
                 <ParticipantCount />
                 {!isMobile && (
                     <button onClick={toggleFullScreen} style={{
-                        background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)',
-                        border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.85rem',
+                        background: 'var(--bg-elevated)', color: 'var(--text-secondary)',
+                        border: '1px solid var(--sidebar-border)', padding: '0.4rem 0.85rem',
                         borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: '0.3rem'
                     }}>
@@ -2337,10 +2340,10 @@ function RoomTopBar({ videoTitle, isOrganizer, isMobile, isFullScreen, sidebarOp
                     </button>
                 )}
                 <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
-                    background: sidebarOpen ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
-                    color: sidebarOpen ? '#818cf8' : 'var(--text-muted)',
-                    border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.85rem',
-                    borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer'
+                    background: sidebarOpen ? 'rgba(99,102,241,0.15)' : 'var(--bg-elevated)',
+                    color: sidebarOpen ? 'var(--primary-600)' : 'var(--text-secondary)',
+                    border: '1px solid var(--sidebar-border)', padding: '0.4rem 0.85rem',
+                    borderRadius: 8, fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600
                 }}>
                     {sidebarOpen ? 'Close Panel' : 'Open Panel'}
                 </button>
@@ -2392,8 +2395,8 @@ function getSidebarLayout(isMobile, isLandscape) {
         maxHeight: 'none',
         position: 'relative',
         bottom: 'auto',
-        background: 'rgba(15,23,42,0.98)',
-        borderLeft: '1px solid rgba(255,255,255,0.08)',
+        background: 'var(--card-bg)',
+        borderLeft: '1px solid var(--sidebar-border)',
         borderTop: 'none',
         borderTopLeftRadius: 0,
         borderTopRightRadius: 0,
@@ -2535,16 +2538,18 @@ function RoomSidebar({
             )}
             <div style={{
                 display: 'flex', padding: '0.5rem', gap: '0.4rem',
-                borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto'
+                borderBottom: '1px solid var(--sidebar-border)', overflowX: 'auto'
             }}>
                 {sidebarTabs.map(tab => (
                     <button key={tab.id} onClick={() => setSidebarTab(tab.id)} style={{
                         flex: 1, padding: '0.5rem',
-                        background: sidebarTab === tab.id ? '#6366f1' : 'transparent',
-                        color: sidebarTab === tab.id ? 'white' : 'var(--text-muted)',
+                        background: sidebarTab === tab.id ? 'var(--primary-600)' : 'transparent',
+                        color: sidebarTab === tab.id ? '#ffffff' : 'var(--text-secondary)',
+                        fontWeight: sidebarTab === tab.id ? 700 : 500,
                         border: 'none', borderRadius: '6px', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        gap: '0.3rem', fontSize: '0.85rem', minWidth: '50px'
+                        gap: '0.3rem', fontSize: '0.85rem', minWidth: '50px',
+                        transition: 'all 0.15s ease'
                     }}>
                         <tab.icon size={14} /> {tab.label}
                     </button>
@@ -2996,7 +3001,7 @@ function RoomContent({ videoId, videoData, isOrganizer, profile, channelInstance
 
     return (
         <div ref={containerRef} style={{
-            height: '100%', flex: 1, display: 'flex', flexDirection: 'column', background: '#020617',
+            height: '100%', flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-base)', color: 'var(--text-primary)',
             paddingTop: 'env(safe-area-inset-top)',
             paddingBottom: 'env(safe-area-inset-bottom)',
             paddingLeft: 'env(safe-area-inset-left)',
