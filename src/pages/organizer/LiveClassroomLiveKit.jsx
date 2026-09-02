@@ -906,8 +906,8 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
     return (
         <div style={{ padding: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ color: 'white', fontSize: '0.9rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Hand size={16} /> Raised Hands ({handsUp.length})
+                <h3 style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Hand size={16} color="#f59e0b" /> Raised Hands ({handsUp.length})
                 </h3>
                 {handsUp.length > 0 && (
                     <button onClick={onLowerAll} style={{
@@ -923,21 +923,21 @@ function RaisedHandsPanel({ participants, raisedHandsFromDataChannel = {}, onLow
                     {handsUp.map((h, i) => (
                         <div key={h.identity} style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: 'rgba(255,255,255,0.03)', padding: '0.6rem 0.85rem', borderRadius: 10,
-                            border: '1px solid rgba(255,255,255,0.05)',
+                            background: 'var(--bg-elevated)', padding: '0.6rem 0.85rem', borderRadius: 10,
+                            border: '1px solid var(--sidebar-border)',
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 <span style={{ color: '#f59e0b', fontSize: '1.1rem' }}>✋</span>
                                 <div>
-                                    <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 600 }}>#{i + 1} {h.name}</span>
+                                    <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 600 }}>#{i + 1} {h.name}</span>
                                     <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', margin: 0 }}>
                                         {h.raisedAt ? new Date(h.raisedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                                     </p>
                                 </div>
                             </div>
                             <button onClick={() => onLowerHand(h.identity)} style={{
-                                background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)',
-                                padding: '4px 8px', borderRadius: 6, fontSize: '0.7rem', cursor: 'pointer',
+                                background: 'var(--bg-surface)', color: 'var(--text-secondary)', border: '1px solid var(--sidebar-border)',
+                                padding: '4px 8px', borderRadius: 6, fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600
                             }}>Lower</button>
                         </div>
                     ))}
@@ -960,22 +960,24 @@ RaisedHandsPanel.propTypes = {
 function controlBtnStyle() {
     return {
         width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-        padding: '0.85rem 1rem', borderRadius: 10, cursor: 'pointer', color: 'white',
-        fontSize: '0.85rem', fontWeight: 500, transition: 'all 0.15s ease',
+        background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)',
+        padding: '0.85rem 1rem', borderRadius: 10, cursor: 'pointer', color: 'var(--text-primary)',
+        fontSize: '0.85rem', fontWeight: 600, transition: 'all 0.15s ease',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
     };
 }
 
 // eslint-disable-next-line no-unused-vars
 function HostToggleButton({ isLocked, onToggle, IconLocked, IconUnlocked, labelLocked, labelUnlocked }) {
-    const background = isLocked ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)';
-    const border = isLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)';
-    const iconColor = isLocked ? '#ef4444' : '#22c55e';
+    const background = isLocked ? 'rgba(239,68,68,0.12)' : 'var(--bg-elevated)';
+    const border = isLocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--sidebar-border)';
+    const iconColor = isLocked ? '#ef4444' : '#10b981';
+    const textColor = isLocked ? '#ef4444' : 'var(--text-primary)';
 
     return (
-        <button onClick={onToggle} style={{ ...controlBtnStyle(), marginTop: '0.5rem', background, border }}>
+        <button onClick={onToggle} style={{ ...controlBtnStyle(), marginTop: '0.5rem', background, border, color: textColor }}>
             {isLocked ? <IconLocked size={16} color={iconColor} /> : <IconUnlocked size={16} color={iconColor} />}
-            {isLocked ? labelLocked : labelUnlocked}
+            <span>{isLocked ? labelLocked : labelUnlocked}</span>
         </button>
     );
 }
@@ -998,7 +1000,7 @@ function HostLocksSection({
     reactionsDisabled, handleToggleReactions
 }) {
     return (
-        <div style={{ marginTop: '0.85rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
+        <div style={{ marginTop: '0.85rem', borderTop: '1px solid var(--sidebar-border)', paddingTop: '0.85rem' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Locks</p>
 
             <HostToggleButton
@@ -1065,7 +1067,7 @@ function HostParticipantList({ remoteParticipants, sendHostCommand, onRemovePart
     if (remoteParticipants.length === 0) return null;
 
     return (
-        <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
+        <div style={{ marginTop: '0.5rem', borderTop: '1px solid var(--sidebar-border)', paddingTop: '0.85rem' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Participants</p>
             {remoteParticipants.map(p => {
                 let meta = {};
@@ -1075,22 +1077,22 @@ function HostParticipantList({ remoteParticipants, sendHostCommand, onRemovePart
                 return (
                     <div key={p.identity} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '0.5rem 0.85rem', borderRadius: 8,
-                        background: 'rgba(255,255,255,0.02)', marginBottom: 4,
+                        padding: '0.6rem 0.85rem', borderRadius: 8,
+                        background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', marginBottom: 6,
                     }}>
-                        <span style={{ color: 'white', fontSize: '0.8rem', fontWeight: 500 }}>{pName}</span>
+                        <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 600 }}>{pName}</span>
                         <div style={{ display: 'flex', gap: 4 }}>
                             <button onClick={() => sendHostCommand('mute_participant', { identity: p.identity })} title="Mute" style={{
                                 background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6,
-                                padding: 4, cursor: 'pointer', display: 'flex',
+                                padding: 6, cursor: 'pointer', display: 'flex',
                             }}><MicOff size={14} color="#ef4444" /></button>
                             <button onClick={() => sendHostCommand('request_camera_off', { identity: p.identity })} title="Request Camera Off" style={{
                                 background: 'rgba(245,158,11,0.1)', border: 'none', borderRadius: 6,
-                                padding: 4, cursor: 'pointer', display: 'flex',
+                                padding: 6, cursor: 'pointer', display: 'flex',
                             }}><VideoOff size={14} color="#f59e0b" /></button>
                             <button onClick={() => onRemoveParticipant(p.identity)} title="Remove" style={{
                                 background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6,
-                                padding: 4, cursor: 'pointer', display: 'flex',
+                                padding: 6, cursor: 'pointer', display: 'flex',
                             }}><UserMinus size={14} color="#ef4444" /></button>
                         </div>
                     </div>
@@ -1108,7 +1110,7 @@ HostParticipantList.propTypes = {
 
 function HostAnnouncement({ announcementText, setAnnouncementText, onSendAnnouncement }) {
     return (
-        <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.85rem' }}>
+        <div style={{ marginTop: '0.5rem', borderTop: '1px solid var(--sidebar-border)', paddingTop: '0.85rem' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructor Announcement</p>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input
@@ -1116,9 +1118,9 @@ function HostAnnouncement({ announcementText, setAnnouncementText, onSendAnnounc
                     value={announcementText}
                     onChange={e => setAnnouncementText(e.target.value)}
                     placeholder="Enter announcement..."
-                    style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '0.5rem', borderRadius: 8, fontSize: '0.8rem' }}
+                    style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', color: 'var(--text-primary)', padding: '0.6rem 0.85rem', borderRadius: 8, fontSize: '0.85rem', outline: 'none' }}
                 />
-                <button onClick={onSendAnnouncement} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Send</button>
+                <button onClick={onSendAnnouncement} style={{ background: '#6366f1', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>Send</button>
             </div>
         </div>
     );
@@ -1199,26 +1201,26 @@ function HostControlsTab({ room, videoId, participants, chatLocked, setChatLocke
 
     return (
         <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <h3 style={{ color: 'white', fontSize: '0.9rem', fontWeight: 700, margin: '0 0 0.5rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <ShieldCheck size={16} color="#6366f1" /> Host Controls
+            <h3 style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 700, margin: '0 0 0.5rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ShieldCheck size={16} color="var(--primary-600)" /> Host Controls
             </h3>
 
             {/* Quick Actions */}
             <button onClick={handleMuteAll} style={controlBtnStyle()}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-elevated)'}>
                 <MicOff size={16} color="#ef4444" /> Mute All Participants
             </button>
 
             <button onClick={handleRequestCameraOffAll} style={controlBtnStyle()}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.1)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-elevated)'}>
                 <VideoOff size={16} color="#f59e0b" /> Request Camera Off (All)
             </button>
 
             <button onClick={onLowerAllHands} style={controlBtnStyle()}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.1)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-elevated)'}>
                 <ArrowDown size={16} color="#f59e0b" /> Lower All Hands
             </button>
 
@@ -1557,14 +1559,18 @@ function ScreenShareButton({ isOrganizer, screenShareLocked, isScreenSharing, to
     if (!hasGetDisplayMedia) return null
 
     const isShareBlocked = !isOrganizer && screenShareLocked && !isScreenSharing
+    const iconColor = isShareBlocked ? 'var(--text-muted)' : (isScreenSharing ? 'var(--primary-600)' : 'var(--text-primary)')
+
     return (
         <button onClick={toggleScreen} style={{
             ...btnStyle(true),
-            background: isScreenSharing ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
-            color: isScreenSharing ? '#818cf8' : 'white',
+            background: isScreenSharing ? 'rgba(99,102,241,0.15)' : 'var(--bg-elevated)',
+            color: iconColor,
+            border: isScreenSharing ? '1px solid var(--primary-500)' : '1px solid var(--sidebar-border)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
             ...(isShareBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
         }} title={isShareBlocked ? 'Screen share locked by instructor' : 'Share Screen'}>
-            {isShareBlocked ? <Lock size={20} /> : <MonitorUp size={20} />}
+            {isShareBlocked ? <Lock size={20} color={iconColor} /> : <MonitorUp size={20} color={iconColor} />}
         </button>
     )
 }
@@ -1578,9 +1584,10 @@ ScreenShareButton.propTypes = {
 }
 
 // ─── Reactions Button ───────────────────────────────────────────────────────
-// ─── Reactions Button ───────────────────────────────────────────────────────
 function ReactionsButton({ isOrganizer, reactionsDisabled, showReactionPicker, setShowReactionPicker, onSendReaction, btnStyle, toast }) {
     const isReactionsBlocked = !isOrganizer && reactionsDisabled
+    const iconColor = isReactionsBlocked ? 'var(--text-muted)' : (showReactionPicker ? 'var(--primary-600)' : 'var(--text-primary)')
+
     return (
         <div style={{ position: 'relative' }}>
             <button 
@@ -1593,12 +1600,15 @@ function ReactionsButton({ isOrganizer, reactionsDisabled, showReactionPicker, s
                 }}
                 style={{
                     ...btnStyle(true),
-                    background: showReactionPicker ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)',
+                    background: showReactionPicker ? 'rgba(99,102,241,0.15)' : 'var(--bg-elevated)',
+                    color: iconColor,
+                    border: showReactionPicker ? '1px solid var(--primary-500)' : '1px solid var(--sidebar-border)',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                     ...(isReactionsBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
                 }} 
                 title={isReactionsBlocked ? 'Reactions disabled by instructor' : 'Send Reaction'}
             >
-                {isReactionsBlocked ? <Lock size={20} /> : <Smile size={20} />}
+                {isReactionsBlocked ? <Lock size={20} color={iconColor} /> : <Smile size={20} color={iconColor} />}
             </button>
             {showReactionPicker && !isReactionsBlocked && (
                 <ReactionPicker onSelect={onSendReaction} onClose={() => setShowReactionPicker(false)} />
@@ -1628,6 +1638,8 @@ function HandRaiseButton({ isOrganizer, handsLocked, handRaised, onToggleHand, r
         title = 'Lower Hand'
     }
 
+    const iconColor = isHandBlocked ? 'var(--text-muted)' : (handRaised ? '#f59e0b' : 'var(--text-primary)')
+
     return (
         <button onClick={() => {
             if (isHandBlocked) {
@@ -1637,12 +1649,14 @@ function HandRaiseButton({ isOrganizer, handsLocked, handRaised, onToggleHand, r
             onToggleHand();
         }} style={{
             ...btnStyle(true),
-            background: handRaised ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)',
-            color: handRaised ? '#f59e0b' : 'white',
+            background: handRaised ? 'rgba(245,158,11,0.15)' : 'var(--bg-elevated)',
+            color: iconColor,
+            border: handRaised ? '1px solid #f59e0b' : '1px solid var(--sidebar-border)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
             position: 'relative',
             ...(isHandBlocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
         }} title={title}>
-            {isHandBlocked ? <Lock size={20} /> : <Hand size={20} />}
+            {isHandBlocked ? <Lock size={20} color={iconColor} /> : <Hand size={20} color={iconColor} />}
             {raisedHandsCount > 0 && (
                 <span style={{
                     position: 'absolute', top: -4, right: -4,
@@ -1836,7 +1850,7 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
 
             {/* Minimize */}
             <button onClick={onMinimize} style={btnStyle(true)} title="Minimize Meeting">
-                <Minimize size={20} />
+                <Minimize size={20} color="var(--text-primary)" />
             </button>
 
             {/* Hand Raise */}
