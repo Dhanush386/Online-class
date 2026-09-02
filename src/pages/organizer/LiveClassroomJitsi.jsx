@@ -75,10 +75,10 @@ export default function LiveClassroom() {
     }
 
     useEffect(() => {
-        // 1. Load 8x8 Jitsi Script
+        // 1. Load Jitsi Script (meet.jit.si default or 8x8 JaaS)
         const appId = import.meta.env.VITE_8X8_APP_ID || '';
         const jitsiScript = document.createElement('script')
-        jitsiScript.src = appId ? `https://8x8.vc/${appId}/external_api.js` : 'https://8x8.vc/external_api.js'
+        jitsiScript.src = appId ? `https://8x8.vc/${appId}/external_api.js` : 'https://meet.jit.si/external_api.js'
         jitsiScript.async = true
         jitsiScript.onload = () => setJitsiLoaded(true)
         document.head.appendChild(jitsiScript)
@@ -100,58 +100,58 @@ export default function LiveClassroom() {
             setVideoData(data)
             videoDataRef.current = data
             setLoading(false)
-
-            // Real-time Handshake
-            let intervalId = null;
-            const channel = supabase.channel(`class-lobby-${videoId}`, { config: { broadcast: { self: true } } })
-            setChannelInstance(channel)
-            const handleCheckInstructor = () => {
-                if (isOrganizer) channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
-            }
-
-            const handlePresence = (p) => {
-                if (p.payload.instructorJoined) {
-                    setInstructorPresent(true)
-                    if (intervalId) {
-                        clearInterval(intervalId)
-                        intervalId = null
-                    }
-                }
-            }
-
-            const sendPresenceBroadcast = () => channel.send({ type: 'broadcast', event: 'presence', payload: { instructorJoined: true } })
-            const sendCheckInstructorBroadcast = () => channel.send({ type: 'broadcast', event: 'check_instructor', payload: {} })
-
-            const handleSubscribe = (status) => {
-                if (status === 'SUBSCRIBED') {
-                    if (isOrganizer) {
-                        sendPresenceBroadcast()
-                        intervalId = setInterval(sendPresenceBroadcast, 3000)
-                    } else {
-                        sendCheckInstructorBroadcast()
-                        intervalId = setInterval(sendCheckInstructorBroadcast, 3000)
-                    }
-                }
-            }
-
-            channel
-                .on('broadcast', { event: 'check_instructor' }, handleCheckInstructor)
-                .on('broadcast', { event: 'presence' }, handlePresence)
-                .subscribe(handleSubscribe)
-
-            return () => {
-                if (intervalId) clearInterval(intervalId)
-                supabase.removeChannel(channel)
-            }
         }
-    
-        fetchVideo()
+
+        if (videoId) fetchVideo()
+
         return () => {
-            if (jitsiApiRef.current) jitsiApiRef.current.dispose()
-            jitsiScript.remove()
-            gScript.remove()
+            if (jitsiApiRef.current) {
+                jitsiApiRef.current.dispose()
+                jitsiApiRef.current = null
+            }
+            if (jitsiScript && jitsiScript.parentNode) {
+                jitsiScript.parentNode.removeChild(jitsiScript)
+            }
+            if (gScript && gScript.parentNode) {
+                gScript.parentNode.removeChild(gScript)
+            }
         }
     }, [videoId])
+
+    useEffect(() => {
+        if (!videoId || !profile?.id) return
+
+        const channel = supabase.channel(`live_class_${videoId}`, {
+            config: {
+                presence: { key: profile.id }
+            }
+        })
+
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState()
+                const presentUsers = Object.values(state).flat()
+                const hasInstructor = presentUsers.some(u => u.isOrganizer)
+                setInstructorPresent(hasInstructor)
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await channel.track({
+                        id: profile.id,
+                        name: profile.name,
+                        role: profile.role,
+                        isOrganizer,
+                        joinedAt: new Date().toISOString()
+                    })
+                }
+            })
+
+        setChannelInstance(channel)
+
+        return () => {
+            channel.unsubscribe()
+        }
+    }, [videoId, profile])
 
     function initGoogleAuth() {
         if (!globalThis.google || !GOOGLE_CLIENT_ID) return
@@ -171,24 +171,26 @@ export default function LiveClassroom() {
 
     async function initJitsi(data) {
         const appId = import.meta.env.VITE_8X8_APP_ID || '';
-        const domain = '8x8.vc' 
+        const domain = appId ? '8x8.vc' : 'meet.jit.si'
 
         let jwtToken = ''
-        try {
-            const { data: funcData, error } = await supabase.functions.invoke('jaas-token', {
-                body: {
-                    roomName: `Learnova_LiveClass_${data.id}`,
-                    userName: profile?.name || (isOrganizer ? 'Instructor' : 'Student'),
-                    userEmail: profile?.email || '',
-                    isModerator: isOrganizer
+        if (appId) {
+            try {
+                const { data: funcData, error } = await supabase.functions.invoke('jaas-token', {
+                    body: {
+                        roomName: `Learnova_LiveClass_${data.id}`,
+                        userName: profile?.name || (isOrganizer ? 'Instructor' : 'Student'),
+                        userEmail: profile?.email || '',
+                        isModerator: isOrganizer
+                    }
+                })
+                if (error) throw error
+                if (funcData?.token) {
+                    jwtToken = funcData.token
                 }
-            })
-            if (error) throw error
-            if (funcData?.token) {
-                jwtToken = funcData.token
+            } catch (err) {
+                console.error("Failed to fetch JaaS token:", err)
             }
-        } catch (err) {
-            console.error("Failed to fetch JaaS token:", err)
         }
 
         const options = {

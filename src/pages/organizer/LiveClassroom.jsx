@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react'
 import { Loader2 } from 'lucide-react'
 
-// Feature flag: set VITE_LIVE_CLASS_PROVIDER=jitsi in .env to use legacy Jitsi
-const PROVIDER = import.meta.env.VITE_LIVE_CLASS_PROVIDER || 'livekit'
+// Feature flag: set VITE_LIVE_CLASS_PROVIDER=livekit in .env if using self-hosted LiveKit
+const PROVIDER = import.meta.env.VITE_LIVE_CLASS_PROVIDER || 'jitsi'
 
 const LiveClassroomLiveKit = lazy(() => import('./LiveClassroomLiveKit'))
 const LiveClassroomJitsi = lazy(() => import('./LiveClassroomJitsi'))
