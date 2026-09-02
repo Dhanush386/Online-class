@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { startInterviewSession } from '../../services/mockInterviewService'
 
 const STANDARD_TRACKS = [
   {
@@ -125,64 +126,14 @@ export default function MockInterviewHub() {
         topics: courseTopics
       } : undefined
 
-      let sessionId = null
+      const newSession = await startInterviewSession({
+        userId: profile.id,
+        track: trackName,
+        questionCount,
+        courseContext
+      })
 
-      try {
-        const { data, error } = await supabase.functions.invoke('ai-mock-interview', {
-          body: {
-            action: 'start',
-            track: trackName,
-            questionCount: questionCount,
-            courseContext
-          }
-        })
-
-        if (!error && data?.sessionId) {
-          sessionId = data.sessionId
-        }
-      } catch (funcErr) {
-        console.warn('Edge function unavailable, falling back to direct DB session init:', funcErr)
-      }
-
-      // Direct fallback if Edge function is not deployed
-      if (!sessionId) {
-        const { data: newSession, error: dbErr } = await supabase
-          .from('mock_interview_sessions')
-          .insert({
-            student_id: profile.id,
-            track: trackName,
-            question_count: questionCount,
-            status: 'in_progress'
-          })
-          .select()
-          .single()
-
-        if (dbErr) throw dbErr
-
-        let initialQuestion = "Welcome to your Mock Interview! Could you introduce yourself and explain a complex technical problem you solved recently?"
-        const tLower = trackName.toLowerCase()
-        if (tLower.includes('frontend')) {
-          initialQuestion = "Welcome to your Frontend interview! Could you explain how the Virtual DOM works in React, and what advantages or trade-offs it introduces when updating UI components?"
-        } else if (tLower.includes('backend')) {
-          initialQuestion = "Welcome to your Backend interview! How do you approach designing a resilient REST API with database transactions, and how would you handle concurrent writes to the same resource?"
-        } else if (tLower.includes('dsa') || tLower.includes('algorithm')) {
-          initialQuestion = "Welcome to your Algorithms interview! Could you explain the time and space complexity difference between Breadth-First Search (BFS) and Depth-First Search (DFS), and when you would choose one over the other?"
-        } else if (tLower.includes('system')) {
-          initialQuestion = "Welcome to your System Design interview! How would you design a scalable notification service that handles millions of events with rate limiting and retry backoff?"
-        } else if (tLower.includes('fullstack')) {
-          initialQuestion = "Welcome to your Fullstack interview! How do you structure authentication with JWTs across the client, API gateway, and backend database securely?"
-        }
-
-        await supabase.from('mock_interview_turns').insert({
-          session_id: newSession.id,
-          turn_number: 1,
-          question: initialQuestion
-        })
-
-        sessionId = newSession.id
-      }
-
-      navigate(`/student/mock-interview/${sessionId}`)
+      navigate(`/student/mock-interview/${newSession.id}`)
     } catch (err) {
       console.error('Failed to start interview:', err)
       setSetupError(err.message || 'Failed to start interview session. Please try again.')
