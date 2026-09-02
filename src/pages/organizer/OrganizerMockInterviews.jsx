@@ -40,6 +40,8 @@ export default function OrganizerMockInterviews() {
           started_at,
           completed_at,
           overall_score,
+          recording_url,
+          recording_expires_at,
           created_at,
           users:student_id (
             id,
@@ -462,6 +464,28 @@ export default function OrganizerMockInterviews() {
               >
                 Full Q&A Transcript ({modalTurns.length} Turns)
               </button>
+
+              <button
+                onClick={() => setModalTab('recording')}
+                style={{
+                  padding: '0.75rem 1.25rem',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: modalTab === 'recording' ? '2px solid var(--primary-600)' : '2px solid transparent',
+                  color: modalTab === 'recording' ? 'var(--primary-600)' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                🎥 Video Recording
+                {selectedSession.recording_url && (
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981' }} />
+                )}
+              </button>
             </div>
 
             {/* Modal Body */}
@@ -574,6 +598,63 @@ export default function OrganizerMockInterviews() {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Tab 3: Video Recording */}
+              {!modalLoading && modalTab === 'recording' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                        Student Webcam Recording
+                      </h4>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.2rem 0 0' }}>
+                        Recorded during the mock interview session for verification and assessment audit.
+                      </p>
+                    </div>
+
+                    {selectedSession.recording_expires_at && (
+                      <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        padding: '0.3rem 0.65rem',
+                        borderRadius: '6px',
+                        background: new Date(selectedSession.recording_expires_at) < new Date() ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                        color: new Date(selectedSession.recording_expires_at) < new Date() ? '#ef4444' : '#d97706',
+                        border: `1px solid ${new Date(selectedSession.recording_expires_at) < new Date() ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                      }}>
+                        {new Date(selectedSession.recording_expires_at) < new Date() 
+                          ? '⚠️ Recording Expired (Auto-purged after 24h)' 
+                          : `⏳ Auto-purges on: ${new Date(selectedSession.recording_expires_at).toLocaleDateString()} ${new Date(selectedSession.recording_expires_at).toLocaleTimeString()}`
+                        }
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedSession.recording_url && new Date(selectedSession.recording_expires_at || 0) >= new Date() ? (
+                    <div style={{ borderRadius: '12px', overflow: 'hidden', background: '#000', boxShadow: 'var(--shadow-lg)' }}>
+                      <video
+                        src={selectedSession.recording_url}
+                        controls
+                        playsInline
+                        style={{ width: '100%', maxHeight: '480px', display: 'block' }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ padding: '3.5rem 2rem', textAlign: 'center', background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px dashed var(--sidebar-border)' }}>
+                      <AlertTriangle size={36} color="#d97706" style={{ margin: '0 auto 0.75rem' }} />
+                      <h5 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                        Video Recording Unavailable
+                      </h5>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0, maxWidth: 450, marginInline: 'auto' }}>
+                        {selectedSession.recording_expires_at && new Date(selectedSession.recording_expires_at) < new Date()
+                          ? 'This video recording has exceeded the 24-hour retention window and was automatically purged to protect student privacy.'
+                          : 'No video was recorded for this session (camera permission was not granted by the student).'
+                        }
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

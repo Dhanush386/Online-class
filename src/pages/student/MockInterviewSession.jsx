@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Bot, User, Send, Loader2, Sparkles, 
   ArrowLeft, CheckCircle, AlertCircle, 
-  HelpCircle, LogOut 
+  HelpCircle, LogOut, Video, VideoOff, Mic
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -27,7 +27,15 @@ export default function MockInterviewSession() {
   const [error, setError] = useState(null)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
 
+  // Video recording states
+  const [cameraActive, setCameraActive] = useState(false)
+  const [uploadingRecording, setUploadingRecording] = useState(false)
+
   const chatEndRef = useRef(null)
+  const videoRef = useRef(null)
+  const mediaStreamRef = useRef(null)
+  const mediaRecorderRef = useRef(null)
+  const recordedChunksRef = useRef([])
 
   // Scroll chat to bottom
   const scrollToBottom = () => {
@@ -99,6 +107,131 @@ export default function MockInterviewSession() {
     loadSession()
   }, [sessionId, profile?.id])
 
+  // Initialize Camera & Video Recording
+  useEffect(() => {
+    if (session?.status !== 'in_progress') return
+
+    let active = true
+
+    async function startCameraAndRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+          audio: true
+        })
+
+        if (!active) {
+          stream.getTracks().forEach(t => t.stop())
+          return
+        }
+
+        mediaStreamRef.current = stream
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+        }
+        setCameraActive(true)
+
+        // Initialize MediaRecorder
+        recordedChunksRef.current = []
+        const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+          ? 'video/webm;codecs=vp8,opus'
+          : 'video/webm'
+
+        const recorder = new MediaRecorder(stream, { mimeType })
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            recordedChunksRef.current.push(event.data)
+          }
+        }
+        recorder.start(2000) // capture chunks every 2s
+        mediaRecorderRef.current = recorder
+      } catch (camErr) {
+        console.warn('Camera/Mic permission denied or unavailable:', camErr)
+      }
+    }
+
+    startCameraAndRecording()
+
+    return () => {
+      active = false
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try { mediaRecorderRef.current.stop() } catch (err) { console.debug('Media recorder stop error:', err) }
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [session?.status, session?.id])
+
+  // Finalize & Upload Video Recording (24-Hour Expiration)
+  const uploadInterviewVideo = async () => {
+    if (!mediaRecorderRef.current || recordedChunksRef.current.length === 0) return null
+
+    return new Promise((resolve) => {
+      try {
+        const performUpload = async () => {
+          try {
+            setUploadingRecording(true)
+            const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' })
+            const fileName = `${profile.id}/${session.id}_${Date.now()}.webm`
+
+            const { error: upErr } = await supabase.storage
+              .from('interview-recordings')
+              .upload(fileName, blob, {
+                contentType: 'video/webm',
+                upsert: true
+              })
+
+            if (upErr) {
+              console.warn('Failed to upload interview recording:', upErr)
+              resolve(null)
+              return
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('interview-recordings')
+              .getPublicUrl(fileName)
+
+            // 24 Hours retention from now
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
+            await supabase
+              .from('mock_interview_sessions')
+              .update({
+                recording_url: publicUrl,
+                recording_expires_at: expiresAt
+              })
+              .eq('id', session.id)
+
+            // Stop camera tracks cleanly
+            if (mediaStreamRef.current) {
+              mediaStreamRef.current.getTracks().forEach(t => t.stop())
+            }
+
+            resolve(publicUrl)
+          } catch (e) {
+            console.error('Error during video upload:', e)
+            resolve(null)
+          } finally {
+            setUploadingRecording(false)
+          }
+        }
+
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.onstop = () => {
+            performUpload()
+          }
+          mediaRecorderRef.current.stop()
+        } else {
+          performUpload()
+        }
+      } catch (err) {
+        console.error('Video upload failed:', err)
+        resolve(null)
+      }
+    })
+  }
+
   // Handle Answer Submission
   const handleSubmitAnswer = async (e) => {
     e?.preventDefault()
@@ -151,8 +284,9 @@ export default function MockInterviewSession() {
       setTurns(updatedTurns)
       setAnswerInput('')
 
-      // 3. If completed, trigger report generation
+      // 3. If completed, upload video & trigger report generation
       if (data.isCompleted) {
+        await uploadInterviewVideo()
         await generateFinalReport()
       }
     } catch (err) {
@@ -290,26 +424,61 @@ export default function MockInterviewSession() {
         </div>
       </div>
 
-      {/* Error Alert */}
-      {error && (
-        <div style={{ padding: '0.85rem 1.25rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
-          <AlertCircle size={18} /> {error}
+      {/* Camera & Retention Disclaimer */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '0.75rem',
+        padding: '0.65rem 1rem',
+        borderRadius: '10px',
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--sidebar-border)',
+        fontSize: '0.82rem',
+        color: 'var(--text-muted)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            background: cameraActive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+            color: cameraActive ? '#ef4444' : 'var(--text-muted)',
+            fontWeight: 700,
+            fontSize: '0.75rem',
+            padding: '0.2rem 0.5rem',
+            borderRadius: '6px'
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: cameraActive ? '#ef4444' : '#94a3b8', animation: cameraActive ? 'pulse 1.5s infinite' : 'none' }} />
+            {cameraActive ? 'REC ON' : 'CAMERA OFF'}
+          </div>
+          <span>Interview video is recorded and auto-deleted after <strong>24 hours</strong>.</span>
         </div>
-      )}
 
-      {/* Chat / Interview Stream */}
-      <div 
-        className="glass-card" 
-        style={{ 
-          padding: '1.5rem', 
-          minHeight: '420px', 
-          maxHeight: '560px', 
-          overflowY: 'auto', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '1.25rem' 
-        }}
-      >
+        {uploadingRecording && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary-400)', fontWeight: 600 }}>
+            <Loader2 size={14} className="animate-spin" /> Uploading recording...
+          </div>
+        )}
+      </div>
+
+      {/* Main Interview Grid with Camera Preview */}
+      <div style={{ display: 'grid', gridTemplateColumns: cameraActive ? '1fr 240px' : '1fr', gap: '1.25rem', alignItems: 'start' }}>
+
+        {/* Chat / Interview Stream */}
+        <div 
+          className="glass-card" 
+          style={{ 
+            padding: '1.5rem', 
+            minHeight: '420px', 
+            maxHeight: '560px', 
+            overflowY: 'auto', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '1.25rem' 
+          }}
+        >
         {turns.map((turn) => (
           <div key={turn.turn_number} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             
@@ -410,6 +579,39 @@ export default function MockInterviewSession() {
         )}
 
         <div ref={chatEndRef} />
+        </div>
+
+        {/* Floating / Side Camera Preview Tile */}
+        {cameraActive && (
+          <div className="glass-card" style={{ padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)' }}>
+                Live Camera
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.72rem', color: '#ef4444', fontWeight: 700 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} /> REC
+              </div>
+            </div>
+
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', borderRadius: '10px', overflow: 'hidden', background: '#000' }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+              />
+              <div style={{ position: 'absolute', bottom: 6, left: 6, display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(0,0,0,0.6)', padding: '0.15rem 0.4rem', borderRadius: 4, color: '#fff', fontSize: '0.65rem' }}>
+                <Mic size={10} color="#10b981" /> Mic Active
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.35 }}>
+              Your video & audio are securely recorded for instructor evaluation and auto-deleted after 24 hours.
+            </p>
+          </div>
+        )}
+
       </div>
 
       {/* Answer Input Panel */}

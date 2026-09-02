@@ -85,6 +85,51 @@ export default function MockInterviewReportView({
         </div>
       </div>
 
+      {/* Video Recording Player (24h Retention) */}
+      {session?.recording_url && (
+        <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+              🎥 Interview Video Recording
+            </h3>
+            
+            {session.recording_expires_at && (
+              <span style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                padding: '0.3rem 0.65rem',
+                borderRadius: '8px',
+                background: new Date(session.recording_expires_at) < new Date() ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.12)',
+                color: new Date(session.recording_expires_at) < new Date() ? '#ef4444' : '#d97706',
+                border: `1px solid ${new Date(session.recording_expires_at) < new Date() ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+              }}>
+                {new Date(session.recording_expires_at) < new Date() 
+                  ? '⚠️ Expired & Deleted (24h Retention)'
+                  : '⏳ Available for 24 hours (Auto-deletes afterwards)'
+                }
+              </span>
+            )}
+          </div>
+
+          {new Date(session.recording_expires_at || 0) < new Date() ? (
+            <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px dashed var(--sidebar-border)' }}>
+              <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>
+                This recording has reached its 24-hour retention limit and has been automatically removed.
+              </p>
+            </div>
+          ) : (
+            <div style={{ borderRadius: '12px', overflow: 'hidden', background: '#000', boxShadow: 'var(--shadow-md)' }}>
+              <video
+                src={session.recording_url}
+                controls
+                playsInline
+                style={{ width: '100%', maxHeight: '420px', display: 'block' }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Row 1: Overall Score & Category Breakdown */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
         
