@@ -163,6 +163,14 @@ export default function MockInterviewSession() {
     }
   }, [session?.status, session?.id])
 
+  // Ensure stream is attached to video element when it mounts
+  useEffect(() => {
+    if (cameraActive && mediaStreamRef.current && videoRef.current) {
+      videoRef.current.srcObject = mediaStreamRef.current
+      videoRef.current.play().catch(e => console.debug('Video play error:', e))
+    }
+  }, [cameraActive])
+
   // Finalize & Upload Video Recording (24-Hour Expiration)
   const uploadInterviewVideo = async () => {
     if (!mediaRecorderRef.current || recordedChunksRef.current.length === 0) return null
@@ -808,7 +816,13 @@ export default function MockInterviewSession() {
 
             <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', borderRadius: '10px', overflow: 'hidden', background: '#000' }}>
               <video
-                ref={videoRef}
+                ref={(el) => {
+                  videoRef.current = el
+                  if (el && mediaStreamRef.current && el.srcObject !== mediaStreamRef.current) {
+                    el.srcObject = mediaStreamRef.current
+                    el.play().catch(e => console.debug('Video play error:', e))
+                  }
+                }}
                 autoPlay
                 muted
                 playsInline
