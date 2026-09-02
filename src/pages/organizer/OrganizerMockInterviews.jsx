@@ -287,6 +287,7 @@ export default function OrganizerMockInterviews() {
   })
 
   const activeQuestionsCount = questions.filter(q => q.is_active).length
+  const uniqueTracks = Array.from(new Set(sessions.map(s => s.track).filter(Boolean)))
   const uniqueQuestionTracks = Array.from(new Set(questions.map(q => q.track).filter(Boolean)))
 
   return (
