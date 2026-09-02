@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, User, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, X, AlertCircle, Save, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink, CheckCircle } from 'lucide-react'
+import { Users, User, Search, ChevronDown, ChevronUp, Clock, BookOpen, TrendingUp, X, AlertCircle, Save, Mail, Trash2, Calendar, Phone, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Trophy, Camera, Globe, ExternalLink, CheckCircle, Layers, LayoutGrid, FolderKanban, Sparkles } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDefaultUnlockTimeForDay } from '../../lib/dateUtils'
 import PropTypes from 'prop-types'
@@ -39,7 +39,7 @@ const ExpiryControl = ({ studentId, currentExpiry, onUpdate, saving }) => {
                     className="btn-primary"
                     style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem', background: '#f97316', border: 'none' }}
                 >
-                    {saving ? '...' : <Save size={12} />}
+                    <Save size={12} /> Save
                 </button>
             )}
             {currentExpiry && (
@@ -62,30 +62,31 @@ ExpiryControl.propTypes = {
     saving: PropTypes.bool.isRequired
 }
 
-const TabButton = ({ currentTab, tabName, onClick, color, children }) => {
+function TabButton({ currentTab, tabName, onClick, color, children }) {
     const isActive = currentTab === tabName;
     return (
         <button
-            className={`nav-btn ${isActive ? 'active' : ''}`}
             onClick={() => onClick(tabName)}
-            style={{ 
-                padding: '0.85rem 1rem', 
-                background: 'none', 
-                border: 'none', 
-                borderBottom: isActive ? `2px solid ${color}` : '2px solid transparent', 
-                color: isActive ? 'var(--text-primary)' : 'var(--text-muted)', 
-                fontWeight: 600, 
-                fontSize: '0.9rem', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.5rem', 
-                cursor: 'pointer' 
+            style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: isActive ? `2px solid ${color}` : '2px solid transparent',
+                color: isActive ? color : 'var(--text-secondary)',
+                fontWeight: isActive ? 700 : 500,
+                padding: '0.75rem 1rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.2s',
+                outline: 'none',
+                fontSize: '0.9rem'
             }}
         >
             {children}
         </button>
     );
-};
+}
 
 TabButton.propTypes = {
     currentTab: PropTypes.string.isRequired,
@@ -121,6 +122,10 @@ export default function StudentManagement() {
     const [dayAccess, setDayAccess] = useState([])
     const [maxDay, setMaxDay] = useState(1)
     const [viewingProfileId, setViewingProfileId] = useState(null)
+
+    // Course-wise separation & view states for Active Students
+    const [selectedCourseFilter, setSelectedCourseFilter] = useState('all')
+    const [viewMode, setViewMode] = useState('course_wise') // 'course_wise' | 'flat'
 
     const [resetProgressOnAssign, setResetProgressOnAssign] = useState(false)
 
@@ -568,6 +573,11 @@ export default function StudentManagement() {
                 setAssigningTo={setAssigningTo} setError={setError}
                 handleUpdateExpiry={handleUpdateExpiry}
                 handleRemoveCourse={handleRemoveCourse} saving={saving}
+                courses={courses}
+                selectedCourseFilter={selectedCourseFilter}
+                setSelectedCourseFilter={setSelectedCourseFilter}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
             />
         );
     }
@@ -1241,16 +1251,433 @@ StudentCard.propTypes = {
 function StudentsList({
     error, filtered, tab, groupMembers, groups, expanded, setExpanded, setViewingProfileId,
     handleUpdateStatus, handleDeleteStudent, setAssigningTo, setError, handleUpdateExpiry,
-    handleRemoveCourse, saving
+    handleRemoveCourse, saving, courses = [], selectedCourseFilter = 'all', setSelectedCourseFilter,
+    viewMode = 'course_wise', setViewMode
 }) {
-    return (
+    if (tab === 'pending') {
+        return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                        {error && (
-                            <div style={{ padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <AlertCircle size={16} flexShrink={0} /> {error}
+                {error && (
+                    <div style={{ padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <AlertCircle size={16} flexShrink={0} /> {error}
+                    </div>
+                )}
+                {filtered.map(student => (
+                    <StudentCard
+                        key={student.id}
+                        student={student}
+                        tab={tab}
+                        groupMembers={groupMembers}
+                        groups={groups}
+                        expanded={expanded}
+                        setExpanded={setExpanded}
+                        setViewingProfileId={setViewingProfileId}
+                        handleUpdateStatus={handleUpdateStatus}
+                        handleDeleteStudent={handleDeleteStudent}
+                        setAssigningTo={setAssigningTo}
+                        setError={setError}
+                        handleUpdateExpiry={handleUpdateExpiry}
+                        handleRemoveCourse={handleRemoveCourse}
+                        saving={saving}
+                        avg={avgCompletion(student.enrollments)}
+                    />
+                ))}
+            </div>
+        )
+    }
+
+    // Active Tab: Compute course-wise breakdowns
+    const unassignedStudents = filtered.filter(s => !s.enrollments || s.enrollments.length === 0)
+    
+    // Group active students by each course
+    const courseGroups = courses.map(course => {
+        const enrolledStudents = filtered.filter(s => s.enrollments?.some(e => e.id === course.id))
+        const totalProgress = enrolledStudents.reduce((acc, s) => {
+            const en = s.enrollments.find(e => e.id === course.id)
+            return acc + (en?.completion || 0)
+        }, 0)
+        const avgCourseCompletion = enrolledStudents.length > 0 ? Math.round(totalProgress / enrolledStudents.length) : 0
+
+        return {
+            course,
+            students: enrolledStudents,
+            avgCompletion: avgCourseCompletion
+        }
+    })
+
+    // Filtered list based on selectedCourseFilter
+    let displayedStudents = filtered
+    if (selectedCourseFilter === 'unassigned') {
+        displayedStudents = unassignedStudents
+    } else if (selectedCourseFilter !== 'all') {
+        displayedStudents = filtered.filter(s => s.enrollments?.some(e => e.id === selectedCourseFilter))
+    }
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {error && (
+                <div style={{ padding: '0.85rem 1rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: 8, fontSize: '0.85rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <AlertCircle size={16} flexShrink={0} /> {error}
+                </div>
+            )}
+
+            {/* Course-Wise Separation Toolbar */}
+            <div 
+                className="glass-card" 
+                style={{ 
+                    padding: '0.85rem 1.25rem', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    flexWrap: 'wrap', 
+                    gap: '1rem',
+                    background: 'var(--card-bg)',
+                    border: '1px solid var(--sidebar-border)'
+                }}
+            >
+                {/* Course Filter Pills */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginRight: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <FolderKanban size={14} /> Courses:
+                    </span>
+
+                    {/* All Courses Button */}
+                    <button
+                        onClick={() => setSelectedCourseFilter('all')}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '20px',
+                            border: '1px solid',
+                            borderColor: selectedCourseFilter === 'all' ? 'var(--primary-600)' : 'var(--sidebar-border)',
+                            background: selectedCourseFilter === 'all' ? 'var(--primary-600)' : 'var(--bg-elevated)',
+                            color: selectedCourseFilter === 'all' ? '#ffffff' : 'var(--text-secondary)',
+                            fontSize: '0.82rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                        }}
+                    >
+                        <span>All Courses</span>
+                        <span style={{ 
+                            fontSize: '0.72rem', 
+                            padding: '0.1rem 0.45rem', 
+                            borderRadius: '10px', 
+                            background: selectedCourseFilter === 'all' ? 'rgba(255,255,255,0.25)' : 'var(--sidebar-border)',
+                            color: selectedCourseFilter === 'all' ? '#fff' : 'var(--text-muted)'
+                        }}>
+                            {filtered.length}
+                        </span>
+                    </button>
+
+                    {/* Individual Course Buttons */}
+                    {courses.map(course => {
+                        const count = filtered.filter(s => s.enrollments?.some(e => e.id === course.id)).length
+                        const isSelected = selectedCourseFilter === course.id
+
+                        return (
+                            <button
+                                key={course.id}
+                                onClick={() => setSelectedCourseFilter(course.id)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    padding: '0.35rem 0.75rem',
+                                    borderRadius: '20px',
+                                    border: '1px solid',
+                                    borderColor: isSelected ? 'var(--primary-600)' : 'var(--sidebar-border)',
+                                    background: isSelected ? 'var(--primary-600)' : 'var(--bg-elevated)',
+                                    color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                                    fontSize: '0.82rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                }}
+                            >
+                                <BookOpen size={13} />
+                                <span style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{course.title}</span>
+                                <span style={{ 
+                                    fontSize: '0.72rem', 
+                                    padding: '0.1rem 0.45rem', 
+                                    borderRadius: '10px', 
+                                    background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--sidebar-border)',
+                                    color: isSelected ? '#fff' : 'var(--text-muted)'
+                                }}>
+                                    {count}
+                                </span>
+                            </button>
+                        )
+                    })}
+
+                    {/* Unassigned Students Pill */}
+                    {unassignedStudents.length > 0 && (
+                        <button
+                            onClick={() => setSelectedCourseFilter('unassigned')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: '0.35rem 0.75rem',
+                                borderRadius: '20px',
+                                border: '1px solid',
+                                borderColor: selectedCourseFilter === 'unassigned' ? '#f59e0b' : 'rgba(245, 158, 11, 0.3)',
+                                background: selectedCourseFilter === 'unassigned' ? '#f59e0b' : 'rgba(245, 158, 11, 0.1)',
+                                color: selectedCourseFilter === 'unassigned' ? '#ffffff' : '#d97706',
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                            }}
+                        >
+                            <AlertCircle size={13} />
+                            <span>Unassigned</span>
+                            <span style={{ 
+                                fontSize: '0.72rem', 
+                                padding: '0.1rem 0.45rem', 
+                                borderRadius: '10px', 
+                                background: selectedCourseFilter === 'unassigned' ? 'rgba(255,255,255,0.3)' : 'rgba(245, 158, 11, 0.25)',
+                                color: selectedCourseFilter === 'unassigned' ? '#fff' : '#b45309'
+                            }}>
+                                {unassignedStudents.length}
+                            </span>
+                        </button>
+                    )}
+                </div>
+
+                {/* View Mode Toggle (Course Sections vs Flat List) */}
+                {selectedCourseFilter === 'all' && (
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)', padding: '2px', borderRadius: '8px', border: '1px solid var(--sidebar-border)' }}>
+                        <button
+                            onClick={() => setViewMode('course_wise')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.3rem 0.65rem',
+                                borderRadius: '6px',
+                                border: 'none',
+                                background: viewMode === 'course_wise' ? 'var(--card-bg)' : 'transparent',
+                                color: viewMode === 'course_wise' ? 'var(--primary-600)' : 'var(--text-muted)',
+                                fontWeight: viewMode === 'course_wise' ? 700 : 500,
+                                fontSize: '0.78rem',
+                                cursor: 'pointer',
+                                boxShadow: viewMode === 'course_wise' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                            }}
+                        >
+                            <Layers size={13} /> Course Sections
+                        </button>
+                        <button
+                            onClick={() => setViewMode('flat')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.3rem 0.65rem',
+                                borderRadius: '6px',
+                                border: 'none',
+                                background: viewMode === 'flat' ? 'var(--card-bg)' : 'transparent',
+                                color: viewMode === 'flat' ? 'var(--primary-600)' : 'var(--text-muted)',
+                                fontWeight: viewMode === 'flat' ? 700 : 500,
+                                fontSize: '0.78rem',
+                                cursor: 'pointer',
+                                boxShadow: viewMode === 'flat' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                            }}
+                        >
+                            <LayoutGrid size={13} /> Flat List
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* View 1: Course-Wise Grouped Sections */}
+            {selectedCourseFilter === 'all' && viewMode === 'course_wise' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    {courseGroups.map(({ course, students: cStudents, avgCompletion: cAvg }) => (
+                        <div 
+                            key={course.id}
+                            className="glass-card"
+                            style={{ 
+                                padding: '1.5rem', 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                gap: '1rem',
+                                background: 'var(--card-bg)',
+                                border: '1px solid var(--sidebar-border)',
+                                borderRadius: '16px'
+                            }}
+                        >
+                            {/* Course Section Banner */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--sidebar-border)', paddingBottom: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                    <div style={{
+                                        width: 42, height: 42,
+                                        borderRadius: '12px',
+                                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                        color: '#ffffff',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}>
+                                        <BookOpen size={20} />
+                                    </div>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                                                {course.title}
+                                            </h3>
+                                            <span style={{ 
+                                                fontSize: '0.75rem', 
+                                                fontWeight: 700, 
+                                                padding: '0.15rem 0.55rem', 
+                                                borderRadius: '12px', 
+                                                background: 'rgba(99, 102, 241, 0.12)', 
+                                                color: 'var(--primary-600)',
+                                                border: '1px solid rgba(99, 102, 241, 0.25)'
+                                            }}>
+                                                {cStudents.length} Enrolled Student{cStudents.length === 1 ? '' : 's'}
+                                            </span>
+                                        </div>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                            {course.description ? course.description.slice(0, 90) + '...' : 'Active course curriculum'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Course Average Progress */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                                            Avg Progress
+                                        </div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#10b981' }}>
+                                            {cAvg}%
+                                        </div>
+                                    </div>
+                                    <div style={{ width: 80 }}>
+                                        <div className="progress-bar-track" style={{ height: 8 }}>
+                                            <div className="progress-bar-fill" style={{ width: `${cAvg}%`, background: getScoreGradient(cAvg) }} />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        )}
-                        {filtered.map(student => (
+
+                            {/* Enrolled Students inside Course */}
+                            {cStudents.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {cStudents.map(student => (
+                                        <StudentCard
+                                            key={student.id}
+                                            student={student}
+                                            tab={tab}
+                                            groupMembers={groupMembers}
+                                            groups={groups}
+                                            expanded={expanded}
+                                            setExpanded={setExpanded}
+                                            setViewingProfileId={setViewingProfileId}
+                                            handleUpdateStatus={handleUpdateStatus}
+                                            handleDeleteStudent={handleDeleteStudent}
+                                            setAssigningTo={setAssigningTo}
+                                            setError={setError}
+                                            handleUpdateExpiry={handleUpdateExpiry}
+                                            handleRemoveCourse={handleRemoveCourse}
+                                            saving={saving}
+                                            avg={avgCompletion(student.enrollments)}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem', background: 'var(--bg-elevated)', borderRadius: '10px' }}>
+                                    No active students enrolled in <strong>{course.title}</strong> yet.
+                                </div>
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Unassigned Students Section */}
+                    {unassignedStudents.length > 0 && (
+                        <div 
+                            className="glass-card"
+                            style={{ 
+                                padding: '1.5rem', 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                gap: '1rem',
+                                background: 'rgba(245, 158, 11, 0.04)',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                borderRadius: '16px'
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid rgba(245, 158, 11, 0.2)', paddingBottom: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                    <div style={{
+                                        width: 42, height: 42,
+                                        borderRadius: '12px',
+                                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                        color: '#ffffff',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
+                                    }}>
+                                        <AlertCircle size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#d97706', margin: 0 }}>
+                                            Unassigned Students ({unassignedStudents.length})
+                                        </h3>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                            These approved active students have not yet been enrolled in any course.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {unassignedStudents.map(student => (
+                                    <StudentCard
+                                        key={student.id}
+                                        student={student}
+                                        tab={tab}
+                                        groupMembers={groupMembers}
+                                        groups={groups}
+                                        expanded={expanded}
+                                        setExpanded={setExpanded}
+                                        setViewingProfileId={setViewingProfileId}
+                                        handleUpdateStatus={handleUpdateStatus}
+                                        handleDeleteStudent={handleDeleteStudent}
+                                        setAssigningTo={setAssigningTo}
+                                        setError={setError}
+                                        handleUpdateExpiry={handleUpdateExpiry}
+                                        handleRemoveCourse={handleRemoveCourse}
+                                        saving={saving}
+                                        avg={avgCompletion(student.enrollments)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                /* View 2: Single Course Filtered / Flat View */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    {selectedCourseFilter !== 'all' && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--bg-elevated)', borderRadius: '10px', border: '1px solid var(--sidebar-border)' }}>
+                            <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <BookOpen size={16} color="var(--primary-600)" />
+                                Showing: {selectedCourseFilter === 'unassigned' ? 'Unassigned Students' : courses.find(c => c.id === selectedCourseFilter)?.title} ({displayedStudents.length})
+                            </span>
+                            <button
+                                onClick={() => setSelectedCourseFilter('all')}
+                                className="btn-secondary"
+                                style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                            >
+                                Clear Filter
+                            </button>
+                        </div>
+                    )}
+
+                    {displayedStudents.length > 0 ? (
+                        displayedStudents.map(student => (
                             <StudentCard
                                 key={student.id}
                                 student={student}
@@ -1269,8 +1696,15 @@ function StudentsList({
                                 saving={saving}
                                 avg={avgCompletion(student.enrollments)}
                             />
-                        ))}
-                    </div>
+                        ))
+                    ) : (
+                        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            No active students found matching this course selection.
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
     )
 }
 
@@ -1289,7 +1723,12 @@ StudentsList.propTypes = {
     setError: PropTypes.func.isRequired,
     handleUpdateExpiry: PropTypes.func.isRequired,
     handleRemoveCourse: PropTypes.func.isRequired,
-    saving: PropTypes.bool.isRequired
+    saving: PropTypes.bool.isRequired,
+    courses: PropTypes.array,
+    selectedCourseFilter: PropTypes.string,
+    setSelectedCourseFilter: PropTypes.func,
+    viewMode: PropTypes.string,
+    setViewMode: PropTypes.func
 }
 
 function StudentModals({
