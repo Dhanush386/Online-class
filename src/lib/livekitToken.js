@@ -93,10 +93,25 @@ async function generateLocalLiveKitToken({ roomName, identity, name, role = 'stu
 }
 
 /**
- * Fetch LiveKit Token: tries Supabase Edge Function first, then falls back to client generation
+ * Fetch LiveKit Token: generates locally using project credentials, or falls back to Edge Function
  */
 export async function getLiveKitToken({ roomName, identity, name, role, isOrganizer, proctoringMode = false }) {
-    // 1. Try Supabase Edge Function
+    const apiKey = import.meta.env.VITE_LIVEKIT_API_KEY
+    const apiSecret = import.meta.env.VITE_LIVEKIT_API_SECRET
+
+    // 1. If project credentials exist in .env, use them directly to guarantee matching keys
+    if (apiKey && apiSecret) {
+        return await generateLocalLiveKitToken({
+            roomName,
+            identity,
+            name,
+            role,
+            isOrganizer,
+            proctoringMode
+        })
+    }
+
+    // 2. Fallback to Supabase Edge Function if .env keys are not provided
     try {
         const { data, error } = await supabase.functions.invoke('livekit-token', {
             body: { roomName, proctoringMode }
@@ -104,17 +119,9 @@ export async function getLiveKitToken({ roomName, identity, name, role, isOrgani
         if (!error && data?.token) {
             return data.token
         }
-    } catch {
-        // Fallback to client generator
+    } catch (err) {
+        console.warn('Edge Function livekit-token failed:', err)
     }
 
-    // 2. Client-side local generator
-    return await generateLocalLiveKitToken({
-        roomName,
-        identity,
-        name,
-        role,
-        isOrganizer,
-        proctoringMode
-    })
+    throw new Error('LiveKit credentials missing in environment')
 }
