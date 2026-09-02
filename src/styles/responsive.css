@@ -1,0 +1,70 @@
+/* src/styles/responsive.css */
+/* Learnova Mobile-First Responsive System */
+
+/* Safe Area Insets (Capacitor/PWA) */
+.safe-pt { padding-top: var(--safe-area-top); }
+.safe-pb { padding-bottom: var(--safe-area-bottom); }
+.safe-pl { padding-left: env(safe-area-inset-left, 0px); }
+.safe-pr { padding-right: env(safe-area-inset-right, 0px); }
+
+/* Global Utilities */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Mobile Base (up to 767px) */
+@media (max-width: 767px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .glass-card {
+    padding: 1rem !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  h1 {
+    font-size: 1.5rem !important;
+    line-height: 1.2 !important;
+  }
+
+  h2 {
+    font-size: 1.25rem !important;
+  }
+
+  .stack-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .stack-mobile > * {
+    width: 100% !important;
+  }
+}
+
+/* Tablet Portrait (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Landscape Mobile / Small Tablets */
+@media (max-height: 480px) and (orientation: landscape) {
+  .glass-card {
+    padding: 1rem !important;
+  }
+}

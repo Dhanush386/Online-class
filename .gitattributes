@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.cjs text=auto eol=lf
+*.jsx text=auto eol=lf
+*.js text=auto eol=lf

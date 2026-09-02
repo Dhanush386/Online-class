@@ -1,0 +1,669 @@
+import { useState, useEffect, useRef } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { 
+    MessageSquare, X, Send, Loader2,
+    PlusCircle, History, Ticket, ExternalLink, ChevronRight,
+    MessageCircle, Trash2, Clock, Paperclip, Image as ImageIcon
+} from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabase'
+
+export default function AIChatbot() {
+    const { profile } = useAuth()
+    const location = useLocation()
+    const navigate = useNavigate()
+    const [isOpen, setIsOpen] = useState(false)
+    const [activeTab, setActiveTab] = useState('home') 
+    const [isChatting, setIsChatting] = useState(false)
+    const [sessions, setSessions] = useState([])
+    const [activeSessionId, setActiveSessionId] = useState(null)
+    const [input, setInput] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
+    const [tickets, setTickets] = useState([])
+    const [isCreatingTicket, setIsCreatingTicket] = useState(false)
+    const [newTicketSubject, setNewTicketSubject] = useState('')
+    const [newTicketMessage, setNewTicketMessage] = useState('')
+    const [isTicketLoading, setIsTicketLoading] = useState(false)
+    const [screenshot, setScreenshot] = useState(null)
+    const fileInputRef = useRef(null)
+    const scrollRef = useRef(null)
+
+    // Storage Key
+    const storageKey = profile?.id ? `learnova_sessions_${profile.id}` : 'learnova_sessions_guest'
+
+    // Load ALL sessions on mount
+    useEffect(() => {
+        const saved = localStorage.getItem(storageKey)
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved)
+                setSessions(Array.isArray(parsed) ? parsed : [])
+            } catch (e) {
+                console.error('Error loading sessions:', e)
+                setSessions([])
+            }
+        }
+    }, [profile?.id, storageKey])
+
+    // Save ALL sessions whenever any session changes
+    useEffect(() => {
+        if (sessions.length > 0) {
+            localStorage.setItem(storageKey, JSON.stringify(sessions))
+        }
+    }, [sessions, storageKey])
+
+    // Load Tickets when tab changes
+    useEffect(() => {
+        if (activeTab === 'tickets' && profile?.id) {
+            fetchTickets()
+        }
+    }, [activeTab, profile?.id])
+
+    const fetchTickets = async () => {
+        setIsTicketLoading(true)
+        try {
+            const { data, error } = await supabase
+                .from('support_tickets')
+                .select('*')
+                .order('created_at', { ascending: false })
+            
+            if (error) throw error
+            setTickets(data || [])
+        } catch (err) {
+            console.error('Error fetching tickets:', err)
+        } finally {
+            setIsTicketLoading(false)
+        }
+    }
+
+    const handleCreateTicket = async (e) => {
+        e.preventDefault()
+        if (!newTicketSubject.trim() || !newTicketMessage.trim() || isTicketLoading) return
+
+        setIsTicketLoading(true)
+        try {
+            // 1. Create Ticket
+            const { data: ticket, error: ticketError } = await supabase
+                .from('support_tickets')
+                .insert({
+                    student_id: profile.id,
+                    subject: newTicketSubject.trim(),
+                    status: 'open'
+                })
+                .select()
+                .single()
+
+            if (ticketError) throw ticketError
+
+            // 2. Upload Screenshot if exists
+            let attachmentUrl = null
+            let attachmentName = null
+
+            if (screenshot) {
+                const fileExt = screenshot.name.split('.').pop()
+                const fileName = `${crypto.randomUUID()}.${fileExt}`
+                const filePath = `${profile.id}/${fileName}`
+
+                const { error: uploadError } = await supabase.storage
+                    .from('support-attachments')
+                    .upload(filePath, screenshot)
+
+                if (uploadError) throw uploadError
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('support-attachments')
+                    .getPublicUrl(filePath)
+                
+                attachmentUrl = publicUrl
+                attachmentName = screenshot.name
+            }
+
+            // 3. Create Initial Message
+            const { error: msgError } = await supabase
+                .from('support_messages')
+                .insert({
+                    ticket_id: ticket.id,
+                    student_id: profile.id,
+                    message: newTicketMessage.trim(),
+                    is_from_student: true,
+                    attachment_url: attachmentUrl,
+                    attachment_name: attachmentName
+                })
+
+            if (msgError) throw msgError
+
+            setNewTicketSubject('')
+            setNewTicketMessage('')
+            setScreenshot(null)
+            setIsCreatingTicket(false)
+            fetchTickets()
+            alert('Ticket created successfully!')
+        } catch (err) {
+            alert('Failed to create ticket: ' + err.message)
+        } finally {
+            setIsTicketLoading(false)
+        }
+    }
+
+    const getActiveMessages = () => {
+        const session = sessions.find(s => s.id === activeSessionId)
+        return session?.messages || []
+    }
+
+    const setMessages = (updateFn) => {
+        setSessions(prev => prev.map(s => {
+            if (s.id === activeSessionId) {
+                const currentMsgs = s.messages || []
+                const newMsgs = typeof updateFn === 'function' ? updateFn(currentMsgs) : updateFn
+                return { ...s, messages: newMsgs, timestamp: Date.now() }
+            }
+            return s
+        }))
+    }
+
+    const handleStartNewChat = () => {
+        const newId = `session_${Date.now()}_${crypto.randomUUID().split("-")[0]}`
+        const initialMsg = { 
+            id: crypto.randomUUID(),
+            role: 'assistant', 
+            content: "Hello! welcome to Learnova. I'm your learning assistant. You can ask me questions about your course, coding challenges, or any support issues. How can I help you today?" 
+        }
+        
+        const newSession = {
+            id: newId,
+            timestamp: Date.now(),
+            messages: [initialMsg]
+        }
+        
+        setSessions(prev => [newSession, ...prev])
+        setActiveSessionId(newId)
+        setIsChatting(true)
+    }
+
+    const handleResumeChat = (sessionId) => {
+        setActiveSessionId(sessionId)
+        setIsChatting(true)
+    }
+
+    const handleDeleteSession = (e, sessionId) => {
+        e.stopPropagation()
+        if (globalThis.confirm('Delete this chat history?')) {
+            const updatedSessions = sessions.filter(s => s.id !== sessionId)
+            setSessions(updatedSessions)
+            if (activeSessionId === sessionId) {
+                setIsChatting(false)
+                setActiveSessionId(null)
+            }
+            localStorage.setItem(storageKey, JSON.stringify(updatedSessions))
+        }
+    }
+
+    const handleClearChat = () => {
+        if (globalThis.confirm('Clear all messages in this session?')) {
+            setMessages([])
+        }
+    }
+
+    // Visibility Logic
+    const isHidden = location.pathname.includes('/take') || location.pathname.includes('/student/coding/')
+    
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+        }
+    }, [sessions, isOpen, isChatting])
+
+    if (isHidden) return null
+
+    const handleSend = async (e) => {
+        e.preventDefault()
+        if (!input.trim() || isLoading || !activeSessionId) return
+
+        const userMessage = { id: crypto.randomUUID(), role: 'user', content: input.trim() }
+        setMessages(prev => [...prev, userMessage])
+        setInput('')
+        setIsLoading(true)
+
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+        const modelsToTry = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemma-3-27b-it']
+
+        try {
+            if (apiKey) {
+                let lastError = null
+                let success = false
+
+                for (const model of modelsToTry) {
+                    const controller = new AbortController()
+                    const timeoutId = setTimeout(() => controller.abort(), 15000) 
+
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            signal: controller.signal,
+                            body: JSON.stringify({
+                                contents: [{
+                                    parts: [{ text: `You are Learnova Assistant. Help the user with: ${input.trim()}. Platform Info: Learnova is an e-learning platform. Be concise and friendly.` }]
+                                }]
+                            })
+                        })
+
+                        clearTimeout(timeoutId)
+
+                        if (response.ok) {
+                            const data = await response.json()
+                            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that response."
+                            setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: aiText }])
+                            success = true
+                            break 
+                        } else {
+                            const errorData = await response.json()
+                            lastError = errorData.error?.message || `Error ${response.status}`
+                        }
+                    } catch (err) {
+                        clearTimeout(timeoutId)
+                        lastError = err.message
+                    }
+                }
+                if (!success) throw new Error(lastError || "All models busy.")
+            } else {
+                setTimeout(() => {
+                    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
+                }, 1000)
+            }
+        } catch (error) {
+            console.error('Chat API Error:', error)
+            setTimeout(() => {
+                setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
+            }, 500)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const getMockResponse = (query) => {
+        if (query.includes('assessment')) return "Assessments are timed tests. Find them in the 'Assessments' tab."
+        if (query.includes('coding')) return "The Coding Practice section has real-world tests."
+        if (query.includes('course')) return "View enrolled courses in 'My Courses'."
+        return "I'm here to help with your Learnova platform questions! How else can I assist you?"
+    }
+
+    const renderHeader = () => (
+        <div style={{ padding: '1rem 1.25rem', background: 'var(--bg-base)', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{ padding: '6px', background: 'rgba(99,102,241,0.1)', borderRadius: '8px', color: '#6366f1' }}>
+                    <MessageCircle size={20} />
+                </div>
+                <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)', margin: 0 }}>Virtual Assistant</h3>
+            </div>
+            <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}><X size={20} /></button>
+        </div>
+    )
+
+    const tabLabels = {
+        home: 'Home',
+        past: 'Past chats',
+        tickets: 'Ticket history'
+    }
+
+    const renderTabs = () => (
+        <div style={{ display: 'flex', background: 'var(--bg-base)', borderBottom: '1px solid var(--sidebar-border)', padding: '0 0.5rem' }}>
+            {['home', 'past', 'tickets'].map((tab) => (
+                <button
+                    key={tab}
+                    onClick={() => { setActiveTab(tab); setIsChatting(false); }}
+                    style={{ padding: '0.85rem 1rem', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366f1' : 'var(--text-muted)', position: 'relative', cursor: 'pointer', flex: 1, textTransform: 'capitalize' }}
+                >
+                    {tabLabels[tab]}
+                    {activeTab === tab && <div style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: '3px', background: 'var(--text-primary)', borderRadius: '3px 3px 0 0' }} />}
+                </button>
+            ))}
+        </div>
+    )
+
+    const renderHome = () => (
+        <div style={{ padding: '2rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
+            <span style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Welcome</span>
+            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {profile?.name || 'Guest'} <span style={{ fontSize: '1.75rem' }}>👋</span>
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>How can I help you?<br />Browse our Help Center or start a chat.</p>
+            <button 
+                onClick={() => {
+                    setIsOpen(false)
+                    const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
+                    navigate(supportPath)
+                }}
+                style={{
+                    width: '100%',
+                    padding: '1rem',
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--sidebar-border)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    color: '#6366f1',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    marginBottom: 'auto'
+                }}
+            >
+                Help Center <ExternalLink size={18} />
+            </button>
+            <button 
+                onClick={handleStartNewChat}
+                style={{ width: '100%', padding: '1rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '14px', fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 10px 20px rgba(124, 58, 237, 0.2)', cursor: 'pointer', transition: 'transform 0.2s', marginTop: '2rem' }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onFocus={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                onBlur={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+                <PlusCircle size={20} fill="white" color="#7c3aed" /> Start New Chat
+            </button>
+        </div>
+    )
+
+    const renderChatArea = () => (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1, overflow: 'hidden' }}>
+            <div style={{ padding: '0.5rem 1rem', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--sidebar-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button 
+                    onClick={() => { setIsChatting(false); setActiveSessionId(null); }}
+                    style={{ background: 'none', border: 'none', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                >
+                    <ChevronRight size={14} style={{ transform: 'rotate(180deg)' }} /> Back to Home
+                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={handleClearChat} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', fontSize: '0.85rem', cursor: 'pointer' }}>Reset</button>
+                </div>
+            </div>
+
+            <div 
+                ref={scrollRef}
+                style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', background: 'var(--bg-base)' }}
+            >
+                {getActiveMessages().map((msg, i) => (
+                    <div key={msg.id || i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                        <div style={{ padding: '0.85rem 1rem', borderRadius: '16px', background: msg.role === 'user' ? '#7c3aed' : 'var(--bg-elevated)', color: msg.role === 'user' ? 'white' : 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                            {msg.content}
+                        </div>
+                    </div>
+                ))}
+                {isLoading && (
+                    <div style={{ alignSelf: 'flex-start', padding: '1rem', background: 'var(--bg-elevated)', borderRadius: '16px' }}>
+                        <Loader2 className="animate-spin" size={18} color="#6366f1" />
+                    </div>
+                )}
+            </div>
+
+            <form onSubmit={handleSend} style={{ padding: '1rem', borderTop: '1px solid var(--sidebar-border)', display: 'flex', gap: '0.5rem', background: 'var(--bg-base)' }}>
+                <input 
+                    className="chat-input-new"
+                    type="text" 
+                    placeholder="Type your message..." 
+                    value={input} 
+                    onChange={(e) => setInput(e.target.value)}
+                    style={{ flex: 1, padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid var(--sidebar-border)', outline: 'none', background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
+                />
+                <button type="submit" disabled={!input.trim() || isLoading} style={{ width: 44, height: 44, borderRadius: '10px', background: '#7c3aed', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Send size={20} />
+                </button>
+            </form>
+        </div>
+    )
+
+    const renderPastChats = () => (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', background: 'var(--bg-base)' }}>
+            {sessions.length === 0 ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                    <History size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                    <p style={{ margin: 0 }}>No past conversations yet.</p>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {sessions.map(s => {
+                        const lastMsg = s.messages[s.messages.length - 1]?.content || 'Empty Chat'
+                        const date = new Date(s.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })
+                        return (
+                            <div key={s.id} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', borderRadius: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+                                <button 
+                                    onClick={() => handleResumeChat(s.id)}
+                                    style={{ flex: 1, minWidth: 0, padding: '1rem', background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', textAlign: 'left', fontFamily: 'inherit' }}
+                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)' }}
+                                    onFocus={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)' }}
+                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                                    onBlur={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                                >
+                                    <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', overflow: 'hidden', flex: 1 }}>
+                                        <div style={{ padding: '8px', background: 'rgba(99,102,241,0.1)', borderRadius: '10px', color: '#6366f1', flexShrink: 0 }}><MessageSquare size={18} /></div>
+                                        <div style={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastMsg}</p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}><Clock size={12} /> {date}</div>
+                                        </div>
+                                    </div>
+                                </button>
+                                <button 
+                                    onClick={(e) => handleDeleteSession(e, s.id)}
+                                    style={{ padding: '1rem', color: 'var(--text-muted)', background: 'none', border: 'none', borderLeft: '1px solid var(--sidebar-border)', cursor: 'pointer', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                                    onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                                    onFocus={(e) => e.currentTarget.style.color = '#ef4444'}
+                                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                                    onBlur={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
+        </div>
+    )
+
+    const renderTicketListContent = () => {
+        if (isTicketLoading && tickets.length === 0) {
+            return (
+                <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Loader2 className="animate-spin" size={24} color="#6366f1" />
+                </div>
+            )
+        }
+        
+        if (tickets.length === 0) {
+            return (
+                <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                    <Ticket size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                    <p style={{ margin: 0, fontSize: '0.85rem' }}>No tickets found yet.</p>
+                </div>
+            )
+        }
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {tickets.map(t => (
+                    <button 
+                        key={t.id}
+                        onClick={() => {
+                            setIsOpen(false)
+                            const supportPath = profile?.role === 'organizer' ? '/organizer/support' : '/student/support'
+                            navigate(supportPath)
+                        }}
+                        style={{ display: 'block', width: '100%', padding: '1rem', borderRadius: '14px', background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'left', fontFamily: 'inherit', color: 'inherit' }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', flex: 1, marginRight: '0.5rem' }}>{t.subject}</span>
+                            <span style={{ 
+                                padding: '4px 8px', 
+                                borderRadius: '6px', 
+                                fontSize: '0.6rem', 
+                                fontWeight: 700, 
+                                textTransform: 'uppercase',
+                                background: t.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                                color: t.status === 'open' ? '#10b981' : '#ef4444'
+                            }}>
+                                {t.status}
+                            </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                            <Clock size={12} /> {new Date(t.created_at).toLocaleDateString()}
+                        </div>
+                    </button>
+                ))}
+            </div>
+        )
+    }
+
+    const renderTicketHistory = () => {
+        if (isCreatingTicket) {
+            return (
+                <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>New Support Ticket</h4>
+                        <button 
+                            onClick={() => setIsCreatingTicket(false)}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                    <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div>
+                            <label htmlFor="ticket-subject" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Subject</label>
+                            <input 
+                                id="ticket-subject"
+                                type="text"
+                                placeholder="What's the issue about?"
+                                value={newTicketSubject}
+                                onChange={(e) => setNewTicketSubject(e.target.value)}
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--sidebar-border)', background: 'var(--bg-elevated)', outline: 'none', color: 'var(--text-primary)' }}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="ticket-description" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Description</label>
+                            <textarea 
+                                id="ticket-description"
+                                placeholder="Provide more details..."
+                                value={newTicketMessage}
+                                onChange={(e) => setNewTicketMessage(e.target.value)}
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--sidebar-border)', background: 'var(--bg-elevated)', outline: 'none', minHeight: '100px', resize: 'none', color: 'var(--text-primary)' }}
+                                required
+                            />
+                        </div>
+
+                        {/* File Upload UI */}
+                        <div style={{ background: 'var(--bg-elevated)', padding: '0.85rem', borderRadius: '12px', border: '1px dashed var(--sidebar-border)' }}>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files[0]
+                                    if (file && file.size <= 5 * 1024 * 1024) {
+                                        setScreenshot(file)
+                                    } else if (file) {
+                                        alert('File size too large (max 5MB)')
+                                    }
+                                }}
+                                accept="image/*"
+                            />
+                            {screenshot ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', background: 'var(--bg-base)', padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid var(--sidebar-border)' }}>
+                                    <div style={{ background: '#7c3aed', color: 'white', padding: '4px', borderRadius: '4px' }}>
+                                        <ImageIcon size={14} />
+                                    </div>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-primary)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {screenshot.name}
+                                    </span>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setScreenshot(null)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <button 
+                                    type="button" 
+                                    onClick={() => fileInputRef.current.click()}
+                                    style={{ width: '100%', background: 'none', border: 'none', color: '#6366f1', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '4px' }}
+                                >
+                                    <Paperclip size={16} /> Add Screenshot
+                                </button>
+                            )}
+                        </div>
+
+                        <button 
+                            type="submit"
+                            disabled={isTicketLoading}
+                            style={{ width: '100%', padding: '0.85rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, marginTop: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                        >
+                            {isTicketLoading ? <Loader2 className="animate-spin" size={18} /> : <>Submit Ticket <Send size={16} /></>}
+                        </button>
+                    </form>
+                </div>
+            )
+        }
+
+
+
+        return (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', background: 'var(--bg-base)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Support Tickets</h4>
+                    <button 
+                        onClick={() => setIsCreatingTicket(true)}
+                        style={{ padding: '0.5rem 0.8rem', background: 'rgba(99,102,241,0.1)', color: '#6366f1', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                        <PlusCircle size={14} /> New Ticket
+                    </button>
+                </div>
+
+                {renderTicketListContent()}
+            </div>
+        )
+    }
+
+    return (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 1000 }}>
+            {!isOpen && (
+                <button 
+                    onClick={() => setIsOpen(true)}
+                    className="fab-shadow animate-bounce"
+                    style={{ width: '64px', height: '64px', borderRadius: '20px', background: '#7c3aed', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s' }}
+                >
+                    <MessageSquare size={30} />
+                </button>
+            )}
+
+            {isOpen && (
+                <div className="animate-scale-in" style={{ width: '400px', height: '660px', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-base)', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid var(--sidebar-border)' }}>
+                    {renderHeader()}
+                    {!isChatting && renderTabs()}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                        {isChatting ? renderChatArea() : (
+                            <>
+                                {activeTab === 'home' && renderHome()}
+                                {activeTab === 'past' && renderPastChats()}
+                                {activeTab === 'tickets' && renderTicketHistory()}
+                            </>
+                        )}
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '200px', background: 'radial-gradient(circle at 100% 100%, rgba(124,58,237,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: -1 }} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '200px', background: 'radial-gradient(circle at 0% 0%, rgba(99,102,241,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: -1 }} />
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes scaleIn {
+                    from { transform: scale(0.95) translateY(10px); opacity: 0; }
+                    to { transform: scale(1) translateY(0); opacity: 1; }
+                }
+                .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+                .fab-shadow { box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4); }
+                .chat-input-new:focus { border-color: #7c3aed !important; box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1); }
+            `}</style>
+        </div>
+    )
+}
