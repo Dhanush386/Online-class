@@ -799,28 +799,42 @@ export default function MockInterviewSession() {
       {showExitConfirm && (
         <div style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 9999, padding: '1rem'
         }}>
-          <div className="glass-card" style={{ maxWidth: 440, width: '100%', padding: '1.75rem', background: 'var(--bg-primary)' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+          <div 
+            style={{ 
+              maxWidth: 460, 
+              width: '100%', 
+              padding: '2rem', 
+              background: 'var(--card-bg)', 
+              borderRadius: '16px',
+              border: '1px solid var(--sidebar-border)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}
+          >
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
               Leave Mock Interview?
             </h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-              You are currently on Question {currentTurnNumber} of {totalQuestions}. If you leave now, you can resume this session later from your Interview Hub.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, margin: 0 }}>
+              You are currently on <strong>Question {currentTurnNumber} of {totalQuestions}</strong>. If you leave now, your recorded progress is saved and you can resume anytime from your Interview Hub.
             </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
               <button 
                 className="btn-secondary" 
+                style={{ padding: '0.65rem 1.25rem', fontWeight: 600 }}
                 onClick={() => setShowExitConfirm(false)}
               >
                 Continue Interview
               </button>
               <button 
                 className="btn-primary" 
-                style={{ background: '#ef4444' }}
+                style={{ background: '#ef4444', borderColor: '#ef4444', color: '#fff', padding: '0.65rem 1.25rem', fontWeight: 700 }}
                 onClick={() => navigate('/student/mock-interview')}
               >
                 Exit to Hub

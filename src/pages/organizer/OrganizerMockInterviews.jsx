@@ -403,8 +403,9 @@ export default function OrganizerMockInterviews() {
         }}>
           <div className="glass-card" style={{ 
             maxWidth: 900, width: '100%', maxHeight: '90vh', 
-            background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column',
-            overflow: 'hidden', padding: 0
+            background: 'var(--card-bg)', display: 'flex', flexDirection: 'column',
+            overflow: 'hidden', padding: 0,
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6)'
           }}>
             
             {/* Modal Header */}
