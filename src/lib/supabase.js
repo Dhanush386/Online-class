@@ -20,12 +20,18 @@ try {
     try { globalThis.localStorage?.removeItem('learnova-auth-token') } catch {}
 }
 
-export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder-anon-key', {
-    auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storageKey: 'learnova-auth-token', // Explicitly named key for maximum stability
-        storage: globalThis.localStorage
+const isConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+
+export const supabase = createClient(
+    supabaseUrl || 'https://placeholder.supabase.co',
+    supabaseAnonKey || 'placeholder-anon-key',
+    {
+        auth: {
+            persistSession: isConfigured,
+            autoRefreshToken: isConfigured,
+            detectSessionInUrl: isConfigured,
+            storageKey: 'learnova-auth-token',
+            storage: globalThis.localStorage
+        }
     }
-})
+)
