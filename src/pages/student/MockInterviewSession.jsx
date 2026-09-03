@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Bot, User, Send, Loader2, Sparkles, 
-  ArrowLeft, CheckCircle, AlertCircle, 
+  ArrowLeft, CheckCircle, CheckCircle2, AlertCircle, 
   HelpCircle, LogOut, Video, VideoOff, Mic
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
