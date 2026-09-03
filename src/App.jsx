@@ -187,6 +187,8 @@ function AppInner() {
             <Route path="courses/:courseId"                 element={<CourseDetail />} />
             <Route path="assessments"                       element={<Assessments />} />
             <Route path="assessments/:assessmentId/take"   element={<TakeAssessment />} />
+            <Route path="assessments/:assessmentId"        element={<TakeAssessment />} />
+            <Route path="assessment/:assessmentId"         element={<TakeAssessment />} />
             <Route path="assessments/:assessmentId/review" element={<AssessmentReview />} />
             <Route path="coding"                            element={<CodingPractice />} />
             <Route path="coding/:challengeId"              element={<CodeWorkspace />} />

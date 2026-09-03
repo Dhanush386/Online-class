@@ -377,6 +377,26 @@ export default function MockInterviewSession() {
     }
   }
 
+  // Allow concluding early to view full performance scorecard
+  const handleEarlyConclude = async () => {
+    if (submitting || generatingReport || !session) return
+    const answeredTurns = turns.filter(t => t.student_answer && t.student_answer.trim().length > 0)
+    if (answeredTurns.length === 0) {
+      setShowExitConfirm(true)
+      return
+    }
+    setSubmitting(true)
+    try {
+      await uploadInterviewVideo()
+      await generateFinalReport(turns)
+    } catch (err) {
+      console.error('Failed to conclude early:', err)
+      setError('Failed to conclude session. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   // Generate Final Report
   const generateFinalReport = async (latestTurns = turns) => {
     setGeneratingReport(true)
@@ -805,7 +825,13 @@ export default function MockInterviewSession() {
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                Your Response (Question {currentTurnNumber} of {totalQuestions})
+                {currentTurnNumber >= totalQuestions ? (
+                  <span style={{ color: '#7c3aed', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Sparkles size={16} /> Final Question ({currentTurnNumber} of {totalQuestions}) — Submitting will conclude interview & show your performance scorecard
+                  </span>
+                ) : (
+                  `Your Response (Question ${currentTurnNumber} of ${totalQuestions})`
+                )}
               </label>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {answerInput.length} chars • Ctrl + Enter to submit
@@ -840,33 +866,53 @@ export default function MockInterviewSession() {
               }}
             />
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <HelpCircle size={14} /> Be concise and explain your reasoning clearly.
               </span>
 
-              <button
-                type="submit"
-                disabled={!answerInput.trim() || submitting}
-                className="btn-primary"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.65rem 1.5rem',
-                  opacity: (!answerInput.trim() || submitting) ? 0.6 : 1
-                }}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} /> Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} /> Submit Answer
-                  </>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {currentTurnNumber > 1 && currentTurnNumber < totalQuestions && (
+                  <button
+                    type="button"
+                    onClick={handleEarlyConclude}
+                    disabled={submitting || generatingReport}
+                    className="btn-secondary"
+                    style={{ padding: '0.65rem 1.1rem', fontSize: '0.82rem' }}
+                    title="Conclude interview now with completed turns and view performance report"
+                  >
+                    Finish & View Scorecard
+                  </button>
                 )}
-              </button>
+
+                <button
+                  type="submit"
+                  disabled={!answerInput.trim() || submitting}
+                  className="btn-primary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.65rem 1.5rem',
+                    background: currentTurnNumber >= totalQuestions ? 'linear-gradient(135deg, #7c3aed, #4f46e5)' : undefined,
+                    opacity: (!answerInput.trim() || submitting) ? 0.6 : 1
+                  }}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} /> {currentTurnNumber >= totalQuestions ? 'Evaluating & Compiling Report...' : 'Submitting...'}
+                    </>
+                  ) : currentTurnNumber >= totalQuestions ? (
+                    <>
+                      <CheckCircle2 size={16} /> Submit & Complete Interview
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} /> Submit Answer
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
           </div>

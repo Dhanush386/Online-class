@@ -903,11 +903,13 @@ export function MeetingProvider({ children }) {
 
     const { user, signOut } = useAuth()
     // ── Global Browser Navigation Interception for Classroom ──
-    const blocker = useBlocker(
-        ({ currentLocation, nextLocation }) => {
-            return meeting.isActive && !meeting.isMinimized && currentLocation.pathname.includes('/classroom/') && nextLocation.pathname !== currentLocation.pathname
-        }
+    const shouldBlockMeetingNav = Boolean(
+        meeting.isActive &&
+        !meeting.isMinimized &&
+        location.pathname.includes('/classroom/')
     )
+
+    const blocker = useBlocker(shouldBlockMeetingNav)
 
     useEffect(() => {
         if (blocker.state === 'blocked') {

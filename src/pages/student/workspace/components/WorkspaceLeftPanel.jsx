@@ -543,7 +543,7 @@ export function WorkspaceLeftPanel({
     }
 
     const renderHelpTab = () => (
-        <div style={{ color: 'var(--card-border)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>
             {hasRequestedHelp ? (
                 <div className="animate-fade-in">
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Help & Hints</h3>

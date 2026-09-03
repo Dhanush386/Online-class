@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
@@ -345,6 +345,29 @@ function OrganizerHeader({
   unreadCount, handleMarkAllAsRead, notifications, showProfileMenu, setShowProfileMenu,
   requestNavigation, navigate
 }) {
+  const notifRef = useRef(null)
+  const profileRef = useRef(null)
+
+  useEffect(() => {
+    if (!showNotifications && !showProfileMenu) return
+
+    function handleClickOutside(e) {
+      if (showNotifications && notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false)
+      }
+      if (showProfileMenu && profileRef.current && !profileRef.current.contains(e.target)) {
+        setShowProfileMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside, true)
+    document.addEventListener('touchstart', handleClickOutside, true)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true)
+      document.removeEventListener('touchstart', handleClickOutside, true)
+    }
+  }, [showNotifications, showProfileMenu, setShowNotifications, setShowProfileMenu])
+
   return (
     <header style={{
       height: 60, flexShrink: 0,
@@ -370,64 +393,57 @@ function OrganizerHeader({
         <ThemeSelector />
 
         {/* Notifications */}
-        <div style={{ position: 'relative' }}>
+        <div ref={notifRef} style={{ position: 'relative' }}>
           <button onClick={() => setShowNotifications(!showNotifications)} className="btn-icon" style={{ position: 'relative' }} title="Notifications">
             <Bell size={16} />
             {unreadCount > 0 && <span className="notif-dot" />}
           </button>
           <AnimatePresence>
             {showNotifications && (
-              <>
-                <button 
-                  onClick={() => setShowNotifications(false)} 
-                  aria-label="Close notifications menu"
-                  style={{ position: 'fixed', inset: 0, zIndex: 45, background: 'transparent', border: 'none', padding: 0, cursor: 'default' }} 
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  className="dropdown-menu"
-                  style={{ top: 'calc(100% + 8px)', right: 0, width: 300, zIndex: 200 }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.85rem 0.85rem' }}>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</span>
-                    {unreadCount > 0 && (
-                      <button onClick={handleMarkAllAsRead} style={{ border: 'none', background: 'none', fontSize: '0.72rem', color: 'var(--primary-500)', fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-body)' }}>Mark all read</button>
-                    )}
-                  </div>
-                  <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    {notifications.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                        <Bell size={24} style={{ opacity: 0.25, marginBottom: '0.5rem' }} /><div>No notifications yet</div>
-                      </div>
-                    ) : notifications.map(n => (
-                      <div key={n.id} style={{
-                        padding: '0.85rem 0.85rem', borderRadius: 8, position: 'relative',
-                        background: n.isRead ? 'transparent' : 'rgba(99,102,241,0.05)',
-                        border: `1px solid ${n.isRead ? 'transparent' : 'rgba(99,102,241,0.12)'}`,
-                      }}>
-                        <div style={{ display: 'flex', gap: '0.6rem' }}>
-                          {getNotificationIcon(n.type)}
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
-                            <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>{n.message}</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={9} /> {new Date(n.created_at).toLocaleDateString()}</div>
-                          </div>
-                          {!n.isRead && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary-500)', flexShrink: 0, marginTop: 4 }} />}
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="dropdown-menu"
+                style={{ top: 'calc(100% + 8px)', right: 0, width: 300, zIndex: 200 }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.85rem 0.85rem' }}>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>Notifications</span>
+                  {unreadCount > 0 && (
+                    <button onClick={handleMarkAllAsRead} style={{ border: 'none', background: 'none', fontSize: '0.72rem', color: 'var(--primary-500)', fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-body)' }}>Mark all read</button>
+                  )}
+                </div>
+                <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  {notifications.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                      <Bell size={24} style={{ opacity: 0.25, marginBottom: '0.5rem' }} /><div>No notifications yet</div>
+                    </div>
+                  ) : notifications.map(n => (
+                    <div key={n.id} style={{
+                      padding: '0.85rem 0.85rem', borderRadius: 8, position: 'relative',
+                      background: n.isRead ? 'transparent' : 'rgba(99,102,241,0.05)',
+                      border: `1px solid ${n.isRead ? 'transparent' : 'rgba(99,102,241,0.12)'}`,
+                    }}>
+                      <div style={{ display: 'flex', gap: '0.6rem' }}>
+                        {getNotificationIcon(n.type)}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{n.title}</div>
+                          <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>{n.message}</div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={9} /> {new Date(n.created_at).toLocaleDateString()}</div>
                         </div>
+                        {!n.isRead && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary-500)', flexShrink: 0, marginTop: 4 }} />}
                       </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
 
         {/* Profile menu */}
-        <div style={{ position: 'relative' }}>
+        <div ref={profileRef} style={{ position: 'relative' }}>
           <button
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             style={{
@@ -450,20 +466,14 @@ function OrganizerHeader({
 
           <AnimatePresence>
             {showProfileMenu && (
-              <>
-                <button 
-                  onClick={() => setShowProfileMenu(false)} 
-                  aria-label="Close profile menu"
-                  style={{ position: 'fixed', inset: 0, zIndex: 145, background: 'transparent', border: 'none', padding: 0, cursor: 'default' }} 
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  className="dropdown-menu"
-                  style={{ top: 'calc(100% + 8px)', right: 0, width: 220, zIndex: 150 }}
-                >
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="dropdown-menu"
+                style={{ top: 'calc(100% + 8px)', right: 0, width: 220, zIndex: 150 }}
+              >
                   <div style={{ padding: '0.85rem', marginBottom: '0.25rem', borderBottom: '1px solid var(--card-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                       <Avatar name={profile?.name || 'O'} size="md" />
@@ -479,7 +489,6 @@ function OrganizerHeader({
                   <div className="dropdown-divider" />
                   <button onClick={() => { handleSignOut(); setShowProfileMenu(false) }} className="dropdown-item danger"><LogOut size={15} /> Sign Out</button>
                 </motion.div>
-              </>
             )}
           </AnimatePresence>
         </div>

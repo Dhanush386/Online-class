@@ -204,16 +204,14 @@ export default function AssessmentReview() {
                                                     {q.code_language}
                                                 </span>
                                             </div>
-                                            <div style={{ background: '#0f172a', overflowX: 'auto' }}>
-                                                <div style={{ minWidth: '100%', width: 'max-content' }}>
-                                                    <CodeEditor
-                                                        value={q.code_snippet}
-                                                        language={q.code_language}
-                                                        readOnly={true}
-                                                        theme="dark"
-                                                        style={{ height: 'auto', minHeight: 120, padding: 0 }}
-                                                    />
-                                                </div>
+                                            <div style={{ background: '#0b0f19', overflowX: 'auto' }}>
+                                                <CodeEditor
+                                                    value={q.code_snippet}
+                                                    language={q.code_language}
+                                                    readOnly={true}
+                                                    theme="dark"
+                                                    style={{ height: 'auto', minHeight: '90px', width: '100%' }}
+                                                />
                                             </div>
                                         </div>
                                     )}
@@ -223,7 +221,7 @@ export default function AssessmentReview() {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem' }}>
                                 {q.options.map((opt, i) => {
                                     let isThisCorrect = false
                                     try {
@@ -238,29 +236,75 @@ export default function AssessmentReview() {
                                     }
 
                                     const isThisSelected = Array.isArray(selected) ? selected.includes(opt) : opt === selected
-                                    let bg = 'var(--card-bg)', border = 'var(--card-border)', textColor = 'var(--text-primary)'
+                                    let bg = 'var(--bg-elevated)', border = '1px solid var(--sidebar-border)', textColor = 'var(--text-primary)'
 
-                                    if (isThisCorrect) { bg = 'rgba(16, 185, 129, 0.1)'; border = 'rgba(16, 185, 129, 0.2)'; textColor = 'var(--success)' }
-                                    else if (isThisSelected && !isThisCorrect) { bg = 'rgba(239, 68, 68, 0.1)'; border = 'rgba(239, 68, 68, 0.2)'; textColor = 'var(--danger)' }
+                                    if (isThisCorrect) { 
+                                        bg = 'rgba(16, 185, 129, 0.12)' 
+                                        border = '1.5px solid #10b981' 
+                                        textColor = '#059669' 
+                                    } else if (isThisSelected && !isThisCorrect) { 
+                                        bg = 'rgba(239, 68, 68, 0.12)' 
+                                        border = '1.5px solid #ef4444' 
+                                        textColor = '#dc2626' 
+                                    }
 
-                                    let iconBg = '#cbd5e1'
+                                    let iconBg = 'var(--bg-surface)'
+                                    let iconBorder = '1.5px solid var(--sidebar-border)'
+                                    let iconColor = 'var(--text-secondary)'
                                     let iconContent = String.fromCodePoint(65 + i)
+
                                     if (isThisCorrect) {
                                         iconBg = '#10b981'
-                                        iconContent = <CheckCircle2 size={12} />
+                                        iconBorder = 'none'
+                                        iconColor = '#ffffff'
+                                        iconContent = <CheckCircle2 size={15} color="#ffffff" strokeWidth={2.5} />
                                     } else if (isThisSelected) {
                                         iconBg = '#ef4444'
-                                        iconContent = <XCircle size={12} />
+                                        iconBorder = 'none'
+                                        iconColor = '#ffffff'
+                                        iconContent = <XCircle size={15} color="#ffffff" strokeWidth={2.5} />
                                     }
 
                                     return (
-                                        <div key={opt} style={{ padding: '0.85rem 1rem', borderRadius: 10, background: bg, border: `1px solid ${border}`, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.85rem', color: textColor }}>
-                                            <div style={{ width: 20, height: 20, background: iconBg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem', flexShrink: 0 }}>
+                                        <div key={opt} style={{ 
+                                            padding: '0.75rem 1rem', 
+                                            borderRadius: 10, 
+                                            background: bg, 
+                                            border: border, 
+                                            fontSize: '0.9rem', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            gap: '0.85rem', 
+                                            color: textColor,
+                                            fontWeight: (isThisCorrect || isThisSelected) ? 600 : 500
+                                        }}>
+                                            <div style={{ 
+                                                width: 26, 
+                                                height: 26, 
+                                                background: iconBg, 
+                                                border: iconBorder, 
+                                                borderRadius: '50%', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center', 
+                                                color: iconColor, 
+                                                fontSize: '0.8rem', 
+                                                fontWeight: 700,
+                                                flexShrink: 0 
+                                            }}>
                                                 {iconContent}
                                             </div>
-                                            {opt}
-                                            {isThisSelected && !isThisCorrect && <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Your answer</span>}
-                                            {isThisCorrect && <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>{isThisSelected ? 'Your correct answer' : 'Correct'}</span>}
+                                            <span style={{ flex: 1, wordBreak: 'break-word', lineHeight: 1.4 }}>{opt}</span>
+                                            {isThisSelected && !isThisCorrect && (
+                                                <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: '#dc2626', background: 'rgba(239, 68, 68, 0.15)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, textTransform: 'uppercase' }}>
+                                                    Your answer
+                                                </span>
+                                            )}
+                                            {isThisCorrect && (
+                                                <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: '#059669', background: 'rgba(16, 185, 129, 0.18)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, textTransform: 'uppercase' }}>
+                                                    {isThisSelected ? 'Your correct answer' : 'Correct'}
+                                                </span>
+                                            )}
                                         </div>
                                     )
                                 })}

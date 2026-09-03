@@ -81,7 +81,7 @@ export default function SharedProject({ subdomainSlug }) {
 
     if (loading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--text-primary)', color: 'white' }}>
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
                 <div style={{ width: 40, height: 40, border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
@@ -90,12 +90,12 @@ export default function SharedProject({ subdomainSlug }) {
 
     if (error || !project) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--text-primary)', color: 'white' }}>
-                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', maxWidth: 400, background: 'var(--text-primary)', border: '1px solid var(--card-border)' }}>
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', maxWidth: 400, background: 'var(--bg-surface)', border: '1px solid var(--card-border)' }}>
                     <div style={{ width: 64, height: 64, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
                         <Code size={32} color="#ef4444" />
                     </div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Project Unavailable</h1>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Project Unavailable</h1>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>This web project link is invalid or the project has been removed.</p>
                     <a href="https://learnovas.in/login" className="btn-primary" style={{ display: 'inline-flex' }}>Return to Learnova</a>
                 </div>

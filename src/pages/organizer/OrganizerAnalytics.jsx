@@ -369,7 +369,7 @@ export default function OrganizerAnalytics() {
         <button
           onClick={loadDashboardData}
           className="btn-secondary"
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', height: '2.5rem', background: '#f8fafc', border: '1px solid #cbd5e1' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', height: '2.5rem' }}
         >
           <RefreshCw size={16} /> Sync Data
         </button>
@@ -390,14 +390,14 @@ export default function OrganizerAnalytics() {
         <button 
           disabled={exporting}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') downloadAnalyticsPDF() }}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', cursor: exporting ? 'not-allowed' : 'pointer', background: 'rgba(6, 182, 212, 0.05)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '16px', width: '100%', textAlign: 'left', opacity: exporting ? 0.6 : 1 }} 
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', cursor: exporting ? 'not-allowed' : 'pointer', background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', borderRadius: '16px', width: '100%', textAlign: 'left', opacity: exporting ? 0.6 : 1 }} 
           onClick={downloadAnalyticsPDF}
         >
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <FileDown size={32} color="#06b6d4" />
                 <div>
-                    <h4 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{exporting ? 'Exporting...' : 'Export PDF'}</h4>
-                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem' }}>{exporting ? 'Please wait...' : 'Generate report'}</p>
+                    <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 700 }}>{exporting ? 'Exporting...' : 'Export PDF'}</h4>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }}>{exporting ? 'Please wait...' : 'Generate report'}</p>
                 </div>
             </div>
             <ArrowUpRight size={20} color="#06b6d4" />
@@ -409,17 +409,17 @@ export default function OrganizerAnalytics() {
         
         {/* Course Performance Bar Chart */}
         <GlassCard tilt3d={true}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>
             📊 Course Analytics & Completion Performance
           </h3>
           <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer width="99%" height={280}>
               <BarChart data={courseData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 100]} />
-                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
-                <Legend wrapperStyle={{ fontSize: 12, color: 'white' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} domain={[0, 100]} />
+                <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', borderRadius: 8, color: 'var(--text-primary)' }} />
+                <Legend wrapperStyle={{ fontSize: 12, color: 'var(--text-primary)' }} />
                 <Bar dataKey="Average Score" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Completion %" fill="#06b6d4" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Attendance %" fill="#22c55e" radius={[4, 4, 0, 0]} />
@@ -430,7 +430,7 @@ export default function OrganizerAnalytics() {
 
         {/* Risk Profile Donut Chart */}
         <GlassCard tilt3d={true} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>
             🛡️ Proctoring Risk Profile
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160 }}>
@@ -441,18 +441,18 @@ export default function OrganizerAnalytics() {
                     <Cell key={`cell-risk-${entry.name}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} formatter={(value, name) => [`${value} Sessions`, name]} />
+                <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', borderRadius: 8, color: 'var(--text-primary)' }} formatter={(value, name) => [`${value} Sessions`, name]} />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '1rem' }}>
             {riskData.map((entry) => (
               <div key={entry.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: entry.color }}></div>
                   <span>{entry.name}</span>
                 </div>
-                <strong style={{ color: 'white' }}>{entry.percentage}%</strong>
+                <strong style={{ color: 'var(--text-primary)' }}>{entry.percentage}%</strong>
               </div>
             ))}
           </div>
@@ -464,13 +464,13 @@ export default function OrganizerAnalytics() {
         
         {/* Top Performing Courses */}
         <GlassCard tilt3d={true}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             🏆 Top Performing Courses
           </h3>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', fontSize: '0.85rem' }}>
+                <tr style={{ borderBottom: '1px solid var(--card-border)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                   <th style={{ padding: '0.85rem 0' }}>Course</th>
                   <th style={{ padding: '0.85rem 0' }}>Avg Score</th>
                   <th style={{ padding: '0.85rem 0' }}>Completion</th>
@@ -479,7 +479,7 @@ export default function OrganizerAnalytics() {
               </thead>
               <tbody>
                 {topCourses.map((c) => (
-                  <tr key={c.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem' }}>
+                  <tr key={c.name} style={{ borderBottom: '1px solid var(--card-border)', color: 'var(--text-primary)', fontSize: '0.9rem' }}>
                     <td style={{ padding: '1rem 0', fontWeight: 600 }}>{c.name}</td>
                     <td style={{ padding: '1rem 0', color: '#8b5cf6', fontWeight: 700 }}>{c['Average Score']}%</td>
                     <td style={{ padding: '1rem 0' }}>{c['Completion %']}%</td>
@@ -487,7 +487,7 @@ export default function OrganizerAnalytics() {
                   </tr>
                 ))}
                 {topCourses.length === 0 && (
-                  <tr><td colSpan="4" style={{ padding: '2rem 0', textAlign: 'center', color: '#94a3b8' }}>No course data available.</td></tr>
+                  <tr><td colSpan="4" style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--text-muted)' }}>No course data available.</td></tr>
                 )}
               </tbody>
             </table>
@@ -496,12 +496,12 @@ export default function OrganizerAnalytics() {
 
         {/* At-Risk Students Widget */}
         <GlassCard tilt3d={true} style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             🚨 Students Requiring Attention
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', flex: 1 }}>
             {atRiskStudents.length === 0 ? (
-              <div style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                 <ShieldAlert size={32} color="#22c55e" />
                 No active security infractions. Everything is clean.
               </div>
@@ -514,21 +514,17 @@ export default function OrganizerAnalytics() {
                   <button 
                     key={v.session_id || `${studentName}-${v.course_title}`} 
                     onClick={() => navigate(`/organizer/proctoring`)}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.2s', width: '100%' }}
-                    onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                    onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                    onFocus={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                    onBlur={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1rem', background: 'var(--bg-elevated)', borderRadius: 12, border: '1px solid var(--card-border)', cursor: 'pointer', transition: 'background 0.2s', width: '100%' }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                       <div style={{ width: 36, height: 36, borderRadius: '50%', background: isCritical ? 'rgba(239,68,68,0.2)' : 'rgba(249,115,22,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isCritical ? '#ef4444' : '#f97316', fontWeight: 800, fontSize: '0.9rem' }}>
                         {studentName.substring(0, 2).toUpperCase()}
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                           {studentName}
                         </div>
-                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 500 }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                           {v.course_title?.substring(0, 20)}
                         </div>
                       </div>
@@ -550,16 +546,16 @@ export default function OrganizerAnalytics() {
         
         {/* Weekly Completion Trend */}
         <GlassCard tilt3d={true}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>
             📅 Weekly Completion Trend
           </h3>
           <div style={{ width: '100%', height: 220, minWidth: 0, minHeight: 0 }}>
             <ResponsiveContainer width="99%" height={220}>
               <LineChart data={weeklyCompletionData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="week" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 100]} />
-                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
+                <XAxis dataKey="week" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} domain={[0, 100]} />
+                <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', borderRadius: 8, color: 'var(--text-primary)' }} />
                 <Line type="monotone" dataKey="completion" stroke="#06b6d4" strokeWidth={3} dot={{ r: 4, fill: '#06b6d4' }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -568,16 +564,16 @@ export default function OrganizerAnalytics() {
 
         {/* Health Score Distribution */}
         <GlassCard tilt3d={true}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>
             ❤️ Student Health Score
           </h3>
           <div style={{ width: '100%', height: 220, minWidth: 0, minHeight: 0 }}>
             <ResponsiveContainer width="99%" height={220}>
               <BarChart data={healthScoreData} layout="vertical" margin={{ top: 5, right: 5, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis dataKey="range" type="category" stroke="#94a3b8" fontSize={10} tickLine={false} width={80} />
-                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" horizontal={false} />
+                <XAxis type="number" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+                <YAxis dataKey="range" type="category" stroke="var(--text-muted)" fontSize={10} tickLine={false} width={80} />
+                <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', borderRadius: 8, color: 'var(--text-primary)' }} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                   {healthScoreData.map((entry) => (
                     <Cell key={`cell-health-${entry.range}`} fill={entry.color} />
@@ -590,7 +586,7 @@ export default function OrganizerAnalytics() {
 
         {/* XP Source Breakdown */}
         <GlassCard tilt3d={true}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>
             ✨ XP Generation Sources
           </h3>
           <div style={{ width: '100%', height: 220, minWidth: 0, minHeight: 0 }}>
@@ -601,8 +597,8 @@ export default function OrganizerAnalytics() {
                     <Cell key={`cell-xp-${entry.name}`} fill={entry.color || ['#ec4899', '#8b5cf6', '#06b6d4', '#f59e0b', '#22c55e'][index % 5]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
-                <Legend wrapperStyle={{ fontSize: 11, color: '#cbd5e1' }} />
+                <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', borderRadius: 8, color: 'var(--text-primary)' }} />
+                <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -636,8 +632,8 @@ function KPIAnalyticsCard({ icon, title, value, color, alert }) {
       }}
     >
       <div>
-        <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{title}</div>
-        <div style={{ fontSize: '1.75rem', fontWeight: 850, color: 'white', marginTop: '0.25rem' }}>{value}</div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{title}</div>
+        <div style={{ fontSize: '1.75rem', fontWeight: 850, color: 'var(--text-primary)', marginTop: '0.25rem' }}>{value}</div>
       </div>
       <div style={{ 
         width: 48, 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import PropTypes from 'prop-types'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
@@ -47,8 +48,9 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
   const [open, setOpen]   = useState(false)
   const [query, setQuery] = useState('')
   const [index, setIndex] = useState(0)
-  const inputRef  = useRef(null)
-  const navigate  = useNavigate()
+  const inputRef    = useRef(null)
+  const paletteRef  = useRef(null)
+  const navigate    = useNavigate()
 
   const commands = role === 'student' ? STUDENT_COMMANDS : ORGANIZER_COMMANDS
 
@@ -101,6 +103,24 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
     return () => globalThis.removeEventListener('keydown', handler)
   }, [open, openPalette, closePalette])
 
+  // Click outside to close (Capture phase ensures it catches any click anywhere on document)
+  useEffect(() => {
+    if (!open) return
+
+    const handleClickOutside = (e) => {
+      if (paletteRef.current && !paletteRef.current.contains(e.target)) {
+        closePalette()
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside, true)
+    document.addEventListener('touchstart', handleClickOutside, true)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true)
+      document.removeEventListener('touchstart', handleClickOutside, true)
+    }
+  }, [open, closePalette])
+
   // Arrow key navigation
   const handleKeyDown = (e) => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setIndex(i => Math.min(i + 1, flatFiltered.length - 1)) }
@@ -133,49 +153,59 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
         </span>
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              onClick={closePalette}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              style={{
-                position: 'fixed', inset: 0,
-                background: 'rgba(15,23,42,0.45)',
-                backdropFilter: 'blur(6px)',
-                zIndex: 9998,
-              }}
-            />
+      {createPortal(
+        <AnimatePresence>
+          {open && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 99999 }}>
+              {/* Backdrop */}
+              <motion.div
+                onClick={closePalette}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  position: 'fixed', inset: 0,
+                  background: 'rgba(15,23,42,0.5)',
+                  backdropFilter: 'blur(6px)',
+                  WebkitBackdropFilter: 'blur(6px)',
+                }}
+              />
 
-            {/* Palette */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: -16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: -12 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 36 }}
-              style={{
-                position: 'fixed',
-                top: '15vh',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '100%',
-                maxWidth: 560,
-                zIndex: 9999,
-                padding: '0 1rem',
-              }}
-            >
-              <div style={{
-                background: 'var(--bg-elevated)',
-                backdropFilter: 'blur(24px)',
-                borderRadius: 20,
-                border: '1px solid var(--card-border)',
-                boxShadow: 'var(--shadow-2xl)',
-                overflow: 'hidden',
-              }}>
+              {/* Palette Content Centering Container */}
+              <div
+                style={{
+                  position: 'fixed',
+                  top: '15vh',
+                  left: 0,
+                  right: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  padding: '0 1rem',
+                  pointerEvents: 'none',
+                }}
+              >
+                <motion.div
+                  ref={paletteRef}
+                  initial={{ opacity: 0, scale: 0.94, y: -16 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.94, y: -12 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 36 }}
+                  style={{
+                    width: '100%',
+                    maxWidth: 560,
+                    pointerEvents: 'auto',
+                  }}
+                >
+                  <div style={{
+                    background: 'var(--bg-elevated)',
+                    backdropFilter: 'blur(24px)',
+                    WebkitBackdropFilter: 'blur(24px)',
+                    borderRadius: 20,
+                    border: '1px solid var(--card-border)',
+                    boxShadow: 'var(--shadow-2xl)',
+                    overflow: 'hidden',
+                  }}>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '0.85rem',
                   padding: '1rem 1.25rem',
@@ -287,11 +317,14 @@ export default function CommandPalette({ role = 'student', onSignOut }) {
                     ))}
                   </div>
                 </div>
+                  </div>
+                </motion.div>
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   )
 }

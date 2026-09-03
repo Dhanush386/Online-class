@@ -40,12 +40,38 @@ const runHtmlTestcases = (htmlTestcases, htmlCode) => {
     return results
 }
 
-const isValidCssValue = (val) => {
-    return val !== '' && val !== 'none' && val !== 'normal' && val !== '0px'
+const checkCssPropertyInCode = (css, property, selector = '') => {
+    if (!css || !property) return false
+    try {
+        const cleanCss = css.replace(/\/\*[\s\S]*?\*\//g, '') // remove comments
+        const cleanProp = property.trim().toLowerCase().replace(/-/g, '\\-')
+        const propRegex = new RegExp(String.raw`\b${cleanProp}\s*:\s*([^;]+)`, 'i')
+
+        // If selector is specified, check within that selector's block
+        if (selector && selector.trim()) {
+            const cleanSelector = selector.trim().toLowerCase()
+            const blockRegex = /([^{}]+)\{([^}]+)\}/g
+            let match
+            while ((match = blockRegex.exec(cleanCss)) !== null) {
+                const selectors = match[1].toLowerCase().split(',').map(s => s.trim())
+                const body = match[2]
+                const matchesSelector = selectors.some(s => s === cleanSelector || s.endsWith(` ${cleanSelector}`) || s.endsWith(`>${cleanSelector}`))
+                if (matchesSelector && propRegex.test(body)) {
+                    return true
+                }
+            }
+        }
+        
+        // Otherwise (or if selector block wasn't strictly formatted), check if the property is used in CSS
+        return propRegex.test(cleanCss)
+    } catch (err) {
+        console.warn('CSS parsing error:', err)
+    }
+    return false
 }
 
-const evaluateCssTestCase = (tc, iframeRef) => {
-    if (!tc.selector || !tc.property) {
+const evaluateCssTestCase = (tc, iframeRef, cssCode) => {
+    if (!tc.property) {
         return { 
             description: tc.description || 'Manual Check', 
             passed: true, 
@@ -55,57 +81,65 @@ const evaluateCssTestCase = (tc, iframeRef) => {
         }
     }
 
-    const iDoc = iframeRef.current?.contentDocument
-    const iWin = iframeRef.current?.contentWindow
-    
-    if (!iDoc || !iWin) {
-        return { 
-            description: tc.description || tc.selector, 
-            passed: false, 
-            type: 'css', 
-            expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, 
-            actual: 'iframe not ready' 
+    const normProp = tc.property.trim().toLowerCase()
+    const camelProp = normProp.replace(/-([a-z])/g, (_, l) => l.toUpperCase())
+
+    const iDoc = iframeRef?.current?.contentDocument
+    let isDeclaredInStylesheets = false
+    let foundValue = ''
+
+    // 1. Inspect stylesheet rules in iframe
+    if (iDoc) {
+        try {
+            for (const sheet of (iDoc.styleSheets || [])) {
+                try {
+                    const rules = sheet.cssRules || sheet.rules || []
+                    for (const rule of rules) {
+                        if (rule.style) {
+                            const val = rule.style.getPropertyValue(normProp) || rule.style[camelProp]
+                            if (val && val.toString().trim() !== '') {
+                                isDeclaredInStylesheets = true
+                                foundValue = val.toString().trim()
+                                break
+                            }
+                        }
+                    }
+                } catch {
+                    // cross-origin rule access protection
+                }
+                if (isDeclaredInStylesheets) break
+            }
+        } catch {
+            // DOM access error
         }
     }
-    
-    const el = iDoc.querySelector(tc.selector)
-    if (!el) {
-        return { 
-            description: tc.description || tc.selector, 
-            passed: false, 
-            type: 'css', 
-            expected: `"${tc.selector}" exists`, 
-            actual: 'element not found' 
-        }
-    }
-    
-    const style = iWin.getComputedStyle(el)
-    const camel = tc.property.replace(/-([a-z])/g, (_, l) => l.toUpperCase())
-    const actualVal = (style[camel] || style.getPropertyValue(tc.property) || '').trim()
-    const passed = tc.value 
-        ? actualVal.toLowerCase().includes(tc.value.toLowerCase()) 
-        : isValidCssValue(actualVal)
-    
+
+    // 2. Direct regex search in student's cssCode
+    const isDeclaredInCode = checkCssPropertyInCode(cssCode, tc.property, tc.selector)
+    const isPropertyPresent = isDeclaredInStylesheets || isDeclaredInCode
+
+    const passed = isPropertyPresent
+
     return { 
-        description: tc.description || `${tc.selector} → ${tc.property}`, 
+        description: tc.description || (tc.selector ? `${tc.selector} → ${tc.property}` : `CSS: ${tc.property}`), 
         passed, 
         type: 'css', 
-        expected: tc.value ? `${tc.property}: ${tc.value}` : `${tc.property} to be set`, 
-        actual: actualVal || 'not set' 
+        expected: `Property "${tc.property}" declared in CSS`, 
+        actual: isPropertyPresent ? `found "${tc.property}" ✓` : `"${tc.property}" not found in CSS` 
     }
 }
 
-const runCssTestcases = (cssTestcases, iframeRef) => {
+const runCssTestcases = (cssTestcases, iframeRef, cssCode) => {
     const results = []
     for (const tc of (cssTestcases || [])) {
         try {
-            results.push(evaluateCssTestCase(tc, iframeRef))
+            results.push(evaluateCssTestCase(tc, iframeRef, cssCode))
         } catch {
             results.push({ 
-                description: tc.description || tc.selector, 
+                description: tc.description || tc.property || 'CSS Check', 
                 passed: false, 
                 type: 'css', 
-                expected: `${tc.property}${tc.value ? ': ' + tc.value : ''}`, 
+                expected: `Property "${tc.property}" declared in CSS`, 
                 actual: 'evaluation error' 
             })
         }
@@ -399,7 +433,7 @@ export default function CodeWorkspace() {
         if (webTestcases?.css?.length) {
             updatePreview()
             await new Promise(r => setTimeout(r, 450))
-            results.push(...runCssTestcases(webTestcases.css, iframeRef))
+            results.push(...runCssTestcases(webTestcases.css, iframeRef, cssCode))
         }
         
         if (webTestcases?.js?.length) {

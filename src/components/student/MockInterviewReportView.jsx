@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import PropTypes from 'prop-types'
+import { useNavigate } from 'react-router-dom'
 import { 
   Award, CheckCircle2, AlertTriangle, Lightbulb, 
   ChevronDown, ChevronUp, RotateCcw, ArrowLeft, 
@@ -13,6 +14,7 @@ export default function MockInterviewReportView({
   onBackToHub, 
   onStartNew 
 }) {
+  const navigate = useNavigate()
   const [expandedModelAnswer, setExpandedModelAnswer] = useState(0)
 
   if (!report) {
@@ -333,6 +335,41 @@ export default function MockInterviewReportView({
           </div>
         </div>
       )}
+
+      {/* Bottom Exit & Action Bar */}
+      <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: 'var(--bg-elevated)', border: '1px solid var(--sidebar-border)' }}>
+        <div>
+          <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            Interview Session Completed
+          </h4>
+          <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            Your evaluation is saved to your interview history.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => navigate('/student/dashboard')}
+            className="btn-secondary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem' }}
+          >
+            Exit to Dashboard
+          </button>
+          <button
+            onClick={onBackToHub}
+            className="btn-secondary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem' }}
+          >
+            <ArrowLeft size={16} /> Return to Interview Hub
+          </button>
+          <button
+            onClick={onStartNew}
+            className="btn-primary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem' }}
+          >
+            <RotateCcw size={16} /> Start Another Interview
+          </button>
+        </div>
+      </div>
 
     </div>
   )

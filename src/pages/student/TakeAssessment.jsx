@@ -9,6 +9,7 @@ import CodeEditor from '../../components/CodeEditor'
 import { useLiveKitProctoring } from '../../hooks/useLiveKitProctoring'
 import useXpAward from '../../hooks/useXpAward'
 import { getQuizEventType } from '../../constants/xpRewards'
+import useTheme from '../../hooks/useTheme'
 
 const MAX_ATTEMPTS = 1
 const BYPASS_PROCTORING = false // Set to false to enable AI proctoring violations in production
@@ -34,6 +35,10 @@ export default function TakeAssessment() {
     const { profile, user } = useAuth()
     const navigate = useNavigate()
     const { awardXp, toastMessage } = useXpAward()
+    const { theme } = useTheme()
+
+    const searchParams = new URLSearchParams(window.location.search)
+    const isAdminTest = searchParams.get('admin') === 'true' || ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
 
     const [assessment, setAssessment] = useState(null)
     const [questions, setQuestions] = useState([])
@@ -430,38 +435,44 @@ export default function TakeAssessment() {
         }
 
         if (!sessionId) {
-            try {
-                // Server-side device validation & cryptographically signed session token issuance
-                const { data: sessionResp, error: rpcErr } = await supabase.rpc('start_exam_session', {
-                    p_assessment_id: assessmentId,
-                    p_user_agent: navigator.userAgent,
-                    p_viewport_width: window.innerWidth,
-                    p_viewport_height: window.innerHeight,
-                    p_touch_points: navigator.maxTouchPoints || 0
-                })
-                
-                if (rpcErr) {
-                    if (rpcErr.code === '22023') {
-                        alert('Mobile devices are blocked. Proctored exams must be taken on a desktop or laptop.')
-                    } else if (rpcErr.code === '23505') {
-                        alert('You have already submitted an attempt for this assessment.')
-                    } else {
-                        alert('Could not start verified exam session: ' + (rpcErr.message || 'Verification failed.'))
+            if (isAdminTest) {
+                setSessionId('admin-preview-session')
+                sessionIdRef.current = 'admin-preview-session'
+                sessionTokenRef.current = 'admin-preview-token'
+            } else {
+                try {
+                    // Server-side device validation & cryptographically signed session token issuance
+                    const { data: sessionResp, error: rpcErr } = await supabase.rpc('start_exam_session', {
+                        p_assessment_id: assessmentId,
+                        p_user_agent: navigator.userAgent,
+                        p_viewport_width: window.innerWidth,
+                        p_viewport_height: window.innerHeight,
+                        p_touch_points: navigator.maxTouchPoints || 0
+                    })
+                    
+                    if (rpcErr) {
+                        if (rpcErr.code === '22023') {
+                            alert('Mobile devices are blocked. Proctored exams must be taken on a desktop or laptop.')
+                        } else if (rpcErr.code === '23505') {
+                            alert('You have already submitted an attempt for this assessment.')
+                        } else {
+                            alert('Could not start verified exam session: ' + (rpcErr.message || 'Verification failed.'))
+                        }
+                        navigate('/student/assessments')
+                        return
                     }
+                    
+                    if (sessionResp) {
+                        setSessionId(sessionResp.sessionId)
+                        sessionIdRef.current = sessionResp.sessionId
+                        sessionTokenRef.current = sessionResp.sessionToken
+                    }
+                } catch (err) {
+                    console.error('Error starting proctoring session:', err)
+                    alert('Failed to establish verified exam session. Please refresh and retry.')
                     navigate('/student/assessments')
                     return
                 }
-                
-                if (sessionResp) {
-                    setSessionId(sessionResp.sessionId)
-                    sessionIdRef.current = sessionResp.sessionId
-                    sessionTokenRef.current = sessionResp.sessionToken
-                }
-            } catch (err) {
-                console.error('Error starting proctoring session:', err)
-                alert('Failed to establish verified exam session. Please refresh and retry.')
-                navigate('/student/assessments')
-                return
             }
         }
     }
@@ -495,39 +506,41 @@ export default function TakeAssessment() {
             if (aErr) throw aErr
             if (qErr) throw qErr
 
-            // Check if locked for student's groups
-            const userGroupIds = memberships?.map(m => m.group_id) || []
+            // Check if locked for student's groups (Skip in admin test mode)
+            if (!isAdminTest) {
+                const userGroupIds = memberships?.map(m => m.group_id) || []
 
-            // Check manual resource-level lock
-            const isResourceLocked = locks?.some(l => userGroupIds.includes(l.group_id))
+                // Check manual resource-level lock
+                const isResourceLocked = locks?.some(l => userGroupIds.includes(l.group_id))
 
-            // Check day-level lock/schedule
-            const dayAccess = (locksDay || []).find(a => a.course_id === assess.course_id && a.day_number === assess.day_number && userGroupIds.includes(a.group_id))
-            const isDayLocked = dayAccess?.is_locked || (dayAccess?.open_time && new Date(dayAccess.open_time) > new Date())
+                // Check day-level lock/schedule
+                const dayAccess = (locksDay || []).find(a => a.course_id === assess.course_id && a.day_number === assess.day_number && userGroupIds.includes(a.group_id))
+                const isDayLocked = dayAccess?.is_locked || (dayAccess?.open_time && new Date(dayAccess.open_time) > new Date())
 
-            if (isResourceLocked || isDayLocked) {
-                alert(isDayLocked && dayAccess?.open_time ? `This day opens at ${new Date(dayAccess.open_time).toLocaleString()}` : 'This assessment is currently locked for your group.')
-                navigate(`/student/courses/${assess.course_id}`, { replace: true })
-                return
-            }
+                if (isResourceLocked || isDayLocked) {
+                    alert(isDayLocked && dayAccess?.open_time ? `This day opens at ${new Date(dayAccess.open_time).toLocaleString()}` : 'This assessment is currently locked for your group.')
+                    navigate(`/student/courses/${assess.course_id}`, { replace: true })
+                    return
+                }
 
-            // Check assessment-level open_time
-            if (assess.open_time && new Date(assess.open_time) > new Date()) {
-                alert(`This assessment opens at ${new Date(assess.open_time).toLocaleString()}`)
-                navigate(`/student/courses/${assess.course_id}`, { replace: true })
-                return
-            }
+                // Check assessment-level open_time
+                if (assess.open_time && new Date(assess.open_time) > new Date()) {
+                    alert(`This assessment opens at ${new Date(assess.open_time).toLocaleString()}`)
+                    navigate(`/student/courses/${assess.course_id}`, { replace: true })
+                    return
+                }
 
-            // CHECK: Deadline Expiry
-            if (assess.due_date && new Date(assess.due_date) < new Date()) {
-                alert('This assessment is no longer available as the deadline has passed.')
-                navigate(`/student/courses/${assess.course_id}`, { replace: true })
-                return
-            }
+                // CHECK: Deadline Expiry
+                if (assess.due_date && new Date(assess.due_date) < new Date()) {
+                    alert('This assessment is no longer available as the deadline has passed.')
+                    navigate(`/student/courses/${assess.course_id}`, { replace: true })
+                    return
+                }
 
-            if ((existingSubs || []).length >= MAX_ATTEMPTS) {
-                navigate(`/student/assessments/${assessmentId}/review`, { replace: true })
-                return
+                if ((existingSubs || []).length >= MAX_ATTEMPTS) {
+                    navigate(`/student/assessments/${assessmentId}/review`, { replace: true })
+                    return
+                }
             }
 
             setAssessment(assess)
@@ -607,6 +620,38 @@ export default function TakeAssessment() {
     async function handleSubmit(isAuto = false) {
         if (!isAuto && Object.keys(answers).length < questions.length) {
             if (!confirm('You haven\'t answered all questions. Submit anyway?')) return
+        }
+
+        if (isAdminTest) {
+            let testScore = 0
+            questions.forEach(q => {
+                const ans = answers[q.id]
+                let isCorrect = false
+                try {
+                    if (q.correct_answer?.startsWith('[') && q.correct_answer?.endsWith(']')) {
+                        const correctArr = JSON.parse(q.correct_answer)
+                        if (Array.isArray(ans)) {
+                            isCorrect = ans.length === correctArr.length && ans.every(v => correctArr.includes(v))
+                        } else {
+                            isCorrect = correctArr.includes(ans)
+                        }
+                    } else {
+                        isCorrect = ans === q.correct_answer
+                    }
+                } catch {
+                    isCorrect = ans === q.correct_answer
+                }
+                if (isCorrect) testScore++
+            })
+            const finalPct = Math.round((testScore / (questions.length || 1)) * 100)
+            setResult({
+                score: testScore,
+                total: questions.length,
+                percentage: finalPct
+            })
+            setSubmitted(true)
+            setSubmitting(false)
+            return
         }
 
         setSubmitting(true)
@@ -738,12 +783,35 @@ export default function TakeAssessment() {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                            <button onClick={() => navigate(`/student/assessments/${assessmentId}/review`)} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                                View Detailed Results
-                            </button>
-                            <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-                                Back to Course
-                            </button>
+                            {isAdminTest ? (
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            setSubmitted(false)
+                                            setIsStarted(false)
+                                            setAnswers({})
+                                            setResult(null)
+                                            setCurrentIdx(0)
+                                        }}
+                                        className="btn-primary"
+                                        style={{ width: '100%', justifyContent: 'center', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                                    >
+                                        🔄 Test Assessment Again
+                                    </button>
+                                    <button onClick={() => window.close()} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                                        Close Preview Tab
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button onClick={() => navigate(`/student/assessments/${assessmentId}/review`)} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                                        View Detailed Results
+                                    </button>
+                                    <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                                        Back to Course
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -806,7 +874,16 @@ export default function TakeAssessment() {
                             <li style={{ listStyleType: 'disc', marginLeft: '1rem' }}>Receiving 3 violation strikes will result in automatic test failure.</li>
                         </div>
                         
-                        {cameraEnabled ? (
+                        {isAdminTest && (
+                            <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 12, padding: '0.85rem 1.25rem', marginBottom: '1.5rem', color: '#6d28d9', fontSize: '0.875rem', fontWeight: 600 }}>
+                                👑 Organizer Test Mode: You are previewing and testing this assessment. Single-attempt restrictions and proctoring locks are bypassed.
+                            </div>
+                        )}
+                        {isAdminTest ? (
+                            <button onClick={enterFullScreen} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '3.5rem', fontSize: '1.1rem', marginBottom: '1rem', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                                Start Test Preview
+                            </button>
+                        ) : cameraEnabled ? (
                             <div style={{ marginBottom: '1rem' }}>
                                 <div style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', padding: '0.85rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                                     <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
@@ -879,7 +956,7 @@ export default function TakeAssessment() {
                 )}
                 <div>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Question {currentIdx + 1} of {questions.length}</div>
-                    <div style={{ width: 120, height: 6, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ width: 120, height: 6, background: 'var(--sidebar-border)', borderRadius: 3, overflow: 'hidden' }}>
                         <div style={{ width: `${progress}%`, height: '100%', background: '#6366f1', transition: 'width 0.3s ease' }} />
                     </div>
                 </div>
@@ -901,32 +978,32 @@ export default function TakeAssessment() {
                         style={{
                             padding: '0.9rem 1.25rem',
                             borderRadius: 10,
-                            border: `2px solid ${isSelected ? '#3b82f6' : 'rgba(255,255,255,0.1)'}`,
-                            background: isSelected ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255,255,255,0.04)',
+                            border: isSelected ? '2px solid var(--primary-500)' : '1px solid var(--sidebar-border)',
+                            background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-elevated)',
                             textAlign: 'left',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.85rem',
                             transition: 'all 0.18s ease',
-                            color: isSelected ? '#93c5fd' : 'var(--text-primary)',
-                            fontWeight: isSelected ? 600 : 400,
+                            color: isSelected ? 'var(--primary-600)' : 'var(--text-primary)',
+                            fontWeight: isSelected ? 600 : 500,
                             fontSize: '0.92rem'
                         }}
                     >
                         <div style={{
-                            width: 20, height: 20,
-                            borderRadius: isMulti(currentQ) ? '5px' : '50%',
-                            border: `2px solid ${isSelected ? '#3b82f6' : 'rgba(255,255,255,0.3)'}`,
+                            width: 22, height: 22,
+                            borderRadius: isMulti(currentQ) ? '6px' : '50%',
+                            border: isSelected ? '2px solid var(--primary-500)' : '1.5px solid var(--sidebar-border)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: isSelected ? '#3b82f6' : 'transparent',
+                            background: isSelected ? 'var(--primary-500)' : 'var(--bg-surface)',
                             color: 'white',
                             fontSize: '0.75rem',
                             flexShrink: 0
                         }}>
-                            {isSelected ? <CheckCircle2 size={12} /> : null}
+                            {isSelected ? <CheckCircle2 size={13} color="#ffffff" strokeWidth={2.5} /> : null}
                         </div>
-                        {opt}
+                        <span style={{ flex: 1, wordBreak: 'break-word', lineHeight: 1.4 }}>{opt}</span>
                     </button>
                 )
             })}
@@ -1030,9 +1107,9 @@ export default function TakeAssessment() {
 
     if (isCodeMCQ) {
         return (
-            <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: '#0d1117', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg-base)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 {/* Top header bar */}
-                <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0d1117', flexShrink: 0 }}>
+                <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--card-border)', background: 'var(--bg-surface)', flexShrink: 0 }}>
                     {renderHeader()}
                 </div>
 
@@ -1041,20 +1118,20 @@ export default function TakeAssessment() {
 
                     {/* LEFT: Question + Options + Nav */}
                     <div style={{
-                        width: '300px',
-                        minWidth: '260px',
-                        maxWidth: '340px',
-                        borderRight: '1px solid rgba(255,255,255,0.08)',
+                        width: '320px',
+                        minWidth: '280px',
+                        maxWidth: '380px',
+                        borderRight: '1px solid var(--sidebar-border)',
                         display: 'flex',
                         flexDirection: 'column',
                         overflowY: 'auto',
-                        background: '#111827',
+                        background: 'var(--bg-surface)',
                         padding: '1.5rem 1.25rem',
                         gap: '1.25rem'
                     }}>
                         {/* Question text */}
                         <div>
-                            <p style={{ fontSize: '0.95rem', fontWeight: 500, color: '#f1f5f9', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                            <p style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                                 {currentQ?.question_text}
                             </p>
                         </div>
@@ -1070,34 +1147,34 @@ export default function TakeAssessment() {
 
                     {/* Collapse toggle (visual only) */}
                     <div style={{
-                        width: '28px',
-                        background: '#0d1117',
+                        width: '24px',
+                        background: 'var(--bg-base)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        borderRight: '1px solid rgba(255,255,255,0.06)',
+                        borderRight: '1px solid var(--card-border)',
                         cursor: 'default',
                         flexShrink: 0
                     }}>
-                        <ChevronLeft size={14} color="#4b5563" />
+                        <ChevronLeft size={14} color="var(--text-muted)" />
                     </div>
 
                     {/* RIGHT: Code Editor */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#0d1117' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-base)' }}>
                         {/* Editor header */}
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             padding: '0.5rem 1rem',
-                            borderBottom: '1px solid rgba(255,255,255,0.08)',
-                            background: '#111827',
+                            borderBottom: '1px solid var(--card-border)',
+                            background: 'var(--bg-surface)',
                             flexShrink: 0
                         }}>
                             <span style={{ fontSize: '0.8rem', color: '#6366f1', fontWeight: 700, background: 'rgba(99,102,241,0.12)', padding: '0.2rem 0.6rem', borderRadius: 4, borderTop: '2px solid #6366f1' }}>
                                 {currentQ.snippet_title || 'Code'}
                             </span>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 {currentQ.code_language?.toUpperCase()}
                             </span>
                         </div>
@@ -1108,7 +1185,7 @@ export default function TakeAssessment() {
                                 value={currentQ.code_snippet}
                                 language={currentQ.code_language}
                                 readOnly={true}
-                                theme="dark"
+                                theme={theme === 'light' ? 'light' : 'dark'}
                                 style={{ height: '100%', minHeight: '100%' }}
                             />
                         </div>

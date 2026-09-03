@@ -46,6 +46,7 @@ export default function OrganizerAssessments() {
     const [groups, setGroups] = useState([])
     const [resourceAccess, setResourceAccess] = useState([])
     const [lockingResource, setLockingResource] = useState(null)
+    const [questionCounts, setQuestionCounts] = useState({})
 
     useEffect(() => {
         if (profile?.id) {
@@ -73,13 +74,21 @@ export default function OrganizerAssessments() {
             { data: courseData },
             { data: assessData },
             { data: groupData },
-            { data: accessData }
+            { data: accessData },
+            { data: questionData }
         ] = await Promise.all([
             courseQuery,
             supabase.from('assessments').select('*, courses(title)').order('created_at', { ascending: false }),
             supabase.from('groups').select('*').eq('organizer_id', profile.id),
-            supabase.from('resource_access').select('*').eq('resource_type', 'assessment')
+            supabase.from('resource_access').select('*').eq('resource_type', 'assessment'),
+            supabase.from('questions').select('assessment_id')
         ])
+
+        const countMap = {}
+        questionData?.forEach(q => {
+            countMap[q.assessment_id] = (countMap[q.assessment_id] || 0) + 1
+        })
+        setQuestionCounts(countMap)
 
         setCourses(courseData || [])
         setAssessments(assessData || [])
@@ -344,20 +353,35 @@ export default function OrganizerAssessments() {
                                 {a.description || 'No description provided.'}
                             </p>
 
-                            <Link
-                                to={`/organizer/assessments/${a.id}/questions`}
-                                className="btn-secondary"
-                                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
-                            >
-                                Manage Questions <ChevronRight size={16} />
-                            </Link>
-                            <button
-                                onClick={() => loadMarks(a)}
-                                className="btn-primary"
-                                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem', marginTop: '0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
-                            >
-                                <Eye size={16} /> View Student Marks
-                            </button>
+                            <div style={{ borderTop: '1px solid var(--sidebar-border)', paddingTop: '0.85rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.85rem', marginTop: 'auto' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                    {questionCounts[a.id] || 0} Questions
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    <button
+                                        onClick={() => loadMarks(a)}
+                                        className="btn-primary"
+                                        style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                                    >
+                                        <Eye size={14} /> Submissions
+                                    </button>
+                                    <button
+                                        onClick={() => globalThis.open(`/student/assessments/${a.id}/take?admin=true`, '_blank')}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                                        title="Preview and test this assessment as a student"
+                                    >
+                                        Test Question
+                                    </button>
+                                    <Link
+                                        to={`/organizer/assessments/${a.id}/questions`}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                                    >
+                                        View Details
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
                         <div style={{ padding: '0.85rem 1.5rem', borderTop: '1px solid var(--card-border)', background: 'var(--bg-base)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

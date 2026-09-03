@@ -14,7 +14,8 @@ import {
   createOrganizerQuestion,
   updateOrganizerQuestion,
   deleteOrganizerQuestion,
-  seedDefaultOrganizerQuestions
+  seedDefaultOrganizerQuestions,
+  deleteMockInterviewSession
 } from '../../services/mockInterviewService'
 
 export default function OrganizerMockInterviews() {
@@ -27,6 +28,11 @@ export default function OrganizerMockInterviews() {
   const [searchQuery, setSearchQuery] = useState('')
   const [trackFilter, setTrackFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+
+  // Session Deletion state
+  const [sessionToDelete, setSessionToDelete] = useState(null)
+  const [deletingSession, setDeletingSession] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
 
   // Question Bank state
   const [questions, setQuestions] = useState([])
@@ -55,6 +61,25 @@ export default function OrganizerMockInterviews() {
   const [modalTurns, setModalTurns] = useState([])
   const [modalReport, setModalReport] = useState(null)
   const [modalTab, setModalTab] = useState('report') // 'report' | 'transcript'
+
+  const handleConfirmDeleteSession = async () => {
+    if (!sessionToDelete) return
+    setDeletingSession(true)
+    setDeleteError(null)
+    try {
+      await deleteMockInterviewSession(sessionToDelete.id, sessionToDelete.recording_url)
+      setSessions(prev => prev.filter(s => s.id !== sessionToDelete.id))
+      if (selectedSession?.id === sessionToDelete.id) {
+        setSelectedSession(null)
+      }
+      setSessionToDelete(null)
+    } catch (err) {
+      console.error('Failed to delete session:', err)
+      setDeleteError(err.message || 'Failed to delete interview session from database.')
+    } finally {
+      setDeletingSession(false)
+    }
+  }
 
   useEffect(() => {
     fetchSessions()
@@ -602,19 +627,40 @@ export default function OrganizerMockInterviews() {
                           </td>
 
                           <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                            <button
-                              onClick={() => handleOpenVerification(session)}
-                              className="btn-secondary"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.35rem',
-                                padding: '0.4rem 0.85rem',
-                                fontSize: '0.8rem'
-                              }}
-                            >
-                              <Eye size={14} /> Verify & Review
-                            </button>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <button
+                                onClick={() => handleOpenVerification(session)}
+                                className="btn-secondary"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem',
+                                  padding: '0.4rem 0.85rem',
+                                  fontSize: '0.8rem'
+                                }}
+                              >
+                                <Eye size={14} /> Verify & Review
+                              </button>
+
+                              <button
+                                onClick={() => setSessionToDelete(session)}
+                                className="btn-secondary"
+                                title="Delete session from database"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  padding: '0.4rem 0.6rem',
+                                  fontSize: '0.8rem',
+                                  color: '#ef4444',
+                                  borderColor: 'rgba(239, 68, 68, 0.3)',
+                                  background: 'rgba(239, 68, 68, 0.05)',
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -1178,12 +1224,32 @@ export default function OrganizerMockInterviews() {
                 </span>
               </div>
 
-              <button 
-                onClick={() => setSelectedSession(null)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-              >
-                <X size={22} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <button
+                  onClick={() => setSessionToDelete(selectedSession)}
+                  className="btn-secondary"
+                  style={{
+                    color: '#ef4444',
+                    borderColor: 'rgba(239, 68, 68, 0.3)',
+                    background: 'rgba(239, 68, 68, 0.06)',
+                    fontSize: '0.8rem',
+                    padding: '0.4rem 0.8rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                  title="Permanently delete this interview session"
+                >
+                  <Trash2 size={14} /> Delete Session
+                </button>
+
+                <button 
+                  onClick={() => setSelectedSession(null)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                >
+                  <X size={22} />
+                </button>
+              </div>
             </div>
 
             {/* Modal Navigation Tabs */}
@@ -1425,6 +1491,103 @@ export default function OrganizerMockInterviews() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Session Delete Confirmation Modal */}
+      {sessionToDelete && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 10000, padding: '1rem'
+        }}>
+          <div className="glass-card" style={{
+            maxWidth: 480, width: '100%', padding: '2rem',
+            background: 'var(--card-bg)', textAlign: 'center',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6)'
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 1.25rem'
+            }}>
+              <AlertTriangle size={28} />
+            </div>
+
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+              Delete Mock Interview Session?
+            </h3>
+
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+              Are you sure you want to delete the interview session for{' '}
+              <strong style={{ color: 'var(--text-primary)' }}>{sessionToDelete.users?.name || 'Student'}</strong>{' '}
+              ({sessionToDelete.track})?
+            </p>
+
+            <div style={{
+              padding: '0.85rem 1rem', borderRadius: '8px',
+              background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.2)',
+              color: '#b91c1c', fontSize: '0.82rem', textAlign: 'left', lineHeight: 1.45,
+              marginBottom: '1.5rem'
+            }}>
+              ⚠️ <strong>Warning:</strong> This will permanently delete:
+              <ul style={{ margin: '0.35rem 0 0 1.25rem', padding: 0 }}>
+                <li>The candidate session record and final score</li>
+                <li>All student question transcripts & AI feedbacks</li>
+                <li>AI evaluation scorecard & performance reports</li>
+                <li>The recorded video from storage</li>
+              </ul>
+            </div>
+
+            {deleteError && (
+              <div style={{
+                padding: '0.65rem 0.85rem', borderRadius: '6px',
+                background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444',
+                fontSize: '0.85rem', marginBottom: '1rem', textAlign: 'left'
+              }}>
+                {deleteError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.85rem' }}>
+              <button
+                type="button"
+                onClick={() => { setSessionToDelete(null); setDeleteError(null); }}
+                disabled={deletingSession}
+                className="btn-secondary"
+                style={{ padding: '0.65rem 1.25rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteSession}
+                disabled={deletingSession}
+                className="btn-primary"
+                style={{
+                  background: '#ef4444',
+                  borderColor: '#ef4444',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1.35rem'
+                }}
+              >
+                {deletingSession ? (
+                  <>
+                    <RefreshCw className="animate-spin" size={16} /> Deleting from Database...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} /> Yes, Delete Permanently
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

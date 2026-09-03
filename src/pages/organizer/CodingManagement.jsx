@@ -94,7 +94,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
     const handleAddCss = () => {
         setFormData(p => ({
             ...p,
-            web_testcases: { ...p.web_testcases, css: [...(p.web_testcases?.css || []), { id: crypto.randomUUID(), description: '', selector: '', property: '', value: '' }] }
+            web_testcases: { ...p.web_testcases, css: [...(p.web_testcases?.css || []), { id: crypto.randomUUID(), description: '', selector: '', property: '' }] }
         }))
     }
     const handleRemoveJs = (idx) => {
@@ -155,7 +155,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                     </div>
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
                         {['html', 'css', 'js'].map(t => {
-                            const count = (formData.web_testcases?.[t] || []).filter(x => t === 'js' ? x.keyword?.trim() : x.selector?.trim()).length
+                            const count = (formData.web_testcases?.[t] || []).filter(x => t === 'js' ? x.keyword?.trim() : t === 'css' ? x.property?.trim() : x.selector?.trim()).length
                             return count > 0 ? (
                                 <span key={t} style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0.15rem 0.5rem', background: getTabColor(t), color: 'white', borderRadius: 10 }}>
                                     {t.toUpperCase()} {count}
@@ -238,7 +238,7 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                     {wcTab === 'css' && (
                         <div>
                             <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.85rem' }}>
-                                Check computed CSS properties. Leave <code style={{ background: '#f1f5f9', padding: '0 4px', borderRadius: 3 }}>Expected Value</code> empty to just check the property is set.
+                                Check that specific CSS properties are declared/present in the student's CSS.
                             </p>
                             {(formData.web_testcases?.css || []).map((tc, idx) => (
                                 <div key={tc.id || `css-tc-${idx}`} style={{ border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.85rem', marginBottom: '0.6rem', background: '#eff6ff', position: 'relative' }}>
@@ -246,26 +246,16 @@ function HtmlSpecificOptions({ formData, setFormData, wcTab, setWcTab }) {
                                         style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>
                                         <Trash2 size={14} />
                                     </button>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 160px 140px', gap: '0.6rem' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: '0.6rem' }}>
                                         <div>
                                             <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>DESCRIPTION</div>
-                                            <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Container should use flexbox"
+                                            <input className="form-input" style={{ fontSize: '0.8rem' }} placeholder="Page should define text-align"
                                                 value={tc.description || ''} onChange={e => handleUpdateCss(idx, 'description', e.target.value)} />
                                         </div>
                                         <div>
-                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS SELECTOR</div>
-                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder=".container"
-                                                value={tc.selector || ''} onChange={e => handleUpdateCss(idx, 'selector', e.target.value)} />
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS PROPERTY</div>
-                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="display"
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6', display: 'block', marginBottom: '0.25rem' }}>CSS PROPERTY *</div>
+                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="text-align"
                                                 value={tc.property || ''} onChange={e => handleUpdateCss(idx, 'property', e.target.value)} />
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>EXPECTED VALUE</div>
-                                            <input className="form-input" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} placeholder="flex"
-                                                value={tc.value || ''} onChange={e => handleUpdateCss(idx, 'value', e.target.value)} />
                                         </div>
                                     </div>
                                 </div>
@@ -1100,7 +1090,7 @@ export default function CodingManagement() {
             // Build web_testcases — filter out empty entries
             const cleanWebTc = formData.language === 'html' ? {
                 html: (formData.web_testcases?.html || []).filter(t => t.description?.trim() || t.selector?.trim()),
-                css:  (formData.web_testcases?.css  || []).filter(t => t.description?.trim() || t.selector?.trim() || t.property?.trim()),
+                css:  (formData.web_testcases?.css  || []).filter(t => t.description?.trim() || t.property?.trim()),
                 js:   (formData.web_testcases?.js   || []).filter(t => t.description?.trim() || t.keyword?.trim())
             } : null
             const hasWebTc = cleanWebTc && (cleanWebTc.html.length || cleanWebTc.css.length || cleanWebTc.js.length)
@@ -1636,42 +1626,42 @@ export default function CodingManagement() {
                                                     <div>
                                                         <label className="form-label">Starter Code</label>
                                                         {formData.language === 'html' ? (
-                                                            <div style={{ height: '200px', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
+                                                            <div style={{ background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
                                                                 <div style={{ display: 'flex', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--card-border)' }}>
                                                                     <button type="button" onClick={() => setWebTab('html')} style={{ padding: '0.4rem 1rem', background: webTab === 'html' ? 'var(--primary-500)' : 'transparent', color: webTab === 'html' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
                                                                     <button type="button" onClick={() => setWebTab('css')} style={{ padding: '0.4rem 1rem', background: webTab === 'css' ? 'var(--primary-500)' : 'transparent', color: webTab === 'css' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
                                                                     <button type="button" onClick={() => setWebTab('js')} style={{ padding: '0.4rem 1rem', background: webTab === 'js' ? 'var(--primary-500)' : 'transparent', color: webTab === 'js' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
                                                                 </div>
-                                                                <div style={{ height: '180px' }}>
-                                                                    {webTab === 'html' && <CodeEditor value={starterWebCode.html} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" />}
-                                                                    {webTab === 'css' && <CodeEditor value={starterWebCode.css} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} language="css" />}
-                                                                    {webTab === 'js' && <CodeEditor value={starterWebCode.js} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} language="js" />}
+                                                                <div style={{ height: '180px', position: 'relative' }}>
+                                                                    {webTab === 'html' && <CodeEditor value={starterWebCode?.html || ''} onChange={e => setStarterWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="<!DOCTYPE html>..." />}
+                                                                    {webTab === 'css' && <CodeEditor value={starterWebCode?.css || ''} onChange={e => setStarterWebCode(p => ({ ...p, css: e.target.value }))} language="css" placeholder="/* CSS styles */" />}
+                                                                    {webTab === 'js' && <CodeEditor value={starterWebCode?.js || ''} onChange={e => setStarterWebCode(p => ({ ...p, js: e.target.value }))} language="js" placeholder="// JS code" />}
                                                                 </div>
                                                             </div>
                                                         ) : (
-                                                            <div style={{ height: '200px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
-                                                                <CodeEditor value={formData.starter_code} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} />
+                                                            <div style={{ height: '210px', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+                                                                <CodeEditor value={formData.starter_code || ''} onChange={e => setFormData(p => ({ ...p, starter_code: e.target.value }))} language={formData.language} placeholder="Starter code..." />
                                                             </div>
                                                         )}
                                                     </div>
                                                     <div>
                                                         <label className="form-label">Solution Code</label>
                                                         {formData.language === 'html' ? (
-                                                            <div style={{ background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
-                                                                <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)' }}>
+                                                            <div style={{ background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden' }}>
+                                                                <div style={{ display: 'flex', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--card-border)' }}>
                                                                     <button type="button" onClick={() => setSolutionWebTab('html')} style={{ padding: '0.4rem 1rem', background: solutionWebTab === 'html' ? 'var(--primary-500)' : 'transparent', color: solutionWebTab === 'html' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>HTML</button>
                                                                     <button type="button" onClick={() => setSolutionWebTab('css')} style={{ padding: '0.4rem 1rem', background: solutionWebTab === 'css' ? 'var(--primary-500)' : 'transparent', color: solutionWebTab === 'css' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>CSS</button>
                                                                     <button type="button" onClick={() => setSolutionWebTab('js')} style={{ padding: '0.4rem 1rem', background: solutionWebTab === 'js' ? 'var(--primary-500)' : 'transparent', color: solutionWebTab === 'js' ? '#fff' : 'var(--text-muted)', border: 'none', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>JS</button>
                                                                 </div>
-                                                                <div style={{ height: '180px' }}>
-                                                                    {solutionWebTab === 'html' && <CodeEditor value={solutionWebCode.html} onChange={e => setSolutionWebCode(p => ({ ...p, html: e.target.value }))} language="html" />}
-                                                                    {solutionWebTab === 'css' && <CodeEditor value={solutionWebCode.css} onChange={e => setSolutionWebCode(p => ({ ...p, css: e.target.value }))} language="css" />}
-                                                                    {solutionWebTab === 'js' && <CodeEditor value={solutionWebCode.js} onChange={e => setSolutionWebCode(p => ({ ...p, js: e.target.value }))} language="js" />}
+                                                                <div style={{ height: '180px', position: 'relative' }}>
+                                                                    {solutionWebTab === 'html' && <CodeEditor value={solutionWebCode?.html || ''} onChange={e => setSolutionWebCode(p => ({ ...p, html: e.target.value }))} language="html" placeholder="<!DOCTYPE html>..." />}
+                                                                    {solutionWebTab === 'css' && <CodeEditor value={solutionWebCode?.css || ''} onChange={e => setSolutionWebCode(p => ({ ...p, css: e.target.value }))} language="css" placeholder="/* CSS solution */" />}
+                                                                    {solutionWebTab === 'js' && <CodeEditor value={solutionWebCode?.js || ''} onChange={e => setSolutionWebCode(p => ({ ...p, js: e.target.value }))} language="js" placeholder="// JS solution" />}
                                                                 </div>
                                                             </div>
                                                         ) : (
-                                                            <div style={{ height: '200px', background: 'var(--bg-base)', borderRadius: 8, overflow: 'hidden' }}>
-                                                                <CodeEditor value={formData.solution_code} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} />
+                                                            <div style={{ height: '210px', background: 'var(--bg-base)', border: '1px solid var(--card-border)', borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+                                                                <CodeEditor value={formData.solution_code || ''} onChange={e => setFormData(p => ({ ...p, solution_code: e.target.value }))} language={formData.language} placeholder="Write solution code here..." />
                                                             </div>
                                                         )}
                                                     </div>

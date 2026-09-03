@@ -121,21 +121,21 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                 <button type="button" onClick={() => setView('list')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
                     <ChevronLeft size={16} /> Back to Discussions
                 </button>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#fff' }}>Start a New Thread</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Start a New Thread</h3>
                 <form onSubmit={handleCreateThread} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
-                        <label htmlFor="thread-title" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Title</label>
-                        <input id="thread-title" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="E.g. Getting an EOFError on Test Case 2" required style={{ width: '100%', padding: '0.85rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem' }} />
+                        <label htmlFor="thread-title" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>Title</label>
+                        <input id="thread-title" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="E.g. Getting an EOFError on Test Case 2" required style={{ width: '100%', padding: '0.85rem', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--sidebar-border)', color: 'var(--text-primary)', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
                     </div>
                     <div>
-                        <label htmlFor="thread-desc" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Description</label>
-                        <textarea id="thread-desc" value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Describe what you need help with..." required rows={5} style={{ width: '100%', padding: '0.85rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem', resize: 'vertical' }} />
+                        <label htmlFor="thread-desc" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>Description</label>
+                        <textarea id="thread-desc" value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Describe what you need help with..." required rows={5} style={{ width: '100%', padding: '0.85rem', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--sidebar-border)', color: 'var(--text-primary)', fontSize: '0.9rem', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
                     </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#cbd5e1' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                         <input type="checkbox" checked={attachCode} onChange={e => setAttachCode(e.target.checked)} />
                         <span>Attach my current code workspace snapshot</span>
                     </label>
-                    <button type="submit" style={{ padding: '0.85rem', borderRadius: 8, background: '#3b82f6', border: 'none', color: '#fff', fontWeight: 700, marginTop: '1rem', cursor: 'pointer' }}>Post Thread</button>
+                    <button type="submit" className="btn-primary" style={{ padding: '0.85rem', borderRadius: 8, border: 'none', fontWeight: 700, marginTop: '1rem', cursor: 'pointer', width: '100%' }}>Post Thread</button>
                 </form>
             </div>
         )
@@ -151,18 +151,18 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                 <div style={{ flex: 1, overflowY: 'auto' }}>
                     {/* Original Post */}
                     <div style={{ marginBottom: '2rem' }}>
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>{activeThread.title}</h2>
+                        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{activeThread.title}</h2>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                             <span>Posted by {activeThread.users?.name || 'Student'}</span>
                             <span>•</span>
                             <Clock size={12} /> {new Date(activeThread.created_at).toLocaleDateString()}
                         </div>
-                        <p style={{ fontSize: '0.9rem', color: '#cbd5e1', lineHeight: 1.6, whiteSpace: 'pre-wrap', background: 'var(--text-primary)', padding: '1rem', borderRadius: 8, border: '1px solid var(--card-border)' }}>{activeThread.content}</p>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap', background: 'var(--bg-surface)', padding: '1rem', borderRadius: 8, border: '1px solid var(--sidebar-border)' }}>{activeThread.content}</p>
                         
                         {activeThread.code_snapshot && (
-                            <div style={{ marginTop: '1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
-                                <div style={{ padding: '0.5rem 1rem', background: 'var(--text-primary)', borderBottom: '1px solid var(--card-border)', fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CodeIcon size={14} /> Attached Code Snapshot</div>
-                                <pre style={{ margin: 0, padding: '1rem', background: 'var(--text-primary)', color: '#e2e8f0', fontSize: '0.8rem', overflowX: 'auto' }}>{activeThread.code_snapshot}</pre>
+                            <div style={{ marginTop: '1rem', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--sidebar-border)' }}>
+                                <div style={{ padding: '0.5rem 1rem', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--sidebar-border)', fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CodeIcon size={14} /> Attached Code Snapshot</div>
+                                <pre style={{ margin: 0, padding: '1rem', background: '#0b0f19', color: '#e2e8f0', fontSize: '0.8rem', overflowX: 'auto' }}>{activeThread.code_snapshot}</pre>
                             </div>
                         )}
                     </div>
@@ -171,16 +171,16 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                     <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '1rem', textTransform: 'uppercase' }}>Replies</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
                         {replies.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'var(--text-primary)', borderRadius: 8, border: '1px dashed var(--card-border)' }}>No replies yet.</div>
+                            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'var(--bg-surface)', borderRadius: 8, border: '1px dashed var(--sidebar-border)' }}>No replies yet.</div>
                         ) : (
                             replies.map(reply => (
-                                <div key={reply.id} style={{ padding: '1rem', borderRadius: 8, background: reply.is_organizer ? '#1e3a8a20' : 'var(--text-primary)', border: `1px solid ${reply.is_organizer ? '#3b82f650' : 'var(--card-border)'}` }}>
+                                <div key={reply.id} style={{ padding: '1rem', borderRadius: 8, background: reply.is_organizer ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg-surface)', border: `1px solid ${reply.is_organizer ? 'rgba(59, 130, 246, 0.3)' : 'var(--sidebar-border)'}` }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: reply.is_organizer ? '#60a5fa' : 'var(--text-muted)' }}>{reply.users?.name || 'User'}</span>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: reply.is_organizer ? '#3b82f6' : 'var(--text-secondary)' }}>{reply.users?.name || 'User'}</span>
                                         {reply.is_organizer && <span style={{ padding: '2px 6px', background: '#3b82f6', color: '#fff', fontSize: '0.6rem', borderRadius: 4, fontWeight: 800 }}>MENTOR</span>}
                                         <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(reply.created_at).toLocaleString()}</span>
                                     </div>
-                                    <p style={{ fontSize: '0.9rem', color: '#cbd5e1', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{reply.content}</p>
+                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{reply.content}</p>
                                 </div>
                             ))
                         )}
@@ -188,9 +188,9 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                 </div>
 
                 {/* Reply Form */}
-                <form onSubmit={handlePostReply} style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--card-border)' }}>
-                    <input value={replyContent} onChange={e => setReplyContent(e.target.value)} placeholder="Type your reply..." style={{ flex: 1, padding: '0.85rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', color: '#fff', fontSize: '0.9rem' }} />
-                    <button type="submit" disabled={!replyContent.trim()} style={{ padding: '0 1.25rem', borderRadius: 8, background: '#3b82f6', border: 'none', color: '#fff', cursor: replyContent.trim() ? 'pointer' : 'not-allowed', opacity: replyContent.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <form onSubmit={handlePostReply} style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--sidebar-border)' }}>
+                    <input value={replyContent} onChange={e => setReplyContent(e.target.value)} placeholder="Type your reply..." style={{ flex: 1, padding: '0.85rem', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--sidebar-border)', color: 'var(--text-primary)', fontSize: '0.9rem', outline: 'none' }} />
+                    <button type="submit" disabled={!replyContent.trim()} className="btn-primary" style={{ padding: '0 1.25rem', borderRadius: 8, border: 'none', cursor: replyContent.trim() ? 'pointer' : 'not-allowed', opacity: replyContent.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Send size={18} />
                     </button>
                 </form>
@@ -201,8 +201,8 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
     return (
         <div className="animate-fade-in" style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MessageSquare size={18} /> Discussions</h3>
-                <button type="button" onClick={() => setView('create')} style={{ padding: '0.4rem 0.8rem', borderRadius: 6, background: '#3b82f6', border: 'none', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MessageSquare size={18} /> Discussions</h3>
+                <button type="button" onClick={() => setView('create')} className="btn-primary" style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: 'none', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Plus size={14} /> New Thread
                 </button>
             </div>
@@ -219,11 +219,11 @@ export default function CodingDiscussions({ challengeId, currentCode }) {
                             type="button"
                             key={d.id} 
                             onClick={() => { setActiveThread(d); setView('thread') }} 
-                            style={{ display: 'block', width: '100%', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', padding: '1rem', borderRadius: 8, background: 'var(--text-primary)', border: '1px solid var(--card-border)', cursor: 'pointer', transition: 'all 0.2s ease', ':hover': { borderColor: 'var(--text-secondary)' } }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', padding: '1rem', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--sidebar-border)', boxShadow: 'var(--shadow-xs)', cursor: 'pointer', transition: 'all 0.2s ease' }}
                         >
                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem' }}>
-                                <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#e2e8f0', margin: 0, lineHeight: 1.4 }}>{d.title}</h4>
-                                {d.status === 'resolved' && <span style={{ padding: '2px 6px', background: '#10b98120', color: '#10b981', border: '1px solid #10b98150', fontSize: '0.85rem', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}><CheckCircle2 size={10} /> Resolved</span>}
+                                <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>{d.title}</h4>
+                                {d.status === 'resolved' && <span style={{ padding: '2px 6px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '0.85rem', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}><CheckCircle2 size={10} /> Resolved</span>}
                             </div>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '1rem' }}>{d.content}</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>

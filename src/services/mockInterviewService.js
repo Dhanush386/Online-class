@@ -1,24 +1,28 @@
 import { supabase } from '../lib/supabase'
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY?.trim()
+function getGeminiApiKey() {
+  return import.meta.env.VITE_GEMINI_API_KEY?.trim() || ''
+}
 
 const GEMINI_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-pro'
+  'gemini-2.5-flash',
+  'gemini-flash-latest',
+  'gemini-2.5-pro',
+  'gemini-2.5-flash-lite'
 ]
 
 /**
  * Call Gemini AI Flash model with resilient model fallback
  */
 async function callGemini(prompt, isJson = false) {
-  if (!GEMINI_API_KEY) {
+  const apiKey = getGeminiApiKey()
+  if (!apiKey) {
     return null
   }
 
   for (const model of GEMINI_MODELS) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -434,13 +438,24 @@ export async function submitInterviewTurn({ sessionId, track, turnNumber, totalQ
   const isLastTurn = turnNumber >= totalQuestions
   const nextTurnNumber = turnNumber + 1
 
-  let feedbackPrompt = `You are a Senior Technical Interviewer.
+  const isGibberishOrShort = !answer || answer.trim().length < 15 || /^(asdf|asdss|test|qwerty|xyz|idk|no|none|na|\.+)$/i.test(answer.trim())
+
+  let feedbackPrompt = `You are an honest and constructive Senior Technical Interviewer.
 Question asked: "${currentQuestion}"
 Student's Answer: "${answer}"
 
-Provide brief, encouraging 1-2 sentence constructive feedback/transition acknowledging their points before moving on.`
+Task:
+Evaluate the student's answer accurately in 1-2 concise sentences:
+- If the answer is gibberish, spam, or too short/irrelevant (such as "${answer}"), clearly state that the response does not address the question and encourage them to explain the technical concepts.
+- If the answer is incorrect or incomplete, point out what is missing or incorrect.
+- If the answer is accurate, acknowledge what was done well.
+Be constructive, professional, and honest. Do not give praise for wrong or meaningless answers.`
 
-  let feedback = await callGemini(feedbackPrompt) || "Solid explanation. Let's move forward."
+  const fallbackFeedback = isGibberishOrShort
+    ? "That response was incomplete and did not answer the technical question. In an interview, aim to explain the core concepts clearly. Let's move to the next question."
+    : "Thank you for sharing your thoughts. Let's delve deeper with the next question."
+
+  let feedback = await callGemini(feedbackPrompt) || fallbackFeedback
 
   let nextQuestion = null
 
@@ -549,20 +564,29 @@ Evaluate this interview and return a JSON object matching this exact schema:
   }
 
   if (!reportJson || !reportJson.overall_score) {
+    const validTurns = turns.filter(t => (t.student_answer || '').trim().length >= 25 && !/^(asdf|asdss|test|qwerty|xyz|idk|no|none|na|\.+)$/i.test((t.student_answer || '').trim()))
+    const validRatio = turns.length > 0 ? validTurns.length / turns.length : 0
+    const calculatedFallbackScore = Math.min(85, Math.max(15, Math.round(validRatio * 65 + (validRatio > 0 ? 15 : 0))))
+
     reportJson = {
-      overall_score: 82,
+      overall_score: calculatedFallbackScore,
       category_scores: {
-        technical_correctness: 84,
-        conceptual_depth: 78,
-        communication_clarity: 85,
-        problem_solving: 80
+        technical_correctness: Math.max(10, Math.round(calculatedFallbackScore * 0.95)),
+        conceptual_depth: Math.max(10, Math.round(calculatedFallbackScore * 0.9)),
+        communication_clarity: Math.max(15, Math.round(calculatedFallbackScore * 1.05)),
+        problem_solving: Math.max(10, Math.round(calculatedFallbackScore * 0.92))
       },
-      strengths: [
-        "Strong understanding of foundational concepts",
-        "Clear, structured technical communication",
-        "Good awareness of trade-offs and edge cases"
+      strengths: validRatio > 0.4 ? [
+        "Attempted to engage with technical interview topics",
+        "Demonstrated familiarity with track concepts"
+      ] : [
+        "Completed the session attempt"
       ],
-      gaps: [
+      gaps: validRatio < 0.5 ? [
+        "Answers were brief, incomplete, or did not sufficiently address the questions",
+        "Provide structured explanations detailing mechanisms, trade-offs, and examples",
+        "Take time to compose well-rounded responses"
+      ] : [
         "Could elaborate further on production scaling considerations",
         "Explicitly mention space and time complexity where applicable"
       ],
@@ -602,3 +626,52 @@ Evaluate this interview and return a JSON object matching this exact schema:
     session: updatedSession
   }
 }
+
+/**
+ * Permanently delete a mock interview session, its associated video recording, turns, and report
+ */
+export async function deleteMockInterviewSession(sessionId, recordingUrl = null) {
+  if (!sessionId) throw new Error('Session ID is required for deletion.')
+
+  // 1. If recording_url exists, attempt to remove file from Supabase storage
+  if (recordingUrl) {
+    try {
+      const parts = recordingUrl.split('/interview-recordings/')
+      if (parts.length > 1) {
+        const filePath = decodeURIComponent(parts[1].split('?')[0])
+        if (filePath) {
+          await supabase.storage.from('interview-recordings').remove([filePath])
+        }
+      }
+    } catch (storageErr) {
+      console.warn('Failed to delete interview recording from storage:', storageErr)
+    }
+  }
+
+  // 2. Explicitly clean up child turns & reports to prevent FK constraint errors
+  try {
+    await supabase.from('mock_interview_turns').delete().eq('session_id', sessionId)
+  } catch (err) {
+    console.debug('Turns delete note:', err)
+  }
+
+  try {
+    await supabase.from('mock_interview_reports').delete().eq('session_id', sessionId)
+  } catch (err) {
+    console.debug('Report delete note:', err)
+  }
+
+  // 3. Delete from mock_interview_sessions
+  const { error } = await supabase
+    .from('mock_interview_sessions')
+    .delete()
+    .eq('id', sessionId)
+
+  if (error) {
+    console.error('Error deleting mock interview session:', error)
+    throw error
+  }
+
+  return { success: true }
+}
+

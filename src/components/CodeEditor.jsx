@@ -34,6 +34,7 @@ const CodeEditor = ({
     // Syntax Highlighting Logic
     const highlight = (code, lang) => {
         if (!code) return ''
+        const normalizedLang = (lang || '').toLowerCase()
 
         // Escaping HTML
         let html = code
@@ -47,7 +48,7 @@ const CodeEditor = ({
             return `___TOKEN_${tokens.length - 1}___`
         }
 
-        if (lang === 'html' || lang === 'web') {
+        if (normalizedLang === 'html' || normalizedLang === 'web') {
             // Doctypes
             html = html.replace(/(&lt;!DOCTYPE html&gt;)/gi, m => pushToken(m, '#94a3b8'))
             // Strings (inside attributes)
@@ -57,19 +58,19 @@ const CodeEditor = ({
             html = html.replace(/(&lt;\/[a-z1-6]+&gt;)/gi, m => pushToken(m, theme === 'light' ? '#dc2626' : '#f43f5e'))
             // Attributes
             html = html.replace(/ ([a-z-]+)=/gi, m => pushToken(m, theme === 'light' ? '#d97706' : '#fbbf24'))
-        } else if (lang === 'css') {
-            // Values
-            html = html.replace(/: ([^;]+);/g, (m, v) => ': ' + pushToken(v, theme === 'light' ? '#d97706' : '#fbbf24') + ';')
-            // Properties
-            html = html.replace(/\b([a-z-]+):/gi, m => pushToken(m, theme === 'light' ? '#2563eb' : '#60a5fa'))
+        } else if (normalizedLang === 'css') {
+            // Values: text-decoration: line-through;
+            html = html.replace(/:\s*([^;]+);/g, (m, v) => ': ' + pushToken(v.trim(), theme === 'light' ? '#d97706' : '#fbbf24') + ';')
+            // Properties: text-decoration:
+            html = html.replace(/\b([a-z-]+)\s*:/gi, (m, p) => pushToken(p, theme === 'light' ? '#2563eb' : '#60a5fa') + ':')
             // Selectors
-            html = html.replace(/^([.#a-z][^{]+) {/gim, (m, s) => pushToken(s, theme === 'light' ? '#dc2626' : '#f43f5e') + ' {')
+            html = html.replace(/^([.#a-z*][^{]+)\s*\{/gim, (m, s) => pushToken(s.trim(), theme === 'light' ? '#dc2626' : '#f43f5e') + ' {')
         } else {
             // JS / Python / SQL Common
             let commentRegex
-            if (lang === 'python') {
+            if (normalizedLang === 'python') {
                 commentRegex = /(#.*)/g
-            } else if (lang === 'sql') {
+            } else if (normalizedLang === 'sql') {
                 commentRegex = /(--.*)/g
             } else {
                 commentRegex = /(\/\/.*)/g
@@ -81,10 +82,11 @@ const CodeEditor = ({
 
             const keywords = {
                 js: new RegExp(String.raw`\b(${'const let var function return if else for while import export class from await async try catch new this'.replaceAll(' ', '|')})\b`, 'g'),
+                javascript: new RegExp(String.raw`\b(${'const let var function return if else for while import export class from await async try catch new this'.replaceAll(' ', '|')})\b`, 'g'),
                 python: new RegExp(String.raw`\b(${'def class return if else elif for while import from as try except with async await in is not and or lambda print'.replaceAll(' ', '|')})\b`, 'g'),
                 sql: new RegExp(String.raw`\b(${'SELECT FROM WHERE INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE DROP JOIN LEFT RIGHT INNER ON GROUP BY ORDER LIMIT ASC DESC'.replaceAll(' ', '|')})\b`, 'gi')
             }
-            const activeKeywords = keywords[lang] || keywords.js
+            const activeKeywords = keywords[normalizedLang] || keywords.js
             html = html.replace(activeKeywords, m => pushToken(m, theme === 'light' ? '#9333ea' : '#c084fc'))
 
             html = html.replace(/\b(\d+)\b/g, m => pushToken(m, theme === 'light' ? '#d97706' : '#fbbf24'))
@@ -183,18 +185,22 @@ const CodeEditor = ({
         handleScroll()
     }, [value])
 
-    const lines = (value || '').split('\n')
+    const safeValue = value ?? ''
+    const lines = safeValue.split('\n')
 
     return (
         <div
+            onClick={() => !readOnly && textareaRef.current?.focus()}
             style={{
                 display: 'flex',
                 position: 'relative',
                 width: '100%',
                 height: '100%',
+                minHeight: '100%',
                 overflow: 'hidden',
                 fontVariantLigatures: 'none',
                 background: theme === 'light' ? '#ffffff' : '#0b0f19',
+                cursor: readOnly ? 'default' : 'text',
                 ...style
             }}
         >
@@ -205,7 +211,7 @@ const CodeEditor = ({
                     aria-hidden="true"
                     style={{
                         width: '44px',
-                        height: '100%',
+                        minHeight: '100%',
                         paddingTop: '1.25rem',
                         paddingBottom: '1.25rem',
                         paddingRight: '12px',
@@ -229,65 +235,110 @@ const CodeEditor = ({
                 </div>
             )}
 
-            {/* Code Editor Canvas (Highlight pre overlay + Textarea input) */}
-            <div style={{ position: 'relative', flex: 1, height: '100%', overflow: 'hidden' }}>
-                <pre
-                    ref={preRef}
-                    aria-hidden="true"
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        margin: 0,
-                        padding: '1.25rem',
-                        pointerEvents: 'none',
-                        whiteSpace: 'pre',
-                        background: 'transparent',
-                        color: theme === 'light' ? 'var(--text-primary)' : '#e2e8f0',
-                        fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
-                        fontSize: fontSize,
-                        lineHeight: 1.5,
-                        border: 'none',
-                        overflow: 'auto',
-                        boxSizing: 'border-box'
-                    }}
-                    dangerouslySetInnerHTML={{ __html: highlight(value, language) + '<br/>' }}
-                />
+            {/* Code Editor Canvas */}
+            {readOnly ? (
+                <div style={{ position: 'relative', flex: 1, minHeight: '100%', height: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
+                    <pre
+                        ref={preRef}
+                        style={{
+                            margin: 0,
+                            padding: '1.25rem',
+                            whiteSpace: 'pre',
+                            background: 'transparent',
+                            color: theme === 'light' ? '#0f172a' : '#e2e8f0',
+                            fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
+                            fontSize: fontSize,
+                            lineHeight: 1.5,
+                            border: 'none',
+                            boxSizing: 'border-box',
+                            minHeight: '100%',
+                            display: 'block'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: highlight(safeValue, language) }}
+                    />
+                </div>
+            ) : (
+                <div style={{ position: 'relative', flex: 1, minHeight: '100%', height: '100%', overflow: 'hidden' }}>
+                    <pre
+                        ref={preRef}
+                        aria-hidden="true"
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            margin: 0,
+                            padding: '1.25rem',
+                            pointerEvents: 'none',
+                            whiteSpace: 'pre',
+                            background: 'transparent',
+                            color: theme === 'light' ? 'var(--text-primary)' : '#e2e8f0',
+                            fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
+                            fontSize: fontSize,
+                            lineHeight: 1.5,
+                            border: 'none',
+                            overflow: 'auto',
+                            boxSizing: 'border-box'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: highlight(safeValue, language) + '<br/>' }}
+                    />
 
-                <textarea
-                    ref={textareaRef}
-                    value={value}
-                    onChange={onChange}
-                    onKeyDown={handleKeyDown}
-                    onScroll={handleScroll}
-                    placeholder={placeholder}
-                    spellCheck={false}
-                    readOnly={readOnly}
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        padding: '1.25rem',
-                        background: 'transparent',
-                        color: 'transparent',
-                        caretColor: theme === 'light' ? '#000000' : '#ffffff',
-                        fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
-                        fontSize: fontSize,
-                        lineHeight: 1.5,
-                        border: 'none',
-                        outline: 'none',
-                        resize: 'none',
-                        whiteSpace: 'pre',
-                        overflow: 'auto',
-                        boxSizing: 'border-box',
-                        zIndex: 1
-                    }}
-                />
-            </div>
+                    {/* Placeholder fallback for transparent textarea */}
+                    {!safeValue && placeholder && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                padding: '1.25rem',
+                                color: theme === 'light' ? '#94a3b8' : '#64748b',
+                                fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
+                                fontSize: fontSize,
+                                lineHeight: 1.5,
+                                pointerEvents: 'none',
+                                userSelect: 'none',
+                                whiteSpace: 'pre'
+                            }}
+                        >
+                            {placeholder}
+                        </div>
+                    )}
+
+                    <textarea
+                        ref={textareaRef}
+                        value={safeValue}
+                        onChange={onChange}
+                        onKeyDown={handleKeyDown}
+                        onScroll={handleScroll}
+                        spellCheck={false}
+                        readOnly={false}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            padding: '1.25rem',
+                            background: 'transparent',
+                            color: 'transparent',
+                            WebkitTextFillColor: 'transparent',
+                            caretColor: theme === 'light' ? '#0f172a' : '#ffffff',
+                            fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
+                            fontSize: fontSize,
+                            lineHeight: 1.5,
+                            border: 'none',
+                            outline: 'none',
+                            resize: 'none',
+                            whiteSpace: 'pre',
+                            overflow: 'auto',
+                            boxSizing: 'border-box',
+                            zIndex: 2,
+                            cursor: 'text'
+                        }}
+                    />
+                </div>
+            )}
         </div>
     )
 }

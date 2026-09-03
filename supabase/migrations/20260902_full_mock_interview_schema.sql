@@ -10,23 +10,44 @@ ALTER TABLE public.mock_interview_sessions
 ADD COLUMN IF NOT EXISTS recording_url TEXT,
 ADD COLUMN IF NOT EXISTS recording_expires_at TIMESTAMPTZ;
 
--- Storage Bucket for Interview Recordings
+-- Storage Bucket for Interview Recordings (Private: Only student & organizer have access)
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('interview-recordings', 'interview-recordings', true)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('interview-recordings', 'interview-recordings', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
 
--- Storage Policies
+-- Storage Policies: Attended student & Organizer/Admin ONLY
 DROP POLICY IF EXISTS "Public Select Access for Interview Recordings" ON storage.objects;
-CREATE POLICY "Public Select Access for Interview Recordings" ON storage.objects
-    FOR SELECT USING (bucket_id = 'interview-recordings');
+DROP POLICY IF EXISTS "Access Interview Recordings" ON storage.objects;
+CREATE POLICY "Access Interview Recordings" ON storage.objects
+    FOR SELECT TO authenticated
+    USING (
+        bucket_id = 'interview-recordings'
+        AND (
+            (storage.foldername(name))[1] = auth.uid()::text
+            OR (SELECT public.is_staff())
+            OR (auth.jwt() ->> 'role') IN ('organizer', 'main_admin', 'sub_admin')
+        )
+    );
 
 DROP POLICY IF EXISTS "Authenticated Insert Access for Student Interview Recordings" ON storage.objects;
 CREATE POLICY "Authenticated Insert Access for Student Interview Recordings" ON storage.objects
-    FOR INSERT TO authenticated WITH CHECK (bucket_id = 'interview-recordings');
+    FOR INSERT TO authenticated
+    WITH CHECK (
+        bucket_id = 'interview-recordings'
+        AND (storage.foldername(name))[1] = auth.uid()::text
+    );
 
 DROP POLICY IF EXISTS "Authenticated Delete Access for Interview Recordings" ON storage.objects;
 CREATE POLICY "Authenticated Delete Access for Interview Recordings" ON storage.objects
-    FOR DELETE TO authenticated USING (bucket_id = 'interview-recordings');
+    FOR DELETE TO authenticated
+    USING (
+        bucket_id = 'interview-recordings'
+        AND (
+            (storage.foldername(name))[1] = auth.uid()::text
+            OR (SELECT public.is_staff())
+            OR (auth.jwt() ->> 'role') IN ('organizer', 'main_admin', 'sub_admin')
+        )
+    );
 
 -- ─────────────────────────────────────────────────────────────
 -- 2. Mock Interview Custom Questions (Question Bank)
@@ -189,3 +210,76 @@ VALUES
     true
   )
 ON CONFLICT DO NOTHING;
+
+-- ─────────────────────────────────────────────────────────────
+-- 6. Strict Privacy & Security Access Control:
+-- Attended Student and Organizer/Admin ONLY can view/delete videos and results
+-- ─────────────────────────────────────────────────────────────
+
+-- 6.1 Table Policies: mock_interview_sessions
+DROP POLICY IF EXISTS "Students can view own interview sessions" ON public.mock_interview_sessions;
+DROP POLICY IF EXISTS "Students and organizers can view interview sessions" ON public.mock_interview_sessions;
+CREATE POLICY "Students and organizers can view interview sessions"
+    ON public.mock_interview_sessions
+    FOR SELECT TO authenticated
+    USING (
+        student_id = auth.uid()
+        OR (SELECT public.is_staff())
+        OR (auth.jwt() ->> 'role') IN ('organizer', 'main_admin', 'sub_admin')
+    );
+
+DROP POLICY IF EXISTS "Students can delete own interview sessions" ON public.mock_interview_sessions;
+DROP POLICY IF EXISTS "Students and organizers can delete interview sessions" ON public.mock_interview_sessions;
+CREATE POLICY "Students and organizers can delete interview sessions"
+    ON public.mock_interview_sessions
+    FOR DELETE TO authenticated
+    USING (
+        student_id = auth.uid()
+        OR (SELECT public.is_staff())
+        OR (auth.jwt() ->> 'role') IN ('organizer', 'main_admin', 'sub_admin')
+    );
+
+-- 6.2 Table Policies: mock_interview_turns
+DROP POLICY IF EXISTS "Students can view own interview turns" ON public.mock_interview_turns;
+DROP POLICY IF EXISTS "Students and organizers can view interview turns" ON public.mock_interview_turns;
+CREATE POLICY "Students and organizers can view interview turns"
+    ON public.mock_interview_turns
+    FOR SELECT TO authenticated
+    USING (
+        session_id IN (SELECT id FROM public.mock_interview_sessions WHERE student_id = auth.uid())
+        OR (SELECT public.is_staff())
+        OR (auth.jwt() ->> 'role') IN ('organizer', 'main_admin', 'sub_admin')
+    );
+
+DROP POLICY IF EXISTS "Students and organizers can delete interview turns" ON public.mock_interview_turns;
+CREATE POLICY "Students and organizers can delete interview turns"
+    ON public.mock_interview_turns
+    FOR DELETE TO authenticated
+    USING (
+        session_id IN (SELECT id FROM public.mock_interview_sessions WHERE student_id = auth.uid())
+        OR (SELECT public.is_staff())
+        OR (auth.jwt() ->> 'role') IN ('organizer', 'main_admin', 'sub_admin')
+    );
+
+-- 6.3 Table Policies: mock_interview_reports
+DROP POLICY IF EXISTS "Students can view own interview reports" ON public.mock_interview_reports;
+DROP POLICY IF EXISTS "Students and organizers can view interview reports" ON public.mock_interview_reports;
+CREATE POLICY "Students and organizers can view interview reports"
+    ON public.mock_interview_reports
+    FOR SELECT TO authenticated
+    USING (
+        session_id IN (SELECT id FROM public.mock_interview_sessions WHERE student_id = auth.uid())
+        OR (SELECT public.is_staff())
+        OR (auth.jwt() ->> 'role') IN ('organizer', 'main_admin', 'sub_admin')
+    );
+
+DROP POLICY IF EXISTS "Students and organizers can delete interview reports" ON public.mock_interview_reports;
+CREATE POLICY "Students and organizers can delete interview reports"
+    ON public.mock_interview_reports
+    FOR DELETE TO authenticated
+    USING (
+        session_id IN (SELECT id FROM public.mock_interview_sessions WHERE student_id = auth.uid())
+        OR (SELECT public.is_staff())
+        OR (auth.jwt() ->> 'role') IN ('organizer', 'main_admin', 'sub_admin')
+    );
+

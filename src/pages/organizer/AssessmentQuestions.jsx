@@ -3,15 +3,47 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Plus, Trash2, Edit2, X, Save, AlertCircle, ChevronLeft, HelpCircle, CheckCircle2, Clock, Sparkles, Loader2, Code as CodeIcon } from 'lucide-react'
 import CodeEditor from '../../components/CodeEditor'
+import { getStarterQuestionsForAssessment } from '../../services/assessmentTemplates'
+import useTheme from '../../hooks/useTheme'
 
 export default function AssessmentQuestions() {
     const { assessmentId } = useParams()
+    const { theme } = useTheme()
     const [assessment, setAssessment] = useState(null)
     const [questions, setQuestions] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
+
+    async function handleInsertStarterQuestions() {
+        const pack = getStarterQuestionsForAssessment(assessment?.title, assessment?.courses?.title)
+        if (!pack || pack.length === 0) return
+        if (!confirm(`Insert ${pack.length} starter test questions for "${assessment?.courses?.title || assessment?.title}"?`)) return
+        
+        setSaving(true)
+        try {
+            const payloads = pack.map(q => ({
+                assessment_id: assessmentId,
+                question_text: q.question_text,
+                question_type: q.question_type,
+                code_language: q.code_language,
+                code_snippet: q.code_snippet,
+                snippet_title: q.snippet_title,
+                options: q.options,
+                correct_answer: JSON.stringify(q.correct_answer)
+            }))
+
+            const { error } = await supabase.from('questions').insert(payloads)
+            if (error) throw error
+
+            await loadData()
+        } catch (err) {
+            alert('Failed to insert starter questions: ' + err.message)
+        } finally {
+            setSaving(false)
+        }
+    }
 
     const [formData, setFormData] = useState({
         question_text: '',
@@ -334,13 +366,30 @@ export default function AssessmentQuestions() {
                             {assessment?.courses?.title} • {questions.length} Questions
                         </p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.85rem' }}>
+                    <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={handleInsertStarterQuestions}
+                            disabled={saving}
+                            className="btn-secondary"
+                            style={{ gap: '0.5rem', background: 'rgba(16, 185, 129, 0.08)', color: '#059669', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                            title="Insert curated starter test questions for this assessment"
+                        >
+                            <Sparkles size={16} /> ⚡ Starter Questions
+                        </button>
                         <button
                             onClick={() => { setAiPrompt(''); setGeneratedQuestions([]); setShowAIModal(true) }}
                             className="btn-secondary"
                             style={{ gap: '0.5rem', background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}
                         >
                             <Sparkles size={18} /> Generate with AI
+                        </button>
+                        <button
+                            onClick={() => globalThis.open(`/student/assessments/${assessmentId}/take?admin=true`, '_blank')}
+                            className="btn-secondary"
+                            style={{ gap: '0.5rem', color: '#6366f1', borderColor: 'rgba(99,102,241,0.3)', background: 'rgba(99,102,241,0.05)' }}
+                            title="Preview and test this assessment as a student"
+                        >
+                            Test Question
                         </button>
                         <button
                             onClick={() => { resetForm(); setShowModal(true) }}
@@ -362,16 +411,36 @@ export default function AssessmentQuestions() {
 
             {/* Questions List */}
             {questions.length === 0 ? (
-                <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
-                    <HelpCircle size={48} style={{ margin: '0 auto 1rem', opacity: 0.2, display: 'block' }} />
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Questions Yet</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Start building your quiz by adding the first question.</p>
-                    <button onClick={() => setShowModal(true)} className="btn-secondary" style={{ marginBottom: '0.85rem' }}>
-                        <Plus size={18} /> Add Multiple Choice Question
-                    </button>
-                    <button onClick={() => { setAiPrompt(''); setGeneratedQuestions([]); setShowAIModal(true) }} className="btn-secondary" style={{ background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe' }}>
-                        <Sparkles size={18} /> Generate with AI
-                    </button>
+                <div className="glass-card" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+                    <HelpCircle size={48} style={{ margin: '0 auto 1rem', opacity: 0.3, display: 'block', color: 'var(--primary-600)' }} />
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Questions in This Assessment Yet</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.75rem', maxWidth: 480, marginInline: 'auto' }}>
+                        Start by loading curated test questions matching <strong>{assessment?.courses?.title || assessment?.title}</strong>, generating new questions with AI, or creating them manually.
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+                        <button 
+                            onClick={handleInsertStarterQuestions} 
+                            disabled={saving}
+                            className="btn-primary" 
+                            style={{ gap: '0.5rem', padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                        >
+                            <Sparkles size={18} /> ⚡ Insert Starter Questions
+                        </button>
+                        <button 
+                            onClick={() => { setAiPrompt(''); setGeneratedQuestions([]); setShowAIModal(true) }} 
+                            className="btn-secondary" 
+                            style={{ gap: '0.5rem', background: '#f5f3ff', color: '#8b5cf6', borderColor: '#ddd6fe', padding: '0.75rem 1.25rem' }}
+                        >
+                            <Sparkles size={18} /> Generate with AI
+                        </button>
+                        <button 
+                            onClick={() => { resetForm(); setShowModal(true) }} 
+                            className="btn-secondary" 
+                            style={{ gap: '0.5rem', padding: '0.75rem 1.25rem' }}
+                        >
+                            <Plus size={18} /> Add Manually
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -389,27 +458,25 @@ export default function AssessmentQuestions() {
                                         )}
                                         {q.question_type === 'code_mcq' && q.code_snippet && (
                                             <div style={{ marginTop: '0.85rem', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--card-border)' }}>
-                                                <div style={{ background: '#1e293b', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155' }}>
+                                                <div style={{ background: 'var(--bg-elevated)', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--card-border)' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <CodeIcon size={14} color="#94a3b8" />
-                                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0' }}>
+                                                        <CodeIcon size={14} color="var(--text-muted)" />
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                                                             {q.snippet_title || 'Code Snippet'}
                                                         </span>
                                                     </div>
-                                                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                                         {q.code_language}
                                                     </span>
                                                 </div>
-                                                <div style={{ background: '#0f172a', overflowX: 'auto' }}>
-                                                    <div style={{ minWidth: '100%', width: 'max-content' }}>
-                                                        <CodeEditor
-                                                            value={q.code_snippet}
-                                                            language={q.code_language}
-                                                            readOnly={true}
-                                                            theme="dark"
-                                                            style={{ height: 'auto', minHeight: 120, padding: 0 }}
-                                                        />
-                                                    </div>
+                                                <div style={{ background: 'var(--bg-base)', overflowX: 'auto' }}>
+                                                    <CodeEditor
+                                                        value={q.code_snippet}
+                                                        language={q.code_language}
+                                                        readOnly={true}
+                                                        theme={theme === 'light' ? 'light' : 'dark'}
+                                                        style={{ height: 'auto', minHeight: '90px', width: '100%' }}
+                                                    />
                                                 </div>
                                             </div>
                                         )}
@@ -424,7 +491,7 @@ export default function AssessmentQuestions() {
                                     </button>
                                 </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginLeft: '2.75rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem', marginLeft: '2.75rem' }}>
                                 {q.options.map((opt, i) => {
                                     let isCorrect = false
                                     try {
@@ -440,20 +507,58 @@ export default function AssessmentQuestions() {
 
                                     return (
                                         <div key={opt || `opt-${i}`} style={{
-                                            padding: '0.85rem 1rem',
+                                            padding: '0.75rem 1rem',
                                             borderRadius: 10,
-                                            background: isCorrect ? 'rgba(16,185,129,0.1)' : 'var(--bg-elevated)',
-                                            border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : 'var(--card-border)'}`,
-                                            fontSize: '0.85rem',
+                                            background: isCorrect 
+                                                ? 'rgba(16, 185, 129, 0.12)' 
+                                                : 'var(--bg-elevated)',
+                                            border: isCorrect 
+                                                ? '1.5px solid #10b981' 
+                                                : '1px solid var(--sidebar-border)',
+                                            boxShadow: isCorrect 
+                                                ? '0 0 0 1px rgba(16, 185, 129, 0.2)' 
+                                                : '0 1px 2px rgba(0, 0, 0, 0.04)',
+                                            fontSize: '0.9rem',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '0.85rem',
-                                            color: isCorrect ? '#10b981' : 'var(--text-primary)'
+                                            color: isCorrect 
+                                                ? '#059669' 
+                                                : 'var(--text-primary)',
+                                            fontWeight: isCorrect ? 600 : 500,
+                                            transition: 'all 0.15s ease'
                                         }}>
-                                            <div style={{ width: 18, height: 18, background: isCorrect ? '#10b981' : '#cbd5e1', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
-                                                {isCorrect ? <CheckCircle2 size={12} /> : String.fromCodePoint(65 + i)}
+                                            <div style={{ 
+                                                width: 26, 
+                                                height: 26, 
+                                                background: isCorrect ? '#10b981' : 'var(--bg-surface)', 
+                                                border: isCorrect ? 'none' : '1.5px solid var(--sidebar-border)',
+                                                borderRadius: '50%', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center', 
+                                                color: isCorrect ? '#ffffff' : 'var(--text-secondary)',
+                                                fontWeight: 700,
+                                                fontSize: '0.8rem',
+                                                flexShrink: 0 
+                                            }}>
+                                                {isCorrect ? <CheckCircle2 size={15} color="#ffffff" strokeWidth={2.5} /> : String.fromCodePoint(65 + i)}
                                             </div>
-                                            {opt}
+                                            <span style={{ flex: 1, wordBreak: 'break-word', lineHeight: 1.4 }}>{opt}</span>
+                                            {isCorrect && (
+                                                <span style={{ 
+                                                    fontSize: '0.72rem', 
+                                                    fontWeight: 700, 
+                                                    color: '#059669', 
+                                                    background: 'rgba(16, 185, 129, 0.18)', 
+                                                    padding: '2px 8px', 
+                                                    borderRadius: '6px',
+                                                    letterSpacing: '0.3px',
+                                                    textTransform: 'uppercase'
+                                                }}>
+                                                    Correct
+                                                </span>
+                                            )}
                                         </div>
                                     )
                                 })}
