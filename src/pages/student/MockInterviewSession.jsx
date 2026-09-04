@@ -50,6 +50,11 @@ export default function MockInterviewSession() {
   const [error, setError] = useState(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
+  // Video recording states
+  const [cameraActive, setCameraActive] = useState(false);
+  const [screenShared, setScreenShared] = useState(false);
+  const [uploadingRecording, setUploadingRecording] = useState(false);
+
   // Question Text-to-Speech (TTS)
   const [activeSpeakingTurn, setActiveSpeakingTurn] = useState(null);
 
@@ -187,11 +192,6 @@ export default function MockInterviewSession() {
       setSilenceSecondsLeft((prev) => Math.max(prev, 10));
     }
   }, [interimTranscript, volumeLevel]);
-
-  // Video recording states
-  const [cameraActive, setCameraActive] = useState(false);
-  const [screenShared, setScreenShared] = useState(false);
-  const [uploadingRecording, setUploadingRecording] = useState(false);
 
   const chatEndRef = useRef(null);
   const videoRef = useRef(null);
