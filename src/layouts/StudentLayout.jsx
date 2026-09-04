@@ -12,7 +12,6 @@ import {
   Flame, Star, Info, AlertTriangle, CheckCircle, Clock, Trophy, CreditCard,
   ChevronDown, Sparkles, Bot
 } from 'lucide-react'
-import AIChatbot from '../components/shared/AIChatbot'
 import ThemeSelector from '../components/shared/ThemeSelector'
 import learnovaLogo from '../assets/learnova-logo.png'
 import CommandPalette from '../components/CommandPalette'
@@ -222,8 +221,6 @@ export default function StudentLayout() {
           <StudentMobileNav requestNavigation={requestNavigation} />
         )}
       </div>
-
-      {!location.pathname.includes('/classroom/') && <AIChatbot />}
     </div>
   )
 }

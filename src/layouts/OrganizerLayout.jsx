@@ -12,7 +12,6 @@ import {
   CreditCard, ChevronDown, Settings, BarChart2, Shield, FolderOpen,
   Bot
 } from 'lucide-react'
-import AIChatbot from '../components/shared/AIChatbot'
 import ThemeSelector from '../components/shared/ThemeSelector'
 import learnovaLogo from '../assets/learnova-logo.png'
 import CommandPalette from '../components/CommandPalette'
@@ -217,8 +216,6 @@ export default function OrganizerLayout() {
           <Outlet />
         </main>
       </div>
-
-      {!location.pathname.includes('/classroom/') && <AIChatbot />}
     </div>
   )
 }

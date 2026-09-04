@@ -816,12 +816,12 @@ export default function MockInterviewSession() {
   return (
     <div
       style={{
-        maxWidth: 960,
+        maxWidth: 1200,
         margin: "0 auto",
         display: "flex",
         flexDirection: "column",
-        gap: "0.75rem",
-        paddingBottom: "1rem",
+        gap: "0.85rem",
+        paddingBottom: "1.5rem",
       }}
     >
       {/* Top Header Card */}
@@ -998,7 +998,7 @@ export default function MockInterviewSession() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: cameraActive ? "1fr 240px" : "1fr",
+          gridTemplateColumns: cameraActive ? "1fr 280px" : "1fr",
           gap: "1.25rem",
           alignItems: "start",
         }}
@@ -1007,23 +1007,24 @@ export default function MockInterviewSession() {
         <div
           className="glass-card"
           style={{
-            padding: "1.15rem",
-            minHeight: "460px",
+            padding: "1.5rem 1.65rem 1.65rem",
+            minHeight: "580px",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            gap: "0.75rem",
+            gap: "1.15rem",
           }}
         >
           {/* Scrollable Questions and Dialog History */}
           <div
             style={{
-              maxHeight: "220px",
+              minHeight: "150px",
+              maxHeight: "320px",
               overflowY: "auto",
               display: "flex",
               flexDirection: "column",
-              gap: "0.85rem",
-              paddingRight: "0.35rem",
+              gap: "1rem",
+              paddingRight: "0.5rem",
               flex: "1 1 auto",
             }}
           >
@@ -1280,11 +1281,11 @@ export default function MockInterviewSession() {
             onSubmit={handleSubmitAnswer}
             style={{
               marginTop: "auto",
-              paddingTop: "0.75rem",
+              paddingTop: "1.1rem",
               borderTop: "1px solid var(--sidebar-border)",
               display: "flex",
               flexDirection: "column",
-              gap: "0.55rem",
+              gap: "0.85rem",
             }}
           >
             <div
@@ -1296,7 +1297,7 @@ export default function MockInterviewSession() {
             >
               <label
                 style={{
-                  fontSize: "0.85rem",
+                  fontSize: "0.9rem",
                   fontWeight: 700,
                   color: "var(--text-primary)",
                   display: "flex",
@@ -1313,7 +1314,7 @@ export default function MockInterviewSession() {
                       gap: "0.4rem",
                     }}
                   >
-                    <Sparkles size={15} /> Final Question ({currentTurnNumber}{" "}
+                    <Sparkles size={16} /> Final Question ({currentTurnNumber}{" "}
                     of {totalQuestions}) — Submitting concludes interview
                   </span>
                 ) : (
@@ -1324,13 +1325,13 @@ export default function MockInterviewSession() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.5rem",
+                  gap: "0.55rem",
                   flexWrap: "wrap",
                 }}
               >
                 <span
                   style={{
-                    fontSize: "0.72rem",
+                    fontSize: "0.75rem",
                     color: "var(--primary-600)",
                     display: "inline-flex",
                     alignItems: "center",
@@ -1338,18 +1339,18 @@ export default function MockInterviewSession() {
                     fontWeight: 600,
                   }}
                 >
-                  <Lock size={11} /> Speech-Only (No Typing)
+                  <Lock size={12} /> Speech-Only (No Typing)
                 </span>
                 {answerInput && !submitting && (
                   <button
                     type="button"
                     onClick={() => setAnswerInput("")}
                     style={{
-                      fontSize: "0.7rem",
+                      fontSize: "0.72rem",
                       color: "#ef4444",
                       background: "rgba(239, 68, 68, 0.08)",
                       border: "1px solid rgba(239, 68, 68, 0.25)",
-                      padding: "0.15rem 0.45rem",
+                      padding: "0.18rem 0.5rem",
                       borderRadius: "5px",
                       cursor: "pointer",
                       display: "inline-flex",
@@ -1359,7 +1360,7 @@ export default function MockInterviewSession() {
                     }}
                     title="Clear spoken response to record again"
                   >
-                    <RotateCcw size={10} /> Clear & Re-record
+                    <RotateCcw size={11} /> Clear & Re-record
                   </button>
                 )}
               </div>
@@ -1371,21 +1372,21 @@ export default function MockInterviewSession() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "0.4rem 0.65rem",
-                borderRadius: "8px",
+                padding: "0.55rem 0.85rem",
+                borderRadius: "10px",
                 background: isListening
                   ? "rgba(99, 102, 241, 0.08)"
                   : "var(--bg-secondary)",
                 border: `1px solid ${isListening ? "rgba(99, 102, 241, 0.3)" : "var(--sidebar-border)"}`,
                 flexWrap: "wrap",
-                gap: "0.4rem",
+                gap: "0.5rem",
               }}
             >
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.5rem",
+                  gap: "0.55rem",
                   flexWrap: "wrap",
                 }}
               >
@@ -1401,10 +1402,10 @@ export default function MockInterviewSession() {
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: "0.35rem",
-                      padding: "0.3rem 0.75rem",
-                      borderRadius: "6px",
-                      fontSize: "0.78rem",
+                      gap: "0.4rem",
+                      padding: "0.4rem 0.9rem",
+                      borderRadius: "7px",
+                      fontSize: "0.82rem",
                       fontWeight: 600,
                       cursor: "pointer",
                       border: "none",
@@ -1419,7 +1420,7 @@ export default function MockInterviewSession() {
                     }}
                   >
                     <Mic
-                      size={13}
+                      size={14}
                       className={isListening ? "animate-pulse" : ""}
                     />
                     {isListening ? "Release to End" : "Hold to Speak"}
@@ -1436,10 +1437,10 @@ export default function MockInterviewSession() {
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: "0.35rem",
-                      padding: "0.3rem 0.75rem",
-                      borderRadius: "6px",
-                      fontSize: "0.78rem",
+                      gap: "0.4rem",
+                      padding: "0.4rem 0.9rem",
+                      borderRadius: "7px",
+                      fontSize: "0.82rem",
                       fontWeight: 600,
                       cursor: "pointer",
                       border: "none",
@@ -1456,26 +1457,26 @@ export default function MockInterviewSession() {
                   >
                     {sttState === STT_STATES.REQUESTING_MIC ? (
                       <>
-                        <Loader2 size={13} className="animate-spin" />{" "}
+                        <Loader2 size={14} className="animate-spin" />{" "}
                         Requesting Mic...
                       </>
                     ) : sttState === STT_STATES.CONNECTING_GEMINI ? (
                       <>
-                        <Loader2 size={13} className="animate-spin" />{" "}
+                        <Loader2 size={14} className="animate-spin" />{" "}
                         Connecting Gemini...
                       </>
                     ) : sttState === STT_STATES.STOPPING ? (
                       <>
-                        <Loader2 size={13} className="animate-spin" />{" "}
+                        <Loader2 size={14} className="animate-spin" />{" "}
                         Finalizing...
                       </>
                     ) : isListening ? (
                       <>
-                        <MicOff size={13} /> Stop Speaking
+                        <MicOff size={14} /> Stop Speaking
                       </>
                     ) : (
                       <>
-                        <Mic size={13} /> Start Speaking
+                        <Mic size={14} /> Start Speaking
                       </>
                     )}
                   </button>
@@ -1488,10 +1489,10 @@ export default function MockInterviewSession() {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "4px",
-                      fontSize: "0.7rem",
+                      fontSize: "0.72rem",
                       background: "rgba(16, 185, 129, 0.15)",
                       color: "#10b981",
-                      padding: "0.18rem 0.5rem",
+                      padding: "0.2rem 0.55rem",
                       borderRadius: "12px",
                       fontWeight: 700,
                     }}
@@ -1514,10 +1515,10 @@ export default function MockInterviewSession() {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "4px",
-                      fontSize: "0.7rem",
+                      fontSize: "0.72rem",
                       background: "rgba(245, 158, 11, 0.15)",
                       color: "#f59e0b",
-                      padding: "0.18rem 0.5rem",
+                      padding: "0.2rem 0.55rem",
                       borderRadius: "12px",
                       fontWeight: 600,
                     }}
@@ -1529,10 +1530,10 @@ export default function MockInterviewSession() {
                 {/* English-Only Indicator */}
                 <span
                   style={{
-                    fontSize: "0.68rem",
+                    fontSize: "0.72rem",
                     background: "rgba(99, 102, 241, 0.1)",
                     color: "var(--primary-600)",
-                    padding: "0.15rem 0.45rem",
+                    padding: "0.18rem 0.5rem",
                     borderRadius: "12px",
                     fontWeight: 700,
                     display: "inline-flex",
@@ -1551,7 +1552,7 @@ export default function MockInterviewSession() {
                       display: "flex",
                       alignItems: "center",
                       gap: "3px",
-                      height: "16px",
+                      height: "18px",
                       padding: "0 4px",
                     }}
                     title="Voice Activity Level"
@@ -1566,7 +1567,7 @@ export default function MockInterviewSession() {
                             activeEngine === "gemini-live"
                               ? "#6366f1"
                               : "#f59e0b",
-                          height: `${Math.max(4, Math.min(16, Math.round(volumeLevel * factor * 0.16)))}px`,
+                          height: `${Math.max(4, Math.min(18, Math.round(volumeLevel * factor * 0.18)))}px`,
                           transition: "height 0.08s ease",
                         }}
                       />
@@ -1580,8 +1581,8 @@ export default function MockInterviewSession() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.3rem",
-                  fontSize: "0.72rem",
+                  gap: "0.35rem",
+                  fontSize: "0.75rem",
                   color: "var(--text-muted)",
                 }}
               >
@@ -1590,8 +1591,8 @@ export default function MockInterviewSession() {
                   type="button"
                   onClick={() => setSttMode("click")}
                   style={{
-                    padding: "0.12rem 0.45rem",
-                    borderRadius: "4px",
+                    padding: "0.15rem 0.5rem",
+                    borderRadius: "5px",
                     border: "1px solid var(--sidebar-border)",
                     background:
                       sttMode === "click"
@@ -1603,7 +1604,7 @@ export default function MockInterviewSession() {
                         : "var(--text-muted)",
                     fontWeight: sttMode === "click" ? 700 : 400,
                     cursor: "pointer",
-                    fontSize: "0.7rem",
+                    fontSize: "0.74rem",
                   }}
                 >
                   Click to speak
@@ -1612,8 +1613,8 @@ export default function MockInterviewSession() {
                   type="button"
                   onClick={() => setSttMode("push-to-talk")}
                   style={{
-                    padding: "0.12rem 0.45rem",
-                    borderRadius: "4px",
+                    padding: "0.15rem 0.5rem",
+                    borderRadius: "5px",
                     border: "1px solid var(--sidebar-border)",
                     background:
                       sttMode === "push-to-talk"
@@ -1625,7 +1626,7 @@ export default function MockInterviewSession() {
                         : "var(--text-muted)",
                     fontWeight: sttMode === "push-to-talk" ? 700 : 400,
                     cursor: "pointer",
-                    fontSize: "0.7rem",
+                    fontSize: "0.74rem",
                   }}
                 >
                   Hold to speak
@@ -1635,16 +1636,16 @@ export default function MockInterviewSession() {
 
             <div style={{ position: "relative" }}>
               <textarea
-                rows={2}
+                rows={3}
                 value={answerInput}
                 readOnly
                 disabled={submitting}
                 placeholder="🎙 Speech-To-Text Only: Manual typing is disabled. Click 'Start Speaking' above to dictate your answer verbally in English..."
                 style={{
                   width: "100%",
-                  minHeight: "56px",
-                  padding: "0.65rem 0.85rem",
-                  borderRadius: "8px",
+                  minHeight: "92px",
+                  padding: "0.85rem 1rem",
+                  borderRadius: "10px",
                   border: isListening
                     ? "1px solid #6366f1"
                     : "1px solid var(--sidebar-border)",
@@ -1652,9 +1653,9 @@ export default function MockInterviewSession() {
                     ? "rgba(99, 102, 241, 0.03)"
                     : "var(--bg-primary)",
                   color: "var(--text-primary)",
-                  fontSize: "0.9rem",
-                  lineHeight: 1.45,
-                  resize: "none",
+                  fontSize: "0.95rem",
+                  lineHeight: 1.5,
+                  resize: "vertical",
                   fontFamily: "inherit",
                   outline: "none",
                   boxSizing: "border-box",
@@ -1666,21 +1667,21 @@ export default function MockInterviewSession() {
                 <div
                   style={{
                     position: "absolute",
-                    bottom: "8px",
-                    right: "10px",
-                    fontSize: "0.68rem",
+                    bottom: "10px",
+                    right: "12px",
+                    fontSize: "0.72rem",
                     color: "var(--text-muted)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "0.3rem",
+                    gap: "0.35rem",
                     pointerEvents: "none",
                     background: "var(--bg-secondary)",
-                    padding: "0.15rem 0.45rem",
+                    padding: "0.2rem 0.5rem",
                     borderRadius: "4px",
                     border: "1px solid var(--sidebar-border)",
                   }}
                 >
-                  <Mic size={10} color="var(--primary-600)" /> Speech Required
+                  <Mic size={11} color="var(--primary-600)" /> Speech Required
                 </div>
               )}
             </div>
@@ -1691,17 +1692,17 @@ export default function MockInterviewSession() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.4rem",
-                  padding: "0.35rem 0.65rem",
-                  borderRadius: "6px",
+                  gap: "0.5rem",
+                  padding: "0.45rem 0.75rem",
+                  borderRadius: "8px",
                   background: "rgba(99, 102, 241, 0.08)",
                   border: "1px dashed rgba(99, 102, 241, 0.35)",
-                  fontSize: "0.8rem",
+                  fontSize: "0.85rem",
                   color: "var(--text-primary)",
                 }}
               >
                 <Mic
-                  size={12}
+                  size={14}
                   className="animate-pulse"
                   style={{ color: "#6366f1", flexShrink: 0 }}
                 />
@@ -1715,14 +1716,14 @@ export default function MockInterviewSession() {
             {sttError && (
               <div
                 style={{
-                  fontSize: "0.75rem",
+                  fontSize: "0.78rem",
                   color: "#f59e0b",
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.3rem",
+                  gap: "0.35rem",
                 }}
               >
-                <AlertCircle size={12} /> {sttError}
+                <AlertCircle size={13} /> {sttError}
               </div>
             )}
 
@@ -1732,19 +1733,21 @@ export default function MockInterviewSession() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 flexWrap: "wrap",
-                gap: "0.5rem",
+                gap: "0.75rem",
+                paddingTop: "0.35rem",
+                paddingBottom: "0.25rem",
               }}
             >
               <span
                 style={{
-                  fontSize: "0.75rem",
+                  fontSize: "0.78rem",
                   color: "var(--text-muted)",
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.3rem",
+                  gap: "0.35rem",
                 }}
               >
-                <HelpCircle size={13} /> Speak in English using mic. Typing is
+                <HelpCircle size={14} /> Speak in English using mic. Typing is
                 disabled.
               </span>
 
@@ -1752,7 +1755,7 @@ export default function MockInterviewSession() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.5rem",
+                  gap: "0.75rem",
                 }}
               >
                 {currentTurnNumber > 1 &&
@@ -1762,7 +1765,7 @@ export default function MockInterviewSession() {
                       onClick={handleEarlyConclude}
                       disabled={submitting || generatingReport}
                       className="btn-secondary"
-                      style={{ padding: "0.45rem 0.85rem", fontSize: "0.78rem" }}
+                      style={{ padding: "0.55rem 1rem", fontSize: "0.82rem" }}
                       title="Conclude interview now with completed turns and view performance report"
                     >
                       Finish Early
@@ -1776,9 +1779,10 @@ export default function MockInterviewSession() {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "0.4rem",
-                    padding: "0.5rem 1.15rem",
-                    fontSize: "0.82rem",
+                    gap: "0.45rem",
+                    padding: "0.6rem 1.45rem",
+                    fontSize: "0.88rem",
+                    fontWeight: 600,
                     background:
                       currentTurnNumber >= totalQuestions
                         ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
@@ -1788,18 +1792,18 @@ export default function MockInterviewSession() {
                 >
                   {submitting ? (
                     <>
-                      <Loader2 className="animate-spin" size={14} />{" "}
+                      <Loader2 className="animate-spin" size={15} />{" "}
                       {currentTurnNumber >= totalQuestions
                         ? "Compiling..."
                         : "Submitting..."}
                     </>
                   ) : currentTurnNumber >= totalQuestions ? (
                     <>
-                      <CheckCircle2 size={14} /> Submit & Complete Interview
+                      <CheckCircle2 size={15} /> Submit & Complete Interview
                     </>
                   ) : (
                     <>
-                      <Send size={14} /> Submit Answer
+                      <Send size={15} /> Submit Answer
                     </>
                   )}
                 </button>
