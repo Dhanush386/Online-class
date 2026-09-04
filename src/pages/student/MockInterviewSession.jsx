@@ -18,6 +18,8 @@ import {
   Volume2,
   VolumeX,
   MicOff,
+  RotateCcw,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -1424,9 +1426,49 @@ export default function MockInterviewSession() {
                   `Your Response (Question ${currentTurnNumber} of ${totalQuestions})`
                 )}
               </label>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                {answerInput.length} chars • Ctrl + Enter to submit
-              </span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.65rem",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--primary-600)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  <Lock size={12} /> Speech-Only Mode (Typing Disabled)
+                </span>
+                {answerInput && !submitting && (
+                  <button
+                    type="button"
+                    onClick={() => setAnswerInput("")}
+                    style={{
+                      fontSize: "0.72rem",
+                      color: "#ef4444",
+                      background: "rgba(239, 68, 68, 0.08)",
+                      border: "1px solid rgba(239, 68, 68, 0.25)",
+                      padding: "0.15rem 0.5rem",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.25rem",
+                      fontWeight: 600,
+                    }}
+                    title="Clear spoken response to record again"
+                  >
+                    <RotateCcw size={11} /> Clear & Re-record
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Speech to Text Control Bar */}
@@ -1697,33 +1739,56 @@ export default function MockInterviewSession() {
               </div>
             </div>
 
-            <textarea
-              rows={4}
-              value={answerInput}
-              onChange={(e) => setAnswerInput(e.target.value)}
-              onKeyDown={(e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                  e.preventDefault();
-                  handleSubmitAnswer();
-                }
-              }}
-              disabled={submitting}
-              placeholder="Speak your answer out loud or type here... Click 'Start Speaking' to dictate with Gemini Live."
-              style={{
-                width: "100%",
-                padding: "0.85rem 1rem",
-                borderRadius: "10px",
-                border: "1px solid var(--sidebar-border)",
-                background: "var(--bg-primary)",
-                color: "var(--text-primary)",
-                fontSize: "0.95rem",
-                lineHeight: 1.5,
-                resize: "vertical",
-                fontFamily: "inherit",
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
+            <div style={{ position: "relative" }}>
+              <textarea
+                rows={4}
+                value={answerInput}
+                readOnly
+                disabled={submitting}
+                placeholder="🎙 Speech-To-Text Only: Manual typing is disabled. Click 'Start Speaking' above to dictate your answer verbally in English..."
+                style={{
+                  width: "100%",
+                  padding: "0.85rem 1rem",
+                  borderRadius: "10px",
+                  border: isListening
+                    ? "1px solid #6366f1"
+                    : "1px solid var(--sidebar-border)",
+                  background: isListening
+                    ? "rgba(99, 102, 241, 0.03)"
+                    : "var(--bg-primary)",
+                  color: "var(--text-primary)",
+                  fontSize: "0.95rem",
+                  lineHeight: 1.5,
+                  resize: "vertical",
+                  fontFamily: "inherit",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  cursor: "default",
+                  userSelect: "text",
+                }}
+              />
+              {!answerInput && !isListening && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "10px",
+                    right: "12px",
+                    fontSize: "0.72rem",
+                    color: "var(--text-muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    pointerEvents: "none",
+                    background: "var(--bg-secondary)",
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: "4px",
+                    border: "1px solid var(--sidebar-border)",
+                  }}
+                >
+                  <Mic size={11} color="var(--primary-600)" /> Speech Required
+                </div>
+              )}
+            </div>
 
             {/* Interim Transcript Live Banner */}
             {interimTranscript && (
@@ -1784,8 +1849,8 @@ export default function MockInterviewSession() {
                   gap: "0.35rem",
                 }}
               >
-                <HelpCircle size={14} /> Be concise and explain your reasoning
-                clearly.
+                <HelpCircle size={14} /> Answer verbally in English using the
+                microphone. Manual typing is disabled.
               </span>
 
               <div
