@@ -816,16 +816,16 @@ export default function MockInterviewSession() {
   return (
     <div
       style={{
-        maxWidth: 900,
+        maxWidth: 960,
         margin: "0 auto",
         display: "flex",
         flexDirection: "column",
-        gap: "1.25rem",
-        paddingBottom: "2rem",
+        gap: "0.75rem",
+        paddingBottom: "1rem",
       }}
     >
       {/* Top Header Card */}
-      <div className="glass-card" style={{ padding: "1.25rem 1.5rem" }}>
+      <div className="glass-card" style={{ padding: "0.85rem 1.25rem" }}>
         <div
           style={{
             display: "flex",
@@ -932,12 +932,12 @@ export default function MockInterviewSession() {
           alignItems: "center",
           justifyContent: "space-between",
           flexWrap: "wrap",
-          gap: "0.75rem",
-          padding: "0.65rem 1rem",
-          borderRadius: "10px",
+          gap: "0.5rem",
+          padding: "0.45rem 0.85rem",
+          borderRadius: "8px",
           background: "var(--bg-elevated)",
           border: "1px solid var(--sidebar-border)",
-          fontSize: "0.82rem",
+          fontSize: "0.78rem",
           color: "var(--text-muted)",
         }}
       >
@@ -1003,19 +1003,30 @@ export default function MockInterviewSession() {
           alignItems: "start",
         }}
       >
-        {/* Chat / Interview Stream */}
+        {/* Left Column: Interview Stage (Questions + Integrated Speech Answer Panel) */}
         <div
           className="glass-card"
           style={{
-            padding: "1.5rem",
-            minHeight: "420px",
-            maxHeight: "560px",
-            overflowY: "auto",
+            padding: "1.15rem",
+            minHeight: "460px",
             display: "flex",
             flexDirection: "column",
-            gap: "1.25rem",
+            justifyContent: "space-between",
+            gap: "0.75rem",
           }}
         >
+          {/* Scrollable Questions and Dialog History */}
+          <div
+            style={{
+              maxHeight: "220px",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.85rem",
+              paddingRight: "0.35rem",
+              flex: "1 1 auto",
+            }}
+          >
           {turns.map((turn) => (
             <div
               key={turn.turn_number}
@@ -1263,6 +1274,541 @@ export default function MockInterviewSession() {
           <div ref={chatEndRef} />
         </div>
 
+        {/* Integrated Bottom Answer Input Panel (Docked in the empty space) */}
+        {!generatingReport && (
+          <form
+            onSubmit={handleSubmitAnswer}
+            style={{
+              marginTop: "auto",
+              paddingTop: "0.75rem",
+              borderTop: "1px solid var(--sidebar-border)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.55rem",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <label
+                style={{
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
+              >
+                {currentTurnNumber >= totalQuestions ? (
+                  <span
+                    style={{
+                      color: "#7c3aed",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                    }}
+                  >
+                    <Sparkles size={15} /> Final Question ({currentTurnNumber}{" "}
+                    of {totalQuestions}) — Submitting concludes interview
+                  </span>
+                ) : (
+                  `Your Spoken Response (Question ${currentTurnNumber} of ${totalQuestions})`
+                )}
+              </label>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "var(--primary-600)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  <Lock size={11} /> Speech-Only (No Typing)
+                </span>
+                {answerInput && !submitting && (
+                  <button
+                    type="button"
+                    onClick={() => setAnswerInput("")}
+                    style={{
+                      fontSize: "0.7rem",
+                      color: "#ef4444",
+                      background: "rgba(239, 68, 68, 0.08)",
+                      border: "1px solid rgba(239, 68, 68, 0.25)",
+                      padding: "0.15rem 0.45rem",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.25rem",
+                      fontWeight: 600,
+                    }}
+                    title="Clear spoken response to record again"
+                  >
+                    <RotateCcw size={10} /> Clear & Re-record
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Speech to Text Control Bar */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.4rem 0.65rem",
+                borderRadius: "8px",
+                background: isListening
+                  ? "rgba(99, 102, 241, 0.08)"
+                  : "var(--bg-secondary)",
+                border: `1px solid ${isListening ? "rgba(99, 102, 241, 0.3)" : "var(--sidebar-border)"}`,
+                flexWrap: "wrap",
+                gap: "0.4rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  flexWrap: "wrap",
+                }}
+              >
+                {/* Push-to-Talk vs Click-to-Speak button */}
+                {sttMode === "push-to-talk" ? (
+                  <button
+                    type="button"
+                    onMouseDown={startListening}
+                    onMouseUp={stopListening}
+                    onTouchStart={startListening}
+                    onTouchEnd={stopListening}
+                    disabled={submitting}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                      padding: "0.3rem 0.75rem",
+                      borderRadius: "6px",
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      border: "none",
+                      background: isListening
+                        ? "#ef4444"
+                        : "var(--primary-600)",
+                      color: "#ffffff",
+                      boxShadow: isListening
+                        ? "0 0 12px rgba(239, 68, 68, 0.4)"
+                        : undefined,
+                      userSelect: "none",
+                    }}
+                  >
+                    <Mic
+                      size={13}
+                      className={isListening ? "animate-pulse" : ""}
+                    />
+                    {isListening ? "Release to End" : "Hold to Speak"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={toggleListening}
+                    disabled={
+                      submitting ||
+                      sttState === STT_STATES.REQUESTING_MIC ||
+                      sttState === STT_STATES.CONNECTING_GEMINI
+                    }
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                      padding: "0.3rem 0.75rem",
+                      borderRadius: "6px",
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      border: "none",
+                      background: isListening
+                        ? activeEngine === "gemini-live"
+                          ? "#ef4444"
+                          : "#d97706"
+                        : "var(--primary-600)",
+                      color: "#ffffff",
+                      boxShadow: isListening
+                        ? "0 0 12px rgba(239, 68, 68, 0.4)"
+                        : undefined,
+                    }}
+                  >
+                    {sttState === STT_STATES.REQUESTING_MIC ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />{" "}
+                        Requesting Mic...
+                      </>
+                    ) : sttState === STT_STATES.CONNECTING_GEMINI ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />{" "}
+                        Connecting Gemini...
+                      </>
+                    ) : sttState === STT_STATES.STOPPING ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />{" "}
+                        Finalizing...
+                      </>
+                    ) : isListening ? (
+                      <>
+                        <MicOff size={13} /> Stop Speaking
+                      </>
+                    ) : (
+                      <>
+                        <Mic size={13} /> Start Speaking
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Engine status indicator */}
+                {activeEngine === "gemini-live" && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "0.7rem",
+                      background: "rgba(16, 185, 129, 0.15)",
+                      color: "#10b981",
+                      padding: "0.18rem 0.5rem",
+                      borderRadius: "12px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: "#10b981",
+                      }}
+                    />
+                    Gemini Live 3.5
+                  </span>
+                )}
+
+                {activeEngine === "browser-speech" && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "0.7rem",
+                      background: "rgba(245, 158, 11, 0.15)",
+                      color: "#f59e0b",
+                      padding: "0.18rem 0.5rem",
+                      borderRadius: "12px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ⚠ Gemini fallback (Browser Speech)
+                  </span>
+                )}
+
+                {/* English-Only Indicator */}
+                <span
+                  style={{
+                    fontSize: "0.68rem",
+                    background: "rgba(99, 102, 241, 0.1)",
+                    color: "var(--primary-600)",
+                    padding: "0.15rem 0.45rem",
+                    borderRadius: "12px",
+                    fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "3px",
+                  }}
+                  title="Speech recognition strictly configured for English technical interviews"
+                >
+                  EN Only
+                </span>
+
+                {/* Live Volume Waveform when listening */}
+                {isListening && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "3px",
+                      height: "16px",
+                      padding: "0 4px",
+                    }}
+                    title="Voice Activity Level"
+                  >
+                    {[0.3, 0.7, 1.0, 0.8, 0.4].map((factor, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          width: "3px",
+                          borderRadius: "2px",
+                          background:
+                            activeEngine === "gemini-live"
+                              ? "#6366f1"
+                              : "#f59e0b",
+                          height: `${Math.max(4, Math.min(16, Math.round(volumeLevel * factor * 0.16)))}px`,
+                          transition: "height 0.08s ease",
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Mode Selector */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                  fontSize: "0.72rem",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <span>Mode:</span>
+                <button
+                  type="button"
+                  onClick={() => setSttMode("click")}
+                  style={{
+                    padding: "0.12rem 0.45rem",
+                    borderRadius: "4px",
+                    border: "1px solid var(--sidebar-border)",
+                    background:
+                      sttMode === "click"
+                        ? "rgba(99, 102, 241, 0.15)"
+                        : "transparent",
+                    color:
+                      sttMode === "click"
+                        ? "var(--primary-600)"
+                        : "var(--text-muted)",
+                    fontWeight: sttMode === "click" ? 700 : 400,
+                    cursor: "pointer",
+                    fontSize: "0.7rem",
+                  }}
+                >
+                  Click to speak
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSttMode("push-to-talk")}
+                  style={{
+                    padding: "0.12rem 0.45rem",
+                    borderRadius: "4px",
+                    border: "1px solid var(--sidebar-border)",
+                    background:
+                      sttMode === "push-to-talk"
+                        ? "rgba(99, 102, 241, 0.15)"
+                        : "transparent",
+                    color:
+                      sttMode === "push-to-talk"
+                        ? "var(--primary-600)"
+                        : "var(--text-muted)",
+                    fontWeight: sttMode === "push-to-talk" ? 700 : 400,
+                    cursor: "pointer",
+                    fontSize: "0.7rem",
+                  }}
+                >
+                  Hold to speak
+                </button>
+              </div>
+            </div>
+
+            <div style={{ position: "relative" }}>
+              <textarea
+                rows={2}
+                value={answerInput}
+                readOnly
+                disabled={submitting}
+                placeholder="🎙 Speech-To-Text Only: Manual typing is disabled. Click 'Start Speaking' above to dictate your answer verbally in English..."
+                style={{
+                  width: "100%",
+                  minHeight: "56px",
+                  padding: "0.65rem 0.85rem",
+                  borderRadius: "8px",
+                  border: isListening
+                    ? "1px solid #6366f1"
+                    : "1px solid var(--sidebar-border)",
+                  background: isListening
+                    ? "rgba(99, 102, 241, 0.03)"
+                    : "var(--bg-primary)",
+                  color: "var(--text-primary)",
+                  fontSize: "0.9rem",
+                  lineHeight: 1.45,
+                  resize: "none",
+                  fontFamily: "inherit",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  cursor: "default",
+                  userSelect: "text",
+                }}
+              />
+              {!answerInput && !isListening && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "8px",
+                    right: "10px",
+                    fontSize: "0.68rem",
+                    color: "var(--text-muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    pointerEvents: "none",
+                    background: "var(--bg-secondary)",
+                    padding: "0.15rem 0.45rem",
+                    borderRadius: "4px",
+                    border: "1px solid var(--sidebar-border)",
+                  }}
+                >
+                  <Mic size={10} color="var(--primary-600)" /> Speech Required
+                </div>
+              )}
+            </div>
+
+            {/* Interim Transcript Live Banner */}
+            {interimTranscript && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "0.35rem 0.65rem",
+                  borderRadius: "6px",
+                  background: "rgba(99, 102, 241, 0.08)",
+                  border: "1px dashed rgba(99, 102, 241, 0.35)",
+                  fontSize: "0.8rem",
+                  color: "var(--text-primary)",
+                }}
+              >
+                <Mic
+                  size={12}
+                  className="animate-pulse"
+                  style={{ color: "#6366f1", flexShrink: 0 }}
+                />
+                <span style={{ fontStyle: "italic" }}>
+                  Live: "{interimTranscript}"
+                </span>
+              </div>
+            )}
+
+            {/* STT Status / Fallback Notice */}
+            {sttError && (
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  color: "#f59e0b",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                }}
+              >
+                <AlertCircle size={12} /> {sttError}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  color: "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                }}
+              >
+                <HelpCircle size={13} /> Speak in English using mic. Typing is
+                disabled.
+              </span>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                {currentTurnNumber > 1 &&
+                  currentTurnNumber < totalQuestions && (
+                    <button
+                      type="button"
+                      onClick={handleEarlyConclude}
+                      disabled={submitting || generatingReport}
+                      className="btn-secondary"
+                      style={{ padding: "0.45rem 0.85rem", fontSize: "0.78rem" }}
+                      title="Conclude interview now with completed turns and view performance report"
+                    >
+                      Finish Early
+                    </button>
+                  )}
+
+                <button
+                  type="submit"
+                  disabled={!answerInput.trim() || submitting}
+                  className="btn-primary"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.5rem 1.15rem",
+                    fontSize: "0.82rem",
+                    background:
+                      currentTurnNumber >= totalQuestions
+                        ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
+                        : undefined,
+                    opacity: !answerInput.trim() || submitting ? 0.6 : 1,
+                  }}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="animate-spin" size={14} />{" "}
+                      {currentTurnNumber >= totalQuestions
+                        ? "Compiling..."
+                        : "Submitting..."}
+                    </>
+                  ) : currentTurnNumber >= totalQuestions ? (
+                    <>
+                      <CheckCircle2 size={14} /> Submit & Complete Interview
+                    </>
+                  ) : (
+                    <>
+                      <Send size={14} /> Submit Answer
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
+        </div>
+
         {/* Floating / Side Camera Preview Tile */}
         {cameraActive && (
           <div
@@ -1381,537 +1927,6 @@ export default function MockInterviewSession() {
           </div>
         )}
       </div>
-
-      {/* Answer Input Panel */}
-      {!generatingReport && (
-        <form
-          onSubmit={handleSubmitAnswer}
-          className="glass-card"
-          style={{ padding: "1.25rem" }}
-        >
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <label
-                style={{
-                  fontSize: "0.875rem",
-                  fontWeight: 700,
-                  color: "var(--text-primary)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                }}
-              >
-                {currentTurnNumber >= totalQuestions ? (
-                  <span
-                    style={{
-                      color: "#7c3aed",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.4rem",
-                    }}
-                  >
-                    <Sparkles size={16} /> Final Question ({currentTurnNumber}{" "}
-                    of {totalQuestions}) — Submitting will conclude interview &
-                    show your performance scorecard
-                  </span>
-                ) : (
-                  `Your Response (Question ${currentTurnNumber} of ${totalQuestions})`
-                )}
-              </label>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.65rem",
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "var(--primary-600)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.3rem",
-                    fontWeight: 600,
-                  }}
-                >
-                  <Lock size={12} /> Speech-Only Mode (Typing Disabled)
-                </span>
-                {answerInput && !submitting && (
-                  <button
-                    type="button"
-                    onClick={() => setAnswerInput("")}
-                    style={{
-                      fontSize: "0.72rem",
-                      color: "#ef4444",
-                      background: "rgba(239, 68, 68, 0.08)",
-                      border: "1px solid rgba(239, 68, 68, 0.25)",
-                      padding: "0.15rem 0.5rem",
-                      borderRadius: "5px",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.25rem",
-                      fontWeight: 600,
-                    }}
-                    title="Clear spoken response to record again"
-                  >
-                    <RotateCcw size={11} /> Clear & Re-record
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Speech to Text Control Bar */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0.5rem 0.75rem",
-                borderRadius: "8px",
-                background: isListening
-                  ? "rgba(99, 102, 241, 0.08)"
-                  : "var(--bg-secondary)",
-                border: `1px solid ${isListening ? "rgba(99, 102, 241, 0.3)" : "var(--sidebar-border)"}`,
-                flexWrap: "wrap",
-                gap: "0.5rem",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.65rem",
-                  flexWrap: "wrap",
-                }}
-              >
-                {/* Push-to-Talk vs Click-to-Speak button */}
-                {sttMode === "push-to-talk" ? (
-                  <button
-                    type="button"
-                    onMouseDown={startListening}
-                    onMouseUp={stopListening}
-                    onTouchStart={startListening}
-                    onTouchEnd={stopListening}
-                    disabled={submitting}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.4rem",
-                      padding: "0.35rem 0.85rem",
-                      borderRadius: "6px",
-                      fontSize: "0.8rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      border: "none",
-                      background: isListening
-                        ? "#ef4444"
-                        : "var(--primary-600)",
-                      color: "#ffffff",
-                      boxShadow: isListening
-                        ? "0 0 12px rgba(239, 68, 68, 0.4)"
-                        : undefined,
-                      userSelect: "none",
-                    }}
-                  >
-                    <Mic
-                      size={14}
-                      className={isListening ? "animate-pulse" : ""}
-                    />
-                    {isListening ? "Release to End" : "Hold to Speak"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={toggleListening}
-                    disabled={
-                      submitting ||
-                      sttState === STT_STATES.REQUESTING_MIC ||
-                      sttState === STT_STATES.CONNECTING_GEMINI
-                    }
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.4rem",
-                      padding: "0.35rem 0.85rem",
-                      borderRadius: "6px",
-                      fontSize: "0.8rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      border: "none",
-                      background: isListening
-                        ? activeEngine === "gemini-live"
-                          ? "#ef4444"
-                          : "#d97706"
-                        : "var(--primary-600)",
-                      color: "#ffffff",
-                      boxShadow: isListening
-                        ? "0 0 12px rgba(239, 68, 68, 0.4)"
-                        : undefined,
-                    }}
-                  >
-                    {sttState === STT_STATES.REQUESTING_MIC ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />{" "}
-                        Requesting Mic...
-                      </>
-                    ) : sttState === STT_STATES.CONNECTING_GEMINI ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />{" "}
-                        Connecting Gemini...
-                      </>
-                    ) : sttState === STT_STATES.STOPPING ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />{" "}
-                        Finalizing...
-                      </>
-                    ) : isListening ? (
-                      <>
-                        <MicOff size={14} /> Stop Speaking
-                      </>
-                    ) : (
-                      <>
-                        <Mic size={14} /> Start Speaking
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {/* Engine status indicator */}
-                {activeEngine === "gemini-live" && (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      fontSize: "0.72rem",
-                      background: "rgba(16, 185, 129, 0.15)",
-                      color: "#10b981",
-                      padding: "0.2rem 0.6rem",
-                      borderRadius: "12px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        background: "#10b981",
-                      }}
-                    />
-                    Gemini Live 3.5
-                  </span>
-                )}
-
-                {activeEngine === "browser-speech" && (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      fontSize: "0.72rem",
-                      background: "rgba(245, 158, 11, 0.15)",
-                      color: "#f59e0b",
-                      padding: "0.2rem 0.6rem",
-                      borderRadius: "12px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    ⚠ Gemini unavailable — Browser Speech active
-                  </span>
-                )}
-
-                {/* English-Only Indicator */}
-                <span
-                  style={{
-                    fontSize: "0.7rem",
-                    background: "rgba(99, 102, 241, 0.1)",
-                    color: "var(--primary-600)",
-                    padding: "0.15rem 0.5rem",
-                    borderRadius: "12px",
-                    fontWeight: 700,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "3px",
-                  }}
-                  title="Speech recognition strictly configured for English technical interviews"
-                >
-                  EN Only
-                </span>
-
-                {/* Live Volume Waveform when listening */}
-                {isListening && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "3px",
-                      height: "18px",
-                      padding: "0 4px",
-                    }}
-                    title="Voice Activity Level"
-                  >
-                    {[0.3, 0.7, 1.0, 0.8, 0.4].map((factor, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          width: "3px",
-                          borderRadius: "2px",
-                          background:
-                            activeEngine === "gemini-live"
-                              ? "#6366f1"
-                              : "#f59e0b",
-                          height: `${Math.max(4, Math.min(18, Math.round(volumeLevel * factor * 0.18)))}px`,
-                          transition: "height 0.08s ease",
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Mode Selector */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.35rem",
-                  fontSize: "0.75rem",
-                  color: "var(--text-muted)",
-                }}
-              >
-                <span>Mode:</span>
-                <button
-                  type="button"
-                  onClick={() => setSttMode("click")}
-                  style={{
-                    padding: "0.15rem 0.5rem",
-                    borderRadius: "4px",
-                    border: "1px solid var(--sidebar-border)",
-                    background:
-                      sttMode === "click"
-                        ? "rgba(99, 102, 241, 0.15)"
-                        : "transparent",
-                    color:
-                      sttMode === "click"
-                        ? "var(--primary-600)"
-                        : "var(--text-muted)",
-                    fontWeight: sttMode === "click" ? 700 : 400,
-                    cursor: "pointer",
-                    fontSize: "0.72rem",
-                  }}
-                >
-                  Click to speak
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSttMode("push-to-talk")}
-                  style={{
-                    padding: "0.15rem 0.5rem",
-                    borderRadius: "4px",
-                    border: "1px solid var(--sidebar-border)",
-                    background:
-                      sttMode === "push-to-talk"
-                        ? "rgba(99, 102, 241, 0.15)"
-                        : "transparent",
-                    color:
-                      sttMode === "push-to-talk"
-                        ? "var(--primary-600)"
-                        : "var(--text-muted)",
-                    fontWeight: sttMode === "push-to-talk" ? 700 : 400,
-                    cursor: "pointer",
-                    fontSize: "0.72rem",
-                  }}
-                >
-                  Hold to speak
-                </button>
-              </div>
-            </div>
-
-            <div style={{ position: "relative" }}>
-              <textarea
-                rows={4}
-                value={answerInput}
-                readOnly
-                disabled={submitting}
-                placeholder="🎙 Speech-To-Text Only: Manual typing is disabled. Click 'Start Speaking' above to dictate your answer verbally in English..."
-                style={{
-                  width: "100%",
-                  padding: "0.85rem 1rem",
-                  borderRadius: "10px",
-                  border: isListening
-                    ? "1px solid #6366f1"
-                    : "1px solid var(--sidebar-border)",
-                  background: isListening
-                    ? "rgba(99, 102, 241, 0.03)"
-                    : "var(--bg-primary)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.95rem",
-                  lineHeight: 1.5,
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                  outline: "none",
-                  boxSizing: "border-box",
-                  cursor: "default",
-                  userSelect: "text",
-                }}
-              />
-              {!answerInput && !isListening && (
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "10px",
-                    right: "12px",
-                    fontSize: "0.72rem",
-                    color: "var(--text-muted)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.35rem",
-                    pointerEvents: "none",
-                    background: "var(--bg-secondary)",
-                    padding: "0.2rem 0.5rem",
-                    borderRadius: "4px",
-                    border: "1px solid var(--sidebar-border)",
-                  }}
-                >
-                  <Mic size={11} color="var(--primary-600)" /> Speech Required
-                </div>
-              )}
-            </div>
-
-            {/* Interim Transcript Live Banner */}
-            {interimTranscript && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  padding: "0.5rem 0.85rem",
-                  borderRadius: "8px",
-                  background: "rgba(99, 102, 241, 0.08)",
-                  border: "1px dashed rgba(99, 102, 241, 0.35)",
-                  fontSize: "0.85rem",
-                  color: "var(--text-primary)",
-                }}
-              >
-                <Mic
-                  size={14}
-                  className="animate-pulse"
-                  style={{ color: "#6366f1", flexShrink: 0 }}
-                />
-                <span style={{ fontStyle: "italic" }}>
-                  Live: "{interimTranscript}"
-                </span>
-              </div>
-            )}
-
-            {/* STT Status / Fallback Notice */}
-            {sttError && (
-              <div
-                style={{
-                  fontSize: "0.78rem",
-                  color: "#f59e0b",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.35rem",
-                }}
-              >
-                <AlertCircle size={13} /> {sttError}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "0.75rem",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "0.8rem",
-                  color: "var(--text-muted)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.35rem",
-                }}
-              >
-                <HelpCircle size={14} /> Answer verbally in English using the
-                microphone. Manual typing is disabled.
-              </span>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.75rem",
-                }}
-              >
-                {currentTurnNumber > 1 &&
-                  currentTurnNumber < totalQuestions && (
-                    <button
-                      type="button"
-                      onClick={handleEarlyConclude}
-                      disabled={submitting || generatingReport}
-                      className="btn-secondary"
-                      style={{ padding: "0.65rem 1.1rem", fontSize: "0.82rem" }}
-                      title="Conclude interview now with completed turns and view performance report"
-                    >
-                      Finish & View Scorecard
-                    </button>
-                  )}
-
-                <button
-                  type="submit"
-                  disabled={!answerInput.trim() || submitting}
-                  className="btn-primary"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.65rem 1.5rem",
-                    background:
-                      currentTurnNumber >= totalQuestions
-                        ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
-                        : undefined,
-                    opacity: !answerInput.trim() || submitting ? 0.6 : 1,
-                  }}
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="animate-spin" size={16} />{" "}
-                      {currentTurnNumber >= totalQuestions
-                        ? "Evaluating & Compiling Report..."
-                        : "Submitting..."}
-                    </>
-                  ) : currentTurnNumber >= totalQuestions ? (
-                    <>
-                      <CheckCircle2 size={16} /> Submit & Complete Interview
-                    </>
-                  ) : (
-                    <>
-                      <Send size={16} /> Submit Answer
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </form>
-      )}
 
       {/* Exit Confirmation Modal */}
       {showExitConfirm && (
