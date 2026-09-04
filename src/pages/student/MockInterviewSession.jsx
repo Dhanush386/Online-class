@@ -20,6 +20,7 @@ import {
   MicOff,
   RotateCcw,
   Lock,
+  Clock,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -118,6 +119,74 @@ export default function MockInterviewSession() {
     track: session?.track,
     onFinalTranscript: handleFinalTranscript,
   });
+
+  // Auto-submit countdown (10s of silence) & speaking time extension
+  const [silenceSecondsLeft, setSilenceSecondsLeft] = useState(10);
+  const [timeExtendedNotice, setTimeExtendedNotice] = useState(false);
+
+  // Extend speaking time by +10s (Space, Tab, or button click)
+  const handleExtendTime = useCallback(() => {
+    setSilenceSecondsLeft((prev) => prev + 10);
+    setTimeExtendedNotice(true);
+    setTimeout(() => setTimeExtendedNotice(false), 2500);
+  }, []);
+
+  // Keyboard shortcut listener: Space or Tab to extend speaking time
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignore if setup modal or exit modal is active, or already submitting
+      if (!cameraActive || submitting || generatingReport || showExitConfirm) {
+        return;
+      }
+
+      if (e.code === "Space" || e.key === "Tab") {
+        e.preventDefault();
+        handleExtendTime();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [cameraActive, submitting, generatingReport, showExitConfirm, handleExtendTime]);
+
+  // Auto-enable microphone when interview is active & idle
+  useEffect(() => {
+    if (
+      cameraActive &&
+      !submitting &&
+      !generatingReport &&
+      !isListening &&
+      sttState === STT_STATES.IDLE
+    ) {
+      const timer = setTimeout(() => {
+        startListening().catch((err) =>
+          console.debug("Auto-enable mic error:", err),
+        );
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    cameraActive,
+    currentTurnNumber,
+    submitting,
+    generatingReport,
+    isListening,
+    sttState,
+    startListening,
+  ]);
+
+  // Reset silence timer on turn change
+  useEffect(() => {
+    setSilenceSecondsLeft(10);
+    setTimeExtendedNotice(false);
+  }, [currentTurnNumber]);
+
+  // Reset silence timer whenever active speech is detected
+  useEffect(() => {
+    if (interimTranscript?.trim() || volumeLevel > 18) {
+      setSilenceSecondsLeft((prev) => Math.max(prev, 10));
+    }
+  }, [interimTranscript, volumeLevel]);
 
   // Video recording states
   const [cameraActive, setCameraActive] = useState(false);
@@ -433,6 +502,12 @@ export default function MockInterviewSession() {
     const trimmed = answerInput.trim();
     if (!trimmed || submitting || generatingReport || !session) return;
 
+    if (isListening) {
+      stopListening();
+    }
+    setSilenceSecondsLeft(10);
+    setTimeExtendedNotice(false);
+
     setSubmitting(true);
     setError(null);
 
@@ -489,6 +564,45 @@ export default function MockInterviewSession() {
       setSubmitting(false);
     }
   };
+
+  // 10-Second Silence Auto-Submit Countdown
+  const handleSubmitAnswerRef = useRef(handleSubmitAnswer);
+  handleSubmitAnswerRef.current = handleSubmitAnswer;
+  const answerInputRef = useRef(answerInput);
+  answerInputRef.current = answerInput;
+  const isSpeakingRef = useRef(false);
+  isSpeakingRef.current =
+    Boolean(interimTranscript?.trim()) || volumeLevel > 18;
+
+  useEffect(() => {
+    if (!cameraActive || submitting || generatingReport || showExitConfirm) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      // If student is speaking right now, reset silence timer
+      if (isSpeakingRef.current) {
+        setSilenceSecondsLeft((prev) => Math.max(prev, 10));
+        return;
+      }
+
+      // Auto-submit after 10 seconds of silence once student has answered
+      const currentAnswer = answerInputRef.current?.trim() || "";
+      if (currentAnswer.length > 0) {
+        setSilenceSecondsLeft((prev) => {
+          if (prev <= 1) {
+            handleSubmitAnswerRef.current();
+            return 10;
+          }
+          return prev - 1;
+        });
+      } else {
+        setSilenceSecondsLeft(10);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [cameraActive, submitting, generatingReport, showExitConfirm]);
 
   // Allow concluding early to view full performance scorecard
   const handleEarlyConclude = async () => {
@@ -1634,13 +1748,145 @@ export default function MockInterviewSession() {
               </div>
             </div>
 
+            {/* Auto-Submit 10s Silence Countdown & Space/Tab Extend Timer Banner */}
+            {cameraActive && !submitting && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0.45rem 0.85rem",
+                  borderRadius: "8px",
+                  background:
+                    answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                      ? "rgba(239, 68, 68, 0.1)"
+                      : "rgba(99, 102, 241, 0.08)",
+                  border: `1px solid ${
+                    answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                      ? "rgba(239, 68, 68, 0.35)"
+                      : "rgba(99, 102, 241, 0.25)"
+                  }`,
+                  flexWrap: "wrap",
+                  gap: "0.5rem",
+                  transition: "all 0.25s ease",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.45rem",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    color:
+                      answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                        ? "#dc2626"
+                        : "var(--text-primary)",
+                  }}
+                >
+                  <Clock
+                    size={15}
+                    style={{
+                      color:
+                        answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                          ? "#ef4444"
+                          : "var(--primary-600)",
+                    }}
+                    className={
+                      answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                        ? "animate-pulse"
+                        : ""
+                    }
+                  />
+                  {answerInput.trim().length > 0 ? (
+                    <span>
+                      Auto-submits in{" "}
+                      <strong
+                        style={{
+                          fontSize: "0.95rem",
+                          color:
+                            silenceSecondsLeft <= 4
+                              ? "#ef4444"
+                              : "var(--primary-600)",
+                        }}
+                      >
+                        {silenceSecondsLeft}s
+                      </strong>{" "}
+                      of silence
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        color: "var(--text-muted)",
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      🎙 Mic is auto-enabled — speak your response in English (Auto-submits after 10s of silence)
+                    </span>
+                  )}
+                  {timeExtendedNotice && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "3px",
+                        fontSize: "0.74rem",
+                        color: "#10b981",
+                        background: "rgba(16, 185, 129, 0.15)",
+                        padding: "0.12rem 0.5rem",
+                        borderRadius: "10px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      <Sparkles size={11} /> +10s Extended!
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleExtendTime}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    fontSize: "0.76rem",
+                    fontWeight: 700,
+                    color: "var(--primary-600)",
+                    background: "rgba(99, 102, 241, 0.12)",
+                    border: "1px solid rgba(99, 102, 241, 0.3)",
+                    padding: "0.25rem 0.65rem",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                  title="Press Space or Tab on your keyboard to extend speaking time by +10s"
+                >
+                  <span>+10s Extend Time</span>
+                  <span
+                    style={{
+                      background: "var(--bg-elevated)",
+                      border: "1px solid var(--sidebar-border)",
+                      padding: "0.05rem 0.35rem",
+                      borderRadius: "4px",
+                      fontSize: "0.68rem",
+                      fontWeight: 800,
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    Space / Tab
+                  </span>
+                </button>
+              </div>
+            )}
+
             <div style={{ position: "relative" }}>
               <textarea
                 rows={3}
                 value={answerInput}
                 readOnly
                 disabled={submitting}
-                placeholder="🎙 Speech-To-Text Only: Manual typing is disabled. Click 'Start Speaking' above to dictate your answer verbally in English..."
+                placeholder="🎙 Auto-listening: Speak your answer verbally in English. (Auto-submits after 10s of silence, press Space or Tab to extend time)..."
                 style={{
                   width: "100%",
                   minHeight: "92px",
