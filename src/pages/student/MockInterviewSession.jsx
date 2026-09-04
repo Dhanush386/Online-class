@@ -499,8 +499,11 @@ export default function MockInterviewSession() {
   // Handle Answer Submission
   const handleSubmitAnswer = async (e) => {
     e?.preventDefault();
+    if (submitting || generatingReport || !session) return;
+
+    // Auto-submit even if empty by substituting default fallback text
     const trimmed = answerInput.trim();
-    if (!trimmed || submitting || generatingReport || !session) return;
+    const answerToSubmit = trimmed || "No verbal response provided.";
 
     if (isListening) {
       stopListening();
@@ -521,7 +524,7 @@ export default function MockInterviewSession() {
         turnNumber: currentTurnNumber,
         totalQuestions: session.question_count || 5,
         currentQuestion: activeTurn.question,
-        answer: trimmed,
+        answer: answerToSubmit,
       });
 
       // Update local turns state
@@ -529,7 +532,7 @@ export default function MockInterviewSession() {
         if (t.turn_number === currentTurnNumber) {
           return {
             ...t,
-            student_answer: trimmed,
+            student_answer: answerToSubmit,
             ai_feedback: result.feedback,
           };
         }
@@ -568,8 +571,6 @@ export default function MockInterviewSession() {
   // 10-Second Silence Auto-Submit Countdown
   const handleSubmitAnswerRef = useRef(handleSubmitAnswer);
   handleSubmitAnswerRef.current = handleSubmitAnswer;
-  const answerInputRef = useRef(answerInput);
-  answerInputRef.current = answerInput;
   const isSpeakingRef = useRef(false);
   isSpeakingRef.current =
     Boolean(interimTranscript?.trim()) || volumeLevel > 18;
@@ -580,25 +581,20 @@ export default function MockInterviewSession() {
     }
 
     const interval = setInterval(() => {
-      // If student is speaking right now, reset silence timer
+      // If student is speaking right now, keep silence timer reset
       if (isSpeakingRef.current) {
         setSilenceSecondsLeft((prev) => Math.max(prev, 10));
         return;
       }
 
-      // Auto-submit after 10 seconds of silence once student has answered
-      const currentAnswer = answerInputRef.current?.trim() || "";
-      if (currentAnswer.length > 0) {
-        setSilenceSecondsLeft((prev) => {
-          if (prev <= 1) {
-            handleSubmitAnswerRef.current();
-            return 10;
-          }
-          return prev - 1;
-        });
-      } else {
-        setSilenceSecondsLeft(10);
-      }
+      // Count down silence timer continuously even if answer is empty
+      setSilenceSecondsLeft((prev) => {
+        if (prev <= 1) {
+          handleSubmitAnswerRef.current();
+          return 10;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
@@ -1758,11 +1754,11 @@ export default function MockInterviewSession() {
                   padding: "0.45rem 0.85rem",
                   borderRadius: "8px",
                   background:
-                    answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                    silenceSecondsLeft <= 4
                       ? "rgba(239, 68, 68, 0.1)"
                       : "rgba(99, 102, 241, 0.08)",
                   border: `1px solid ${
-                    answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                    silenceSecondsLeft <= 4
                       ? "rgba(239, 68, 68, 0.35)"
                       : "rgba(99, 102, 241, 0.25)"
                   }`,
@@ -1779,7 +1775,7 @@ export default function MockInterviewSession() {
                     fontSize: "0.82rem",
                     fontWeight: 600,
                     color:
-                      answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                      silenceSecondsLeft <= 4
                         ? "#dc2626"
                         : "var(--text-primary)",
                   }}
@@ -1788,42 +1784,33 @@ export default function MockInterviewSession() {
                     size={15}
                     style={{
                       color:
-                        answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                        silenceSecondsLeft <= 4
                           ? "#ef4444"
                           : "var(--primary-600)",
                     }}
                     className={
-                      answerInput.trim().length > 0 && silenceSecondsLeft <= 4
+                      silenceSecondsLeft <= 4
                         ? "animate-pulse"
                         : ""
                     }
                   />
-                  {answerInput.trim().length > 0 ? (
-                    <span>
-                      Auto-submits in{" "}
-                      <strong
-                        style={{
-                          fontSize: "0.95rem",
-                          color:
-                            silenceSecondsLeft <= 4
-                              ? "#ef4444"
-                              : "var(--primary-600)",
-                        }}
-                      >
-                        {silenceSecondsLeft}s
-                      </strong>{" "}
-                      of silence
-                    </span>
-                  ) : (
-                    <span
+                  <span>
+                    Auto-submitting in{" "}
+                    <strong
                       style={{
-                        color: "var(--text-muted)",
-                        fontSize: "0.8rem",
+                        fontSize: "0.95rem",
+                        color:
+                          silenceSecondsLeft <= 4
+                            ? "#ef4444"
+                            : "var(--primary-600)",
                       }}
                     >
-                      🎙 Mic is auto-enabled — speak your response in English (Auto-submits after 10s of silence)
-                    </span>
-                  )}
+                      {silenceSecondsLeft}s
+                    </strong>
+                    {answerInput.trim()
+                      ? " of silence"
+                      : " (Speak now or press Space/Tab to extend)"}
+                  </span>
                   {timeExtendedNotice && (
                     <span
                       style={{
@@ -2020,7 +2007,7 @@ export default function MockInterviewSession() {
 
                 <button
                   type="submit"
-                  disabled={!answerInput.trim() || submitting}
+                  disabled={submitting}
                   className="btn-primary"
                   style={{
                     display: "inline-flex",
@@ -2033,7 +2020,7 @@ export default function MockInterviewSession() {
                       currentTurnNumber >= totalQuestions
                         ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
                         : undefined,
-                    opacity: !answerInput.trim() || submitting ? 0.6 : 1,
+                    opacity: submitting ? 0.6 : 1,
                   }}
                 >
                   {submitting ? (
