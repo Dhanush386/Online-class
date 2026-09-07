@@ -140,7 +140,7 @@ export default function useSpeechToText({
     stopAudioPipeline();
     setState(STT_STATES.BROWSER_SPEECH);
     setActiveEngine("browser-speech");
-    setError("Gemini Live unavailable — Browser Speech recognition active");
+    setError(null);
 
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -234,45 +234,25 @@ export default function useSpeechToText({
       }
     }, 2000);
 
-    // 1 & 2. Concurrently obtain mic stream and Gemini Live token
+    // 1. Obtain and verify microphone stream independently
     let stream = mediaStreamRef.current;
     if (!stream || !stream.active) {
       setState(STT_STATES.REQUESTING_MIC);
-    } else {
-      setState(STT_STATES.CONNECTING_GEMINI);
-    }
-
-    let token = null;
-    try {
-      const micPromise =
-        stream && stream.active
-          ? Promise.resolve(stream)
-          : navigator.mediaDevices.getUserMedia({
-              audio: {
-                channelCount: 1,
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-              },
-            });
-
-      const tokenPromise = getGeminiLiveToken();
-
-      const [acquiredStream, acquiredToken] = await Promise.all([
-        micPromise,
-        tokenPromise,
-      ]);
-
-      stream = acquiredStream;
-      mediaStreamRef.current = stream;
-      token = acquiredToken;
-    } catch (err) {
-      clearTimeout(watchdogTimer);
-      // If mic failed
-      if (!stream || !stream.active) {
-        console.error("Microphone access denied:", err);
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+        mediaStreamRef.current = stream;
+      } catch (micErr) {
+        clearTimeout(watchdogTimer);
+        console.error("Microphone access denied:", micErr);
         const msg =
-          err?.name === "NotAllowedError"
+          micErr?.name === "NotAllowedError"
             ? "Microphone permission was denied. Please allow microphone access in your browser settings."
             : "Could not access microphone.";
         setError(msg);
@@ -280,17 +260,22 @@ export default function useSpeechToText({
         if (onErrorRef.current) onErrorRef.current(new Error(msg));
         return;
       }
+    }
 
-      // If token failed, fall back to browser speech immediately
+    // 2. Obtain Gemini Live token with automatic fallback
+    setState(STT_STATES.CONNECTING_GEMINI);
+    let token = null;
+    try {
+      token = await getGeminiLiveToken();
+    } catch (tokenErr) {
+      clearTimeout(watchdogTimer);
       console.warn(
-        "Ephemeral token acquisition failed, switching to browser fallback:",
-        err,
+        "Gemini Live token unavailable, switching directly to browser speech recognition:",
+        tokenErr,
       );
       await startBrowserSpeechFallback();
       return;
     }
-
-    setState(STT_STATES.CONNECTING_GEMINI);
 
     // 3. Connect to Gemini Live WebSocket
     try {

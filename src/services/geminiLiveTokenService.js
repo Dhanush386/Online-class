@@ -83,8 +83,8 @@ export async function getGeminiLiveToken() {
           expireTime = data.expireTime;
         }
       } catch (edgeErr) {
-        console.warn(
-          "Supabase edge function gemini-live-token invocation failed:",
+        console.debug(
+          "Supabase edge function gemini-live-token invocation unavailable:",
           edgeErr,
         );
       }
