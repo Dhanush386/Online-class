@@ -170,6 +170,77 @@ export default function MockInterviewSession() {
   const [preFaceStatus, setPreFaceStatus] = useState("idle"); // 'idle' | 'checking' | 'detected' | 'too_dark' | 'no_face'
   const preVideoRef = useRef(null);
 
+  // Refs
+  const chatEndRef = useRef(null);
+  const videoRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const screenStreamRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const compositeCleanupRef = useRef(null);
+
+  // Full Screen Mode state & controller
+  const [isFullscreen, setIsFullscreen] = useState(
+    () => typeof document !== "undefined" && Boolean(document.fullscreenElement),
+  );
+
+  const isExamActive =
+    cameraActive &&
+    !isInterviewCompleted &&
+    session?.status !== "completed";
+
+  const enterFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+          await document.documentElement.webkitRequestFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn("Fullscreen enter error:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange,
+      );
+    };
+  }, []);
+
+  // Re-enter fullscreen on Enter or Space when lockout modal is shown
+  useEffect(() => {
+    if (isExamActive && !isFullscreen) {
+      const handleKeyDown = (e) => {
+        if (e.key === "Enter" || e.code === "Space") {
+          e.preventDefault();
+          enterFullscreen();
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [isExamActive, isFullscreen, enterFullscreen]);
+
+  // Exit fullscreen cleanly on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof document !== "undefined" && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+  }, []);
+
   // Load AI Model for Face/Person Fallback
   useEffect(() => {
     let isMounted = true;
@@ -352,68 +423,6 @@ export default function MockInterviewSession() {
     setFaceStatus("detected");
     setCameraActive(true);
   };
-
-  // Full Screen Mode state & controller
-  const [isFullscreen, setIsFullscreen] = useState(
-    () => typeof document !== "undefined" && Boolean(document.fullscreenElement),
-  );
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-      document.removeEventListener(
-        "webkitfullscreenchange",
-        handleFullscreenChange,
-      );
-    };
-  }, []);
-
-  const enterFullscreen = useCallback(async () => {
-    try {
-      if (!document.fullscreenElement) {
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
-        } else if (document.documentElement.webkitRequestFullscreen) {
-          await document.documentElement.webkitRequestFullscreen();
-        }
-      }
-    } catch (err) {
-      console.warn("Fullscreen enter error:", err);
-    }
-  }, []);
-
-  const isExamActive =
-    cameraActive &&
-    !isInterviewCompleted &&
-    session?.status !== "completed";
-
-  // Re-enter fullscreen on Enter or Space when lockout modal is shown
-  useEffect(() => {
-    if (isExamActive && !isFullscreen) {
-      const handleKeyDown = (e) => {
-        if (e.key === "Enter" || e.code === "Space") {
-          e.preventDefault();
-          enterFullscreen();
-        }
-      };
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [isExamActive, isFullscreen, enterFullscreen]);
-
-  // Exit fullscreen cleanly on unmount
-  useEffect(() => {
-    return () => {
-      if (typeof document !== "undefined" && document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
-    };
-  }, []);
 
   // Question Text-to-Speech (TTS) & AI Reading State
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
@@ -811,14 +820,6 @@ export default function MockInterviewSession() {
       setSilenceSecondsLeft((prev) => Math.max(prev, 10));
     }
   }, [interimTranscript, volumeLevel]);
-
-  const chatEndRef = useRef(null);
-  const videoRef = useRef(null);
-  const mediaStreamRef = useRef(null);
-  const screenStreamRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const recordedChunksRef = useRef([]);
-  const compositeCleanupRef = useRef(null);
 
   // Scroll chat to bottom
   const scrollToBottom = () => {
