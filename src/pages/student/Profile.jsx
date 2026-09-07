@@ -49,8 +49,7 @@ const formInputStyle = {
     color: 'var(--text-primary)',
     fontSize: '0.95rem',
     outline: 'none',
-    boxSizing: 'border-box',
-    colorScheme: 'dark'
+    boxSizing: 'border-box'
 }
 
 const formSelectStyle = {
@@ -108,7 +107,7 @@ export default function Profile() {
     useEffect(() => {
         loadProfile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user])
+    }, [user?.id])
 
     useEffect(() => {
         if (isCameraOpen && stream && videoRef.current) {
@@ -678,7 +677,12 @@ export default function Profile() {
                                                 name="dob"
                                                 value={formData.dob}
                                                 onChange={handleChange}
-                                                style={formInputStyle}
+                                                onClick={(e) => {
+                                                    if (typeof e.target.showPicker === 'function') {
+                                                        try { e.target.showPicker() } catch (_) {}
+                                                    }
+                                                }}
+                                                style={{ ...formInputStyle, cursor: 'pointer' }}
                                             />
                                         </div>
                                     </div>

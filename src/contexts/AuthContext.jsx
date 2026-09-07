@@ -149,9 +149,17 @@ export function AuthProvider({ children }) {
                 setProfile(null)
                 setLoading(false)
             } else if (session?.user) {
-                setUser(session.user)
-                setLoading(true)
-                fetchProfile(session.user.id)
+                setUser(prev => (prev?.id === session.user.id ? prev : session.user))
+                if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                    // Background token refresh on tab switch: do NOT set loading to true or unmount UI
+                    fetchProfile(session.user.id, false)
+                } else {
+                    setProfile(curr => {
+                        if (!curr) setLoading(true)
+                        return curr
+                    })
+                    fetchProfile(session.user.id, true)
+                }
             }
         })
 
@@ -169,7 +177,7 @@ export function AuthProvider({ children }) {
         return expired
     }
 
-    async function fetchProfile(userId) {
+    async function fetchProfile(userId, updateLoading = true) {
         if (!userId) return
         try {
             const { data } = await supabase
@@ -221,7 +229,9 @@ export function AuthProvider({ children }) {
         } catch (err) {
             console.error('fetchProfile error:', err)
         } finally {
-            setLoading(false)
+            if (updateLoading) {
+                setLoading(false)
+            }
         }
     }
 
