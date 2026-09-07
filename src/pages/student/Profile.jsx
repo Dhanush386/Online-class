@@ -40,6 +40,36 @@ const COMMON_SKILLS = [
     "TypeScript", "Unity", "User Interface (UI) Design", "UX design", "Vue", "WordPress", "XR (AR, VR, MR)"
 ]
 
+const formInputStyle = {
+    width: '100%',
+    padding: '0.8rem 1rem',
+    borderRadius: 10,
+    border: '1px solid var(--card-border)',
+    background: 'var(--bg-elevated)',
+    color: 'var(--text-primary)',
+    fontSize: '0.95rem',
+    outline: 'none',
+    boxSizing: 'border-box',
+    colorScheme: 'dark'
+}
+
+const formSelectStyle = {
+    ...formInputStyle,
+    cursor: 'pointer'
+}
+
+const phonePrefixStyle = {
+    padding: '0.8rem 1rem',
+    borderRadius: 10,
+    border: '1px solid var(--card-border)',
+    background: 'var(--bg-elevated)',
+    color: 'var(--text-secondary)',
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    display: 'flex',
+    alignItems: 'center'
+}
+
 export default function Profile() {
     const { profile, user, refreshProfileStatus } = useAuth()
     const navigate = useNavigate()
@@ -348,7 +378,7 @@ export default function Profile() {
                 {/* Left Sidebar Navigation */}
                 <div style={{ width: 300, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {sections.map(section => (
-                        <div key={section.id} style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+                        <div key={section.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--card-border)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
                             <button
                                 onClick={() => setActiveSection(section.id)}
                                 style={{
@@ -368,14 +398,14 @@ export default function Profile() {
                                         width: 28, 
                                         height: 28, 
                                         borderRadius: '50%', 
-                                        background: activeSection === section.id ? '#10b981' : '#f1f5f9',
+                                        background: activeSection === section.id ? '#10b981' : 'var(--bg-elevated)',
                                         display: 'flex', 
                                         alignItems: 'center', 
                                         justifyContent: 'center' 
                                     }}>
-                                        <section.icon size={16} color={activeSection === section.id ? 'white' : 'var(--text-muted)'} />
+                                        <section.icon size={16} color={activeSection === section.id ? 'white' : 'var(--text-secondary)'} />
                                     </div>
-                                    <span style={{ fontWeight: 600, color: activeSection === section.id ? '#10b981' : 'var(--card-border)' }}>{section.label}</span>
+                                    <span style={{ fontWeight: 600, color: activeSection === section.id ? '#10b981' : 'var(--text-primary)' }}>{section.label}</span>
                                 </div>
                                 {section.id === 'basic' ? (
                                     <ChevronDown size={18} color="var(--text-muted)" style={{ transform: activeSection === 'basic' ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
@@ -387,7 +417,7 @@ export default function Profile() {
                             {section.id === 'basic' && activeSection === 'basic' && (
                                 <div style={{ padding: '0 1.25rem 1.25rem 3.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
                                     {/* Timeline line */}
-                                    <div style={{ position: 'absolute', left: '2rem', top: 0, bottom: '2rem', width: 2, background: '#f1f5f9' }} />
+                                    <div style={{ position: 'absolute', left: '2rem', top: 0, bottom: '2rem', width: 2, background: 'var(--card-border)' }} />
                                     
                                     {basicSubSections.map(sub => (
                                         <button
@@ -396,8 +426,8 @@ export default function Profile() {
                                             style={{
                                                 padding: '0.6rem 1rem',
                                                 borderRadius: 8,
-                                                background: activeSubSection === sub.id ? 'rgba(16,185,129,0.08)' : 'none',
-                                                color: activeSubSection === sub.id ? '#10b981' : 'var(--text-muted)',
+                                                background: activeSubSection === sub.id ? 'rgba(16,185,129,0.12)' : 'none',
+                                                color: activeSubSection === sub.id ? '#10b981' : 'var(--text-secondary)',
                                                 border: 'none',
                                                 cursor: 'pointer',
                                                 textAlign: 'left',
@@ -415,8 +445,8 @@ export default function Profile() {
                                                 width: 8, 
                                                 height: 8, 
                                                 borderRadius: '50%', 
-                                                background: activeSubSection === sub.id ? '#10b981' : '#cbd5e1',
-                                                border: '2px solid white'
+                                                background: activeSubSection === sub.id ? '#10b981' : 'var(--card-border)',
+                                                border: '2px solid var(--bg-surface)'
                                             }} />
                                             {sub.label}
                                         </button>
@@ -428,7 +458,7 @@ export default function Profile() {
                 </div>
 
                 {/* Right Content Area */}
-                <div style={{ flex: 1, background: 'white', borderRadius: 24, padding: '2.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', minHeight: 600 }}>
+                <div style={{ flex: 1, background: 'var(--bg-surface)', border: '1px solid var(--card-border)', borderRadius: 24, padding: '2.5rem', boxShadow: 'var(--shadow-md)', minHeight: 600 }}>
                     {activeSection === 'basic' && (
                         <>
                             {activeSubSection === 'profile' && (
@@ -452,8 +482,8 @@ export default function Profile() {
                                                 width: 150, 
                                                 height: 180, 
                                                 borderRadius: 12, 
-                                                background: '#f8fafc', 
-                                                border: '2px dashed #e2e8f0',
+                                                background: 'var(--bg-elevated)', 
+                                                border: '2px dashed var(--card-border)',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
@@ -463,7 +493,7 @@ export default function Profile() {
                                                 {formData.photo_url ? (
                                                     <img src={formData.photo_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 ) : (
-                                                    <Camera size={40} color="#cbd5e1" />
+                                                    <Camera size={40} color="var(--text-muted)" />
                                                 )}
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -477,7 +507,7 @@ export default function Profile() {
                                                 />
                                                 <button 
                                                     onClick={() => fileInputRef.current.click()}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)' }}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-primary)' }}
                                                 >
                                                     <Upload size={18} /> Upload Photo
                                                 </button>
@@ -509,18 +539,19 @@ export default function Profile() {
                                                 padding: '2rem'
                                             }}>
                                                 <div style={{
-                                                    background: 'white',
+                                                    background: 'var(--bg-surface)',
+                                                    border: '1px solid var(--card-border)',
                                                     borderRadius: 32,
                                                     width: '100%',
                                                     maxWidth: 500,
                                                     padding: '2rem',
                                                     textAlign: 'center',
                                                     position: 'relative',
-                                                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+                                                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)'
                                                 }}>
                                                     <button 
                                                         onClick={stopCamera}
-                                                        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#f1f5f9', border: 'none', padding: '0.85rem', borderRadius: '50%', cursor: 'pointer', color: 'var(--text-muted)' }}
+                                                        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', padding: '0.85rem', borderRadius: '50%', cursor: 'pointer', color: 'var(--text-primary)' }}
                                                     >
                                                         <X size={20} />
                                                     </button>
@@ -550,7 +581,7 @@ export default function Profile() {
                                                     <div style={{ display: 'flex', gap: '1rem' }}>
                                                         <button 
                                                             onClick={stopCamera}
-                                                            style={{ flex: 1, padding: '1rem', borderRadius: 12, background: '#f1f5f9', color: 'var(--text-muted)', fontWeight: 600, border: 'none', cursor: 'pointer' }}
+                                                            style={{ flex: 1, padding: '1rem', borderRadius: 12, background: 'var(--bg-elevated)', color: 'var(--text-secondary)', fontWeight: 600, border: '1px solid var(--card-border)', cursor: 'pointer' }}
                                                         >
                                                             Cancel
                                                         </button>
@@ -592,7 +623,7 @@ export default function Profile() {
                                                 value={formData.first_name}
                                                 onChange={handleChange}
                                                 placeholder="Ex: Sachin"
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                style={formInputStyle}
                                             />
                                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ex: Sachin</p>
                                         </div>
@@ -604,7 +635,7 @@ export default function Profile() {
                                                 value={formData.last_name}
                                                 onChange={handleChange}
                                                 placeholder="Ex: Tendulkar"
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                style={formInputStyle}
                                             />
                                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ex: Tendulkar</p>
                                         </div>
@@ -618,7 +649,7 @@ export default function Profile() {
                                             value={formData.certificate_name}
                                             onChange={handleChange}
                                             placeholder="Full name as it should appear"
-                                            style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                            style={formInputStyle}
                                         />
                                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>How would you like your name to appear on certificates?</p>
                                     </div>
@@ -631,7 +662,7 @@ export default function Profile() {
                                                 name="gender" 
                                                 value={formData.gender} 
                                                 onChange={handleChange}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                style={formSelectStyle}
                                             >
                                                 <option value="">Select Gender</option>
                                                 <option>Male</option>
@@ -647,7 +678,7 @@ export default function Profile() {
                                                 name="dob"
                                                 value={formData.dob}
                                                 onChange={handleChange}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                style={formInputStyle}
                                             />
                                         </div>
                                     </div>
@@ -665,7 +696,7 @@ export default function Profile() {
                                                     value={formData.linkedin_url}
                                                     onChange={handleChange}
                                                     placeholder="https://linkedin.com/in/username"
-                                                    style={{ width: '100%', padding: '0.8rem 1rem 0.8rem 3rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                    style={{ ...formInputStyle, paddingLeft: '3rem' }}
                                                 />
                                             </div>
                                         </div>
@@ -685,7 +716,7 @@ export default function Profile() {
                                             />
                                             <button 
                                                 onClick={() => resumeInputRef.current.click()}
-                                                style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)' }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1.5rem', background: 'var(--bg-elevated)', border: '1px solid var(--card-border)', borderRadius: 10, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-primary)' }}
                                             >
                                                 <Upload size={18} /> {formData.resume_url ? 'Update Resume' : 'Upload Resume'}
                                             </button>
@@ -715,14 +746,14 @@ export default function Profile() {
                                         <div>
                                             <label htmlFor="phone" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Phone Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
+                                                <div style={phonePrefixStyle}>IN +91</div>
                                                 <input 
                                                     id="phone"
                                                     name="phone"
                                                     value={formData.phone || ''}
                                                     onChange={handleChange}
                                                     placeholder="Enter phone number"
-                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                    style={{ ...formInputStyle, flex: 1 }}
                                                 />
                                             </div>
                                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Primary contact number</p>
@@ -730,14 +761,14 @@ export default function Profile() {
                                         <div>
                                             <label htmlFor="whatsapp_number" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>WhatsApp Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
+                                                <div style={phonePrefixStyle}>IN +91</div>
                                                 <input 
                                                     id="whatsapp_number"
                                                     name="whatsapp_number"
                                                     value={formData.whatsapp_number || ''}
                                                     onChange={handleChange}
                                                     placeholder="Enter WhatsApp number"
-                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                    style={{ ...formInputStyle, flex: 1 }}
                                                 />
                                             </div>
                                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>For important updates on WhatsApp</p>
@@ -751,7 +782,7 @@ export default function Profile() {
                                                 id="email"
                                                 value={user?.email || ''}
                                                 disabled
-                                                style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}
+                                                style={{ ...formInputStyle, flex: 1, opacity: 0.75, cursor: 'not-allowed' }}
                                             />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: 600 }}>
@@ -759,8 +790,8 @@ export default function Profile() {
                                         </div>
                                     </div>
 
-                                    <div style={{ background: '#f8fafc', borderRadius: 12, padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-                                        <label htmlFor="whatsapp_updates" style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontWeight: 600, color: 'var(--card-border)', fontSize: '0.95rem' }}>
+                                    <div style={{ background: 'var(--bg-elevated)', borderRadius: 12, padding: '1.25rem', border: '1px solid var(--card-border)' }}>
+                                        <label htmlFor="whatsapp_updates" style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                                             <input 
                                                 id="whatsapp_updates"
                                                 type="checkbox" 
@@ -791,7 +822,7 @@ export default function Profile() {
                                                 value={formData.parent_first_name}
                                                 onChange={handleChange}
                                                 placeholder="Ex: Ramesh"
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                style={formInputStyle}
                                             />
                                         </div>
                                         <div>
@@ -802,7 +833,7 @@ export default function Profile() {
                                                 value={formData.parent_last_name}
                                                 onChange={handleChange}
                                                 placeholder="Ex: Tendulkar"
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                style={formInputStyle}
                                             />
                                         </div>
                                     </div>
@@ -815,7 +846,7 @@ export default function Profile() {
                                                 name="parent_relation" 
                                                 value={formData.parent_relation} 
                                                 onChange={handleChange}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                style={formSelectStyle}
                                             >
                                                 <option value="">Select Relation</option>
                                                 <option>Father</option>
@@ -830,7 +861,7 @@ export default function Profile() {
                                                 name="parent_occupation" 
                                                 value={formData.parent_occupation} 
                                                 onChange={handleChange}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                style={formSelectStyle}
                                             >
                                                 <option value="">Select Occupation</option>
                                                 <option>Teacher</option>
@@ -857,28 +888,28 @@ export default function Profile() {
                                         <div>
                                             <label htmlFor="parent_phone" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Parent/Guardian Phone Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
+                                                <div style={phonePrefixStyle}>IN +91</div>
                                                 <input 
                                                     id="parent_phone"
                                                     name="parent_phone"
                                                     value={formData.parent_phone || ''}
                                                     onChange={handleChange}
                                                     placeholder="Enter phone number"
-                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                    style={{ ...formInputStyle, flex: 1 }}
                                                 />
                                             </div>
                                         </div>
                                         <div>
                                             <label htmlFor="parent_whatsapp" style={{ display: 'block', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Parent/Guardian WhatsApp Number</label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <div style={{ padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.95rem' }}>IN +91</div>
+                                                <div style={phonePrefixStyle}>IN +91</div>
                                                 <input 
                                                     id="parent_whatsapp"
                                                     name="parent_whatsapp"
                                                     value={formData.parent_whatsapp || ''}
                                                     onChange={handleChange}
                                                     placeholder="Enter WhatsApp number"
-                                                    style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                    style={{ ...formInputStyle, flex: 1 }}
                                                 />
                                             </div>
                                         </div>
@@ -901,7 +932,7 @@ export default function Profile() {
                                             value={formData.address_line1}
                                             onChange={handleChange}
                                             placeholder="House No, Street name, etc"
-                                            style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                            style={formInputStyle}
                                         />
                                     </div>
 
@@ -913,7 +944,7 @@ export default function Profile() {
                                             value={formData.address_line2}
                                             onChange={handleChange}
                                             placeholder="Locality, Area, etc"
-                                            style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                            style={formInputStyle}
                                         />
                                     </div>
 
@@ -928,7 +959,7 @@ export default function Profile() {
                                                     const val = e.target.value;
                                                     setFormData(prev => ({ ...prev, country: val, state: '', district: '' }));
                                                 }}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                style={formSelectStyle}
                                             >
                                                 <option value="">Select Country</option>
                                                 {countries.map(c => (
@@ -945,7 +976,7 @@ export default function Profile() {
                                                 value={formData.pincode}
                                                 onChange={handleChange}
                                                 placeholder="6-digit PIN code"
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                style={formInputStyle}
                                             />
                                         </div>
                                     </div>
@@ -961,7 +992,7 @@ export default function Profile() {
                                                     const val = e.target.value;
                                                     setFormData(prev => ({ ...prev, state: val, district: '' }));
                                                 }}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                style={formSelectStyle}
                                             >
                                                 <option value="">Select State</option>
                                                 {formData.country === 'India' 
@@ -980,7 +1011,7 @@ export default function Profile() {
                                                     name="district" 
                                                     value={formData.district} 
                                                     onChange={handleChange}
-                                                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                    style={formSelectStyle}
                                                 >
                                                     <option value="">Select District</option>
                                                     {(indiaDistricts[formData.state] || []).map(d => (
@@ -994,7 +1025,7 @@ export default function Profile() {
                                                     value={formData.district}
                                                     onChange={handleChange}
                                                     placeholder="Enter district"
-                                                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                    style={formInputStyle}
                                                 />
                                             )}
                                         </div>
@@ -1017,7 +1048,7 @@ export default function Profile() {
                                                 name="coding_level" 
                                                 value={formData.coding_level} 
                                                 onChange={handleChange}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                style={formSelectStyle}
                                             >
                                                 <option value="">Select Coding Level</option>
                                                 <option>I don't have knowledge in coding</option>
@@ -1038,7 +1069,7 @@ export default function Profile() {
                                                             onChange={() => setFormData(p => ({ ...p, has_laptop: v === 'Yes' }))}
                                                             style={{ width: 18, height: 18, accentColor: '#10b981' }}
                                                         />
-                                                        <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}>{v}</span>
+                                                        <span style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 500 }}>{v}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -1068,7 +1099,7 @@ export default function Profile() {
                                                     }
                                                 }}
                                                 placeholder="Search or add skills (e.g. React, Python)"
-                                                style={{ width: '100%', padding: '0.8rem 1rem 0.8rem 3rem', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem' }}
+                                                style={{ ...formInputStyle, paddingLeft: '3rem' }}
                                             />
                                             
                                             {showSkillSuggestions && (
@@ -1077,14 +1108,14 @@ export default function Profile() {
                                                     top: '110%', 
                                                     left: 0, 
                                                     right: 0, 
-                                                    background: 'white', 
+                                                    background: 'var(--bg-elevated)', 
                                                     borderRadius: 12, 
-                                                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
+                                                    boxShadow: 'var(--shadow-lg)', 
                                                     zIndex: 100, 
                                                     maxHeight: 250, 
-                                                    overflowY: 'auto',
-                                                    border: '1px solid #f1f5f9',
-                                                    padding: '0.5rem'
+                                                    overflowY: 'auto', 
+                                                    border: '1px solid var(--card-border)', 
+                                                    padding: '0.5rem' 
                                                 }}>
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0.5rem' }}>
                                                         {COMMON_SKILLS
@@ -1096,18 +1127,18 @@ export default function Profile() {
                                                                     style={{ 
                                                                         padding: '0.4rem 0.8rem', 
                                                                         borderRadius: 20, 
-                                                                        background: '#f1f5f9', 
-                                                                        border: 'none', 
+                                                                        background: 'var(--bg-surface)', 
+                                                                        border: '1px solid var(--card-border)', 
                                                                         fontSize: '0.85rem', 
-                                                                        color: 'var(--text-secondary)', 
+                                                                        color: 'var(--text-primary)', 
                                                                         cursor: 'pointer',
                                                                         fontWeight: 500,
                                                                         transition: 'all 0.2s'
                                                                     }}
-                                                                    onMouseOver={(e) => { e.target.style.background = '#e2e8f0' }}
-                                                                    onFocus={(e) => { e.target.style.background = '#e2e8f0' }}
-                                                                    onMouseOut={(e) => { e.target.style.background = '#f1f5f9' }}
-                                                                    onBlur={(e) => { e.target.style.background = '#f1f5f9' }}
+                                                                    onMouseOver={(e) => { e.target.style.background = 'var(--bg-surface-hover)' }}
+                                                                    onFocus={(e) => { e.target.style.background = 'var(--bg-surface-hover)' }}
+                                                                    onMouseOut={(e) => { e.target.style.background = 'var(--bg-surface)' }}
+                                                                    onBlur={(e) => { e.target.style.background = 'var(--bg-surface)' }}
                                                                 >
                                                                     + {skill}
                                                                 </button>
@@ -1171,7 +1202,7 @@ export default function Profile() {
                                                 name="language_teaching" 
                                                 value={formData.language_teaching} 
                                                 onChange={handleChange}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                style={formSelectStyle}
                                             >
                                                 <option value="">Select Language</option>
                                                 <option>Tamil</option>
@@ -1186,7 +1217,7 @@ export default function Profile() {
                                                 name="language_watching" 
                                                 value={formData.language_watching} 
                                                 onChange={handleChange}
-                                                style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', fontSize: '0.95rem' }}
+                                                style={formSelectStyle}
                                             >
                                                 <option value="">Select Language</option>
                                                 <option>Tamil</option>
@@ -1220,12 +1251,12 @@ export default function Profile() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 {formData.education_details.length === 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
-                                        <GraduationCap size={64} color="#e2e8f0" />
+                                        <GraduationCap size={64} color="var(--text-muted)" />
                                         <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No education details added yet</p>
                                     </div>
                                 ) : (
                                     formData.education_details.map(edu => (
-                                        <div key={edu.id} style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: 16, position: 'relative' }}>
+                                        <div key={edu.id} style={{ padding: '1.5rem', border: '1px solid var(--card-border)', background: 'var(--bg-elevated)', borderRadius: 16, position: 'relative' }}>
                                             <button 
                                                 onClick={() => removeEducation(edu.id)}
                                                 style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}
@@ -1239,7 +1270,7 @@ export default function Profile() {
                                                         <input 
                                                             value={edu.school}
                                                             onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
-                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                            style={{ ...formInputStyle, marginTop: '0.5rem', background: 'var(--bg-surface)' }}
                                                         />
                                                     </label>
                                                 </div>
@@ -1249,7 +1280,7 @@ export default function Profile() {
                                                         <input 
                                                             value={edu.degree}
                                                             onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
-                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                            style={{ ...formInputStyle, marginTop: '0.5rem', background: 'var(--bg-surface)' }}
                                                         />
                                                     </label>
                                                 </div>
@@ -1282,12 +1313,12 @@ export default function Profile() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 {formData.work_experience.length === 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
-                                        <Briefcase size={64} color="#e2e8f0" />
+                                        <Briefcase size={64} color="var(--text-muted)" />
                                         <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No work experience added yet</p>
                                     </div>
                                 ) : (
                                     formData.work_experience.map(work => (
-                                        <div key={work.id} style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: 16, position: 'relative' }}>
+                                        <div key={work.id} style={{ padding: '1.5rem', border: '1px solid var(--card-border)', background: 'var(--bg-elevated)', borderRadius: 16, position: 'relative' }}>
                                             <button 
                                                 onClick={() => removeWorkExperience(work.id)}
                                                 style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}
@@ -1301,7 +1332,7 @@ export default function Profile() {
                                                         <input 
                                                             value={work.company}
                                                             onChange={(e) => updateWorkExperience(work.id, 'company', e.target.value)}
-                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                            style={{ ...formInputStyle, marginTop: '0.5rem', background: 'var(--bg-surface)' }}
                                                         />
                                                     </label>
                                                 </div>
@@ -1311,7 +1342,7 @@ export default function Profile() {
                                                         <input 
                                                             value={work.role}
                                                             onChange={(e) => updateWorkExperience(work.id, 'role', e.target.value)}
-                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                            style={{ ...formInputStyle, marginTop: '0.5rem', background: 'var(--bg-surface)' }}
                                                         />
                                                     </label>
                                                 </div>
@@ -1344,12 +1375,12 @@ export default function Profile() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 {formData.projects_achievements.length === 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
-                                        <Trophy size={64} color="#e2e8f0" />
+                                        <Trophy size={64} color="var(--text-muted)" />
                                         <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>No projects or achievements added yet</p>
                                     </div>
                                 ) : (
                                     formData.projects_achievements.map(proj => (
-                                        <div key={proj.id} style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: 16, position: 'relative' }}>
+                                        <div key={proj.id} style={{ padding: '1.5rem', border: '1px solid var(--card-border)', background: 'var(--bg-elevated)', borderRadius: 16, position: 'relative' }}>
                                             <button 
                                                 onClick={() => removeProject(proj.id)}
                                                 style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}
@@ -1363,7 +1394,7 @@ export default function Profile() {
                                                         <input 
                                                             value={proj.title}
                                                             onChange={(e) => updateProject(proj.id, 'title', e.target.value)}
-                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                            style={{ ...formInputStyle, marginTop: '0.5rem', background: 'var(--bg-surface)' }}
                                                         />
                                                     </label>
                                                 </div>
@@ -1373,7 +1404,7 @@ export default function Profile() {
                                                         <input 
                                                             value={proj.link}
                                                             onChange={(e) => updateProject(proj.id, 'link', e.target.value)}
-                                                            style={{ width: '100%', padding: '0.85rem', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: '0.5rem' }}
+                                                            style={{ ...formInputStyle, marginTop: '0.5rem', background: 'var(--bg-surface)' }}
                                                         />
                                                     </label>
                                                 </div>
@@ -1393,12 +1424,12 @@ export default function Profile() {
                 bottom: '2rem', 
                 left: '50%', 
                 transform: 'translateX(-50%)', 
-                background: 'rgba(255,255,255,0.8)', 
-                backdropFilter: 'blur(10px)',
+                background: 'rgba(17, 21, 34, 0.92)', 
+                backdropFilter: 'blur(16px)',
                 padding: '0.85rem 2rem',
                 borderRadius: 99,
-                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                border: '1px solid rgba(255,255,255,1)',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                border: '1px solid var(--card-border)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '2rem',
@@ -1406,8 +1437,8 @@ export default function Profile() {
             }}>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#e2e8f0' }} />
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#e2e8f0' }} />
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--card-border)' }} />
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--card-border)' }} />
                 </div>
                 <button 
                     onClick={handleSave}
@@ -1424,7 +1455,8 @@ export default function Profile() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.85rem',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        boxShadow: '0 4px 14px rgba(16,185,129,0.3)'
                     }}
                 >
                     {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
