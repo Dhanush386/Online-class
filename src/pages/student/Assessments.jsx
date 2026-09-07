@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { ClipboardList, Calendar, ChevronRight, Eye, Lock, Monitor } from 'lucide-react'
 import { useDeviceType } from '../../hooks/useDeviceType'
+import { calculateAccessibleDay, isItemUnlocked } from '../../utils/dayAccessEngine'
 
 const TABS = ['daily', 'weekly', 'final']
 const TAB_LABELS = { daily: 'Daily Assessment', weekly: 'Weekly Assessment', final: 'Final Assessment' }
@@ -142,31 +143,6 @@ AssessmentCard.propTypes = {
     navigate: PropTypes.func.isRequired,
 };
 
-function getLockStatus(a, lockedAssessIds, locksDay, userGroupIds, now) {
-    if (lockedAssessIds.includes(a.id)) {
-        return { isLocked: true, lockReason: 'This assessment is locked by the instructor.' };
-    }
-
-    const dayAccessObj = (locksDay || []).find(da => 
-        da.course_id === a.course_id && 
-        da.day_number === a.day_number && 
-        userGroupIds.includes(da.group_id)
-    );
-
-    if (dayAccessObj && (dayAccessObj.is_locked || (dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now))) {
-        const reason = dayAccessObj.open_time && new Date(dayAccessObj.open_time) > now 
-            ? `This day opens at ${new Date(dayAccessObj.open_time).toLocaleString()}` 
-            : 'This day is currently locked.';
-        return { isLocked: true, lockReason: reason };
-    }
-
-    if (a.open_time && new Date(a.open_time) > now) {
-        return { isLocked: true, lockReason: `This assessment opens at ${new Date(a.open_time).toLocaleString()}` };
-    }
-
-    return { isLocked: false, lockReason: '' };
-}
-
 export default function Assessments() {
     const { profile } = useAuth()
     const navigate = useNavigate()
@@ -177,11 +153,16 @@ export default function Assessments() {
 
     useEffect(() => {
         async function load() {
-            // Fetch enrolled course IDs first
+            // Fetch enrolled course IDs & enrolled_at first
             const { data: rawEnrollments } = await supabase
                 .from('enrollments')
-                .select('course_id')
+                .select('course_id, enrolled_at')
                 .eq('student_id', profile.id)
+
+            const enrollMap = {}
+            for (const e of (rawEnrollments || [])) {
+                enrollMap[e.course_id] = e.enrolled_at
+            }
 
             const enrolledIds = [...new Set((rawEnrollments || []).map(e => e.course_id))]
 
@@ -210,17 +191,21 @@ export default function Assessments() {
 
             const userGroupIds = memberships?.map(m => m.group_id) || []
             const lockedAssessIds = locks?.filter(l => userGroupIds.includes(l.group_id)).map(l => l.resource_id) || []
-            const now = new Date()
-
-
 
             const grouped = { daily: [], weekly: [], final: [] }
-            const filteredAssessments = (assessData || []).filter(a => !a.courses?.start_date || new Date(a.courses.start_date) <= now)
             
-            for (const a of filteredAssessments) {
-                const { isLocked, lockReason } = getLockStatus(a, lockedAssessIds, locksDay, userGroupIds, now);
-                a.isLocked = isLocked;
-                a.lockReason = lockReason;
+            for (const a of (assessData || [])) {
+                const enrolledAt = enrollMap[a.course_id] || profile?.created_at || new Date()
+                const accessibleDay = calculateAccessibleDay(enrolledAt)
+                const { isLocked, reason } = isItemUnlocked({
+                    item: a,
+                    type: 'assessment',
+                    accessibleDay,
+                    lockedAssessIds,
+                    groupDayAccess: locksDay
+                })
+                a.isLocked = isLocked
+                a.lockReason = reason || ''
 
                 if (grouped[a.type]) {
                     grouped[a.type].push(a);

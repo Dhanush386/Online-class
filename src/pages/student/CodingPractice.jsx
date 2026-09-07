@@ -7,6 +7,7 @@ import {
     Layout, Lock, Zap
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { calculateAccessibleDay, isItemUnlocked } from '../../utils/dayAccessEngine'
 
 
 function getDifficultyColor(difficulty) {
@@ -25,12 +26,15 @@ export default function CodingPractice() {
     const [challenges, setChallenges] = useState([])
     const [submissions, setSubmissions] = useState([])
     const [loading, setLoading] = useState(true)
-    const [search] = useState('')
-    const [groups, setGroups] = useState([])
-    const [userGroupIds, setUserGroupIds] = useState([])
+    const [selectedCourse, setSelectedCourse] = useState('all')
+    const [selectedDifficulty, setSelectedDifficulty] = useState('all')
+    const [selectedTopic, setSelectedTopic] = useState('all')
     const [memberships, setMemberships] = useState([])
+    const [userGroupIds, setUserGroupIds] = useState([])
+    const [groups, setGroups] = useState([])
     const [locksDay, setLocksDay] = useState([])
     const [lockedCodingIds, setLockedCodingIds] = useState([])
+    const [courseEnrollments, setCourseEnrollments] = useState({})
 
     async function loadData() {
         setLoading(true)
@@ -38,8 +42,14 @@ export default function CodingPractice() {
         // Fetch enrolled course IDs first
         const { data: rawEnrollments } = await supabase
             .from('enrollments')
-            .select('course_id')
+            .select('course_id, enrolled_at')
             .eq('student_id', profile.id)
+
+        const enrollMap = {}
+        for (const e of (rawEnrollments || [])) {
+            enrollMap[e.course_id] = e.enrolled_at
+        }
+        setCourseEnrollments(enrollMap)
 
         const enrolledIds = [...new Set((rawEnrollments || []).map(e => e.course_id))]
 
@@ -104,18 +114,16 @@ export default function CodingPractice() {
     }
 
     const checkIfLocked = (c) => {
-        const now = new Date()
-        if (lockedCodingIds.includes(c.id)) {
-            return { locked: true, reason: 'This challenge is locked by the instructor.' }
-        }
-        if (isDayLocked(c.course_id, c.day_number)) {
-            const dayAccessObj = (locksDay || []).find(a => a.course_id === c.course_id && a.day_number === c.day_number && userGroupIds.includes(a.group_id))
-            return { locked: true, reason: dayAccessObj?.open_time ? `This day opens at ${new Date(dayAccessObj.open_time).toLocaleString()}` : 'This day is currently locked.' }
-        }
-        if (c.open_time && new Date(c.open_time) > now) {
-            return { locked: true, reason: `This challenge opens at ${new Date(c.open_time).toLocaleString()}` }
-        }
-        return { locked: false, reason: '' }
+        const enrolledAt = courseEnrollments[c.course_id] || profile?.created_at || new Date()
+        const accessibleDay = calculateAccessibleDay(enrolledAt)
+        const status = isItemUnlocked({
+            item: c,
+            type: 'coding',
+            accessibleDay,
+            lockedCodingIds,
+            groupDayAccess: locksDay
+        })
+        return { locked: status.isLocked, reason: status.reason || '' }
     }
 
     const getStatus = (challengeId) => {

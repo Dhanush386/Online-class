@@ -10,6 +10,7 @@ import { useLiveKitProctoring } from '../../hooks/useLiveKitProctoring'
 import useXpAward from '../../hooks/useXpAward'
 import { getQuizEventType } from '../../constants/xpRewards'
 import useTheme from '../../hooks/useTheme'
+import { calculateAccessibleDay, isItemUnlocked } from '../../utils/dayAccessEngine'
 
 const MAX_ATTEMPTS = 1
 const BYPASS_PROCTORING = false // Set to false to enable AI proctoring violations in production
@@ -556,23 +557,29 @@ export default function TakeAssessment() {
             // Check if locked for student's groups (Skip in admin test mode)
             if (!isAdminTest) {
                 const userGroupIds = memberships?.map(m => m.group_id) || []
-
-                // Check manual resource-level lock
                 const isResourceLocked = locks?.some(l => userGroupIds.includes(l.group_id))
 
-                // Check day-level lock/schedule
-                const dayAccess = (locksDay || []).find(a => a.course_id === assess.course_id && a.day_number === assess.day_number && userGroupIds.includes(a.group_id))
-                const isDayLocked = dayAccess?.is_locked || (dayAccess?.open_time && new Date(dayAccess.open_time) > new Date())
+                // Get enrollment date & accessible day
+                const { data: enrollData } = await supabase
+                    .from('enrollments')
+                    .select('enrolled_at')
+                    .eq('student_id', profile.id)
+                    .eq('course_id', assess.course_id)
+                    .maybeSingle()
 
-                if (isResourceLocked || isDayLocked) {
-                    alert(isDayLocked && dayAccess?.open_time ? `This day opens at ${new Date(dayAccess.open_time).toLocaleString()}` : 'This assessment is currently locked for your group.')
-                    navigate(`/student/courses/${assess.course_id}`, { replace: true })
-                    return
-                }
+                const enrolledAt = enrollData?.enrolled_at || profile?.created_at || new Date()
+                const accessibleDay = calculateAccessibleDay(enrolledAt)
 
-                // Check assessment-level open_time
-                if (assess.open_time && new Date(assess.open_time) > new Date()) {
-                    alert(`This assessment opens at ${new Date(assess.open_time).toLocaleString()}`)
+                const lockStatus = isItemUnlocked({
+                    item: assess,
+                    type: 'assessment',
+                    accessibleDay,
+                    lockedAssessIds: isResourceLocked ? [assess.id] : [],
+                    groupDayAccess: locksDay
+                })
+
+                if (lockStatus.isLocked) {
+                    alert(lockStatus.reason || 'This assessment is currently locked.')
                     navigate(`/student/courses/${assess.course_id}`, { replace: true })
                     return
                 }

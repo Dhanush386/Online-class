@@ -22,17 +22,17 @@ export function toISOWithOffset(localStr) {
 }
 
 /**
- * Returns the current date at 18:30 (6:30 PM) local time formatted for <input type="datetime-local">
+ * Returns the current date at 00:00 (12:00 AM) local time formatted for <input type="datetime-local">
  */
 export function getDefaultUnlockTime() {
     const d = new Date()
-    d.setHours(18, 30, 0, 0)
+    d.setHours(0, 0, 0, 0)
     const pad = n => String(n).padStart(2, '0')
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 /**
- * Returns the date at 18:30 (6:30 PM) local time for a specific day in a course,
+ * Returns the date at 00:00 (12:00 AM) local time for a specific day in a course,
  * given the course's start date and the day number (1-indexed).
  */
 export function getDefaultUnlockTimeForDay(startDateString, dayNumber) {
@@ -46,7 +46,7 @@ export function getDefaultUnlockTimeForDay(startDateString, dayNumber) {
             d.setDate(d.getDate() + (dayNumber - 1));
         }
     }
-    d.setHours(18, 30, 0, 0);
+    d.setHours(0, 0, 0, 0);
     const pad = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

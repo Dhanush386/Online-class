@@ -10,37 +10,21 @@ import WeeklyCompletionModal from '../../components/student/WeeklyCompletionModa
 import CourseJourneyTimeline from '../../components/student/CourseJourneyTimeline'
 import useWeeklyCourse from '../../hooks/useWeeklyCourse'
 import useXpAward from '../../hooks/useXpAward'
+import { calculateAccessibleDay, isItemUnlocked } from '../../utils/dayAccessEngine'
 
 const MAX_ATTEMPTS = 1
 const ASSESS_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
 
-const checkItemLocked = (item, type, { lockedCodingIds, lockedAssessIds, lockedMaterialIds, groupDayAccess, now }) => {
-    // Live class videos should NEVER be locked for students
-    if (type === 'video' || type === 'live') {
-        const isRecorded = item.video_url && (
-            item.video_url.includes('supabase.co/storage') || 
-            item.video_url.includes('drive.google.com') ||
-            !item.video_url.startsWith('http')
-        )
-        // If it is a live class / meeting link, it is always unlocked
-        if (!isRecorded) return false
-    }
-
-    if (type === 'coding' && lockedCodingIds.includes(item.id)) return true
-    if (type === 'assessment' && lockedAssessIds.includes(item.id)) return true
-    if (type === 'resource' && lockedMaterialIds.includes(item.id)) return true
-
-    for (const da of groupDayAccess) {
-        if (da.day_number === item.day_number) {
-            if (da.is_locked || (da.open_time && new Date(da.open_time) > now)) return true
-            break
-        }
-    }
-    
-    const itemTime = item.open_time || item.scheduled_time || item.start_time
-    if (itemTime && new Date(itemTime) > now) return true
-
-    return false
+const checkItemLocked = (item, type, { lockedCodingIds, lockedAssessIds, lockedMaterialIds, groupDayAccess, accessibleDay }) => {
+    return isItemUnlocked({
+        item,
+        type,
+        accessibleDay: accessibleDay ?? 1,
+        lockedCodingIds,
+        lockedAssessIds,
+        lockedMaterialIds,
+        groupDayAccess
+    }).isLocked
 }
 
 function getVideoDurationMs(video) {
@@ -139,6 +123,8 @@ export default function CourseDetail() {
     // Journey Engine state
     const [showWeeklyModal, setShowWeeklyModal] = useState(false)
     const [completedWeekInfo, setCompletedWeekInfo] = useState(null)
+    const [enrollmentDate, setEnrollmentDate] = useState(null)
+    const [accessibleDay, setAccessibleDay] = useState(1)
 
     // Journey Engine hooks
     const {
@@ -162,7 +148,8 @@ export default function CourseDetail() {
                 { data: resData },
                 { data: vpData },
                 { data: initialNotes },
-                { data: codingSubsData }
+                { data: codingSubsData },
+                { data: enrollData }
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
                 supabase.from('videos').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }),
@@ -176,7 +163,8 @@ export default function CourseDetail() {
                 supabase.from('course_resources').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }),
                 supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
                 supabase.from('student_notes').select('*').eq('student_id', profile.id).eq('course_id', courseId).order('created_at', { ascending: false }),
-                supabase.from('coding_submissions').select('*').eq('student_id', profile.id)
+                supabase.from('coding_submissions').select('*').eq('student_id', profile.id),
+                supabase.from('enrollments').select('enrolled_at').eq('student_id', profile.id).eq('course_id', courseId).maybeSingle()
             ])
 
             // No need for setMaxDay state if we just use it to build the day list, but let's see
@@ -184,15 +172,25 @@ export default function CourseDetail() {
             const userGroupIds = memberships?.map(m => m.group_id) || []
             const groupDayAccess = (dayAccessData || []).filter(da => userGroupIds.includes(da.group_id))
 
-
             const lockedCodingIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'coding').map(l => l.resource_id) || []
             const lockedAssessIds = locks?.filter(l => userGroupIds.includes(l.group_id) && l.resource_type === 'assessment').map(l => l.resource_id) || []
             const lockedMaterialIds = locks?.filter(l => userGroupIds.includes(l.group_id) && (l.resource_type === 'resource' || l.resource_type === 'other')).map(l => l.resource_id) || []
 
             setCourse(crs)
-            const now = new Date()
             
-            const lockCtx = { lockedCodingIds, lockedAssessIds, lockedMaterialIds, groupDayAccess, now }
+            // Calculate Day-by-Day access using student's enrollment date & 6:00 PM cutoff
+            const enrollTimestamp = enrollData?.enrolled_at || prog?.created_at || profile?.created_at || new Date()
+            setEnrollmentDate(enrollTimestamp)
+            const currentAccessibleDay = calculateAccessibleDay(enrollTimestamp)
+            setAccessibleDay(currentAccessibleDay)
+
+            const lockCtx = { 
+                lockedCodingIds, 
+                lockedAssessIds, 
+                lockedMaterialIds, 
+                groupDayAccess, 
+                accessibleDay: currentAccessibleDay 
+            }
 
             setSessions((vids || []).map(v => ({ ...v, isLocked: checkItemLocked(v, 'video', lockCtx) })))
             setProgress({ ...prog, video_progress: vpData || [] })
@@ -971,6 +969,8 @@ export default function CourseDetail() {
                             assessment_submissions: Object.values(submissions).flat(),
                             coding_submissions: codingSubmissions
                         }}
+                        enrollmentDate={enrollmentDate}
+                        accessibleDay={accessibleDay}
                         getScheduleDate={getScheduleDate}
                         isWeekLocked={isWeekLocked}
                         onModuleAction={(type, module) => {

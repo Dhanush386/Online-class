@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot, Lock } from 'lucide-react'
+import { calculateAccessibleDay, getItemAbsoluteDay } from '../../utils/dayAccessEngine'
 
 const STATUS_ORDER = {
     'current': 0,
@@ -11,7 +12,7 @@ const STATUS_ORDER = {
 };
 
 function CourseJourneyItem({ item, onModuleAction }) {
-    const isLocked = item.status === 'locked'
+    const isLocked = item.status === 'locked' || item.status === 'upcoming'
     
     const handleAction = () => {
         if (isLocked) return
@@ -71,7 +72,7 @@ function CourseJourneyItem({ item, onModuleAction }) {
         containerStyle.background = 'rgba(245, 158, 11, 0.01)';
         containerStyle.borderColor = 'rgba(245, 158, 11, 0.3)';
         circleBorderColor = '#f59e0b';
-        statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Upcoming</span>;
+        statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Unlocks Tomorrow</span>;
     } else if (item.status === 'locked') {
         containerStyle.opacity = 0.5;
         statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: '#f1f5f9', color: '#64748b', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Locked</span>;
@@ -133,20 +134,30 @@ function CourseJourneyItem({ item, onModuleAction }) {
     )
 }
 
-export default function CourseJourneyTimeline({ course, sessions, challenges, courseResources, assessments, progress, getScheduleDate, onModuleAction, isWeekLocked }) {
+export default function CourseJourneyTimeline({ 
+    course, 
+    sessions, 
+    challenges, 
+    courseResources, 
+    assessments, 
+    progress, 
+    enrollmentDate,
+    accessibleDay: propAccessibleDay,
+    getScheduleDate, 
+    onModuleAction, 
+    isWeekLocked 
+}) {
     const [expandedWeek, setExpandedWeek] = useState(1)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     
-    // Calculate Drip Day Limit (Day-wise pattern) based on enrollment
+    // Calculate Drip Day Limit based on student enrollment date & 6:00 PM cutoff rule
     const currentAccessibleAbsoluteDay = useMemo(() => {
-        const enrollmentDate = progress?.created_at ? new Date(progress.created_at) : (course?.start_date ? new Date(course.start_date) : new Date());
-        const enrollDay = new Date(enrollmentDate);
-        enrollDay.setHours(0, 0, 0, 0);
-        const todayDay = new Date();
-        todayDay.setHours(0, 0, 0, 0);
-        const daysSinceEnrollment = Math.floor((todayDay - enrollDay) / (1000 * 60 * 60 * 24));
-        return Math.max(1, daysSinceEnrollment + 1);
-    }, [progress?.created_at, course?.start_date]);
+        if (propAccessibleDay !== undefined && propAccessibleDay !== null) {
+            return propAccessibleDay;
+        }
+        const enrolledTimestamp = enrollmentDate || progress?.created_at || course?.start_date || new Date();
+        return calculateAccessibleDay(enrolledTimestamp);
+    }, [propAccessibleDay, enrollmentDate, progress?.created_at, course?.start_date]);
 
     const totalWeeks = course?.duration_weeks || 12
 
@@ -232,17 +243,9 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                     isLocked = true;
                 }
 
-                // Enforce Day-wise pattern (drip content) if sequential unlock is enabled
-                if (course?.sequential_unlock !== false) {
-                    const itemDow = item.day_of_week || item.day_number || item.day || 1;
-                    const itemAbsoluteDay = (weekNum - 1) * 7 + itemDow;
-                    if (itemAbsoluteDay > currentAccessibleAbsoluteDay) {
-                        isLocked = true;
-                    }
-                }
-
-                const itemDate = item.open_time || item.scheduled_time || item.start_time;
-                if (itemDate && new Date(itemDate) > new Date()) {
+                // Enforce Day-wise continuous unlocking
+                const itemAbsoluteDay = getItemAbsoluteDay({ ...item, week_number: weekNum });
+                if (currentAccessibleAbsoluteDay === 0 || itemAbsoluteDay > currentAccessibleAbsoluteDay) {
                     isLocked = true;
                 }
             }
@@ -283,7 +286,7 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                 return typeA - typeB;
             });
 
-            // Then assign status so 'current' (Active Focus) hits the first uncompleted item
+            // Within an unlocked day, all Day items are freely accessible (video, coding challenge, quiz)
             topicsMap[topic] = sortedItems.map(item => {
                 const completed = isTaskCompleted(item.type, item.id);
                 let status = 'available';
@@ -294,14 +297,9 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                     // Live classes are ALWAYS unlocked and directly accessible!
                     status = 'available';
                 } else if (item.isLocked) {
-                    const itemTime = item.open_time || item.scheduled_time || item.start_time;
-                    if (itemTime) {
-                        const diffMs = new Date(itemTime) - Date.now();
-                        if (diffMs > 0 && diffMs <= 172800000) {
-                            status = 'upcoming'; // Scheduled within 2 days
-                        } else {
-                            status = 'locked';
-                        }
+                    const itemAbsoluteDay = getItemAbsoluteDay(item);
+                    if (currentAccessibleAbsoluteDay === 0 || itemAbsoluteDay === currentAccessibleAbsoluteDay + 1) {
+                        status = 'upcoming'; // Next day / tomorrow
                     } else {
                         status = 'locked';
                     }
@@ -309,7 +307,8 @@ export default function CourseJourneyTimeline({ course, sessions, challenges, co
                     status = 'current';
                     hasCurrent = true;
                 } else {
-                    status = (course?.sequential_unlock !== false) ? 'locked' : 'available';
+                    // All other items of unlocked day are freely available
+                    status = 'available';
                 }
                 return { ...item, status };
             }).sort((a, b) => {
@@ -553,6 +552,8 @@ CourseJourneyTimeline.propTypes = {
     courseResources: PropTypes.array,
     assessments: PropTypes.object,
     progress: PropTypes.object,
+    enrollmentDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
+    accessibleDay: PropTypes.number,
     getScheduleDate: PropTypes.func,
     onModuleAction: PropTypes.func
 }

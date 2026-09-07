@@ -7,6 +7,7 @@ import MobileBlocker from '../../components/MobileBlocker'
 import { useDeviceType } from '../../hooks/useDeviceType'
 import { useToast } from '../../components/Toast'
 import useXpAward from '../../hooks/useXpAward'
+import { calculateAccessibleDay, isItemUnlocked } from '../../utils/dayAccessEngine'
 
 // Extracted Hooks & Components
 import { useProctoring } from './workspace/hooks/useProctoring'
@@ -545,7 +546,29 @@ export default function CodeWorkspace() {
             const { data, error } = await supabase.from('coding_challenges').select('*').eq('id', challengeId).single()
             if (error) throw error
 
-            if (!canBypass && data.open_time && new Date(data.open_time) > new Date()) {
+            if (!canBypass && data.course_id) {
+                const { data: enrollData } = await supabase
+                    .from('enrollments')
+                    .select('enrolled_at')
+                    .eq('student_id', profile.id)
+                    .eq('course_id', data.course_id)
+                    .maybeSingle()
+
+                const enrolledAt = enrollData?.enrolled_at || profile?.created_at || new Date()
+                const accessibleDay = calculateAccessibleDay(enrolledAt)
+
+                const lockStatus = isItemUnlocked({
+                    item: data,
+                    type: 'coding',
+                    accessibleDay
+                })
+
+                if (lockStatus.isLocked) {
+                    alert(lockStatus.reason || 'This challenge is currently locked.')
+                    navigate('/student/coding', { replace: true })
+                    return
+                }
+            } else if (!canBypass && data.open_time && new Date(data.open_time) > new Date()) {
                 alert(`This challenge opens at ${new Date(data.open_time).toLocaleString()}`)
                 navigate('/student/coding', { replace: true })
                 return
