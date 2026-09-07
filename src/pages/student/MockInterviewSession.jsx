@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   Monitor,
   Share2,
+  PauseCircle,
 } from "lucide-react";
 import * as tf from "@tensorflow/tfjs";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
@@ -202,7 +203,12 @@ export default function MockInterviewSession() {
 
   // Active interview face verification loop
   useEffect(() => {
-    if (!cameraActive || isInterviewCompleted || session?.status === "completed") {
+    if (
+      !cameraActive ||
+      !isFullscreen ||
+      isInterviewCompleted ||
+      session?.status === "completed"
+    ) {
       if (faceCheckIntervalRef.current) clearInterval(faceCheckIntervalRef.current);
       return;
     }
@@ -238,7 +244,7 @@ export default function MockInterviewSession() {
     return () => {
       if (faceCheckIntervalRef.current) clearInterval(faceCheckIntervalRef.current);
     };
-  }, [cameraActive, aiModel, isInterviewCompleted, session?.status, cameraBrightness]);
+  }, [cameraActive, isFullscreen, aiModel, isInterviewCompleted, session?.status, cameraBrightness]);
 
   const handleStartCameraCheck = async () => {
     try {
@@ -680,10 +686,27 @@ export default function MockInterviewSession() {
     }
   }, [showExitConfirm, stopAiSpeech]);
 
-  // Automatically read question aloud when question loads on initial turn
+  // Cancel question reading and pause microphone immediately whenever candidate leaves full screen
+  useEffect(() => {
+    if (isExamActive && !isFullscreen) {
+      stopAiSpeech();
+      // Reset lastSpokenTurnRef so when they return to full screen, question reading will automatically resume
+      lastSpokenTurnRef.current = null;
+      if (isListeningRef.current && stopListeningRef.current) {
+        try {
+          stopListeningRef.current();
+        } catch (e) {
+          console.debug("Error pausing mic on fullscreen exit:", e);
+        }
+      }
+    }
+  }, [isExamActive, isFullscreen, stopAiSpeech]);
+
+  // Automatically read question aloud when question loads on initial turn and in fullscreen
   useEffect(() => {
     if (
       !cameraActive ||
+      !isFullscreen ||
       submitting ||
       generatingReport ||
       showExitConfirm ||
@@ -704,6 +727,7 @@ export default function MockInterviewSession() {
     }
   }, [
     cameraActive,
+    isFullscreen,
     currentTurnNumber,
     turns,
     submitting,
@@ -715,9 +739,10 @@ export default function MockInterviewSession() {
   // Keyboard shortcut listener: Space or Tab to extend speaking time
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ignore if setup modal or exit modal is active, already submitting, or AI is currently reading question
+      // Ignore if setup modal or exit modal is active, out of fullscreen, already submitting, or AI is currently reading question
       if (
         !cameraActive ||
+        !isFullscreen ||
         submitting ||
         generatingReport ||
         showExitConfirm ||
@@ -736,6 +761,7 @@ export default function MockInterviewSession() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     cameraActive,
+    isFullscreen,
     submitting,
     generatingReport,
     showExitConfirm,
@@ -743,10 +769,11 @@ export default function MockInterviewSession() {
     handleExtendTime,
   ]);
 
-  // Auto-enable microphone ONLY after AI interviewer finishes speaking
+  // Auto-enable microphone ONLY after AI interviewer finishes speaking and in fullscreen
   useEffect(() => {
     if (
       cameraActive &&
+      isFullscreen &&
       !isAiSpeaking &&
       !submitting &&
       !generatingReport &&
@@ -762,6 +789,7 @@ export default function MockInterviewSession() {
     }
   }, [
     cameraActive,
+    isFullscreen,
     isAiSpeaking,
     currentTurnNumber,
     submitting,
@@ -1211,8 +1239,10 @@ export default function MockInterviewSession() {
     Boolean(interimTranscript?.trim()) || volumeLevel > 18;
 
   useEffect(() => {
+    // Only run countdown timer during active interview when in fullscreen and ready for speech
     if (
       !cameraActive ||
+      !isFullscreen ||
       !isFaceDetected ||
       submitting ||
       generatingReport ||
@@ -1242,6 +1272,7 @@ export default function MockInterviewSession() {
     return () => clearInterval(interval);
   }, [
     cameraActive,
+    isFullscreen,
     isFaceDetected,
     submitting,
     generatingReport,
@@ -4050,6 +4081,17 @@ export default function MockInterviewSession() {
               >
                 <Lock size={15} color="#6366f1" /> Window switching and tab
                 changing are restricted.
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.45rem",
+                  color: "#f59e0b",
+                  fontWeight: 600,
+                }}
+              >
+                <PauseCircle size={15} color="#f59e0b" /> Question reading and timer are paused until you return.
               </div>
             </div>
 
