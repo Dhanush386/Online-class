@@ -238,3 +238,67 @@ describe('AI Mock Interview: Question Bank Security & Answer Key Protection', ()
     expect(originalTurn.question).not.toBe(modifiedBankQuestion.question)
   })
 })
+
+// ─────────────────────────────────────────────────────────────
+// 5. Face & Screen Sharing Proctoring Rules
+// ─────────────────────────────────────────────────────────────
+export function evaluateInterviewStartPermission(faceStatus, cameraStreamActive) {
+  if (!cameraStreamActive) {
+    return { allowed: false, reason: 'Camera stream not enabled' }
+  }
+  if (faceStatus === 'too_dark') {
+    return { allowed: false, reason: 'Lighting too dark — cannot verify face' }
+  }
+  if (faceStatus !== 'detected') {
+    return { allowed: false, reason: 'Face not detected in camera frame' }
+  }
+  return { allowed: true, reason: 'Face verified in adequate lighting' }
+}
+
+export function evaluateActiveInterviewFaceProctoring(isFaceDetected) {
+  return {
+    pauseSilenceTimer: !isFaceDetected,
+    disableAnswerSubmission: !isFaceDetected,
+    showBlockingOverlay: !isFaceDetected
+  }
+}
+
+describe('AI Mock Interview: Face Detection & Proctoring Verification', () => {
+  it('strictly disallows starting the interview if camera is not enabled', () => {
+    const result = evaluateInterviewStartPermission('idle', false)
+    expect(result.allowed).toBe(false)
+    expect(result.reason).toBe('Camera stream not enabled')
+  })
+
+  it('strictly disallows starting the interview if camera environment is pitch dark', () => {
+    const result = evaluateInterviewStartPermission('too_dark', true)
+    expect(result.allowed).toBe(false)
+    expect(result.reason).toBe('Lighting too dark — cannot verify face')
+  })
+
+  it('strictly disallows starting the interview if face is missing from frame', () => {
+    const result = evaluateInterviewStartPermission('no_face', true)
+    expect(result.allowed).toBe(false)
+    expect(result.reason).toBe('Face not detected in camera frame')
+  })
+
+  it('allows starting the interview when face is verified in adequate lighting', () => {
+    const result = evaluateInterviewStartPermission('detected', true)
+    expect(result.allowed).toBe(true)
+    expect(result.reason).toBe('Face verified in adequate lighting')
+  })
+
+  it('freezes silence countdown timer and blocks submission when face is lost during active interview', () => {
+    const proctoring = evaluateActiveInterviewFaceProctoring(false)
+    expect(proctoring.pauseSilenceTimer).toBe(true)
+    expect(proctoring.disableAnswerSubmission).toBe(true)
+    expect(proctoring.showBlockingOverlay).toBe(true)
+  })
+
+  it('unfreezes countdown and permits normal submission when face is re-detected', () => {
+    const proctoring = evaluateActiveInterviewFaceProctoring(true)
+    expect(proctoring.pauseSilenceTimer).toBe(false)
+    expect(proctoring.disableAnswerSubmission).toBe(false)
+    expect(proctoring.showBlockingOverlay).toBe(false)
+  })
+})

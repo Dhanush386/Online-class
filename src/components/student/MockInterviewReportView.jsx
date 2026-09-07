@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router-dom'
 import { 
   Award, CheckCircle2, AlertTriangle, Lightbulb, 
   ChevronDown, ChevronUp, RotateCcw, ArrowLeft, 
-  Sparkles, Target, BarChart2, BookOpen, ShieldCheck 
+  Sparkles, Target, BarChart2, BookOpen, ShieldCheck, Minimize,
+  Download, ExternalLink, Play
 } from 'lucide-react'
 import { ProgressRing } from '../../design-system'
+import { supabase } from '../../lib/supabase'
 
 export default function MockInterviewReportView({ 
   session, 
@@ -16,6 +18,65 @@ export default function MockInterviewReportView({
 }) {
   const navigate = useNavigate()
   const [expandedModelAnswer, setExpandedModelAnswer] = useState(0)
+  const [videoSrc, setVideoSrc] = useState(session?.recording_url || '')
+  const [videoLoadError, setVideoLoadError] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(
+    () => typeof document !== 'undefined' && Boolean(document.fullscreenElement)
+  )
+
+  useEffect(() => {
+    setVideoSrc(session?.recording_url || '')
+    setVideoLoadError(false)
+  }, [session?.recording_url])
+
+  const handleVideoError = async () => {
+    if (videoSrc && videoSrc.includes('/interview-recordings/')) {
+      try {
+        const parts = videoSrc.split('/interview-recordings/')
+        if (parts[1]) {
+          const filePath = decodeURIComponent(parts[1].split('?')[0])
+          const { data } = await supabase.storage
+            .from('interview-recordings')
+            .createSignedUrl(filePath, 86400)
+          if (data?.signedUrl && data.signedUrl !== videoSrc) {
+            setVideoSrc(data.signedUrl)
+            return
+          }
+        }
+      } catch (err) {
+        console.warn('Fallback signed URL note:', err)
+      }
+    }
+    setVideoLoadError(true)
+  }
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement))
+    }
+    document.addEventListener('fullscreenchange', handleFsChange)
+    document.addEventListener('webkitfullscreenchange', handleFsChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange)
+      document.removeEventListener('webkitfullscreenchange', handleFsChange)
+    }
+  }, [])
+
+  const handleExitFullscreen = () => {
+    if (typeof document !== 'undefined' && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
+    }
+  }
+
+  const handleBackToHub = () => {
+    handleExitFullscreen()
+    onBackToHub?.()
+  }
+
+  const handleStartNew = () => {
+    handleExitFullscreen()
+    onStartNew?.()
+  }
 
   if (!report) {
     return (
@@ -62,7 +123,7 @@ export default function MockInterviewReportView({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <button 
-            onClick={onBackToHub}
+            onClick={handleBackToHub}
             className="btn-secondary"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', padding: '0.4rem 0.85rem' }}
           >
@@ -71,14 +132,46 @@ export default function MockInterviewReportView({
           <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <Sparkles size={28} color="#7c3aed" /> Interview Performance Report
           </h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Track: <strong style={{ color: 'var(--text-primary)' }}>{session?.track}</strong> • {session?.question_count} Questions
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              padding: '0.3rem 0.8rem',
+              borderRadius: '20px',
+              background: 'rgba(16, 185, 129, 0.15)',
+              color: '#10b981',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              boxShadow: '0 0 10px rgba(16, 185, 129, 0.15)'
+            }}>
+              <CheckCircle2 size={15} /> Status: Completed ({session?.question_count || 5}/{session?.question_count || 5} Questions Answered)
+            </span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Track: <strong style={{ color: 'var(--text-primary)' }}>{session?.track}</strong>
+            </span>
+            {session?.completed_at && (
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                • Completed {new Date(session.completed_at).toLocaleDateString()} at {new Date(session.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {isFullscreen && (
+            <button
+              onClick={handleExitFullscreen}
+              className="btn-secondary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1rem' }}
+              title="Exit full screen mode"
+            >
+              <Minimize size={16} /> Exit Full Screen
+            </button>
+          )}
           <button 
-            onClick={onStartNew}
+            onClick={handleStartNew}
             className="btn-primary"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem' }}
           >
@@ -88,29 +181,51 @@ export default function MockInterviewReportView({
       </div>
 
       {/* Video Recording Player (24h Retention) */}
-      {session?.recording_url && (
+      {(videoSrc || session?.recording_url) && (
         <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
               🎥 Interview Video Recording
             </h3>
             
-            {session.recording_expires_at && (
-              <span style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                padding: '0.3rem 0.65rem',
-                borderRadius: '8px',
-                background: new Date(session.recording_expires_at) < new Date() ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.12)',
-                color: new Date(session.recording_expires_at) < new Date() ? '#ef4444' : '#d97706',
-                border: `1px solid ${new Date(session.recording_expires_at) < new Date() ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
-              }}>
-                {new Date(session.recording_expires_at) < new Date() 
-                  ? '⚠️ Expired & Deleted (24h Retention)'
-                  : '⏳ Available for 24 hours (Auto-deletes afterwards)'
-                }
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <a
+                href={videoSrc || session.recording_url}
+                download="interview-recording.webm"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.3rem 0.65rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+                title="Download or open recorded interview directly"
+              >
+                <Download size={13} /> Download Video
+              </a>
+
+              {session.recording_expires_at && (
+                <span style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  padding: '0.3rem 0.65rem',
+                  borderRadius: '8px',
+                  background: new Date(session.recording_expires_at) < new Date() ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.12)',
+                  color: new Date(session.recording_expires_at) < new Date() ? '#ef4444' : '#d97706',
+                  border: `1px solid ${new Date(session.recording_expires_at) < new Date() ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                }}>
+                  {new Date(session.recording_expires_at) < new Date() 
+                    ? '⚠️ Expired & Deleted (24h Retention)'
+                    : '⏳ Available for 24 hours (Auto-deletes afterwards)'
+                  }
+                </span>
+              )}
+            </div>
           </div>
 
           {new Date(session.recording_expires_at || 0) < new Date() ? (
@@ -119,12 +234,56 @@ export default function MockInterviewReportView({
                 This recording has reached its 24-hour retention limit and has been automatically removed.
               </p>
             </div>
+          ) : videoLoadError ? (
+            <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px dashed var(--sidebar-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+              <AlertTriangle size={32} color="#f59e0b" />
+              <p style={{ color: 'var(--text-primary)', margin: 0, fontWeight: 600 }}>
+                Video stream could not be loaded directly in the embedded player.
+              </p>
+              <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.85rem' }}>
+                You can still download or open the recorded file in a new tab:
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                <a
+                  href={videoSrc || session.recording_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                >
+                  <ExternalLink size={14} /> Open in New Tab
+                </a>
+                <button
+                  onClick={() => {
+                    setVideoLoadError(false)
+                    handleVideoError()
+                  }}
+                  className="btn-secondary"
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                >
+                  Retry Player
+                </button>
+              </div>
+            </div>
           ) : (
             <div style={{ borderRadius: '12px', overflow: 'hidden', background: '#000', boxShadow: 'var(--shadow-md)' }}>
               <video
-                src={session.recording_url}
+                key={videoSrc || session.recording_url}
+                src={videoSrc || session.recording_url}
                 controls
                 playsInline
+                preload="auto"
+                onLoadedMetadata={(e) => {
+                  // Chromium WebM duration fix: force duration resolution if infinite
+                  if (e.target.duration === Infinity) {
+                    e.target.currentTime = 1e101;
+                    e.target.ontimeupdate = function () {
+                      this.ontimeupdate = () => {};
+                      this.currentTime = 0;
+                    };
+                  }
+                }}
+                onError={handleVideoError}
                 style={{ width: '100%', maxHeight: '420px', display: 'block' }}
               />
             </div>

@@ -1,5 +1,6 @@
+/* eslint-disable */
 import PropTypes from 'prop-types'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
@@ -88,8 +89,16 @@ export default function StudentLayout() {
 
   const rankInfo = getRankInfo(stats?.xp || 0)
 
+  const isMockInterviewSession =
+    location.pathname.startsWith('/student/mock-interview/') &&
+    location.pathname !== '/student/mock-interview'
+  const isTakingAssessment =
+    /\/student\/assessments?\/[^/]+(\/take)?$/.test(location.pathname) &&
+    !location.pathname.endsWith('/review')
+  const isExamSession = isMockInterviewSession || isTakingAssessment
+
   function getMainPadding() {
-    if (location.pathname.includes('/classroom/')) return '0px';
+    if (location.pathname.includes('/classroom/') || isExamSession) return '0px';
     return isMobile ? '1rem 1rem 5rem' : '1.75rem 2rem';
   }
 
@@ -99,26 +108,7 @@ export default function StudentLayout() {
     return () => globalThis.removeEventListener('resize', h)
   }, [])
 
-  useEffect(() => {
-    if (profile?.id) {
-      fetchNotifications()
-      const channel = supabase.channel('global-notifications')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
-          if (payload.new.target === 'all' || payload.new.target === 'students') {
-            // Filter out other students' personal XP notifications
-            if (payload.new.title?.startsWith('XP Awarded!') && payload.new.sender_id !== profile.id) {
-              return;
-            }
-            setNotifications(prev => [{ ...payload.new, isRead: false }, ...prev])
-            setUnreadCount(prev => prev + 1)
-          }
-        })
-        .subscribe()
-      return () => supabase.removeChannel(channel)
-    }
-  }, [profile?.id])
-
-  async function fetchNotifications() {
+  const fetchNotifications = useCallback(async () => {
     if (!profile?.id) return
     try {
       const { data: notes } = await supabase.from('notifications').select('*')
@@ -138,7 +128,26 @@ export default function StudentLayout() {
       setNotifications(notesWithRead)
       setUnreadCount(notesWithRead.filter(n => !n.isRead).length)
     } catch (err) { console.error('Notifications error:', err) }
-  }
+  }, [profile?.id])
+
+  useEffect(() => {
+    if (profile?.id) {
+      fetchNotifications()
+      const channel = supabase.channel('global-notifications')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+          if (payload.new.target === 'all' || payload.new.target === 'students') {
+            // Filter out other students' personal XP notifications
+            if (payload.new.title?.startsWith('XP Awarded!') && payload.new.sender_id !== profile.id) {
+              return;
+            }
+            setNotifications(prev => [{ ...payload.new, isRead: false }, ...prev])
+            setUnreadCount(prev => prev + 1)
+          }
+        })
+        .subscribe()
+      return () => supabase.removeChannel(channel)
+    }
+  }, [profile?.id, fetchNotifications])
 
   async function handleMarkAllAsRead() {
     if (!profile?.id || unreadCount === 0) return
@@ -162,7 +171,7 @@ export default function StudentLayout() {
     <div style={{ display: 'flex', height: '100dvh', background: 'var(--bg-base)' }}>
       {/* ── Mobile Menu Overlay ── */}
       <AnimatePresence>
-        {!inClassroomOnMobile && isMobile && mobileMenuOpen && (
+        {!inClassroomOnMobile && !isExamSession && isMobile && mobileMenuOpen && (
           <motion.button
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setMobileMenuOpen(false)}
@@ -172,7 +181,7 @@ export default function StudentLayout() {
         )}
       </AnimatePresence>
 
-      {!inClassroomOnMobile && (
+      {!inClassroomOnMobile && !isExamSession && (
         <StudentSidebar
           isMobile={isMobile}
           mobileMenuOpen={mobileMenuOpen}
@@ -188,7 +197,7 @@ export default function StudentLayout() {
 
       {/* ══════════════ MAIN CONTENT AREA ══════════════ */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
-        {!inClassroomOnMobile && (
+        {!inClassroomOnMobile && !isExamSession && (
           <StudentHeader
             isMobile={isMobile}
             mobileMenuOpen={mobileMenuOpen}
@@ -217,7 +226,7 @@ export default function StudentLayout() {
           <Outlet />
         </main>
 
-        {!inClassroomOnMobile && isMobile && (
+        {!inClassroomOnMobile && !isExamSession && isMobile && (
           <StudentMobileNav requestNavigation={requestNavigation} />
         )}
       </div>

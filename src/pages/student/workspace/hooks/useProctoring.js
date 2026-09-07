@@ -48,16 +48,41 @@ export function useProctoring({ isStarted, canBypass, BYPASS_PROCTORING, challen
         loadModel()
     }, [canBypass, BYPASS_PROCTORING])
 
+    const faceLostCountRef = useRef(0)
+
     // Run Proctoring Loop
     useEffect(() => {
-        const processProctoringPredictions = (predictions) => {
+        const processProctoringPredictions = async (predictions) => {
+            let hasFace = false;
+
+            // 1. Hardware-accelerated FaceDetector
+            if (typeof globalThis !== 'undefined' && 'FaceDetector' in globalThis && videoRef.current) {
+                try {
+                    const detector = new globalThis.FaceDetector({ fastMode: true, maxDetectedFaces: 3 });
+                    const faces = await detector.detect(videoRef.current);
+                    if (faces && faces.length > 0) hasFace = true;
+                } catch (e) {
+                    console.debug('FaceDetector check note in useProctoring:', e);
+                }
+            }
+
             let phoneDetected = false;
             let personCount = 0;
             predictions.forEach(p => {
                 if (p.class === 'cell phone') phoneDetected = true;
-                if (p.class === 'person') personCount++;
+                if (p.class === 'person' && p.score > 0.35) personCount++;
             });
-            setFaceDetected(personCount > 0);
+            if (personCount > 0) hasFace = true;
+
+            if (hasFace) {
+                faceLostCountRef.current = 0;
+                setFaceDetected(true);
+            } else {
+                faceLostCountRef.current = (faceLostCountRef.current || 0) + 1;
+                if (faceLostCountRef.current >= 3) {
+                    setFaceDetected(false);
+                }
+            }
             
             const now = Date.now();
 
@@ -78,7 +103,7 @@ export function useProctoring({ isStarted, canBypass, BYPASS_PROCTORING, challen
             }
 
             // 2. Face Lost Detection (Risk: +20)
-            if (personCount === 0) {
+            if (!hasFace && faceLostCountRef.current >= 3) {
                 if (now - (lastViolationTimes.current['face_lost'] || 0) > 10000) {
                     lastViolationTimes.current['face_lost'] = now;
                     logViolation('face_lost', 20);
@@ -105,9 +130,9 @@ export function useProctoring({ isStarted, canBypass, BYPASS_PROCTORING, challen
         if (BYPASS_PROCTORING) return;
         if (isStarted && cameraEnabled && aiModel && videoRef.current && !canBypass) {
             proctorInterval.current = setInterval(async () => {
-                if (videoRef.current?.readyState === 4) {
+                if (videoRef.current?.readyState >= 2) {
                     const predictions = await aiModel.detect(videoRef.current);
-                    processProctoringPredictions(predictions);
+                    await processProctoringPredictions(predictions);
                 }
             }, 2500);
         }
@@ -223,7 +248,14 @@ export function useProctoring({ isStarted, canBypass, BYPASS_PROCTORING, challen
 
     const startCamera = async () => {
         try {
-            const stream = await globalThis.navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            const stream = await globalThis.navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user'
+                },
+                audio: true
+            })
             setMediaStream(stream)
             setCameraEnabled(true)
         } catch {

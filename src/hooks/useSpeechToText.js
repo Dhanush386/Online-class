@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { getGeminiLiveToken } from "../services/geminiLiveTokenService";
+import {
+  getGeminiLiveToken,
+  prewarmGeminiLiveToken,
+} from "../services/geminiLiveTokenService";
 import {
   GeminiLiveService,
   filterEnglishOnly,
@@ -38,6 +41,22 @@ export default function useSpeechToText({
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [error, setError] = useState(null);
   const [mode, setMode] = useState("click"); // 'click' | 'push-to-talk'
+  const [preferredEngine, setPreferredEngine] = useState(() => {
+    try {
+      return localStorage.getItem("mock_interview_preferred_engine") || "auto";
+    } catch {
+      return "auto";
+    }
+  });
+
+  const handleSetPreferredEngine = useCallback((eng) => {
+    setPreferredEngine(eng);
+    try {
+      localStorage.setItem("mock_interview_preferred_engine", eng);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   // References
   const geminiLiveRef = useRef(null);
@@ -49,6 +68,11 @@ export default function useSpeechToText({
   const onFinalTranscriptRef = useRef(onFinalTranscript);
   const onErrorRef = useRef(onError);
   const trackRef = useRef(track);
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     onFinalTranscriptRef.current = onFinalTranscript;
@@ -61,6 +85,11 @@ export default function useSpeechToText({
   useEffect(() => {
     trackRef.current = track;
   }, [track]);
+
+  // Prewarm Gemini Live token as soon as hook mounts
+  useEffect(() => {
+    prewarmGeminiLiveToken();
+  }, []);
 
   /**
    * Stop all audio streams and AudioContext
@@ -184,46 +213,84 @@ export default function useSpeechToText({
     isStoppingRef.current = false;
     setError(null);
     setInterimTranscript("");
-    setState(STT_STATES.REQUESTING_MIC);
 
-    let stream = null;
-
-    // 1. Request microphone permission
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-      mediaStreamRef.current = stream;
-    } catch (micErr) {
-      console.error("Microphone access denied:", micErr);
-      const msg =
-        micErr.name === "NotAllowedError"
-          ? "Microphone permission was denied. Please allow microphone access in your browser settings."
-          : "Could not access microphone.";
-      setError(msg);
-      setState(STT_STATES.IDLE);
-      if (onErrorRef.current) onErrorRef.current(new Error(msg));
+    // If user explicitly preferred Browser Speech, start immediately with 0 latency
+    if (preferredEngine === "browser-speech") {
+      await startBrowserSpeechFallback();
       return;
     }
 
-    // 2. Obtain Ephemeral Gemini Live Token
-    setState(STT_STATES.CONNECTING_GEMINI);
+    // Safety watchdog: never allow connecting state to hang longer than 2.0s
+    let watchdogTimer = setTimeout(() => {
+      if (
+        !isStoppingRef.current &&
+        stateRef.current !== STT_STATES.LISTENING &&
+        stateRef.current !== STT_STATES.BROWSER_SPEECH
+      ) {
+        console.warn(
+          "Gemini connection exceeded 2.0s watchdog — triggering instant Browser Speech fallback",
+        );
+        startBrowserSpeechFallback();
+      }
+    }, 2000);
+
+    // 1 & 2. Concurrently obtain mic stream and Gemini Live token
+    let stream = mediaStreamRef.current;
+    if (!stream || !stream.active) {
+      setState(STT_STATES.REQUESTING_MIC);
+    } else {
+      setState(STT_STATES.CONNECTING_GEMINI);
+    }
+
     let token = null;
     try {
-      token = await getGeminiLiveToken();
-    } catch (tokErr) {
+      const micPromise =
+        stream && stream.active
+          ? Promise.resolve(stream)
+          : navigator.mediaDevices.getUserMedia({
+              audio: {
+                channelCount: 1,
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+              },
+            });
+
+      const tokenPromise = getGeminiLiveToken();
+
+      const [acquiredStream, acquiredToken] = await Promise.all([
+        micPromise,
+        tokenPromise,
+      ]);
+
+      stream = acquiredStream;
+      mediaStreamRef.current = stream;
+      token = acquiredToken;
+    } catch (err) {
+      clearTimeout(watchdogTimer);
+      // If mic failed
+      if (!stream || !stream.active) {
+        console.error("Microphone access denied:", err);
+        const msg =
+          err?.name === "NotAllowedError"
+            ? "Microphone permission was denied. Please allow microphone access in your browser settings."
+            : "Could not access microphone.";
+        setError(msg);
+        setState(STT_STATES.IDLE);
+        if (onErrorRef.current) onErrorRef.current(new Error(msg));
+        return;
+      }
+
+      // If token failed, fall back to browser speech immediately
       console.warn(
         "Ephemeral token acquisition failed, switching to browser fallback:",
-        tokErr,
+        err,
       );
       await startBrowserSpeechFallback();
       return;
     }
+
+    setState(STT_STATES.CONNECTING_GEMINI);
 
     // 3. Connect to Gemini Live WebSocket
     try {
@@ -248,7 +315,7 @@ export default function useSpeechToText({
           startBrowserSpeechFallback();
         },
         onClose: () => {
-          if (!isStoppingRef.current && state === STT_STATES.LISTENING) {
+          if (!isStoppingRef.current && stateRef.current === STT_STATES.LISTENING) {
             startBrowserSpeechFallback();
           }
         },
@@ -290,16 +357,38 @@ export default function useSpeechToText({
       workletNode.connect(muteGain);
       muteGain.connect(audioCtx.destination);
 
+      clearTimeout(watchdogTimer);
+      if (
+        stateRef.current === STT_STATES.BROWSER_SPEECH ||
+        isStoppingRef.current
+      ) {
+        service.disconnect();
+        return;
+      }
       setState(STT_STATES.LISTENING);
       setActiveEngine("gemini-live");
     } catch (connErr) {
-      console.warn(
-        "Failed to connect to Gemini Live, falling back to Browser Speech:",
-        connErr,
-      );
-      await startBrowserSpeechFallback();
+      clearTimeout(watchdogTimer);
+      if (
+        stateRef.current !== STT_STATES.BROWSER_SPEECH &&
+        !isStoppingRef.current
+      ) {
+        console.warn(
+          "Failed to connect to Gemini Live, falling back to Browser Speech:",
+          connErr,
+        );
+        await startBrowserSpeechFallback();
+      }
     }
-  }, [startBrowserSpeechFallback, state]);
+  }, [preferredEngine, startBrowserSpeechFallback]);
+
+  /**
+   * Immediately switch to Browser Speech without waiting for Gemini
+   */
+  const switchToBrowserSpeech = useCallback(async () => {
+    console.info("User switched to Browser Speech recognition");
+    await startBrowserSpeechFallback();
+  }, [startBrowserSpeechFallback]);
 
   /**
    * Stop Listening smoothly
@@ -380,6 +469,9 @@ export default function useSpeechToText({
     isListening:
       state === STT_STATES.LISTENING || state === STT_STATES.BROWSER_SPEECH,
     activeEngine,
+    preferredEngine,
+    setPreferredEngine: handleSetPreferredEngine,
+    switchToBrowserSpeech,
     interimTranscript,
     volumeLevel,
     error,

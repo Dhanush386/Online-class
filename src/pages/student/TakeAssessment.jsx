@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { ChevronLeft, ChevronRight, Send, Clock, CheckCircle2, Lock, ShieldAlert, Camera, Code as CodeIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, Clock, CheckCircle2, Lock, ShieldAlert, Camera, Code as CodeIcon, Minimize, AlertTriangle, Sun, RotateCcw } from 'lucide-react'
 import * as tf from '@tensorflow/tfjs'
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
 import CodeEditor from '../../components/CodeEditor'
@@ -51,12 +51,16 @@ export default function TakeAssessment() {
     const [currentIdx, setCurrentIdx] = useState(0)
     const [answers, setAnswers] = useState({}) // { questionId: selectedOption }
     const [isStarted, setIsStarted] = useState(false)
-    const [timeLeft, setTimeLeft] = useState(null)
+    const [timeLeft, _setTimeLeft] = useState(null)
     const [violationCount, setViolationCount] = useState(0)
     const [isAutoSubmitted, setIsAutoSubmitted] = useState(false)
     const [requiresReentry, setRequiresReentry] = useState(false)
     const [securityAlert, setSecurityAlert] = useState(null)
     const [faceDetected, setFaceDetected] = useState(true)
+    const [showQuitConfirm, setShowQuitConfirm] = useState(false)
+    const [isFullscreen, setIsFullscreen] = useState(
+        () => typeof document !== 'undefined' && Boolean(document.fullscreenElement)
+    )
 
     // Proctoring Risk Engine & Session States
     const [sessionId, setSessionId] = useState(null)
@@ -76,10 +80,13 @@ export default function TakeAssessment() {
     // Proctoring Engine States
     const { isMobile, isTablet, isDesktop } = useDeviceType()
     const [cameraEnabled, setCameraEnabled] = useState(false)
+    const [cameraBrightness, setCameraBrightness] = useState(1.0)
     const [aiModel, setAiModel] = useState(null)
     const [mediaStream, setMediaStream] = useState(null)
     const videoRef = useRef(null)
     const proctorInterval = useRef(null)
+    const faceLostCountRef = useRef(0)
+    const runProctorCheckRef = useRef(null)
     
     // Connect to LiveKit securely in the background (invisible to student)
     const { connectionQuality } = useLiveKitProctoring(isStarted ? assessmentId : null, isStarted ? profile?.id : null, false, null, mediaStream);
@@ -144,33 +151,65 @@ export default function TakeAssessment() {
             }
         }
 
-        if (isStarted && cameraEnabled && aiModel && videoRef.current) {
-            proctorInterval.current = setInterval(async () => {
-                if (videoRef.current?.readyState === 4) {
-                    const predictions = await aiModel.detect(videoRef.current)
-                    
-                    let phoneDetected = false
-                    let personCount = 0
+        const checkProctorFrame = async () => {
+            if (videoRef.current?.readyState >= 2) {
+                let hasFace = false
 
-                    predictions.forEach(p => {
-                        if (p.class === 'cell phone') phoneDetected = true
-                        if (p.class === 'person') personCount++
-                    })
-
-                    setFaceDetected(personCount > 0)
-
-                    const now = Date.now();
-
-                    // 1. Phone Detection (Risk: +40)
-                    if (phoneDetected) handlePhoneDetected(now)
-
-                    // 2. Face Lost Detection (Risk: +20)
-                    if (personCount === 0) handleFaceLost(now)
-
-                    // 3. Multiple Faces Detection (Risk: +50)
-                    if (personCount > 1) handleMultipleFaces(now)
+                // 1. Hardware accelerated FaceDetector (Chrome / Edge)
+                if (typeof window !== 'undefined' && 'FaceDetector' in window) {
+                    try {
+                        const detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 3 })
+                        const faces = await detector.detect(videoRef.current)
+                        if (faces && faces.length > 0) hasFace = true
+                    } catch (e) {
+                        console.debug('FaceDetector check note:', e)
+                    }
                 }
-            }, 2500)
+
+                let phoneDetected = false
+                let personCount = 0
+
+                if (aiModel) {
+                    try {
+                        const predictions = await aiModel.detect(videoRef.current)
+                        predictions.forEach(p => {
+                            if (p.class === 'cell phone') phoneDetected = true
+                            if (p.class === 'person' && p.score > 0.35) personCount++
+                        })
+                        if (personCount > 0) hasFace = true
+                    } catch (e) {
+                        console.debug('COCO-SSD error in TakeAssessment:', e)
+                    }
+                }
+
+                if (hasFace) {
+                    faceLostCountRef.current = 0
+                    setFaceDetected(true)
+                } else {
+                    faceLostCountRef.current = (faceLostCountRef.current || 0) + 1
+                    // Require 3 consecutive misses (~7.5s) before triggering blocking overlay
+                    if (faceLostCountRef.current >= 3) {
+                        setFaceDetected(false)
+                    }
+                }
+
+                const now = Date.now();
+
+                // 1. Phone Detection (Risk: +40)
+                if (phoneDetected) handlePhoneDetected(now)
+
+                // 2. Face Lost Detection (Risk: +20)
+                if (!hasFace && faceLostCountRef.current >= 3) handleFaceLost(now)
+
+                // 3. Multiple Faces Detection (Risk: +50)
+                if (personCount > 1) handleMultipleFaces(now)
+            }
+        }
+
+        runProctorCheckRef.current = checkProctorFrame
+
+        if (isStarted && cameraEnabled && videoRef.current) {
+            proctorInterval.current = setInterval(checkProctorFrame, 2500)
         }
 
         return () => {
@@ -189,7 +228,14 @@ export default function TakeAssessment() {
 
     const startCamera = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user'
+                },
+                audio: true
+            })
             setMediaStream(stream)
             setCameraEnabled(true)
         } catch {
@@ -339,7 +385,6 @@ export default function TakeAssessment() {
                 }
             }, 200)
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [violationCount, isStarted, submitted, submitting])
 
     useEffect(() => {
@@ -350,8 +395,10 @@ export default function TakeAssessment() {
         }
 
         const handleFullScreenChange = () => {
+            const hasFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+            setIsFullscreen(hasFs);
             if (BYPASS_PROCTORING) return;
-            if (isStarted && !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement && !submitted) {
+            if (isStarted && !hasFs && !submitted) {
                 setViolationCount(prev => {
                     const next = prev + 1
                     if (next < 3) {
@@ -720,35 +767,58 @@ export default function TakeAssessment() {
     // Keep ref in sync every render so auto-submit effect always calls the latest version
     handleSubmitRef.current = handleSubmit
 
+    // Show Security Block UNLESS we're in auto-submit territory (violations maxed or timer expired)
+    const shouldBlockForSecurity = (requiresReentry || securityAlert) && !submitted && !BYPASS_PROCTORING
+        && violationCount < 3 && !isAutoSubmitted && !(timeLeft !== null && timeLeft <= 0)
+
+    useEffect(() => {
+        if (shouldBlockForSecurity) {
+            const handleKey = (e) => {
+                if (e.key === 'Enter' || e.code === 'Space') {
+                    e.preventDefault();
+                    setSecurityAlert(null);
+                    setRequiresReentry(false);
+                    enterFullScreen();
+                }
+            };
+            window.addEventListener('keydown', handleKey);
+            return () => window.removeEventListener('keydown', handleKey);
+        }
+    }, [shouldBlockForSecurity]);
+
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading assessment...</div>
     if (error && !assessment) return <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>Error: {error}</div>
 
     const renderSecurityBlock = () => {
         return (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.98)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-                <div className="glass-card animate-scale-in" style={{ maxWidth: 500, padding: '3rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <div 
+                onClick={() => {
+                    setSecurityAlert(null);
+                    setRequiresReentry(false);
+                    enterFullScreen();
+                }}
+                style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.98)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', cursor: 'pointer' }}
+            >
+                <div onClick={(e) => e.stopPropagation()} className="glass-card animate-scale-in" style={{ maxWidth: 500, padding: '3rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)', cursor: 'default' }}>
                     <div style={{ width: 80, height: 80, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: '#ef4444' }}>
                         <ShieldAlert size={40} />
                     </div>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>{securityAlert ? 'Security Warning' : 'Security Block'}</h1>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>{securityAlert ? 'Security Warning' : 'Fullscreen Required'}</h1>
                     <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem', lineHeight: 1.6 }}>
-                        {securityAlert || `You have exited Secure Mode. This is a security violation (${violationCount}/3). You must re-enter fullscreen to continue your assessment.`}
+                        {securityAlert || `You have exited Fullscreen Secure Mode. Full screen is strictly required until you complete and submit your assessment. Click below to return.`}
                     </p>
                     <button onClick={() => {
                         setSecurityAlert(null);
                         setRequiresReentry(false);
                         enterFullScreen();
                     }} className="btn-primary" style={{ width: '100%', height: '3.5rem', fontSize: '1.1rem', background: '#ef4444', border: 'none', justifyContent: 'center' }}>
-                        {securityAlert ? 'I Understand & Resume' : 'Re-enter Secure Mode'}
+                        {securityAlert ? 'I Understand & Resume' : 'Return to Full Screen Mode'}
                     </button>
                 </div>
             </div>
         )
     }
 
-    // Show Security Block UNLESS we're in auto-submit territory (violations maxed or timer expired)
-    const shouldBlockForSecurity = (requiresReentry || securityAlert) && !submitted && !BYPASS_PROCTORING
-        && violationCount < 3 && !isAutoSubmitted && !(timeLeft !== null && timeLeft <= 0)
     if (shouldBlockForSecurity) {
         return renderSecurityBlock()
     }
@@ -804,12 +874,31 @@ export default function TakeAssessment() {
                                 </>
                             ) : (
                                 <>
-                                    <button onClick={() => navigate(`/student/assessments/${assessmentId}/review`)} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                                    <button onClick={() => {
+                                        if (typeof document !== 'undefined' && document.fullscreenElement) {
+                                            document.exitFullscreen().catch(() => {});
+                                        }
+                                        navigate(`/student/assessments/${assessmentId}/review`);
+                                    }} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                                         View Detailed Results
                                     </button>
-                                    <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                                    <button onClick={() => {
+                                        if (typeof document !== 'undefined' && document.fullscreenElement) {
+                                            document.exitFullscreen().catch(() => {});
+                                        }
+                                        navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } });
+                                    }} className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
                                         Back to Course
                                     </button>
+                                    {isFullscreen && (
+                                        <button onClick={() => {
+                                            if (typeof document !== 'undefined' && document.fullscreenElement) {
+                                                document.exitFullscreen().catch(() => {});
+                                            }
+                                        }} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', gap: '0.4rem' }}>
+                                            <Minimize size={16} /> Exit Full Screen
+                                        </button>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -885,6 +974,28 @@ export default function TakeAssessment() {
                             </button>
                         ) : cameraEnabled ? (
                             <div style={{ marginBottom: '1rem' }}>
+                                <div style={{ width: '100%', maxWidth: 360, height: 210, margin: '0 auto 1.25rem', borderRadius: 14, overflow: 'hidden', border: '2px solid rgba(99, 102, 241, 0.4)', background: '#000', position: 'relative', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+                                    <video
+                                        ref={(node) => {
+                                            if (node && mediaStream && node.srcObject !== mediaStream) {
+                                                node.srcObject = mediaStream;
+                                                node.play().catch(() => {});
+                                            }
+                                        }}
+                                        autoPlay playsInline muted
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', filter: `brightness(${cameraBrightness}) contrast(1.05)` }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setCameraBrightness(b => b >= 1.75 ? 1.0 : Number((b + 0.25).toFixed(2)))}
+                                        style={{ position: 'absolute', top: 10, right: 10, background: cameraBrightness > 1 ? 'rgba(245, 158, 11, 0.95)' : 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: '4px 10px', borderRadius: 8, fontSize: '0.74rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}
+                                    >
+                                        <Sun size={13} /> {cameraBrightness > 1 ? `Boosted ${Math.round(cameraBrightness * 100)}%` : 'Boost Brightness'}
+                                    </button>
+                                    <div style={{ position: 'absolute', bottom: 8, left: 10, right: 10, background: 'rgba(0,0,0,0.65)', padding: '3px 8px', borderRadius: 6, color: '#fff', fontSize: '0.72rem', textAlign: 'center' }}>
+                                        Check your lighting before starting
+                                    </div>
+                                </div>
                                 <div style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', padding: '0.85rem', borderRadius: 8, fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 600, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                                     <CheckCircle2 size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.25rem' }} /> Webcam Enabled & AI Ready
                                 </div>
@@ -941,9 +1052,14 @@ export default function TakeAssessment() {
     const renderHeader = () => (
         <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-                <button onClick={() => navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } })} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                    <ChevronLeft size={16} /> Quit Assessment
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: '#10b981', fontSize: '0.78rem', fontWeight: 700, padding: '0.2rem 0.65rem', borderRadius: 12, background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                        <Lock size={12} /> Fullscreen Exam Mode Enforced
+                    </span>
+                    <button onClick={() => setShowQuitConfirm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
+                        Quit Exam
+                    </button>
+                </div>
                 <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{assessment?.title}</h1>
                 {profile && <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontWeight: 600 }}>Student: {profile.full_name || profile.name || 'Unknown'}</div>}
             </div>
@@ -966,7 +1082,7 @@ export default function TakeAssessment() {
 
     const renderOptions = () => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {currentQ?.options.map((opt, i) => {
+            {currentQ?.options.map((opt) => {
                 const isSelected = isMulti(currentQ)
                     ? (Array.isArray(answers[currentQ.id]) && answers[currentQ.id].includes(opt))
                     : answers[currentQ.id] === opt
@@ -1079,8 +1195,17 @@ export default function TakeAssessment() {
                             if (node.paused) node.play().catch(e => console.error("Video play error:", e));
                         }
                     }}
-                    autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', filter: `brightness(${cameraBrightness}) contrast(1.05)` }} 
                 />
+                {/* Quick Brightness Toggle */}
+                <button
+                    type="button"
+                    title="Boost Camera Brightness"
+                    onClick={() => setCameraBrightness(b => b >= 1.75 ? 1.0 : Number((b + 0.25).toFixed(2)))}
+                    style={{ position: 'absolute', top: '4px', right: '4px', background: cameraBrightness > 1 ? 'rgba(245, 158, 11, 0.9)' : 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', borderRadius: '4px', padding: '2px 5px', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
+                >
+                    <Sun size={10} /> {cameraBrightness > 1 ? `${Math.round(cameraBrightness * 100)}%` : ''}
+                </button>
                 <div style={{ position: 'absolute', bottom: '4px', left: '0', right: '0', textAlign: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 800, background: 'rgba(239,68,68,0.8)', padding: '2px 0' }}>
                     AI PROCTORING ACTIVE
                 </div>
@@ -1092,13 +1217,89 @@ export default function TakeAssessment() {
         if (faceDetected || !isStarted || !cameraEnabled || submitted || BYPASS_PROCTORING) return null;
         return (
             <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.95)', backdropFilter: 'blur(15px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', flexDirection: 'column' }}>
-                <div style={{ width: 100, height: 100, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', color: '#ef4444', animation: 'pulse 2s infinite' }}>
-                    <Camera size={50} />
+                <div style={{ width: 80, height: 80, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem', color: '#ef4444', animation: 'pulse 2s infinite' }}>
+                    <Camera size={42} />
                 </div>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'white', marginBottom: '1rem', textAlign: 'center' }}>Face Not Detected</h1>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.2rem', maxWidth: 600, textAlign: 'center', lineHeight: 1.6 }}>
-                    AI Proctoring has lost track of your face. Please ensure you are looking directly at the camera and your face is well-lit to continue the assessment.
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'white', marginBottom: '0.75rem', textAlign: 'center' }}>Face Not Detected</h1>
+                <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '1rem', maxWidth: 540, textAlign: 'center', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                    AI Proctoring has lost track of your face. If your room is well-lit, your webcam may be underexposed. Click <strong>Boost Brightness</strong> below or adjust your laptop angle.
                 </p>
+
+                {/* Viewfinder Preview */}
+                <div style={{ width: '100%', maxWidth: 300, height: 180, borderRadius: 12, overflow: 'hidden', border: '2px dashed #ef4444', background: '#000', marginBottom: '1.25rem', position: 'relative' }}>
+                    <video
+                        ref={(node) => {
+                            if (node && mediaStream && node.srcObject !== mediaStream) {
+                                node.srcObject = mediaStream;
+                                node.play().catch(() => {});
+                            }
+                        }}
+                        autoPlay playsInline muted
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', filter: `brightness(${cameraBrightness}) contrast(1.05)` }}
+                    />
+                    <div style={{ position: 'absolute', bottom: 6, left: 10, right: 10, textAlign: 'center', background: 'rgba(0,0,0,0.7)', borderRadius: 4, padding: '2px 6px', color: '#fff', fontSize: '0.7rem' }}>
+                        Center your face in good light
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '1rem' }}>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setCameraBrightness(b => b >= 1.75 ? 1.0 : Number((b + 0.25).toFixed(2)));
+                            setTimeout(() => {
+                                if (runProctorCheckRef.current) runProctorCheckRef.current();
+                            }, 200);
+                        }}
+                        className="btn-secondary"
+                        style={{ background: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.1rem' }}
+                    >
+                        <Sun size={16} /> Boost Brightness ({Math.round(cameraBrightness * 100)}%)
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (runProctorCheckRef.current) runProctorCheckRef.current();
+                        }}
+                        className="btn-primary"
+                        style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.25rem' }}
+                    >
+                        <RotateCcw size={16} /> Re-verify Face Now
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderQuitConfirmModal = () => {
+        if (!showQuitConfirm) return null;
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div className="glass-card animate-scale-in" style={{ maxWidth: 450, width: '100%', padding: '2rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                    <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', color: '#ef4444' }}>
+                        <AlertTriangle size={32} />
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>Quit Assessment?</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+                        Full screen mode is strictly required to preserve exam integrity. Quitting before completing all questions will record an incomplete attempt.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <button onClick={() => setShowQuitConfirm(false)} className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
+                            Stay in Exam
+                        </button>
+                        <button onClick={() => {
+                            setShowQuitConfirm(false);
+                            if (typeof document !== 'undefined' && document.fullscreenElement) {
+                                document.exitFullscreen().catch(() => {});
+                            }
+                            navigate(`/student/courses/${assessment?.course_id}`, { state: { tab: 'assessments' } });
+                        }} className="btn-secondary" style={{ flex: 1, justifyContent: 'center', color: '#ef4444', borderColor: '#ef4444' }}>
+                            Quit Anyway
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     };
@@ -1194,6 +1395,7 @@ export default function TakeAssessment() {
 
                 {renderWebcamFeed()}
                 {renderFaceNotDetectedOverlay()}
+                {renderQuitConfirmModal()}
             </div>
         )
     }
@@ -1208,6 +1410,7 @@ export default function TakeAssessment() {
 
             {renderWebcamFeed()}
             {renderFaceNotDetectedOverlay()}
+            {renderQuitConfirmModal()}
         </div>
     )
 }

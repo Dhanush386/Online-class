@@ -35,7 +35,7 @@ function geminiLiveTokenPlugin(geminiApiKey) {
                 "x-goog-api-key": geminiApiKey,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ uses: 1, expireTime }),
+              body: JSON.stringify({ expireTime }),
             },
           );
 

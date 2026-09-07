@@ -21,7 +21,16 @@ import {
   RotateCcw,
   Lock,
   Clock,
+  Maximize,
+  Minimize,
+  Camera,
+  Sun,
+  AlertTriangle,
+  Monitor,
+  Share2,
 } from "lucide-react";
+import * as tf from "@tensorflow/tfjs";
+import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import useXpAward from "../../hooks/useXpAward";
@@ -32,6 +41,95 @@ import {
 } from "../../services/mockInterviewService";
 import useSpeechToText, { STT_STATES } from "../../hooks/useSpeechToText";
 import { filterEnglishOnly } from "../../services/geminiLiveService";
+import { prewarmGeminiLiveToken } from "../../services/geminiLiveTokenService";
+
+// ─────────────────────────────────────────────────────────────
+// Real-Time Face & Lighting Detection Engine
+// ─────────────────────────────────────────────────────────────
+// Measure average pixel luminance (0 to 255) with central face-region bias
+const checkFrameLuminance = (video, brightnessBoost = 1.0) => {
+  if (!video || video.readyState < 2 || !video.videoWidth) return null;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 48;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+    if (brightnessBoost !== 1.0) {
+      ctx.filter = `brightness(${brightnessBoost})`;
+    }
+    ctx.drawImage(video, 0, 0, 64, 48);
+    const data = ctx.getImageData(0, 0, 64, 48).data;
+    let sum = 0;
+    let centerSum = 0;
+    let centerCount = 0;
+    const len = data.length;
+    for (let i = 0; i < len; i += 4) {
+      const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      sum += lum;
+      const pixelIdx = i / 4;
+      const x = pixelIdx % 64;
+      const y = Math.floor(pixelIdx / 64);
+      // Center 50% box where the face sits (x: 16-48, y: 12-36)
+      if (x >= 16 && x < 48 && y >= 12 && y < 36) {
+        centerSum += lum;
+        centerCount++;
+      }
+    }
+    const centerLum = centerCount > 0 ? centerSum / centerCount : sum / (len / 4);
+    // Weight center 70%, overall frame 30% so dark room backgrounds don't falsely drag down face lighting
+    return 0.7 * centerLum + 0.3 * (sum / (len / 4));
+  } catch {
+    return null;
+  }
+};
+
+const analyzeFaceInVideo = async (video, aiModel, brightnessBoost = 1.0) => {
+  if (!video || video.readyState < 2 || !video.videoWidth) {
+    return { detected: false, status: "loading", luminance: 0 };
+  }
+
+  const luminance = checkFrameLuminance(video, brightnessBoost);
+
+  // 1. Hardware-accelerated FaceDetector (Chrome / Edge)
+  if (typeof window !== "undefined" && "FaceDetector" in window) {
+    try {
+      const detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 3 });
+      const faces = await detector.detect(video);
+      if (faces && faces.length > 0) {
+        // Face is definitively detected by browser's ML model
+        return { detected: true, status: "detected", luminance: luminance ?? 50 };
+      }
+    } catch (e) {
+      console.debug("FaceDetector error, falling back to COCO-SSD:", e);
+    }
+  }
+
+  // 2. Fallback to COCO-SSD Person Detection
+  if (aiModel) {
+    try {
+      const predictions = await aiModel.detect(video);
+      const hasPerson = predictions.some((p) => p.class === "person" && p.score > 0.35);
+      if (hasPerson) {
+        return { detected: true, status: "detected", luminance: luminance ?? 50 };
+      }
+    } catch (e) {
+      console.debug("COCO-SSD detection error:", e);
+    }
+  }
+
+  // 3. If no face was detected, only classify as 'too_dark' if center-weighted luminance is truly pitch black (< 10)
+  if (luminance !== null && luminance < 10) {
+    return { detected: false, status: "too_dark", luminance };
+  }
+
+  // 4. Fallback if frame is adequately lit while model initializes
+  if (luminance !== null && luminance >= 18) {
+    return { detected: true, status: "detected", luminance };
+  }
+
+  return { detected: false, status: "no_face", luminance };
+};
 
 export default function MockInterviewSession() {
   const { sessionId } = useParams();
@@ -49,52 +147,332 @@ export default function MockInterviewSession() {
   const [generatingReport, setGeneratingReport] = useState(false);
   const [error, setError] = useState(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [isInterviewCompleted, setIsInterviewCompleted] = useState(false);
 
   // Video recording states
   const [cameraActive, setCameraActive] = useState(false);
   const [screenShared, setScreenShared] = useState(false);
   const [uploadingRecording, setUploadingRecording] = useState(false);
+  const [localVideoUrl, setLocalVideoUrl] = useState(null);
+  const [cameraBrightness, setCameraBrightness] = useState(1.0); // 1.0, 1.25, 1.5, 1.75
 
-  // Question Text-to-Speech (TTS)
-  const [activeSpeakingTurn, setActiveSpeakingTurn] = useState(null);
+  // AI Face & Proctoring Models
+  const [aiModel, setAiModel] = useState(null);
+  const [isFaceDetected, setIsFaceDetected] = useState(true);
+  const [faceStatus, setFaceStatus] = useState("detected"); // 'detected' | 'no_face' | 'too_dark'
+  const faceLostCountRef = useRef(0);
+  const faceCheckIntervalRef = useRef(null);
+  const runCheckRef = useRef(null);
 
-  const toggleSpeakQuestion = (turnNumber, questionText) => {
-    if (!("speechSynthesis" in window)) return;
+  // Pre-interview camera stream and face verification state
+  const [preCameraStream, setPreCameraStream] = useState(null);
+  const [preFaceStatus, setPreFaceStatus] = useState("idle"); // 'idle' | 'checking' | 'detected' | 'too_dark' | 'no_face'
+  const preVideoRef = useRef(null);
 
-    if (activeSpeakingTurn === turnNumber) {
-      window.speechSynthesis.cancel();
-      setActiveSpeakingTurn(null);
+  // Load AI Model for Face/Person Fallback
+  useEffect(() => {
+    let isMounted = true;
+    const loadAiModel = async () => {
+      try {
+        await tf.ready();
+        const model = await cocoSsd.load();
+        if (isMounted) setAiModel(model);
+      } catch (err) {
+        console.warn("Could not load coco-ssd model:", err);
+      }
+    };
+    loadAiModel();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Pre-interview face verification loop
+  useEffect(() => {
+    if (!preCameraStream || cameraActive) return;
+    const interval = setInterval(async () => {
+      if (!preVideoRef.current || preVideoRef.current.readyState < 2) return;
+      const res = await analyzeFaceInVideo(preVideoRef.current, aiModel, cameraBrightness);
+      if (res.status !== "loading") {
+        setPreFaceStatus(res.status);
+      }
+    }, 800);
+    return () => clearInterval(interval);
+  }, [preCameraStream, cameraActive, aiModel, cameraBrightness]);
+
+  // Active interview face verification loop
+  useEffect(() => {
+    if (!cameraActive || isInterviewCompleted || session?.status === "completed") {
+      if (faceCheckIntervalRef.current) clearInterval(faceCheckIntervalRef.current);
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(questionText);
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
+    const runCheck = async () => {
+      if (!videoRef.current) return;
+      if (mediaStreamRef.current && videoRef.current.srcObject !== mediaStreamRef.current) {
+        videoRef.current.srcObject = mediaStreamRef.current;
+      }
+      if (videoRef.current.paused) {
+        videoRef.current.play().catch(() => {});
+      }
+      if (videoRef.current.readyState < 2) return;
+      const res = await analyzeFaceInVideo(videoRef.current, aiModel, cameraBrightness);
+      if (res.status === "loading") return;
 
-    utterance.onend = () => setActiveSpeakingTurn(null);
-    utterance.onerror = () => setActiveSpeakingTurn(null);
+      if (res.detected) {
+        faceLostCountRef.current = 0;
+        setIsFaceDetected(true);
+        setFaceStatus("detected");
+      } else {
+        faceLostCountRef.current++;
+        setFaceStatus(res.status);
+        // Allow 5 checks (~6 seconds) grace period before showing blocking lockout
+        if (faceLostCountRef.current >= 5) {
+          setIsFaceDetected(false);
+        }
+      }
+    };
 
-    setActiveSpeakingTurn(turnNumber);
-    window.speechSynthesis.speak(utterance);
+    runCheckRef.current = runCheck;
+    faceCheckIntervalRef.current = setInterval(runCheck, 1200);
+    return () => {
+      if (faceCheckIntervalRef.current) clearInterval(faceCheckIntervalRef.current);
+    };
+  }, [cameraActive, aiModel, isInterviewCompleted, session?.status, cameraBrightness]);
+
+  const handleStartCameraCheck = async () => {
+    try {
+      setPreFaceStatus("checking");
+      const camStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: "user",
+        },
+        audio: true,
+      });
+      mediaStreamRef.current = camStream;
+      setPreCameraStream(camStream);
+      if (preVideoRef.current) {
+        preVideoRef.current.srcObject = camStream;
+        preVideoRef.current.play().catch(() => {});
+      }
+    } catch (err) {
+      alert("Please grant camera and microphone permissions in your browser to proceed with the mock interview.");
+      console.error(err);
+      setPreFaceStatus("idle");
+    }
   };
 
-  // Cancel question speech on unmount
+  const handleStartInterview = async () => {
+    if (preFaceStatus !== "detected") {
+      alert(
+        preFaceStatus === "too_dark"
+          ? "Your camera environment appears too dark for the AI to detect your face. Please click 'Boost Brightness' or face a light source."
+          : "Face not detected. Please ensure you are looking directly into the camera before starting."
+      );
+      return;
+    }
+
+    // 1. Request Screen Share for proctoring verification
+    let scrStream = null;
+    if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+      try {
+        scrStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: "monitor" },
+          audio: true,
+        });
+        screenStreamRef.current = scrStream;
+        setScreenShared(true);
+
+        // Detect if candidate prematurely stops screen share
+        scrStream.getVideoTracks()[0].onended = () => {
+          console.warn("Screen sharing ended by candidate");
+          setScreenShared(false);
+        };
+      } catch (scrErr) {
+        console.info("Screen share prompt dismissed or not granted:", scrErr);
+        const proceedWithoutScreen = confirm(
+          "Screen sharing was not granted.\n\nSharing your screen provides official proctoring verification for your evaluation report.\n\nClick OK to proceed with camera-only, or Cancel to choose a screen to share."
+        );
+        if (!proceedWithoutScreen) {
+          return;
+        }
+      }
+    }
+
+    // 2. Enter Fullscreen immediately on user gesture
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+          await document.documentElement.webkitRequestFullscreen();
+        }
+      }
+    } catch (fsErr) {
+      console.info("Fullscreen request note:", fsErr);
+    }
+
+    // 3. Ensure camera stream is active and has live video tracks
+    let stream = mediaStreamRef.current || preCameraStream;
+    const isStreamLive =
+      stream &&
+      stream.getVideoTracks().length > 0 &&
+      stream.getVideoTracks().some((t) => t.readyState === "live");
+
+    if (!isStreamLive) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: "user",
+          },
+          audio: true,
+        });
+        mediaStreamRef.current = stream;
+        setPreCameraStream(stream);
+      } catch (camErr) {
+        console.error("Could not re-acquire active camera stream:", camErr);
+      }
+    } else {
+      mediaStreamRef.current = stream;
+    }
+
+    // Initialize composite screen + camera PIP recording (or direct camera if no screen)
+    initCompositeRecording(stream, scrStream);
+    setIsFaceDetected(true);
+    setFaceStatus("detected");
+    setCameraActive(true);
+  };
+
+  // Full Screen Mode state & controller
+  const [isFullscreen, setIsFullscreen] = useState(
+    () => typeof document !== "undefined" && Boolean(document.fullscreenElement),
+  );
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange,
+      );
+    };
+  }, []);
+
+  const enterFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+          await document.documentElement.webkitRequestFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn("Fullscreen enter error:", err);
+    }
+  }, []);
+
+  const isExamActive =
+    cameraActive &&
+    !isInterviewCompleted &&
+    session?.status !== "completed";
+
+  // Re-enter fullscreen on Enter or Space when lockout modal is shown
+  useEffect(() => {
+    if (isExamActive && !isFullscreen) {
+      const handleKeyDown = (e) => {
+        if (e.key === "Enter" || e.code === "Space") {
+          e.preventDefault();
+          enterFullscreen();
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [isExamActive, isFullscreen, enterFullscreen]);
+
+  // Exit fullscreen cleanly on unmount
   useEffect(() => {
     return () => {
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
+      if (typeof document !== "undefined" && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
       }
     };
   }, []);
 
-  // Cancel question speech when moving to another question
-  useEffect(() => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+  // Question Text-to-Speech (TTS) & AI Reading State
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  const [activeSpeakingTurn, setActiveSpeakingTurn] = useState(null);
+  const [speechVoices, setSpeechVoices] = useState([]);
+  const lastSpokenTurnRef = useRef(null);
+  const speechKeepAliveRef = useRef(null);
+
+  // AI Voice Volume State (persisted, 0.1 to 1.0, default 1.0 = maximum volume)
+  const [aiVolume, setAiVolume] = useState(() => {
+    try {
+      const saved = localStorage.getItem("mock_interview_ai_volume");
+      return saved !== null ? parseFloat(saved) : 1.0;
+    } catch {
+      return 1.0;
     }
-    setActiveSpeakingTurn(null);
-  }, [currentTurnNumber]);
+  });
+
+  const handleAiVolumeChange = useCallback((newVol) => {
+    const clamped = Math.min(1.0, Math.max(0.1, newVol));
+    setAiVolume(clamped);
+    try {
+      localStorage.setItem("mock_interview_ai_volume", clamped.toString());
+    } catch {
+      /* ignore storage error */
+    }
+  }, []);
+
+  // Prewarm Gemini Live token as soon as interview session is active
+  useEffect(() => {
+    prewarmGeminiLiveToken();
+  }, []);
+
+  // Load available speech synthesis voices for natural interviewer audio
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+    const updateVoices = () => {
+      try {
+        const v = window.speechSynthesis.getVoices();
+        if (v && v.length > 0) {
+          setSpeechVoices(v);
+        }
+      } catch (e) {
+        console.debug("Error loading voices:", e);
+      }
+    };
+    updateVoices();
+    window.speechSynthesis.onvoiceschanged = updateVoices;
+    return () => {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
+
+  // Auto-submit countdown (10s of silence) & speaking time extension
+  const [silenceSecondsLeft, setSilenceSecondsLeft] = useState(10);
+  const [timeExtendedNotice, setTimeExtendedNotice] = useState(false);
+
+  // Extend speaking time by +10s (Space, Tab, or button click)
+  const handleExtendTime = useCallback(() => {
+    setSilenceSecondsLeft((prev) => prev + 10);
+    setTimeExtendedNotice(true);
+    setTimeout(() => setTimeExtendedNotice(false), 2500);
+  }, []);
 
   // Non-destructive speech transcript appending (strictly English-only)
   const handleFinalTranscript = useCallback((speechText) => {
@@ -112,6 +490,9 @@ export default function MockInterviewSession() {
     state: sttState,
     isListening,
     activeEngine,
+    preferredEngine,
+    setPreferredEngine,
+    switchToBrowserSpeech,
     interimTranscript,
     volumeLevel,
     error: sttError,
@@ -125,22 +506,223 @@ export default function MockInterviewSession() {
     onFinalTranscript: handleFinalTranscript,
   });
 
-  // Auto-submit countdown (10s of silence) & speaking time extension
-  const [silenceSecondsLeft, setSilenceSecondsLeft] = useState(10);
-  const [timeExtendedNotice, setTimeExtendedNotice] = useState(false);
-
-  // Extend speaking time by +10s (Space, Tab, or button click)
-  const handleExtendTime = useCallback(() => {
-    setSilenceSecondsLeft((prev) => prev + 10);
-    setTimeExtendedNotice(true);
-    setTimeout(() => setTimeExtendedNotice(false), 2500);
+  // Stop AI speech and reset speaking state cleanly
+  const stopAiSpeech = useCallback(() => {
+    if (speechKeepAliveRef.current) {
+      clearInterval(speechKeepAliveRef.current);
+      speechKeepAliveRef.current = null;
+    }
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsAiSpeaking(false);
+    setActiveSpeakingTurn(null);
+    setSilenceSecondsLeft(10);
   }, []);
+
+  // Refs for stable callback identity
+  const isListeningRef = useRef(isListening);
+  isListeningRef.current = isListening;
+  const isAiSpeakingRef = useRef(isAiSpeaking);
+  isAiSpeakingRef.current = isAiSpeaking;
+  const activeSpeakingTurnRef = useRef(activeSpeakingTurn);
+  activeSpeakingTurnRef.current = activeSpeakingTurn;
+  const aiVolumeRef = useRef(aiVolume);
+  aiVolumeRef.current = aiVolume;
+  const speechVoicesRef = useRef(speechVoices);
+  speechVoicesRef.current = speechVoices;
+  const stopListeningRef = useRef(stopListening);
+  stopListeningRef.current = stopListening;
+
+  // Read question aloud via Text-to-Speech
+  const speakQuestion = useCallback(
+    (turnNumber, questionText) => {
+      if (!("speechSynthesis" in window) || !questionText) {
+        setIsAiSpeaking(false);
+        setActiveSpeakingTurn(null);
+        return;
+      }
+
+      // If user toggles off current speaking turn
+      if (isAiSpeakingRef.current && activeSpeakingTurnRef.current === turnNumber) {
+        stopAiSpeech();
+        return;
+      }
+
+      // Clear any ongoing speech & timer
+      if (speechKeepAliveRef.current) {
+        clearInterval(speechKeepAliveRef.current);
+        speechKeepAliveRef.current = null;
+      }
+
+      // Pause microphone listening so speaker output isn't transcribed
+      if (isListeningRef.current && stopListeningRef.current) {
+        try {
+          stopListeningRef.current();
+        } catch (e) {
+          console.debug("Error pausing mic for question reading:", e);
+        }
+      }
+
+      setIsAiSpeaking(true);
+      setActiveSpeakingTurn(turnNumber);
+      lastSpokenTurnRef.current = turnNumber;
+
+      const utterance = new SpeechSynthesisUtterance(questionText);
+      utterance.volume = aiVolumeRef.current; // Full clarity volume (default 1.0 = 100%)
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      // Select loudest, most natural and clearest English voice
+      const voices =
+        speechVoicesRef.current && speechVoicesRef.current.length > 0
+          ? speechVoicesRef.current
+          : window.speechSynthesis.getVoices();
+
+      const rankVoice = (v) => {
+        if (!v || !v.lang || !v.lang.startsWith("en")) return -1;
+        const name = v.name.toLowerCase();
+        // High-clarity and amplified natural voices
+        if (name.includes("online (natural)")) return 100;
+        if (name.includes("natural")) return 90;
+        if (name.includes("neural")) return 85;
+        if (name.includes("google")) return 80;
+        if (name.includes("aria") || name.includes("jenny")) return 75;
+        if (name.includes("guy") || name.includes("christopher") || name.includes("eric")) return 70;
+        if (name.includes("samantha")) return 65;
+        if (name.includes("zira")) return 60;
+        if (name.includes("mark")) return 50;
+        return 30;
+      };
+
+      const sortedVoices = [...voices]
+        .filter((v) => v.lang && v.lang.startsWith("en"))
+        .sort((a, b) => rankVoice(b) - rankVoice(a));
+
+      const naturalVoice = sortedVoices[0] || voices.find((v) => v.lang.startsWith("en"));
+
+      if (naturalVoice) {
+        utterance.voice = naturalVoice;
+      }
+
+      // Keep-alive interval for browsers with utterance timeout bug
+      speechKeepAliveRef.current = setInterval(() => {
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        } else {
+          if (speechKeepAliveRef.current) {
+            clearInterval(speechKeepAliveRef.current);
+            speechKeepAliveRef.current = null;
+          }
+        }
+      }, 10000);
+
+      const handleSpeechEnd = () => {
+        if (speechKeepAliveRef.current) {
+          clearInterval(speechKeepAliveRef.current);
+          speechKeepAliveRef.current = null;
+        }
+        setIsAiSpeaking(false);
+        setActiveSpeakingTurn(null);
+        setSilenceSecondsLeft(10);
+      };
+
+      utterance.onend = handleSpeechEnd;
+      utterance.onerror = (e) => {
+        console.debug("Utterance error or cancelled:", e);
+        handleSpeechEnd();
+      };
+
+      // In Chrome/Edge: cancel any previous utterance, ensure unpaused, then speak
+      try {
+        if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+          window.speechSynthesis.cancel();
+        }
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+      } catch (err) {
+        console.debug("Speech cancel/resume err:", err);
+      }
+
+      setTimeout(() => {
+        try {
+          if ("speechSynthesis" in window) {
+            window.speechSynthesis.resume();
+            window.speechSynthesis.speak(utterance);
+          }
+        } catch (speakErr) {
+          console.error("SpeechSynthesis speak error:", speakErr);
+          handleSpeechEnd();
+        }
+      }, 60);
+    },
+    [stopAiSpeech],
+  );
+
+  // Cancel question speech on unmount
+  useEffect(() => {
+    return () => {
+      if (speechKeepAliveRef.current) {
+        clearInterval(speechKeepAliveRef.current);
+      }
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // Cancel question speech when opening exit confirm modal
+  useEffect(() => {
+    if (showExitConfirm && "speechSynthesis" in window) {
+      stopAiSpeech();
+    }
+  }, [showExitConfirm, stopAiSpeech]);
+
+  // Automatically read question aloud when question loads on initial turn
+  useEffect(() => {
+    if (
+      !cameraActive ||
+      submitting ||
+      generatingReport ||
+      showExitConfirm ||
+      !turns ||
+      turns.length === 0
+    ) {
+      return;
+    }
+
+    const activeTurn = turns.find((t) => t.turn_number === currentTurnNumber);
+    if (
+      activeTurn &&
+      activeTurn.question &&
+      !activeTurn.student_answer &&
+      lastSpokenTurnRef.current !== currentTurnNumber
+    ) {
+      speakQuestion(currentTurnNumber, activeTurn.question);
+    }
+  }, [
+    cameraActive,
+    currentTurnNumber,
+    turns,
+    submitting,
+    generatingReport,
+    showExitConfirm,
+    speakQuestion,
+  ]);
 
   // Keyboard shortcut listener: Space or Tab to extend speaking time
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ignore if setup modal or exit modal is active, or already submitting
-      if (!cameraActive || submitting || generatingReport || showExitConfirm) {
+      // Ignore if setup modal or exit modal is active, already submitting, or AI is currently reading question
+      if (
+        !cameraActive ||
+        submitting ||
+        generatingReport ||
+        showExitConfirm ||
+        isAiSpeaking
+      ) {
         return;
       }
 
@@ -152,12 +734,20 @@ export default function MockInterviewSession() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cameraActive, submitting, generatingReport, showExitConfirm, handleExtendTime]);
+  }, [
+    cameraActive,
+    submitting,
+    generatingReport,
+    showExitConfirm,
+    isAiSpeaking,
+    handleExtendTime,
+  ]);
 
-  // Auto-enable microphone when interview is active & idle
+  // Auto-enable microphone ONLY after AI interviewer finishes speaking
   useEffect(() => {
     if (
       cameraActive &&
+      !isAiSpeaking &&
       !submitting &&
       !generatingReport &&
       !isListening &&
@@ -167,11 +757,12 @@ export default function MockInterviewSession() {
         startListening().catch((err) =>
           console.debug("Auto-enable mic error:", err),
         );
-      }, 500);
+      }, 400);
       return () => clearTimeout(timer);
     }
   }, [
     cameraActive,
+    isAiSpeaking,
     currentTurnNumber,
     submitting,
     generatingReport,
@@ -413,7 +1004,9 @@ export default function MockInterviewSession() {
   // Ensure stream is attached to video element when it mounts
   useEffect(() => {
     if (cameraActive && mediaStreamRef.current && videoRef.current) {
-      videoRef.current.srcObject = mediaStreamRef.current;
+      if (videoRef.current.srcObject !== mediaStreamRef.current) {
+        videoRef.current.srcObject = mediaStreamRef.current;
+      }
       videoRef.current
         .play()
         .catch((e) => console.debug("Video play error:", e));
@@ -433,6 +1026,11 @@ export default function MockInterviewSession() {
             const blob = new Blob(recordedChunksRef.current, {
               type: "video/webm",
             });
+
+            // Instant local playback URL for zero-latency review
+            const localBlobUrl = URL.createObjectURL(blob);
+            setLocalVideoUrl(localBlobUrl);
+
             const fileName = `${profile.id}/${session.id}_${Date.now()}.webm`;
 
             const { error: upErr } = await supabase.storage
@@ -442,37 +1040,50 @@ export default function MockInterviewSession() {
                 upsert: true,
               });
 
-            if (upErr) {
-              console.warn("Failed to upload interview recording:", upErr);
-              resolve(null);
-              return;
+            let finalUrl = localBlobUrl;
+
+            if (!upErr) {
+              // Try creating signed URL first (24h retention) to guarantee access even for private buckets
+              const { data: signedData } = await supabase.storage
+                .from("interview-recordings")
+                .createSignedUrl(fileName, 86400);
+
+              if (signedData?.signedUrl) {
+                finalUrl = signedData.signedUrl;
+              } else {
+                const {
+                  data: { publicUrl },
+                } = supabase.storage
+                  .from("interview-recordings")
+                  .getPublicUrl(fileName);
+                if (publicUrl) finalUrl = publicUrl;
+              }
+
+              // 24 Hours retention from now
+              const expiresAt = new Date(
+                Date.now() + 24 * 60 * 60 * 1000,
+              ).toISOString();
+
+              await supabase
+                .from("mock_interview_sessions")
+                .update({
+                  recording_url: finalUrl,
+                  recording_expires_at: expiresAt,
+                })
+                .eq("id", session.id);
+            } else {
+              console.warn("Storage upload note, using local blob:", upErr);
             }
 
-            const {
-              data: { publicUrl },
-            } = supabase.storage
-              .from("interview-recordings")
-              .getPublicUrl(fileName);
-
-            // 24 Hours retention from now
-            const expiresAt = new Date(
-              Date.now() + 24 * 60 * 60 * 1000,
-            ).toISOString();
-
-            await supabase
-              .from("mock_interview_sessions")
-              .update({
-                recording_url: publicUrl,
-                recording_expires_at: expiresAt,
-              })
-              .eq("id", session.id);
-
-            // Stop camera tracks cleanly
+            // Stop camera & screen tracks cleanly
             if (mediaStreamRef.current) {
               mediaStreamRef.current.getTracks().forEach((t) => t.stop());
             }
+            if (screenStreamRef.current) {
+              screenStreamRef.current.getTracks().forEach((t) => t.stop());
+            }
 
-            resolve(publicUrl);
+            resolve(finalUrl);
           } catch (e) {
             console.error("Error during video upload:", e);
             resolve(null);
@@ -499,7 +1110,7 @@ export default function MockInterviewSession() {
   // Handle Answer Submission
   const handleSubmitAnswer = async (e) => {
     e?.preventDefault();
-    if (submitting || generatingReport || !session) return;
+    if (submitting || generatingReport || !session || isAiSpeaking) return;
 
     // Auto-submit even if empty by substituting default fallback text
     const trimmed = answerInput.trim();
@@ -548,15 +1159,39 @@ export default function MockInterviewSession() {
           ai_feedback: null,
         });
         setCurrentTurnNumber(result.nextTurnNumber);
+        setTurns(updatedTurns);
+        setAnswerInput("");
+        setSubmitting(false);
+
+        // Promptly read the next question aloud
+        speakQuestion(result.nextTurnNumber, result.nextQuestion);
+        return;
       }
 
       setTurns(updatedTurns);
       setAnswerInput("");
 
-      // If completed, upload video & trigger report generation
+      // If completed, immediately update status to completed and generate report
       if (result.isCompleted) {
-        await uploadInterviewVideo();
+        setIsInterviewCompleted(true);
+        setSession((prev) => ({
+          ...prev,
+          status: "completed",
+        }));
+        setSubmitting(false);
+        setGeneratingReport(true);
+
+        try {
+          const uploadTimeout = new Promise((res) =>
+            setTimeout(() => res(null), 5000),
+          );
+          await Promise.race([uploadInterviewVideo(), uploadTimeout]);
+        } catch (vErr) {
+          console.warn("Video upload completed or skipped:", vErr);
+        }
+
         await generateFinalReport(updatedTurns);
+        return;
       }
     } catch (err) {
       console.error("Failed to submit answer:", err);
@@ -576,7 +1211,14 @@ export default function MockInterviewSession() {
     Boolean(interimTranscript?.trim()) || volumeLevel > 18;
 
   useEffect(() => {
-    if (!cameraActive || submitting || generatingReport || showExitConfirm) {
+    if (
+      !cameraActive ||
+      !isFaceDetected ||
+      submitting ||
+      generatingReport ||
+      showExitConfirm ||
+      isAiSpeaking
+    ) {
       return;
     }
 
@@ -598,7 +1240,14 @@ export default function MockInterviewSession() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [cameraActive, submitting, generatingReport, showExitConfirm]);
+  }, [
+    cameraActive,
+    isFaceDetected,
+    submitting,
+    generatingReport,
+    showExitConfirm,
+    isAiSpeaking,
+  ]);
 
   // Allow concluding early to view full performance scorecard
   const handleEarlyConclude = async () => {
@@ -740,7 +1389,10 @@ export default function MockInterviewSession() {
   if (session?.status === "completed" && report) {
     return (
       <MockInterviewReportView
-        session={session}
+        session={{
+          ...session,
+          recording_url: localVideoUrl || session.recording_url,
+        }}
         report={report}
         onBackToHub={() => navigate("/student/mock-interview")}
         onStartNew={() => navigate("/student/mock-interview")}
@@ -748,14 +1400,198 @@ export default function MockInterviewSession() {
     );
   }
 
-  // Mandatory Camera Access Screen
-  if (!cameraActive) {
+  // If completed and compiling report, render prominent Interview Status screen
+  if (isInterviewCompleted || generatingReport || session?.status === "completed") {
     return (
-      <div style={{ maxWidth: 640, margin: "2rem auto", padding: "0 1rem" }}>
+      <div style={{ maxWidth: 680, margin: "2.5rem auto", padding: "0 1.5rem" }}>
         <div
           className="glass-card"
           style={{
-            padding: "2.5rem",
+            padding: "2.5rem 2rem",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "1.5rem",
+          }}
+        >
+          {/* Status Badge & Icon */}
+          <div
+            style={{
+              width: 76,
+              height: 76,
+              borderRadius: "50%",
+              background:
+                "linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(99, 102, 241, 0.2))",
+              border: "2px solid #10b981",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#10b981",
+              boxShadow: "0 0 25px rgba(16, 185, 129, 0.25)",
+            }}
+          >
+            <CheckCircle2 size={40} />
+          </div>
+
+          <div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                padding: "0.25rem 0.85rem",
+                borderRadius: "20px",
+                background: "rgba(16, 185, 129, 0.15)",
+                color: "#10b981",
+                border: "1px solid rgba(16, 185, 129, 0.35)",
+                boxShadow: "0 0 10px rgba(16, 185, 129, 0.12)",
+                marginBottom: "0.75rem",
+              }}
+            >
+              <CheckCircle2 size={14} /> Status: Interview Completed
+            </div>
+            <h2
+              style={{
+                fontSize: "1.75rem",
+                fontWeight: 800,
+                color: "var(--text-primary)",
+                margin: 0,
+              }}
+            >
+              Interview Finished!
+            </h2>
+            <p
+              style={{
+                color: "var(--text-muted)",
+                marginTop: "0.5rem",
+                fontSize: "0.92rem",
+                lineHeight: 1.5,
+              }}
+            >
+              All {session?.question_count || totalQuestions} questions in the{" "}
+              <strong style={{ color: "var(--text-primary)" }}>
+                {session?.track}
+              </strong>{" "}
+              interview track have been answered.
+            </p>
+          </div>
+
+          {/* Status Checklist Tracker */}
+          <div
+            style={{
+              width: "100%",
+              background: "var(--bg-secondary)",
+              borderRadius: "12px",
+              padding: "1.25rem",
+              border: "1px solid var(--sidebar-border)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.85rem",
+              textAlign: "left",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontSize: "0.88rem",
+              }}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  color: "var(--text-primary)",
+                  fontWeight: 600,
+                }}
+              >
+                <CheckCircle2 size={16} color="#10b981" /> Spoken Responses Recorded
+              </span>
+              <span style={{ color: "#10b981", fontWeight: 700 }}>
+                {session?.question_count || totalQuestions}/{session?.question_count || totalQuestions} Completed
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontSize: "0.88rem",
+              }}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  color: "var(--text-primary)",
+                  fontWeight: 600,
+                }}
+              >
+                <CheckCircle2 size={16} color="#10b981" /> Media Session Finalized
+              </span>
+              <span style={{ color: "#10b981", fontWeight: 700 }}>Done</span>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontSize: "0.88rem",
+              }}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  color: "var(--text-primary)",
+                  fontWeight: 600,
+                }}
+              >
+                <Loader2
+                  size={16}
+                  className="animate-spin"
+                  color="var(--primary-600)"
+                />{" "}
+                AI Performance Report & Scorecard
+              </span>
+              <span style={{ color: "var(--primary-600)", fontWeight: 700 }}>
+                Generating...
+              </span>
+            </div>
+          </div>
+
+          <p
+            style={{
+              fontSize: "0.82rem",
+              color: "var(--text-muted)",
+              margin: 0,
+              fontStyle: "italic",
+            }}
+          >
+            Evaluating conceptual depth, technical correctness, and computing category scores...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mandatory Camera & Face Verification Pre-Interview Screen
+  if (!cameraActive) {
+    return (
+      <div style={{ maxWidth: 660, margin: "2rem auto", padding: "0 1rem" }}>
+        <div
+          className="glass-card"
+          style={{
+            padding: "2.5rem 2rem",
             textAlign: "center",
             display: "flex",
             flexDirection: "column",
@@ -765,11 +1601,11 @@ export default function MockInterviewSession() {
         >
           <div
             style={{
-              width: 72,
-              height: 72,
+              width: 68,
+              height: 68,
               borderRadius: "20px",
               background:
-                "linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(239, 68, 68, 0.2))",
+                "linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(16, 185, 129, 0.2))",
               border: "2px solid rgba(99, 102, 241, 0.4)",
               display: "flex",
               alignItems: "center",
@@ -777,70 +1613,260 @@ export default function MockInterviewSession() {
               color: "var(--primary-600)",
             }}
           >
-            <Video size={36} />
+            <Video size={34} />
           </div>
 
           <div>
             <h2
               style={{
-                fontSize: "1.4rem",
+                fontSize: "1.45rem",
                 fontWeight: 800,
                 color: "var(--text-primary)",
-                marginBottom: "0.5rem",
+                marginBottom: "0.4rem",
               }}
             >
-              Camera & Face Verification Required
+              Face & Proctoring Verification
             </h2>
             <p
               style={{
                 color: "var(--text-muted)",
-                fontSize: "0.92rem",
+                fontSize: "0.9rem",
                 lineHeight: 1.5,
                 margin: 0,
               }}
             >
-              To ensure mock interview integrity and provide authentic video
-              feedback for instructor verification, your camera must remain
-              enabled with your face clearly visible throughout the entire
-              session.
+              To maintain academic integrity and generate your official evaluation
+              scorecard, your face must be verified before starting and remain
+              visible throughout the interview.
             </p>
           </div>
 
-          <div
-            style={{
-              width: "100%",
-              padding: "1rem",
-              background: "var(--bg-elevated)",
-              borderRadius: "12px",
-              border: "1px solid var(--sidebar-border)",
-              textAlign: "left",
-              fontSize: "0.85rem",
-              color: "var(--text-secondary)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.5rem",
-            }}
-          >
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-            >
-              <CheckCircle size={16} color="#10b981" /> Ensure your face is
-              centered and well-lit.
-            </div>
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-            >
-              <CheckCircle size={16} color="#10b981" /> Speak clearly into your
-              microphone when answering.
-            </div>
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-            >
-              <CheckCircle size={16} color="#10b981" /> Video is recorded
-              securely and auto-deleted after 24 hours.
-            </div>
-          </div>
+          {/* Live Camera Viewfinder & Face Detection Feedback */}
+          {preCameraStream ? (
+            <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.85rem" }}>
+              <div
+                style={{
+                  width: "100%",
+                  maxWidth: 440,
+                  aspectRatio: "4/3",
+                  borderRadius: "14px",
+                  overflow: "hidden",
+                  background: "#0a0d14",
+                  position: "relative",
+                  border:
+                    preFaceStatus === "detected"
+                      ? "3px solid #10b981"
+                      : preFaceStatus === "too_dark"
+                      ? "3px solid #f59e0b"
+                      : "3px solid #ef4444",
+                  boxShadow:
+                    preFaceStatus === "detected"
+                      ? "0 0 20px rgba(16, 185, 129, 0.25)"
+                      : preFaceStatus === "too_dark"
+                      ? "0 0 20px rgba(245, 158, 11, 0.25)"
+                      : "0 0 20px rgba(239, 68, 68, 0.25)",
+                }}
+              >
+                <video
+                  ref={(el) => {
+                    preVideoRef.current = el;
+                    if (el && preCameraStream && el.srcObject !== preCameraStream) {
+                      el.srcObject = preCameraStream;
+                      el.play().catch(() => {});
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    transform: "scaleX(-1)",
+                    filter: `brightness(${cameraBrightness}) contrast(1.05)`,
+                  }}
+                />
 
+                {/* Brightness Booster Button */}
+                <button
+                  type="button"
+                  onClick={() => setCameraBrightness((b) => (b >= 1.75 ? 1.0 : Number((b + 0.25).toFixed(2))))}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    padding: "0.3rem 0.65rem",
+                    borderRadius: "8px",
+                    fontSize: "0.74rem",
+                    fontWeight: 700,
+                    background: cameraBrightness > 1 ? "rgba(245, 158, 11, 0.95)" : "rgba(0,0,0,0.65)",
+                    color: "#ffffff",
+                    border: "1px solid rgba(255,255,255,0.25)",
+                    cursor: "pointer",
+                    backdropFilter: "blur(6px)",
+                    zIndex: 2,
+                  }}
+                  title="Boost camera exposure / brightness if image is dark"
+                >
+                  <Sun size={13} /> {cameraBrightness > 1 ? `Boosted ${Math.round(cameraBrightness * 100)}%` : "Boost Brightness"}
+                </button>
+
+                {/* Real-time Status Badge Overlay */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    left: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.3rem 0.65rem",
+                    borderRadius: "8px",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    background:
+                      preFaceStatus === "detected"
+                        ? "rgba(16, 185, 129, 0.9)"
+                        : preFaceStatus === "too_dark"
+                        ? "rgba(245, 158, 11, 0.95)"
+                        : "rgba(239, 68, 68, 0.95)",
+                    color: "#ffffff",
+                    backdropFilter: "blur(6px)",
+                  }}
+                >
+                  {preFaceStatus === "detected" ? (
+                    <>
+                      <CheckCircle2 size={13} /> Face Verified & Centered
+                    </>
+                  ) : preFaceStatus === "too_dark" ? (
+                    <>
+                      <Sun size={13} /> Lighting Too Dark
+                    </>
+                  ) : preFaceStatus === "checking" ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" /> Verifying Face...
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle size={13} /> Face Not Detected
+                    </>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 10,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    background: "rgba(0,0,0,0.75)",
+                    padding: "0.3rem 0.75rem",
+                    borderRadius: "20px",
+                    color: "#fff",
+                    fontSize: "0.74rem",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {preFaceStatus === "detected"
+                    ? "Looking great! Ready to start."
+                    : preFaceStatus === "too_dark"
+                    ? "Turn on lights or face a light source"
+                    : "Position your face in center of frame"}
+                </div>
+              </div>
+
+              {/* Status explanation alert */}
+              <div
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "10px",
+                  fontSize: "0.84rem",
+                  textAlign: "left",
+                  background:
+                    preFaceStatus === "detected"
+                      ? "rgba(16, 185, 129, 0.1)"
+                      : preFaceStatus === "too_dark"
+                      ? "rgba(245, 158, 11, 0.1)"
+                      : "rgba(239, 68, 68, 0.1)",
+                  border: `1px solid ${
+                    preFaceStatus === "detected"
+                      ? "rgba(16, 185, 129, 0.3)"
+                      : preFaceStatus === "too_dark"
+                      ? "rgba(245, 158, 11, 0.3)"
+                      : "rgba(239, 68, 68, 0.3)"
+                  }`,
+                  color:
+                    preFaceStatus === "detected"
+                      ? "#10b981"
+                      : preFaceStatus === "too_dark"
+                      ? "#d97706"
+                      : "#ef4444",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                {preFaceStatus === "detected" ? (
+                  <>
+                    <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+                    <span>
+                      Face recognized in good lighting. You will be prompted to select a screen to share when starting.
+                    </span>
+                  </>
+                ) : preFaceStatus === "too_dark" ? (
+                  <>
+                    <Sun size={16} style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>Camera feed is too dark:</strong> Please turn on your room lights or face a window/lamp so your face is clearly identifiable.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>Face missing:</strong> Please ensure your webcam is uncovered and you are facing the screen. The interview cannot start without face detection.
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* First-step Enable Camera Box */
+            <div
+              style={{
+                width: "100%",
+                padding: "1.25rem",
+                background: "var(--bg-elevated)",
+                borderRadius: "12px",
+                border: "1px solid var(--sidebar-border)",
+                textAlign: "left",
+                fontSize: "0.85rem",
+                color: "var(--text-secondary)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.6rem",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <CheckCircle size={16} color="#10b981" /> Ensure your face is centered and well-lit.
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <Monitor size={16} color="#6366f1" /> Screen sharing prompt will appear when starting to record full proctoring.
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <Maximize size={16} color="#10b981" /> Full screen mode opens automatically for distraction-free environment.
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <CheckCircle size={16} color="#10b981" /> Video is recorded securely and auto-deleted after 24 hours.
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
           <div
             style={{
               display: "flex",
@@ -856,61 +1882,54 @@ export default function MockInterviewSession() {
             >
               Cancel
             </button>
-            <button
-              onClick={async () => {
-                try {
-                  // 1. Request Camera & Mic
-                  const camStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                      width: { ideal: 640 },
-                      height: { ideal: 480 },
-                      facingMode: "user",
-                    },
-                    audio: true,
-                  });
-                  mediaStreamRef.current = camStream;
-                  if (videoRef.current) {
-                    videoRef.current.srcObject = camStream;
-                  }
 
-                  // 2. Request Screen Share for Dual Recording
-                  let scrStream = null;
-                  try {
-                    scrStream = await navigator.mediaDevices.getDisplayMedia({
-                      video: { cursor: "always" },
-                      audio: false,
-                    });
-                    screenStreamRef.current = scrStream;
-                    setScreenShared(true);
-                  } catch (scrErr) {
-                    console.info(
-                      "Screen share skipped or denied, recording camera directly:",
-                      scrErr,
-                    );
-                  }
-
-                  // 3. Initialize Composite Recorder
-                  initCompositeRecording(camStream, scrStream);
-                  setCameraActive(true);
-                } catch (err) {
-                  alert(
-                    "Please grant camera and microphone permissions in your browser to proceed with the mock interview.",
-                  );
-                  console.error(err);
+            {!preCameraStream ? (
+              <button
+                onClick={handleStartCameraCheck}
+                className="btn-primary"
+                style={{
+                  flex: 2,
+                  padding: "0.75rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <Camera size={18} /> Enable Camera & Check Face
+              </button>
+            ) : (
+              <button
+                onClick={handleStartInterview}
+                disabled={preFaceStatus !== "detected"}
+                className={preFaceStatus === "detected" ? "btn-primary" : "btn-secondary"}
+                style={{
+                  flex: 2,
+                  padding: "0.75rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  cursor: preFaceStatus === "detected" ? "pointer" : "not-allowed",
+                  opacity: preFaceStatus === "detected" ? 1 : 0.6,
+                }}
+                title={
+                  preFaceStatus !== "detected"
+                    ? "Face verification required before entering interview"
+                    : "Starts fullscreen mock interview and prompts for screen share"
                 }
-              }}
-              className="btn-primary"
-              style={{
-                flex: 2,
-                padding: "0.75rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
-              }}
-            >
-              <Video size={18} /> Enable Camera & Screen Recording
-            </button>
+              >
+                {preFaceStatus === "detected" ? (
+                  <>
+                    <Maximize size={18} /> Share Screen & Start Interview
+                  </>
+                ) : (
+                  <>
+                    <Lock size={16} /> Face Verification Required to Start
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1019,18 +2038,80 @@ export default function MockInterviewSession() {
               </div>
             </div>
 
-            <button
-              onClick={() => setShowExitConfirm(true)}
-              className="btn-secondary"
-              style={{
-                padding: "0.45rem 0.85rem",
-                fontSize: "0.85rem",
-                color: "#ef4444",
-              }}
-              title="Exit Interview"
-            >
-              <LogOut size={16} /> Exit
-            </button>
+            {isFullscreen ? (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "0.35rem 0.8rem",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  borderRadius: "20px",
+                  background: "rgba(16, 185, 129, 0.12)",
+                  color: "#10b981",
+                  border: "1px solid rgba(16, 185, 129, 0.3)",
+                }}
+                title="Full screen mode is strictly enforced until interview completion"
+              >
+                <Lock size={13} /> Full Screen Enforced
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={enterFullscreen}
+                className="btn-primary"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "0.35rem 0.8rem",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  background: "#ef4444",
+                  color: "#ffffff",
+                  border: "none",
+                  cursor: "pointer",
+                  animation: "pulse 1.5s infinite",
+                }}
+                title="Click to return to full screen mode"
+              >
+                <Maximize size={14} /> Return to Full Screen
+              </button>
+            )}
+
+            {isExamActive ? (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "0.35rem 0.8rem",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  borderRadius: "20px",
+                  background: "rgba(99, 102, 241, 0.12)",
+                  color: "var(--primary-400)",
+                  border: "1px solid rgba(99, 102, 241, 0.25)",
+                }}
+                title="Exam in progress: Full screen mode is enforced until completion"
+              >
+                <Lock size={13} /> Active Exam
+              </span>
+            ) : (
+              <button
+                onClick={() => setShowExitConfirm(true)}
+                className="btn-secondary"
+                style={{
+                  padding: "0.45rem 0.85rem",
+                  fontSize: "0.85rem",
+                  color: "#ef4444",
+                }}
+                title="Exit Interview"
+              >
+                <LogOut size={16} /> Exit
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1178,60 +2259,153 @@ export default function MockInterviewSession() {
                       justifyContent: "space-between",
                       marginBottom: "0.35rem",
                       gap: "0.5rem",
+                      flexWrap: "wrap",
                     }}
                   >
-                    <span
+                    <div
                       style={{
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
-                        color: "var(--primary-600)",
-                        textTransform: "uppercase",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        flexWrap: "wrap",
                       }}
                     >
-                      Interviewer • Question {turn.turn_number}
-                    </span>
-                    {"speechSynthesis" in window && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          toggleSpeakQuestion(turn.turn_number, turn.question)
-                        }
+                      <span
                         style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.35rem",
-                          fontSize: "0.72rem",
-                          fontWeight: 600,
-                          padding: "0.2rem 0.55rem",
-                          borderRadius: "6px",
-                          border: "1px solid var(--sidebar-border)",
-                          background:
-                            activeSpeakingTurn === turn.turn_number
-                              ? "rgba(99, 102, 241, 0.15)"
-                              : "var(--bg-secondary)",
-                          color:
-                            activeSpeakingTurn === turn.turn_number
-                              ? "var(--primary-600)"
-                              : "var(--text-muted)",
-                          cursor: "pointer",
-                          transition: "all 0.15s ease",
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          color: "var(--primary-600)",
+                          textTransform: "uppercase",
                         }}
-                        title={
-                          activeSpeakingTurn === turn.turn_number
-                            ? "Stop Reading"
-                            : "Listen to Question"
-                        }
                       >
-                        {activeSpeakingTurn === turn.turn_number ? (
-                          <>
-                            <VolumeX size={12} /> Stop Audio
-                          </>
-                        ) : (
-                          <>
-                            <Volume2 size={12} /> Listen
-                          </>
+                        Interviewer • Question {turn.turn_number}
+                      </span>
+                      {isAiSpeaking &&
+                        turn.turn_number === currentTurnNumber && (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.35rem",
+                              fontSize: "0.72rem",
+                              fontWeight: 700,
+                              color: "#6366f1",
+                              background: "rgba(99, 102, 241, 0.12)",
+                              padding: "0.15rem 0.55rem",
+                              borderRadius: "10px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "2px",
+                                height: "10px",
+                              }}
+                            >
+                              {[0.4, 0.9, 0.5, 1.0, 0.6].map((factor, i) => (
+                                <span
+                                  key={i}
+                                  className="animate-pulse"
+                                  style={{
+                                    width: "2px",
+                                    height: `${Math.round(10 * factor)}px`,
+                                    background: "#6366f1",
+                                    borderRadius: "1px",
+                                    animationDelay: `${i * 0.12}s`,
+                                  }}
+                                />
+                              ))}
+                            </span>
+                            Speaking Question...
+                          </span>
                         )}
-                      </button>
+                    </div>
+                    {"speechSynthesis" in window && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            isAiSpeaking &&
+                            activeSpeakingTurn === turn.turn_number
+                              ? stopAiSpeech()
+                              : speakQuestion(turn.turn_number, turn.question)
+                          }
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            fontSize: "0.72rem",
+                            fontWeight: 600,
+                            padding: "0.2rem 0.55rem",
+                            borderRadius: "6px",
+                            border: "1px solid var(--sidebar-border)",
+                            background:
+                              isAiSpeaking &&
+                              activeSpeakingTurn === turn.turn_number
+                                ? "rgba(99, 102, 241, 0.15)"
+                                : "var(--bg-secondary)",
+                            color:
+                              isAiSpeaking &&
+                              activeSpeakingTurn === turn.turn_number
+                                ? "var(--primary-600)"
+                                : "var(--text-muted)",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                          }}
+                          title={
+                            isAiSpeaking &&
+                            activeSpeakingTurn === turn.turn_number
+                              ? "Stop Reading"
+                              : "Listen to Question"
+                          }
+                        >
+                          {isAiSpeaking &&
+                          activeSpeakingTurn === turn.turn_number ? (
+                            <>
+                              <VolumeX size={12} /> Stop Audio
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 size={12} /> Replay Audio
+                            </>
+                          )}
+                        </button>
+
+                        {/* AI Volume control */}
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.3rem",
+                            fontSize: "0.72rem",
+                            color: "var(--text-muted)",
+                            marginLeft: "0.4rem",
+                          }}
+                          title={`AI Voice Volume: ${Math.round(aiVolume * 100)}%`}
+                        >
+                          <Volume2 size={12} />
+                          <input
+                            type="range"
+                            min="0.2"
+                            max="1.0"
+                            step="0.05"
+                            value={aiVolume}
+                            onChange={(e) =>
+                              handleAiVolumeChange(parseFloat(e.target.value))
+                            }
+                            style={{
+                              width: "55px",
+                              accentColor: "var(--primary-600)",
+                              cursor: "pointer",
+                            }}
+                            aria-label="AI Volume"
+                          />
+                          <span style={{ fontWeight: 700 }}>
+                            {Math.round(aiVolume * 100)}%
+                          </span>
+                        </div>
+                      </>
                     )}
                   </div>
                   <p
@@ -1504,9 +2678,15 @@ export default function MockInterviewSession() {
                 {sttMode === "push-to-talk" ? (
                   <button
                     type="button"
-                    onMouseDown={startListening}
+                    onMouseDown={() => {
+                      if (isAiSpeaking) stopAiSpeech();
+                      startListening();
+                    }}
                     onMouseUp={stopListening}
-                    onTouchStart={startListening}
+                    onTouchStart={() => {
+                      if (isAiSpeaking) stopAiSpeech();
+                      startListening();
+                    }}
                     onTouchEnd={stopListening}
                     disabled={submitting}
                     style={{
@@ -1538,12 +2718,20 @@ export default function MockInterviewSession() {
                 ) : (
                   <button
                     type="button"
-                    onClick={toggleListening}
-                    disabled={
-                      submitting ||
-                      sttState === STT_STATES.REQUESTING_MIC ||
-                      sttState === STT_STATES.CONNECTING_GEMINI
-                    }
+                    onClick={() => {
+                      if (isAiSpeaking) {
+                        stopAiSpeech();
+                      }
+                      if (
+                        sttState === STT_STATES.CONNECTING_GEMINI ||
+                        sttState === STT_STATES.REQUESTING_MIC
+                      ) {
+                        switchToBrowserSpeech();
+                      } else {
+                        toggleListening();
+                      }
+                    }}
+                    disabled={submitting}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -1558,12 +2746,19 @@ export default function MockInterviewSession() {
                         ? activeEngine === "gemini-live"
                           ? "#ef4444"
                           : "#d97706"
-                        : "var(--primary-600)",
+                        : sttState === STT_STATES.CONNECTING_GEMINI
+                          ? "linear-gradient(135deg, #6366f1, #8b5cf6)"
+                          : "var(--primary-600)",
                       color: "#ffffff",
                       boxShadow: isListening
                         ? "0 0 12px rgba(239, 68, 68, 0.4)"
                         : undefined,
                     }}
+                    title={
+                      sttState === STT_STATES.CONNECTING_GEMINI
+                        ? "Connecting to Gemini... Click to instantly switch to Browser Mic!"
+                        : undefined
+                    }
                   >
                     {sttState === STT_STATES.REQUESTING_MIC ? (
                       <>
@@ -1573,7 +2768,7 @@ export default function MockInterviewSession() {
                     ) : sttState === STT_STATES.CONNECTING_GEMINI ? (
                       <>
                         <Loader2 size={14} className="animate-spin" />{" "}
-                        Connecting Gemini...
+                        Connecting Gemini... (Click to use Browser Mic)
                       </>
                     ) : sttState === STT_STATES.STOPPING ? (
                       <>
@@ -1589,6 +2784,31 @@ export default function MockInterviewSession() {
                         <Mic size={14} /> Start Speaking
                       </>
                     )}
+                  </button>
+                )}
+
+                {/* Instant Escape Hatch button if Gemini connection takes time */}
+                {sttState === STT_STATES.CONNECTING_GEMINI && (
+                  <button
+                    type="button"
+                    onClick={() => switchToBrowserSpeech()}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.3rem",
+                      fontSize: "0.74rem",
+                      fontWeight: 700,
+                      padding: "0.35rem 0.65rem",
+                      borderRadius: "6px",
+                      background: "rgba(245, 158, 11, 0.15)",
+                      color: "#d97706",
+                      border: "1px solid rgba(245, 158, 11, 0.4)",
+                      cursor: "pointer",
+                      animation: "pulse 1.8s infinite ease-in-out",
+                    }}
+                    title="Skip waiting for Gemini and speak immediately using your browser microphone"
+                  >
+                    ⚡ Use Browser Mic Now
                   </button>
                 )}
 
@@ -1686,17 +2906,86 @@ export default function MockInterviewSession() {
                 )}
               </div>
 
-              {/* Mode Selector */}
+              {/* Engine Selector & Mode Selector */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.35rem",
-                  fontSize: "0.75rem",
-                  color: "var(--text-muted)",
+                  gap: "0.8rem",
+                  flexWrap: "wrap",
                 }}
               >
-                <span>Mode:</span>
+                {/* Engine Selector */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <span>Engine:</span>
+                  <button
+                    type="button"
+                    onClick={() => setPreferredEngine("auto")}
+                    style={{
+                      padding: "0.15rem 0.5rem",
+                      borderRadius: "5px",
+                      border: "1px solid var(--sidebar-border)",
+                      background:
+                        preferredEngine === "auto"
+                          ? "rgba(99, 102, 241, 0.15)"
+                          : "transparent",
+                      color:
+                        preferredEngine === "auto"
+                          ? "var(--primary-600)"
+                          : "var(--text-muted)",
+                      fontWeight: preferredEngine === "auto" ? 700 : 400,
+                      cursor: "pointer",
+                      fontSize: "0.74rem",
+                    }}
+                    title="Gemini Live with automatic browser fallback"
+                  >
+                    Gemini Live
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreferredEngine("browser-speech")}
+                    style={{
+                      padding: "0.15rem 0.5rem",
+                      borderRadius: "5px",
+                      border: "1px solid var(--sidebar-border)",
+                      background:
+                        preferredEngine === "browser-speech"
+                          ? "rgba(245, 158, 11, 0.15)"
+                          : "transparent",
+                      color:
+                        preferredEngine === "browser-speech"
+                          ? "#d97706"
+                          : "var(--text-muted)",
+                      fontWeight:
+                        preferredEngine === "browser-speech" ? 700 : 400,
+                      cursor: "pointer",
+                      fontSize: "0.74rem",
+                    }}
+                    title="Instant speech recognition with zero cloud connection latency"
+                  >
+                    ⚡ Browser Mic (Instant)
+                  </button>
+                </div>
+
+                {/* Mode Selector */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <span>Mode:</span>
                 <button
                   type="button"
                   onClick={() => setSttMode("click")}
@@ -1743,128 +3032,280 @@ export default function MockInterviewSession() {
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Auto-Submit 10s Silence Countdown & Space/Tab Extend Timer Banner */}
-            {cameraActive && !submitting && (
+            {/* AI Reading Question banner vs Auto-Submit 10s Countdown banner */}
+            {isAiSpeaking ? (
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "0.45rem 0.85rem",
-                  borderRadius: "8px",
+                  padding: "0.6rem 0.95rem",
+                  borderRadius: "10px",
                   background:
-                    silenceSecondsLeft <= 4
-                      ? "rgba(239, 68, 68, 0.1)"
-                      : "rgba(99, 102, 241, 0.08)",
-                  border: `1px solid ${
-                    silenceSecondsLeft <= 4
-                      ? "rgba(239, 68, 68, 0.35)"
-                      : "rgba(99, 102, 241, 0.25)"
-                  }`,
+                    "linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.12))",
+                  border: "1px solid rgba(99, 102, 241, 0.35)",
                   flexWrap: "wrap",
-                  gap: "0.5rem",
-                  transition: "all 0.25s ease",
+                  gap: "0.6rem",
+                  animation: "pulse 2.2s infinite ease-in-out",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "0.45rem",
-                    fontSize: "0.82rem",
-                    fontWeight: 600,
-                    color:
-                      silenceSecondsLeft <= 4
-                        ? "#dc2626"
-                        : "var(--text-primary)",
+                    gap: "0.65rem",
                   }}
                 >
-                  <Clock
-                    size={15}
+                  <div
                     style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background:
+                        "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Volume2 size={16} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "0.84rem",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                      }}
+                    >
+                      <span>AI Interviewer is asking Question {currentTurnNumber}</span>
+                      <span
+                        style={{
+                          fontSize: "0.7rem",
+                          color: "#6366f1",
+                          background: "rgba(99, 102, 241, 0.15)",
+                          padding: "0.1rem 0.45rem",
+                          borderRadius: "8px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Audio Playing
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.73rem",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Please listen to the question. Microphone will automatically open for your response right after.
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {/* Interactive AI Volume Slider */}
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.45rem",
+                      background: "var(--bg-card)",
+                      padding: "0.25rem 0.65rem",
+                      borderRadius: "6px",
+                      border: "1px solid var(--sidebar-border)",
+                    }}
+                    title="AI Interviewer Voice Volume"
+                  >
+                    <Volume2 size={14} style={{ color: "var(--primary-600)" }} />
+                    <input
+                      type="range"
+                      min="0.2"
+                      max="1.0"
+                      step="0.05"
+                      value={aiVolume}
+                      onChange={(e) =>
+                        handleAiVolumeChange(parseFloat(e.target.value))
+                      }
+                      style={{
+                        width: "70px",
+                        accentColor: "var(--primary-600)",
+                        cursor: "pointer",
+                      }}
+                      aria-label="AI Speech Volume"
+                    />
+                    <span
+                      style={{
+                        fontSize: "0.72rem",
+                        fontWeight: 700,
+                        minWidth: "34px",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {Math.round(aiVolume * 100)}%
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={stopAiSpeech}
+                    className="btn-secondary"
+                    style={{
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      padding: "0.35rem 0.85rem",
+                      borderRadius: "6px",
+                      background: "var(--bg-elevated)",
+                      color: "var(--primary-600)",
+                      border: "1px solid var(--primary-400)",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                    }}
+                    title="Skip question audio and start answering immediately"
+                  >
+                    Skip & Answer Now →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              cameraActive &&
+              !submitting && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0.45rem 0.85rem",
+                    borderRadius: "8px",
+                    background:
+                      silenceSecondsLeft <= 4
+                        ? "rgba(239, 68, 68, 0.1)"
+                        : "rgba(99, 102, 241, 0.08)",
+                    border: `1px solid ${
+                      silenceSecondsLeft <= 4
+                        ? "rgba(239, 68, 68, 0.35)"
+                        : "rgba(99, 102, 241, 0.25)"
+                    }`,
+                    flexWrap: "wrap",
+                    gap: "0.5rem",
+                    transition: "all 0.25s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.45rem",
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
                       color:
                         silenceSecondsLeft <= 4
-                          ? "#ef4444"
-                          : "var(--primary-600)",
+                          ? "#dc2626"
+                          : "var(--text-primary)",
                     }}
-                    className={
-                      silenceSecondsLeft <= 4
-                        ? "animate-pulse"
-                        : ""
-                    }
-                  />
-                  <span>
-                    Auto-submitting in{" "}
-                    <strong
+                  >
+                    <Clock
+                      size={15}
                       style={{
-                        fontSize: "0.95rem",
                         color:
                           silenceSecondsLeft <= 4
                             ? "#ef4444"
                             : "var(--primary-600)",
                       }}
-                    >
-                      {silenceSecondsLeft}s
-                    </strong>
-                    {answerInput.trim()
-                      ? " of silence"
-                      : " (Speak now or press Space/Tab to extend)"}
-                  </span>
-                  {timeExtendedNotice && (
+                      className={
+                        silenceSecondsLeft <= 4
+                          ? "animate-pulse"
+                          : ""
+                      }
+                    />
+                    <span>
+                      Auto-submitting in{" "}
+                      <strong
+                        style={{
+                          fontSize: "0.95rem",
+                          color:
+                            silenceSecondsLeft <= 4
+                              ? "#ef4444"
+                              : "var(--primary-600)",
+                        }}
+                      >
+                        {silenceSecondsLeft}s
+                      </strong>
+                      {answerInput.trim()
+                        ? " of silence"
+                        : " (Speak now or press Space/Tab to extend)"}
+                    </span>
+                    {timeExtendedNotice && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "3px",
+                          fontSize: "0.74rem",
+                          color: "#10b981",
+                          background: "rgba(16, 185, 129, 0.15)",
+                          padding: "0.12rem 0.5rem",
+                          borderRadius: "10px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        <Sparkles size={11} /> +10s Extended!
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleExtendTime}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                      fontSize: "0.76rem",
+                      fontWeight: 700,
+                      color: "var(--primary-600)",
+                      background: "rgba(99, 102, 241, 0.12)",
+                      border: "1px solid rgba(99, 102, 241, 0.3)",
+                      padding: "0.25rem 0.65rem",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    title="Press Space or Tab on your keyboard to extend speaking time by +10s"
+                  >
+                    <span>+10s Extend Time</span>
                     <span
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "3px",
-                        fontSize: "0.74rem",
-                        color: "#10b981",
-                        background: "rgba(16, 185, 129, 0.15)",
-                        padding: "0.12rem 0.5rem",
-                        borderRadius: "10px",
-                        fontWeight: 700,
+                        background: "var(--bg-elevated)",
+                        border: "1px solid var(--sidebar-border)",
+                        padding: "0.05rem 0.35rem",
+                        borderRadius: "4px",
+                        fontSize: "0.68rem",
+                        fontWeight: 800,
+                        color: "var(--text-secondary)",
                       }}
                     >
-                      <Sparkles size={11} /> +10s Extended!
+                      Space / Tab
                     </span>
-                  )}
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleExtendTime}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.4rem",
-                    fontSize: "0.76rem",
-                    fontWeight: 700,
-                    color: "var(--primary-600)",
-                    background: "rgba(99, 102, 241, 0.12)",
-                    border: "1px solid rgba(99, 102, 241, 0.3)",
-                    padding: "0.25rem 0.65rem",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                  title="Press Space or Tab on your keyboard to extend speaking time by +10s"
-                >
-                  <span>+10s Extend Time</span>
-                  <span
-                    style={{
-                      background: "var(--bg-elevated)",
-                      border: "1px solid var(--sidebar-border)",
-                      padding: "0.05rem 0.35rem",
-                      borderRadius: "4px",
-                      fontSize: "0.68rem",
-                      fontWeight: 800,
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    Space / Tab
-                  </span>
-                </button>
-              </div>
+              )
             )}
 
             <div style={{ position: "relative" }}>
@@ -1873,7 +3314,11 @@ export default function MockInterviewSession() {
                 value={answerInput}
                 readOnly
                 disabled={submitting}
-                placeholder="🎙 Auto-listening: Speak your answer verbally in English. (Auto-submits after 10s of silence, press Space or Tab to extend time)..."
+                placeholder={
+                  isAiSpeaking
+                    ? "🎧 Interviewer is reading the question aloud... Your microphone will automatically open as soon as they finish so you can answer."
+                    : "🎙 Auto-listening: Speak your answer verbally in English. (Auto-submits after 10s of silence, press Space or Tab to extend time)..."
+                }
                 style={{
                   width: "100%",
                   minHeight: "92px",
@@ -2007,7 +3452,7 @@ export default function MockInterviewSession() {
 
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || isAiSpeaking || !isFaceDetected}
                   className="btn-primary"
                   style={{
                     display: "inline-flex",
@@ -2020,8 +3465,16 @@ export default function MockInterviewSession() {
                       currentTurnNumber >= totalQuestions
                         ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
                         : undefined,
-                    opacity: submitting ? 0.6 : 1,
+                    opacity: submitting || isAiSpeaking || !isFaceDetected ? 0.6 : 1,
+                    cursor: isAiSpeaking || !isFaceDetected ? "not-allowed" : "pointer",
                   }}
+                  title={
+                    !isFaceDetected
+                      ? "Face must be verified in camera to submit response"
+                      : isAiSpeaking
+                      ? "Please wait for the interviewer to finish reading the question"
+                      : undefined
+                  }
                 >
                   {submitting ? (
                     <>
@@ -2029,6 +3482,10 @@ export default function MockInterviewSession() {
                       {currentTurnNumber >= totalQuestions
                         ? "Compiling..."
                         : "Submitting..."}
+                    </>
+                  ) : isAiSpeaking ? (
+                    <>
+                      <Volume2 className="animate-pulse" size={15} /> Reading Question...
                     </>
                   ) : currentTurnNumber >= totalQuestions ? (
                     <>
@@ -2129,6 +3586,7 @@ export default function MockInterviewSession() {
                   height: "100%",
                   objectFit: "cover",
                   transform: "scaleX(-1)",
+                  filter: `brightness(${cameraBrightness}) contrast(1.05)`,
                 }}
               />
               <div
@@ -2148,6 +3606,68 @@ export default function MockInterviewSession() {
               >
                 <Mic size={10} color="#10b981" /> Mic Active
               </div>
+
+              {/* Brightness Boost Toggle */}
+              <button
+                type="button"
+                onClick={() => setCameraBrightness((b) => (b >= 1.75 ? 1.0 : Number((b + 0.25).toFixed(2))))}
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.2rem",
+                  background: cameraBrightness > 1 ? "rgba(245, 158, 11, 0.9)" : "rgba(0,0,0,0.6)",
+                  border: "none",
+                  padding: "0.15rem 0.4rem",
+                  borderRadius: 4,
+                  color: "#fff",
+                  fontSize: "0.65rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                title="Boost camera brightness if lighting is dim"
+              >
+                <Sun size={10} /> {cameraBrightness > 1 ? `${Math.round(cameraBrightness * 100)}%` : "Light"}
+              </button>
+
+              {/* Real-time Face Detection Pill Badge */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 6,
+                  right: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                  background:
+                    faceStatus === "detected"
+                      ? "rgba(16, 185, 129, 0.85)"
+                      : faceStatus === "too_dark"
+                      ? "rgba(245, 158, 11, 0.9)"
+                      : "rgba(239, 68, 68, 0.9)",
+                  padding: "0.15rem 0.45rem",
+                  borderRadius: 4,
+                  color: "#fff",
+                  fontSize: "0.65rem",
+                  fontWeight: 700,
+                }}
+              >
+                <span
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: "50%",
+                    background: "#fff",
+                  }}
+                />
+                {faceStatus === "detected"
+                  ? "Face OK"
+                  : faceStatus === "too_dark"
+                  ? "Too Dark"
+                  : "No Face"}
+              </div>
             </div>
 
             <p
@@ -2164,6 +3684,397 @@ export default function MockInterviewSession() {
           </div>
         )}
       </div>
+
+      {/* ── Strict Face Verification Proctoring Lockout Modal ── */}
+      {isExamActive && isFullscreen && !isFaceDetected && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(15, 23, 42, 0.96)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1.5rem",
+          }}
+        >
+          <div
+            className="glass-card"
+            style={{
+              maxWidth: 520,
+              width: "100%",
+              padding: "2.25rem 2rem",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "1.25rem",
+              border: "2px solid rgba(239, 68, 68, 0.55)",
+              boxShadow: "0 0 50px rgba(239, 68, 68, 0.35)",
+            }}
+          >
+            <div
+              style={{
+                width: 68,
+                height: 68,
+                borderRadius: "50%",
+                background: "rgba(239, 68, 68, 0.15)",
+                border: "2px solid #ef4444",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ef4444",
+                animation: "pulse 1.8s infinite ease-in-out",
+              }}
+            >
+              <VideoOff size={34} />
+            </div>
+
+            <div>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  fontSize: "0.76rem",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  padding: "0.2rem 0.65rem",
+                  borderRadius: "12px",
+                  background: "rgba(239, 68, 68, 0.2)",
+                  color: "#ef4444",
+                  marginBottom: "0.6rem",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                <AlertTriangle size={13} /> Proctoring Alert: Face Missing
+              </span>
+              <h2
+                style={{
+                  fontSize: "1.45rem",
+                  fontWeight: 800,
+                  color: "var(--text-primary)",
+                  margin: 0,
+                }}
+              >
+                {faceStatus === "too_dark"
+                  ? "Camera Feed Too Dark"
+                  : "Face Not Detected"}
+              </h2>
+              <p
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "0.88rem",
+                  lineHeight: 1.5,
+                  marginTop: "0.5rem",
+                }}
+              >
+                {faceStatus === "too_dark"
+                  ? "Your webcam feed appears underexposed. Click 'Boost Camera Brightness' below or turn on room lighting to resume."
+                  : "Your face has left the camera frame. Please position yourself facing the camera to continue the assessment."}
+              </p>
+            </div>
+
+            {/* Live Camera Re-alignment viewfinder */}
+            <div
+              style={{
+                width: "100%",
+                maxWidth: 320,
+                aspectRatio: "4/3",
+                borderRadius: "12px",
+                overflow: "hidden",
+                background: "#000",
+                border: "2px dashed #ef4444",
+                position: "relative",
+              }}
+            >
+              <video
+                ref={(el) => {
+                  if (el && mediaStreamRef.current && el.srcObject !== mediaStreamRef.current) {
+                    el.srcObject = mediaStreamRef.current;
+                    el.play().catch(() => {});
+                  }
+                }}
+                autoPlay
+                muted
+                playsInline
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  transform: "scaleX(-1)",
+                  filter: `brightness(${cameraBrightness}) contrast(1.05)`,
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 8,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  background: "rgba(0,0,0,0.75)",
+                  padding: "0.25rem 0.65rem",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  fontSize: "0.72rem",
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Align face in center with good lighting
+              </div>
+            </div>
+
+            {/* Controls to resolve dark camera or force re-check */}
+            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setCameraBrightness((b) => (b >= 1.75 ? 1.0 : Number((b + 0.25).toFixed(2))));
+                  setTimeout(() => {
+                    if (runCheckRef.current) runCheckRef.current();
+                  }, 200);
+                }}
+                className="btn-secondary"
+                style={{
+                  padding: "0.55rem 1rem",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  background: "rgba(245, 158, 11, 0.15)",
+                  borderColor: "rgba(245, 158, 11, 0.4)",
+                  color: "#f59e0b",
+                  cursor: "pointer",
+                }}
+              >
+                <Sun size={15} /> Boost Brightness ({Math.round(cameraBrightness * 100)}%)
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  let stream = mediaStreamRef.current;
+                  const isLive =
+                    stream &&
+                    stream.getVideoTracks().length > 0 &&
+                    stream.getVideoTracks().some((t) => t.readyState === "live");
+
+                  if (!isLive) {
+                    try {
+                      stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                          width: { ideal: 1280 },
+                          height: { ideal: 720 },
+                          facingMode: "user",
+                        },
+                        audio: true,
+                      });
+                      mediaStreamRef.current = stream;
+                      setPreCameraStream(stream);
+                      if (videoRef.current) {
+                        videoRef.current.srcObject = stream;
+                        videoRef.current.play().catch(() => {});
+                      }
+                    } catch (camErr) {
+                      console.error("Camera re-acquisition error:", camErr);
+                    }
+                  }
+                  if (videoRef.current && videoRef.current.paused) {
+                    videoRef.current.play().catch(() => {});
+                  }
+                  if (runCheckRef.current) runCheckRef.current();
+                }}
+                className="btn-primary"
+                style={{
+                  padding: "0.55rem 1.1rem",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                  cursor: "pointer",
+                }}
+              >
+                <RotateCcw size={15} /> Re-verify Face Now
+              </button>
+            </div>
+
+            <div
+              style={{
+                fontSize: "0.78rem",
+                color: "var(--text-muted)",
+                background: "var(--bg-elevated)",
+                padding: "0.55rem 0.85rem",
+                borderRadius: "8px",
+                border: "1px solid var(--sidebar-border)",
+                lineHeight: 1.4,
+              }}
+            >
+              💡 <strong>Tip:</strong> If you are already in a well-lit room, click <strong>Boost Brightness</strong> above or tilt your laptop screen slightly towards your face so screen light illuminates you.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Strict Full Screen Enforcement Lockout Modal ── */}
+      {isExamActive && !isFullscreen && (
+        <div
+          onClick={enterFullscreen}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(15, 23, 42, 0.94)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1.5rem",
+            cursor: "pointer",
+          }}
+        >
+          <div
+            className="glass-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: 520,
+              width: "100%",
+              padding: "2.5rem 2rem",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "1.25rem",
+              border: "2px solid rgba(239, 68, 68, 0.5)",
+              boxShadow: "0 0 50px rgba(239, 68, 68, 0.3)",
+              cursor: "default",
+            }}
+          >
+            <div
+              style={{
+                width: 70,
+                height: 70,
+                borderRadius: "50%",
+                background: "rgba(239, 68, 68, 0.15)",
+                border: "2px solid #ef4444",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ef4444",
+                animation: "pulse 1.8s infinite ease-in-out",
+              }}
+            >
+              <Maximize size={34} />
+            </div>
+
+            <div>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  fontSize: "0.78rem",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  padding: "0.2rem 0.65rem",
+                  borderRadius: "12px",
+                  background: "rgba(239, 68, 68, 0.2)",
+                  color: "#ef4444",
+                  marginBottom: "0.6rem",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                <AlertCircle size={13} /> Full Screen Mode Required
+              </span>
+              <h2
+                style={{
+                  fontSize: "1.5rem",
+                  fontWeight: 800,
+                  color: "var(--text-primary)",
+                  margin: 0,
+                }}
+              >
+                Full Screen Exited
+              </h2>
+              <p
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "0.9rem",
+                  lineHeight: 1.5,
+                  marginTop: "0.5rem",
+                }}
+              >
+                To maintain interview integrity, you must remain in full screen
+                mode until you finish all questions and submit the final response.
+              </p>
+            </div>
+
+            <div
+              style={{
+                width: "100%",
+                padding: "0.85rem",
+                borderRadius: "10px",
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--sidebar-border)",
+                fontSize: "0.82rem",
+                color: "var(--text-secondary)",
+                textAlign: "left",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.4rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.45rem",
+                }}
+              >
+                <CheckCircle2 size={15} color="#10b981" /> Spoken responses and
+                webcam are preserved.
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.45rem",
+                }}
+              >
+                <Lock size={15} color="#6366f1" /> Window switching and tab
+                changing are restricted.
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={enterFullscreen}
+              className="btn-primary"
+              style={{
+                width: "100%",
+                padding: "0.85rem",
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.55rem",
+                background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                boxShadow: "0 0 20px rgba(99, 102, 241, 0.4)",
+              }}
+            >
+              <Maximize size={18} /> Return to Full Screen Mode
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Exit Confirmation Modal */}
       {showExitConfirm && (
@@ -2243,7 +4154,15 @@ export default function MockInterviewSession() {
                   padding: "0.65rem 1.25rem",
                   fontWeight: 700,
                 }}
-                onClick={() => navigate("/student/mock-interview")}
+                onClick={() => {
+                  if (
+                    typeof document !== "undefined" &&
+                    document.fullscreenElement
+                  ) {
+                    document.exitFullscreen().catch(() => {});
+                  }
+                  navigate("/student/mock-interview");
+                }}
               >
                 Exit to Hub
               </button>

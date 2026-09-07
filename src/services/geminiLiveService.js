@@ -1,3 +1,4 @@
+/* eslint-disable no-control-regex */
 /**
  * Gemini Live WebSocket Client
  *
@@ -264,10 +265,32 @@ export class GeminiLiveService {
 
     return new Promise((resolve, reject) => {
       let opened = false;
+      let timeoutTimer = null;
+
+      const cleanupTimer = () => {
+        if (timeoutTimer) {
+          clearTimeout(timeoutTimer);
+          timeoutTimer = null;
+        }
+      };
+
+      // Set timeout for WebSocket connection & setup completion (3.5s max)
+      timeoutTimer = setTimeout(() => {
+        if (!this.isSetupComplete) {
+          cleanupTimer();
+          this.disconnect();
+          reject(
+            new Error(
+              "Gemini Live connection timed out (3.5s). Falling back for immediate response.",
+            ),
+          );
+        }
+      }, 3500);
 
       try {
         this.socket = new WebSocket(endpoint);
       } catch (err) {
+        cleanupTimer();
         reject(err);
         return;
       }
@@ -302,6 +325,7 @@ export class GeminiLiveService {
           this.socket.send(JSON.stringify(setupPayload));
         } catch (sendErr) {
           console.error("Failed to send setup frame to Gemini Live:", sendErr);
+          cleanupTimer();
           this.disconnect();
           reject(sendErr);
           return;
@@ -327,6 +351,7 @@ export class GeminiLiveService {
 
           // 1. Setup completed acknowledge
           if (msg.setupComplete) {
+            cleanupTimer();
             this.isSetupComplete = true;
             resolve(true);
             return;
@@ -377,17 +402,28 @@ export class GeminiLiveService {
 
       this.socket.onerror = (event) => {
         console.error("Gemini Live WebSocket error:", event);
+        cleanupTimer();
+        if (!this.isSetupComplete) {
+          reject(new Error("Gemini Live WebSocket encountered a connection error before setup"));
+        }
         if (onError)
           onError(
             new Error("Gemini Live WebSocket encountered a connection error"),
           );
-        if (!opened)
-          reject(new Error("Failed to connect to Gemini Live WebSocket"));
       };
 
       this.socket.onclose = (event) => {
+        cleanupTimer();
         this.isConnected = false;
+        const wasSetupComplete = this.isSetupComplete;
         this.isSetupComplete = false;
+        if (!wasSetupComplete) {
+          reject(
+            new Error(
+              `Gemini Live WebSocket closed before setup completed (code: ${event.code})`,
+            ),
+          );
+        }
         if (onClose) onClose(event.code, event.reason);
       };
     });
@@ -444,8 +480,13 @@ export class GeminiLiveService {
   disconnect() {
     if (this.socket) {
       try {
-        if (this.socket.readyState === WebSocket.OPEN) {
-          this.endActivity();
+        if (
+          this.socket.readyState === WebSocket.OPEN ||
+          this.socket.readyState === WebSocket.CONNECTING
+        ) {
+          if (this.socket.readyState === WebSocket.OPEN) {
+            this.endActivity();
+          }
           this.socket.close(1000, "Session ended");
         }
       } catch (err) {
