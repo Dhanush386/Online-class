@@ -149,9 +149,21 @@ export function AuthProvider({ children }) {
                 setProfile(null)
                 setLoading(false)
             } else if (session?.user) {
+                // When switching tabs, Supabase automatically fires TOKEN_REFRESHED.
+                // Do NOT touch user, profile, stats, or loading on TOKEN_REFRESHED.
+                // Touching any of them causes pages (Dashboard, Course viewing, Profile, etc.)
+                // to re-trigger useEffect hooks and refresh.
+                if (event === 'TOKEN_REFRESHED') {
+                    // Only if profile was never loaded, fetch it silently
+                    setProfile(curr => {
+                        if (!curr) fetchProfile(session.user.id, false)
+                        return curr
+                    })
+                    return
+                }
+
                 setUser(prev => (prev?.id === session.user.id ? prev : session.user))
-                if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                    // Background token refresh on tab switch: do NOT set loading to true or unmount UI
+                if (event === 'USER_UPDATED') {
                     fetchProfile(session.user.id, false)
                 } else {
                     setProfile(curr => {
@@ -187,7 +199,22 @@ export function AuthProvider({ children }) {
                 .maybeSingle()
 
             if (data) {
-                setProfile(data)
+                setProfile(prev => {
+                    if (
+                        prev &&
+                        prev.id === data.id &&
+                        prev.role === data.role &&
+                        prev.status === data.status &&
+                        prev.name === data.name &&
+                        prev.email === data.email &&
+                        prev.xp === data.xp &&
+                        prev.coins === data.coins &&
+                        prev.access_expires_at === data.access_expires_at
+                    ) {
+                        return prev
+                    }
+                    return data
+                })
                 checkExpiry(data)
                 
                 // Check if student profile is complete
@@ -281,7 +308,21 @@ export function AuthProvider({ children }) {
 
             const solvedCount = codingSubs?.filter(s => s.status === 'accepted').length || 0
 
-            setStats({ xp: totalXp, coins, solved: solvedCount, streak: streakCount, completedCourses: completedCourseTitles, rankName, rankColor: currentTier.color })
+            setStats(prev => {
+                if (
+                    prev &&
+                    prev.xp === totalXp &&
+                    prev.coins === coins &&
+                    prev.solved === solvedCount &&
+                    prev.streak === streakCount &&
+                    prev.rankName === rankName &&
+                    prev.rankColor === currentTier.color &&
+                    JSON.stringify(prev.completedCourses) === JSON.stringify(completedCourseTitles)
+                ) {
+                    return prev
+                }
+                return { xp: totalXp, coins, solved: solvedCount, streak: streakCount, completedCourses: completedCourseTitles, rankName, rankColor: currentTier.color }
+            })
         } catch (err) { console.error(err) }
     }
 
