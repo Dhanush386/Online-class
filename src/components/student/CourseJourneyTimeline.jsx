@@ -73,10 +73,25 @@ function CourseJourneyItem({ item, onModuleAction, onLockedItemClick }) {
         circleBg = '#10b981';
         statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Completed</span>;
     } else if (item.status === 'upcoming') {
-        containerStyle.background = 'rgba(245, 158, 11, 0.01)';
-        containerStyle.borderColor = 'rgba(245, 158, 11, 0.3)';
-        circleBorderColor = '#f59e0b';
-        statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Unlocks Tomorrow</span>;
+        containerStyle.background = 'white';
+        containerStyle.borderColor = '#e2e8f0';
+        circleBorderColor = '#93c5fd';
+        statusBadge = (
+            <span style={{ 
+                padding: '0.25rem 0.65rem', 
+                background: '#eff6ff', 
+                color: '#3b82f6', 
+                border: '1px solid #dbeafe',
+                borderRadius: '12px', 
+                fontSize: '0.7rem', 
+                fontWeight: 700, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.3rem' 
+            }}>
+                <Clock size={10} /> Unlocks Tomorrow
+            </span>
+        );
     } else if (item.status === 'locked') {
         containerStyle.opacity = 0.55;
         if (item.lockedByPrerequisite && !item.isLocked) {

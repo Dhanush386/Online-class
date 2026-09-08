@@ -233,9 +233,9 @@ export default function LockedModuleModal({
                             {item.lockedByPrerequisite && item.activeFocusTitle && (
                                 <div style={{
                                     display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-                                    background: '#fef3c7', border: '1px solid #fde68a',
+                                    background: '#eff6ff', border: '1px solid #bfdbfe',
                                     padding: '0.35rem 0.75rem', borderRadius: '999px',
-                                    color: '#d97706', fontSize: '0.75rem', fontWeight: 700,
+                                    color: '#2563eb', fontSize: '0.75rem', fontWeight: 700,
                                     marginBottom: '1rem'
                                 }}>
                                     <AlertCircle size={12} /> Prerequisite: Complete &ldquo;{item.activeFocusTitle}&rdquo; first
