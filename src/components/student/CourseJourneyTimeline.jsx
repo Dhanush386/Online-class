@@ -78,8 +78,40 @@ function CourseJourneyItem({ item, onModuleAction, onLockedItemClick }) {
         circleBorderColor = '#f59e0b';
         statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Unlocks Tomorrow</span>;
     } else if (item.status === 'locked') {
-        containerStyle.opacity = 0.5;
-        statusBadge = <span style={{ padding: '0.25rem 0.6rem', background: '#f1f5f9', color: '#64748b', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>Locked</span>;
+        containerStyle.opacity = 0.55;
+        if (item.lockedByPrerequisite && !item.isLocked) {
+            statusBadge = (
+                <span style={{ 
+                    padding: '0.25rem 0.6rem', 
+                    background: '#fef2f2', 
+                    color: '#ef4444', 
+                    borderRadius: '12px', 
+                    fontSize: '0.7rem', 
+                    fontWeight: 700, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.3rem' 
+                }}>
+                    <Lock size={10} /> Complete Previous
+                </span>
+            );
+        } else {
+            statusBadge = (
+                <span style={{ 
+                    padding: '0.25rem 0.6rem', 
+                    background: '#f1f5f9', 
+                    color: '#64748b', 
+                    borderRadius: '12px', 
+                    fontSize: '0.7rem', 
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                }}>
+                    <Lock size={10} /> Locked
+                </span>
+            );
+        }
     } else {
         // available
         containerStyle.boxShadow = '0 2px 8px rgba(0,0,0,0.01)';
@@ -281,68 +313,99 @@ export default function CourseJourneyTimeline({
         const safeChallenges = challenges || [];
         safeChallenges.filter(c => (c.week_number || 1) === weekNum).forEach(c => addToTopic(c, 'coding'));
 
-        // Apply Status Sorting per Topic
-        Object.keys(topicsMap).forEach(topic => {
-            let hasCurrent = false;
-            
-            // First, sort the items chronologically and by type
+        // Sort topics chronologically based on earliest day
+        const sortedTopicKeys = Object.keys(topicsMap).sort((topicA, topicB) => {
+            const getEarliestDay = (items) => {
+                if (!items || items.length === 0) return 999;
+                return Math.min(...items.map(i => i.day_of_week || i.day_number || i.day || 1));
+            };
+            return getEarliestDay(topicsMap[topicA]) - getEarliestDay(topicsMap[topicB]);
+        });
+
+        // Track single Active Focus sequentially across curriculum:
+        // The first incomplete module is the Active Focus.
+        // All subsequent modules are locked until that Active Focus is completed.
+        let activeFocusItem = null;
+
+        sortedTopicKeys.forEach(topic => {
+            // Sort items chronologically, then by explicit order, then by type
             let sortedItems = topicsMap[topic].sort((a, b) => {
                 const dayA = a.day_of_week || a.day_number || a.day || 0;
                 const dayB = b.day_of_week || b.day_number || b.day || 0;
                 if (dayA !== dayB) return dayA - dayB;
 
+                const orderA = a.order_index ?? a.order ?? a.sort_order ?? 99;
+                const orderB = b.order_index ?? b.order ?? b.sort_order ?? 99;
+                if (orderA !== orderB) return orderA - orderB;
+
                 const TYPE_ORDER = { 'live': 0, 'video': 1, 'resource': 2, 'coding': 3, 'assessment': 4 };
                 const typeA = TYPE_ORDER[a.type] ?? 99;
                 const typeB = TYPE_ORDER[b.type] ?? 99;
                 return typeA - typeB;
             });
 
-            // Within an unlocked day, all Day items are freely accessible (video, coding challenge, quiz)
             topicsMap[topic] = sortedItems.map(item => {
                 const completed = isTaskCompleted(item.type, item.id);
-                let status = 'available';
+                const isEarlyUnlocked = Boolean(item.id && earlyUnlockedIds.includes(item.id));
 
                 if (completed) {
-                    status = 'completed';
-                } else if (item.type === 'live') {
-                    // Live classes are ALWAYS unlocked and directly accessible!
-                    status = 'available';
-                } else if (item.isLocked) {
-                    const itemAbsoluteDay = getItemAbsoluteDay({ ...item, week_number: weekNum });
-                    if (currentAccessibleAbsoluteDay === 0 || itemAbsoluteDay === currentAccessibleAbsoluteDay + 1) {
-                        status = 'upcoming'; // Next day / tomorrow
-                    } else {
-                        status = 'locked';
-                    }
-                } else if (!hasCurrent) {
-                    status = 'current';
-                    hasCurrent = true;
-                } else {
-                    // All other items of unlocked day are freely available
-                    status = 'available';
+                    return { ...item, status: 'completed' };
                 }
-                return { ...item, status };
-            }).sort((a, b) => {
-                if (STATUS_ORDER[a.status] !== STATUS_ORDER[b.status]) {
-                    return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
-                }
-                
-                const dayA = a.day_of_week || a.day_number || a.day || 0;
-                const dayB = b.day_of_week || b.day_number || b.day || 0;
-                if (dayA !== dayB) return dayA - dayB;
 
-                const TYPE_ORDER = { 'live': 0, 'video': 1, 'resource': 2, 'coding': 3, 'assessment': 4 };
-                const typeA = TYPE_ORDER[a.type] ?? 99;
-                const typeB = TYPE_ORDER[b.type] ?? 99;
-                return typeA - typeB;
+                if (item.type === 'live') {
+                    // Live classes are ALWAYS unlocked and directly joinable!
+                    return { ...item, status: 'available' };
+                }
+
+                // If early unlocked with coins, student has already bypassed locks
+                if (isEarlyUnlocked) {
+                    if (!activeFocusItem) {
+                        activeFocusItem = item;
+                        return { ...item, status: 'current' };
+                    }
+                    return { ...item, status: 'available' };
+                }
+
+                // If day-locked by drip engine (future day or registration after 6 PM cutoff)
+                if (item.isLocked) {
+                    const itemAbsoluteDay = getItemAbsoluteDay({ ...item, week_number: weekNum });
+                    const isUpcoming = (currentAccessibleAbsoluteDay === 0 || itemAbsoluteDay === currentAccessibleAbsoluteDay + 1);
+                    const status = isUpcoming ? 'upcoming' : 'locked';
+
+                    if (!activeFocusItem) {
+                        activeFocusItem = item;
+                    }
+
+                    return {
+                        ...item,
+                        status,
+                        lockedByPrerequisite: Boolean(activeFocusItem && activeFocusItem.id !== item.id),
+                        activeFocusTitle: activeFocusItem ? activeFocusItem.title : null
+                    };
+                }
+
+                // Item's day is unlocked (e.g. Day 1)
+                if (!activeFocusItem) {
+                    // This is the FIRST incomplete item -> Active Focus!
+                    activeFocusItem = item;
+                    return { ...item, status: 'current' };
+                }
+
+                // Active focus already exists earlier in sequence -> lock this item until active focus is completed
+                return {
+                    ...item,
+                    status: 'locked',
+                    lockedByPrerequisite: true,
+                    activeFocusTitle: activeFocusItem.title
+                };
             });
+            // Keep items strictly in sequential pedagogical order (no STATUS_ORDER shuffling)
         });
 
-        return topicsMap
+        return { topicsMap, topicKeys: sortedTopicKeys }
     }
 
-    const topicsMap = organizeWeekData(expandedWeek)
-    const topicKeys = Object.keys(topicsMap)
+    const { topicsMap, topicKeys } = organizeWeekData(expandedWeek)
 
     let dateLabel = "Dates TBD"
     if (getScheduleDate) {

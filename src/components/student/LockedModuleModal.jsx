@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import PropTypes from 'prop-types'
-import { Lock, Clock, Sparkles, X, ChevronRight, AlertCircle, CheckCircle2, Play, ClipboardList, Code, BookOpen } from 'lucide-react'
+import { Lock, Clock, Sparkles, X, ChevronRight, AlertCircle, CheckCircle2, Play, ClipboardList, Code, BookOpen, CircleDot } from 'lucide-react'
 import { getItemUnlockTargetDate } from '../../utils/dayAccessEngine'
 import { supabase } from '../../lib/supabase'
 
@@ -177,41 +177,104 @@ export default function LockedModuleModal({
                     </div>
                 </div>
 
-                {/* Countdown Timer Area */}
+                {/* Content Area */}
                 <div style={{ padding: '1.75rem' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                            <Clock size={16} color="#6366f1" /> Unlocks Automatically In:
-                        </div>
-
-                        {/* Digit boxes */}
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.6rem' }}>
-                            {timeLeft.days > 0 && (
-                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.6rem 0.8rem', minWidth: '60px' }}>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>{timeLeft.days}</div>
-                                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Days</div>
+                    {item.lockedByPrerequisite && !item.isLocked ? (
+                        /* Prerequisite Lock on an otherwise accessible day */
+                        <div style={{
+                            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%)',
+                            border: '1px solid rgba(99, 102, 241, 0.2)',
+                            borderRadius: '16px',
+                            padding: '1.5rem',
+                            marginBottom: '1.5rem',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{
+                                width: '42px', height: '42px', borderRadius: '50%',
+                                background: '#e0e7ff', color: '#6366f1',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 0.75rem auto'
+                            }}>
+                                <CircleDot size={22} className="animate-pulse" />
+                            </div>
+                            <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.35rem' }}>
+                                Complete Active Focus First
+                            </div>
+                            <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1rem 0', lineHeight: 1.4 }}>
+                                You must finish the previous lesson in your journey before accessing this module:
+                            </p>
+                            {item.activeFocusTitle && (
+                                <div style={{
+                                    background: 'white',
+                                    border: '1px solid #c7d2fe',
+                                    borderRadius: '12px',
+                                    padding: '0.65rem 1rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    maxWidth: '100%',
+                                    boxShadow: '0 2px 8px rgba(99,102,241,0.08)'
+                                }}>
+                                    <span style={{
+                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                        width: 18, height: 18, borderRadius: '50%', background: '#6366f1', color: 'white'
+                                    }}>
+                                        <CircleDot size={10} />
+                                    </span>
+                                    <span style={{ fontWeight: 700, color: '#312e81', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {item.activeFocusTitle}
+                                    </span>
                                 </div>
                             )}
-                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.6rem 0.8rem', minWidth: '60px' }}>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>
-                                    {String(timeLeft.hours).padStart(2, '0')}
+                        </div>
+                    ) : (
+                        /* Drip Locked (Future Day) */
+                        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                            {item.lockedByPrerequisite && item.activeFocusTitle && (
+                                <div style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                                    background: '#fef3c7', border: '1px solid #fde68a',
+                                    padding: '0.35rem 0.75rem', borderRadius: '999px',
+                                    color: '#d97706', fontSize: '0.75rem', fontWeight: 700,
+                                    marginBottom: '1rem'
+                                }}>
+                                    <AlertCircle size={12} /> Prerequisite: Complete &ldquo;{item.activeFocusTitle}&rdquo; first
                                 </div>
-                                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Hours</div>
+                            )}
+
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                                <Clock size={16} color="#6366f1" /> Unlocks Automatically In:
                             </div>
-                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.6rem 0.8rem', minWidth: '60px' }}>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>
-                                    {String(timeLeft.minutes).padStart(2, '0')}
+
+                            {/* Digit boxes */}
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.6rem' }}>
+                                {timeLeft.days > 0 && (
+                                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.6rem 0.8rem', minWidth: '60px' }}>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>{timeLeft.days}</div>
+                                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Days</div>
+                                    </div>
+                                )}
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.6rem 0.8rem', minWidth: '60px' }}>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>
+                                        {String(timeLeft.hours).padStart(2, '0')}
+                                    </div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Hours</div>
                                 </div>
-                                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Mins</div>
-                            </div>
-                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.6rem 0.8rem', minWidth: '60px' }}>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#6366f1' }}>
-                                    {String(timeLeft.seconds).padStart(2, '0')}
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.6rem 0.8rem', minWidth: '60px' }}>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>
+                                        {String(timeLeft.minutes).padStart(2, '0')}
+                                    </div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Mins</div>
                                 </div>
-                                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Secs</div>
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.6rem 0.8rem', minWidth: '60px' }}>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#6366f1' }}>
+                                        {String(timeLeft.seconds).padStart(2, '0')}
+                                    </div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Secs</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Divider with Coin Icon */}
                     <div style={{ position: 'relative', textAlign: 'center', margin: '1.5rem 0' }}>
