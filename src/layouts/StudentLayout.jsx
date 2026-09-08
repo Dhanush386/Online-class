@@ -90,6 +90,17 @@ export default function StudentLayout() {
 
   const rankInfo = getRankInfo(stats?.xp || 0)
 
+  const [isWatchingVideo, setIsWatchingVideo] = useState(false)
+
+  useEffect(() => {
+    const handleVideoChange = (e) => {
+      setIsWatchingVideo(Boolean(e.detail?.isWatching))
+    }
+    setIsWatchingVideo(Boolean(document.body.dataset.watchingVideo))
+    globalThis.addEventListener('watching-video-change', handleVideoChange)
+    return () => globalThis.removeEventListener('watching-video-change', handleVideoChange)
+  }, [])
+
   const isMockInterviewSession =
     location.pathname.startsWith('/student/mock-interview/') &&
     location.pathname !== '/student/mock-interview'
@@ -97,6 +108,14 @@ export default function StudentLayout() {
     /\/student\/assessments?\/[^/]+(\/take)?$/.test(location.pathname) &&
     !location.pathname.endsWith('/review')
   const isExamSession = isMockInterviewSession || isTakingAssessment
+
+  // AI Assistant is disabled during live class, recorded class, assessment, coding practice, or mock interview
+  const isLiveClass = location.pathname.includes('/classroom/')
+  const isAssessment = location.pathname.startsWith('/student/assessments') || location.pathname.startsWith('/student/assessment')
+  const isCodingPractice = location.pathname.startsWith('/student/coding') || location.pathname.startsWith('/student/playground')
+  const isMockInterview = location.pathname.startsWith('/student/mock-interview')
+
+  const isAIDisabled = isLiveClass || isWatchingVideo || isAssessment || isCodingPractice || isMockInterview
 
   function getMainPadding() {
     if (location.pathname.includes('/classroom/') || isExamSession) return '0px';
@@ -232,7 +251,7 @@ export default function StudentLayout() {
         )}
       </div>
 
-      {!location.pathname.includes('/classroom/') && !isExamSession && <AIChatbot />}
+      {!isAIDisabled && <AIChatbot />}
     </div>
   )
 }

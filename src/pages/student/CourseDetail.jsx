@@ -106,6 +106,21 @@ export default function CourseDetail() {
     const [selectedDay] = useState(1)
     const [loading, setLoading] = useState(true)
     const [activeVideo, setActiveVideo] = useState(null)
+
+    useEffect(() => {
+        if (activeVideo) {
+            document.body.dataset.watchingVideo = 'true'
+            globalThis.dispatchEvent(new CustomEvent('watching-video-change', { detail: { isWatching: true } }))
+        } else {
+            delete document.body.dataset.watchingVideo
+            globalThis.dispatchEvent(new CustomEvent('watching-video-change', { detail: { isWatching: false } }))
+        }
+        return () => {
+            delete document.body.dataset.watchingVideo
+            globalThis.dispatchEvent(new CustomEvent('watching-video-change', { detail: { isWatching: false } }))
+        }
+    }, [activeVideo])
+
     const [notes, setNotes] = useState([])
     const [isAddingNote, setIsAddingNote] = useState(false)
     const [activeNote, setActiveNote] = useState(null) // For editing
