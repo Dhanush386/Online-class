@@ -101,24 +101,33 @@ export default function StudentDashboard() {
 
       let allStudents = []
       if (assignedCourseId) {
-        const { data: courseEnrolled } = await supabase
-          .from('enrollments')
-          .select('student_id')
-          .eq('course_id', assignedCourseId)
+        // Try fast RPC first (handles RLS cleanly)
+        const { data: rpcStudents, error: rpcErr } = await supabase
+          .rpc('get_course_leaderboard', { p_course_id: assignedCourseId })
 
-        const enrolledIds = (courseEnrolled || []).map(e => e.student_id).filter(Boolean)
-        if (enrolledIds.length > 0) {
-          const { data: courseUsers } = await supabase
-            .from('users')
-            .select('id, name, xp')
-            .in('id', enrolledIds)
+        if (!rpcErr && Array.isArray(rpcStudents)) {
+          allStudents = rpcStudents
+        } else {
+          // Fallback to direct table query
+          const { data: courseEnrolled } = await supabase
+            .from('enrollments')
+            .select('student_id')
+            .eq('course_id', assignedCourseId)
 
-          allStudents = (courseUsers || []).sort((a, b) => {
-            const xpA = a.xp || 0
-            const xpB = b.xp || 0
-            if (xpB !== xpA) return xpB - xpA
-            return (a.name || '').localeCompare(b.name || '')
-          })
+          const enrolledIds = (courseEnrolled || []).map(e => e.student_id).filter(Boolean)
+          if (enrolledIds.length > 0) {
+            const { data: courseUsers } = await supabase
+              .from('users')
+              .select('id, name, xp')
+              .in('id', enrolledIds)
+
+            allStudents = (courseUsers || []).sort((a, b) => {
+              const xpA = a.xp || 0
+              const xpB = b.xp || 0
+              if (xpB !== xpA) return xpB - xpA
+              return (a.name || '').localeCompare(b.name || '')
+            })
+          }
         }
       }
 

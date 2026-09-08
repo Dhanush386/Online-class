@@ -129,33 +129,37 @@ export default function Leaderboard() {
             try {
                 setLoadingLeaderboard(true)
 
-                // Query students enrolled in this specific assigned course
-                const { data: enrollments, error: enrollError } = await supabase
-                    .from('enrollments')
-                    .select('student_id')
-                    .eq('course_id', selectedCourseId)
+                // 1. Try fast RPC get_course_leaderboard first (handles RLS cleanly)
+                const { data: rpcData, error: rpcError } = await supabase
+                    .rpc('get_course_leaderboard', { p_course_id: selectedCourseId })
 
-                if (enrollError) throw enrollError
+                let rawStudents = []
 
-                const studentIds = (enrollments || []).map(e => e.student_id).filter(Boolean)
+                if (!rpcError && Array.isArray(rpcData)) {
+                    rawStudents = rpcData
+                } else {
+                    // Fallback to direct table query
+                    const { data: enrollments, error: enrollError } = await supabase
+                        .from('enrollments')
+                        .select('student_id')
+                        .eq('course_id', selectedCourseId)
 
-                if (studentIds.length === 0) {
-                    if (isMounted) {
-                        setLeaderboard([])
-                        setLoadingLeaderboard(false)
+                    if (enrollError) throw enrollError
+
+                    const studentIds = (enrollments || []).map(e => e.student_id).filter(Boolean)
+
+                    if (studentIds.length > 0) {
+                        const { data: students, error: studentsError } = await supabase
+                            .from('users')
+                            .select('id, name, avatar_url, xp')
+                            .in('id', studentIds)
+
+                        if (studentsError) throw studentsError
+                        rawStudents = students || []
                     }
-                    return
                 }
 
-                // Query user profiles strictly for enrolled students in this course
-                const { data: students, error: studentsError } = await supabase
-                    .from('users')
-                    .select('id, name, avatar_url, xp')
-                    .in('id', studentIds)
-
-                if (studentsError) throw studentsError
-
-                const sortedStudents = (students || []).sort((a, b) => {
+                const sortedStudents = [...rawStudents].sort((a, b) => {
                     const xpA = a.xp || 0
                     const xpB = b.xp || 0
                     if (xpB !== xpA) return xpB - xpA
