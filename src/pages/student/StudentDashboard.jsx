@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
-import { TrendingUp, RefreshCw, BarChart2 } from 'lucide-react'
+import { TrendingUp, RefreshCw, BarChart2, Sparkles, Bot } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip
@@ -294,6 +294,87 @@ export default function StudentDashboard() {
         </GlassCard>
       </motion.div>
 
+      {/* AI Intelligence Suite Quick Access */}
+      <motion.div variants={itemVariants} style={{ marginBottom: '1.5rem' }}>
+        <GlassCard
+          tilt3d={true}
+          padding="1.25rem 1.5rem"
+          style={{
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.08))',
+            border: '1px solid rgba(139, 92, 246, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+            }}>
+              <Sparkles size={22} />
+            </div>
+            <div>
+              <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                AI Learning & Mock Interview Suite
+              </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Analyze your progress with your AI Study Coach & practice realistic technical mock interviews.
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <Link
+              to="/student/ai-coach"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.55rem 1.1rem',
+                borderRadius: 10,
+                background: 'rgba(99, 102, 241, 0.12)',
+                color: '#6366f1',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Sparkles size={16} /> AI Coach
+            </Link>
+            <Link
+              to="/student/mock-interview"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.55rem 1.1rem',
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                textDecoration: 'none',
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Bot size={16} /> Mock Interview
+            </Link>
+          </div>
+        </GlassCard>
+      </motion.div>
+
       {/* 2-Column Dashboard Layout */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2.5fr 1fr', gap: '1.5rem' }}>
         
@@ -305,7 +386,7 @@ export default function StudentDashboard() {
 
             {/* Weekly Learning Activity Area Chart */}
             <GlassCard tilt3d={true} style={{ display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <TrendingUp size={18} color="#8b5cf6" /> Weekly Learning Activity
               </h3>
               <div style={{ width: '100%', height: 220, flex: 1, minWidth: 0, minHeight: 0 }}>
@@ -317,10 +398,10 @@ export default function StudentDashboard() {
                         <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                    <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" />
+                    <XAxis dataKey="day" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+                    <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+                    <Tooltip contentStyle={{ background: 'var(--bg-surface, #1e293b)', border: '1px solid var(--card-border, rgba(148, 163, 184, 0.2))', borderRadius: 8, color: 'var(--text-primary)' }} />
                     <Area type="monotone" dataKey="XP" stroke="#8b5cf6" strokeWidth={2.5} fillOpacity={1} fill="url(#xpGlow)" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -329,15 +410,15 @@ export default function StudentDashboard() {
 
             {/* Learning Consistency Widget */}
             <GlassCard tilt3d={true} style={{ display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <BarChart2 size={18} color="#06b6d4" /> Learning Consistency
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', flex: 1, justifyContent: 'center' }}>
                 {learningConsistency.map((item) => (
                   <div key={item.day} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: 30, fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700 }}>{item.day}</div>
-                    <div style={{ flex: 1, height: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.max(2, item.intensity)}%`, height: '100%', background: item.intensity > 0 ? '#06b6d4' : 'transparent', borderRadius: 2 }} />
+                    <div style={{ width: 30, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{item.day}</div>
+                    <div style={{ flex: 1, height: 12, background: 'rgba(148, 163, 184, 0.15)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.max(2, item.intensity)}%`, height: '100%', background: item.intensity > 0 ? '#06b6d4' : 'rgba(148, 163, 184, 0.1)', borderRadius: 4 }} />
                     </div>
                   </div>
                 ))}
@@ -352,7 +433,7 @@ export default function StudentDashboard() {
             {/* Top Achievements Showcase */}
             <GlassCard tilt3d={true}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   🏅 Top Achievements
                 </h3>
                 <Link to="/student/achievements" style={{ fontSize: '0.85rem', color: '#8b5cf6', textDecoration: 'none', fontWeight: 600 }}>
@@ -370,11 +451,11 @@ export default function StudentDashboard() {
             <GlassCard tilt3d={true} style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
                 <div>
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                     🏆 Course Leaderboard
                   </h3>
                   {assignedCourseTitle && (
-                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 500, marginTop: '2px' }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: '2px' }}>
                       {assignedCourseTitle}
                     </div>
                   )}
@@ -385,10 +466,10 @@ export default function StudentDashboard() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {topLeaderboard.map((user, i) => (
-                  <div key={user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: user.id === profile.id ? 'rgba(139,92,246,0.1)' : 'transparent', borderRadius: 8, border: user.id === profile.id ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent' }}>
+                  <div key={user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: user.id === profile.id ? 'rgba(139,92,246,0.12)' : 'transparent', borderRadius: 8, border: user.id === profile.id ? '1px solid rgba(139,92,246,0.25)' : '1px solid transparent' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: i < 3 ? '#f59e0b' : '#94a3b8', width: 20 }}>#{i + 1}</span>
-                      <span style={{ fontSize: '0.85rem', color: 'white', fontWeight: user.id === profile.id ? 800 : 500 }}>{user.id === profile.id ? 'You' : user.name.split(' ')[0]}</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: i < 3 ? '#f59e0b' : 'var(--text-muted)', width: 20 }}>#{i + 1}</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: user.id === profile.id ? 800 : 600 }}>{user.id === profile.id ? 'You' : user.name.split(' ')[0]}</span>
                     </div>
                     <span style={{ fontSize: '0.8rem', color: '#8b5cf6', fontWeight: 700 }}>{user.xp.toLocaleString()} XP</span>
                   </div>
@@ -406,19 +487,19 @@ export default function StudentDashboard() {
             <GlassCard tilt3d={true} padding="1.25rem" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🎮</div>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(139,92,246,0.12)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🎮</div>
                   <div>
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Current Level</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'white' }}>Level {kpis.level}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Current Level</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)' }}>Level {kpis.level}</div>
                   </div>
                 </div>
               </div>
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
                   <span>{currentXpInLevel} / 1000 XP</span>
                   <span>{1000 - currentXpInLevel} XP to Lv {kpis.level + 1}</span>
                 </div>
-                <div style={{ height: 6, width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ height: 6, width: '100%', background: 'rgba(148, 163, 184, 0.15)', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ width: `${levelProgressPct}%`, height: '100%', background: '#8b5cf6' }} />
                 </div>
               </div>
@@ -500,7 +581,7 @@ function KPIStudentCard({ icon, title, value, subtitle, color }) {
         width: 44,
         height: 44,
         borderRadius: 12,
-        background: `rgba(${hexToRgb(color)}, 0.1)`,
+        background: `rgba(${hexToRgb(color)}, 0.12)`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -509,9 +590,9 @@ function KPIStudentCard({ icon, title, value, subtitle, color }) {
         {icon}
       </div>
       <div>
-        <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{title}</div>
-        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: color || 'white', marginTop: '2px' }}>{value}</div>
-        <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '2px' }}>{subtitle}</div>
+        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>{title}</div>
+        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: color || 'var(--text-primary)', marginTop: '2px' }}>{value}</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{subtitle}</div>
       </div>
     </GlassCard>
   )
@@ -537,13 +618,13 @@ function hexToRgb(hex) {
 
 function BadgeBox({ icon, name, active }) {
   return (
-    <div style={{ textAlign: 'center', opacity: active ? 1 : 0.3 }}>
+    <div style={{ textAlign: 'center', opacity: active ? 1 : 0.6 }}>
       <div style={{
         width: 52,
         height: 52,
         borderRadius: '50%',
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: active ? 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(99,102,241,0.08))' : 'rgba(148,163,184,0.12)',
+        border: active ? '1px solid rgba(139,92,246,0.3)' : '1px solid rgba(148,163,184,0.2)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -552,7 +633,7 @@ function BadgeBox({ icon, name, active }) {
       }}>
         {icon}
       </div>
-      <div style={{ fontSize: '0.85rem', color: active ? 'white' : '#94a3b8', fontWeight: 700, marginTop: '6px', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: '0.85rem', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 700, marginTop: '6px', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {name}
       </div>
     </div>
