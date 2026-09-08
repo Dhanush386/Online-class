@@ -626,7 +626,7 @@ export default function AIChatbot() {
     }
 
     return (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 1000 }}>
+        <div className="ai-chatbot-wrapper">
             {!isOpen && (
                 <button 
                     onClick={() => setIsOpen(true)}
@@ -656,6 +656,18 @@ export default function AIChatbot() {
             )}
 
             <style>{`
+                .ai-chatbot-wrapper {
+                    position: fixed;
+                    bottom: 2rem;
+                    right: 2rem;
+                    z-index: 1000;
+                }
+                @media (max-width: 768px) {
+                    .ai-chatbot-wrapper {
+                        bottom: 5.5rem;
+                        right: 1.25rem;
+                    }
+                }
                 @keyframes scaleIn {
                     from { transform: scale(0.95) translateY(10px); opacity: 0; }
                     to { transform: scale(1) translateY(0); opacity: 1; }

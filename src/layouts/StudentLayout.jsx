@@ -14,6 +14,7 @@ import {
   ChevronDown, Sparkles, Bot
 } from 'lucide-react'
 import ThemeSelector from '../components/shared/ThemeSelector'
+import AIChatbot from '../components/shared/AIChatbot'
 import learnovaLogo from '../assets/learnova-logo.png'
 import CommandPalette from '../components/CommandPalette'
 import { Avatar, ProgressRing } from '../design-system'
@@ -230,6 +231,8 @@ export default function StudentLayout() {
           <StudentMobileNav requestNavigation={requestNavigation} />
         )}
       </div>
+
+      {!location.pathname.includes('/classroom/') && !isExamSession && <AIChatbot />}
     </div>
   )
 }
