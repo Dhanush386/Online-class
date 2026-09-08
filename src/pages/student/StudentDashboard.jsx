@@ -38,6 +38,7 @@ export default function StudentDashboard() {
   const [learningConsistency, setLearningConsistency] = useState([])
 
   const [topLeaderboard, setTopLeaderboard] = useState([])
+  const [assignedCourseTitle, setAssignedCourseTitle] = useState('')
 
   useEffect(() => {
     const handleResize = () => setIsMobile(globalThis.innerWidth < 768)
@@ -65,7 +66,7 @@ export default function StudentDashboard() {
       const sevenDaysAgoStr = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
       // Define parallel queries
-      const enrollmentsPromise = supabase.from('enrollments').select('course_id').eq('student_id', profile.id)
+      const enrollmentsPromise = supabase.from('enrollments').select('course_id, courses(id, title)').eq('student_id', profile.id)
       const progressPromise = supabase.from('progress').select('completion_percentage').eq('student_id', profile.id)
       const submissionsPromise = supabase.from('assessment_submissions').select('score, total_questions, created_at, assessments(title)').eq('student_id', profile.id).order('created_at', { ascending: true })
       const upcomingVideosPromise = supabase.from('videos').select('id, title, scheduled_time, duration_minutes, courses(title)').gte('scheduled_time', new Date().toISOString()).order('scheduled_time', { ascending: true }).limit(2)
@@ -73,15 +74,14 @@ export default function StudentDashboard() {
       const attendedCountPromise = supabase.from('live_attendance').select('*', { count: 'exact', head: true }).eq('student_id', profile.id).eq('attendance_status', 'present')
       const codingSubsPromise = supabase.from('coding_submissions').select('score, created_at, status').eq('student_id', profile.id).gte('created_at', sevenDaysAgoStr)
       const liveAttPromise = supabase.from('live_attendance').select('joined_at').eq('student_id', profile.id).eq('attendance_status', 'present').gte('joined_at', sevenDaysAgoStr)
-      const leaderboardPromise = supabase.from('users').select('id, name, xp').eq('role', 'student').order('xp', { ascending: false })
 
       // Execute all queries concurrently
       const [
-        , progressRes, submissionsRes, , pastVideosRes,
-        attendedCountRes, codingSubsRes, liveAttRes, leaderboardRes
+        enrollmentsRes, progressRes, submissionsRes, upcomingVideosRes, pastVideosRes,
+        attendedCountRes, codingSubsRes, liveAttRes
       ] = await Promise.all([
         enrollmentsPromise, progressPromise, submissionsPromise, upcomingVideosPromise, pastVideosPromise,
-        attendedCountPromise, codingSubsPromise, liveAttPromise, leaderboardPromise
+        attendedCountPromise, codingSubsPromise, liveAttPromise
       ])
 
       const progress = progressRes.data || []
@@ -91,12 +91,36 @@ export default function StudentDashboard() {
       const attendedCount = attendedCountRes.count || 0
       const codingSubs = codingSubsRes.data || []
       const liveAtt = liveAttRes.data || []
-      const allStudents = (leaderboardRes.data || []).sort((a, b) => {
-        const xpA = a.xp || 0;
-        const xpB = b.xp || 0;
-        if (xpB !== xpA) return xpB - xpA;
-        return (a.name || '').localeCompare(b.name || '');
-      })
+
+      // Scope leaderboard strictly to the assigned course
+      const userEnrollments = enrollmentsRes.data || []
+      const primaryEnrollment = userEnrollments[0]
+      const assignedCourseId = primaryEnrollment?.course_id
+      const courseTitleName = primaryEnrollment?.courses?.title || ''
+      setAssignedCourseTitle(courseTitleName)
+
+      let allStudents = []
+      if (assignedCourseId) {
+        const { data: courseEnrolled } = await supabase
+          .from('enrollments')
+          .select('student_id')
+          .eq('course_id', assignedCourseId)
+
+        const enrolledIds = (courseEnrolled || []).map(e => e.student_id).filter(Boolean)
+        if (enrolledIds.length > 0) {
+          const { data: courseUsers } = await supabase
+            .from('users')
+            .select('id, name, xp')
+            .in('id', enrolledIds)
+
+          allStudents = (courseUsers || []).sort((a, b) => {
+            const xpA = a.xp || 0
+            const xpB = b.xp || 0
+            if (xpB !== xpA) return xpB - xpA
+            return (a.name || '').localeCompare(b.name || '')
+          })
+        }
+      }
 
       // --- CALCULATIONS ---
 
@@ -335,10 +359,17 @@ export default function StudentDashboard() {
 
             {/* Mini Leaderboard Widget */}
             <GlassCard tilt3d={true} style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  🌍 Global Leaderboard
-                </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                    🏆 Course Leaderboard
+                  </h3>
+                  {assignedCourseTitle && (
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 500, marginTop: '2px' }}>
+                      {assignedCourseTitle}
+                    </div>
+                  )}
+                </div>
                 <Link to="/student/leaderboard" style={{ fontSize: '0.85rem', color: '#8b5cf6', textDecoration: 'none', fontWeight: 600 }}>
                   Full Rank
                 </Link>
