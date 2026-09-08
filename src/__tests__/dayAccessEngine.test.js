@@ -4,7 +4,8 @@ import {
     getEffectiveStartDate,
     calculateAccessibleDay,
     getItemAbsoluteDay,
-    isItemUnlocked
+    isItemUnlocked,
+    getItemUnlockTargetDate
 } from '../utils/dayAccessEngine'
 
 describe('dayAccessEngine — 6:00 PM Cutoff & Calendar Day Logic', () => {
@@ -126,16 +127,53 @@ describe('dayAccessEngine — 6:00 PM Cutoff & Calendar Day Logic', () => {
             expect(status.isLocked).toBe(true)
             expect(status.reason).toContain('tomorrow')
         })
+        it('unlocks early if item.id is in earlyUnlockedIds', () => {
+            const day3Item = { id: 'v3-early', week_number: 1, day_of_week: 3 }
+            const status = isItemUnlocked({
+                item: day3Item,
+                type: 'video',
+                accessibleDay: 1,
+                earlyUnlockedIds: ['v3-early']
+            })
+            expect(status.isLocked).toBe(false)
+            expect(status.isEarlyUnlocked).toBe(true)
+        })
+    })
+
+    describe('getItemUnlockTargetDate', () => {
+        it('calculates exact 12:00 AM date for future day item', () => {
+            // Enrolled Sep 7 before 6 PM -> Day 1 is Sep 7
+            const enrolledAt = new Date(2026, 8, 7, 10, 0, 0)
+            // Item on Day 3 (Week 1 Day 3) -> Day 3 unlocks Sep 9 at 12:00 AM
+            const day3Item = { week_number: 1, day_of_week: 3 }
+            const targetDate = getItemUnlockTargetDate(day3Item, enrolledAt)
+
+            expect(targetDate.getFullYear()).toBe(2026)
+            expect(targetDate.getMonth()).toBe(8) // Sep
+            expect(targetDate.getDate()).toBe(9)
+            expect(targetDate.getHours()).toBe(0)
+            expect(targetDate.getMinutes()).toBe(0)
+            expect(targetDate.getSeconds()).toBe(0)
+        })
     })
 
     describe('getItemAbsoluteDay', () => {
-        it('prefers explicit day_number if present', () => {
+        it('prefers explicit day_number when week/dow are not specified', () => {
             expect(getItemAbsoluteDay({ day_number: 5 })).toBe(5)
         })
 
         it('computes day from week_number and day_of_week', () => {
             // Week 2 Day 3 -> (2 - 1) * 7 + 3 = 10
             expect(getItemAbsoluteDay({ week_number: 2, day_of_week: 3 })).toBe(10)
+        })
+
+        it('computes day from week_number and day_of_week even if legacy day_number=1 is present in DB row', () => {
+            // Week 2 Day 3 with DB default day_number: 1 -> should still be 10, not 1!
+            expect(getItemAbsoluteDay({ week_number: 2, day_of_week: 3, day_number: 1 })).toBe(10)
+            // Week 1 Day 6 with DB default day_number: 1 -> should be 6, not 1!
+            expect(getItemAbsoluteDay({ week_number: 1, day_of_week: 6, day_number: 1 })).toBe(6)
+            // Week 1 Day 1 -> should be 1
+            expect(getItemAbsoluteDay({ week_number: 1, day_of_week: 1, day_number: 1 })).toBe(1)
         })
     })
 })

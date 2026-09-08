@@ -68,12 +68,24 @@ export function calculateAccessibleDay(enrolledAt, currentDate = new Date()) {
  */
 export function getItemAbsoluteDay(item) {
     if (!item) return 1;
+
+    // Prioritize week_number and day_of_week (standard curriculum schedule)
+    const week = Number(item.week_number);
+    const dow = Number(item.day_of_week ?? item.day);
+    if (week > 0 && dow > 0) {
+        return (week - 1) * 7 + dow;
+    }
+
+    // Fallback to explicit day_number if week/dow not both present
     if (item.day_number && Number(item.day_number) > 0) {
         return Number(item.day_number);
     }
-    const week = Number(item.week_number) || 1;
-    const dow = Number(item.day_of_week || item.day) || 1;
-    return (week - 1) * 7 + dow;
+
+    if (week > 0) {
+        return (week - 1) * 7 + 1;
+    }
+
+    return 1;
 }
 
 /**
@@ -86,9 +98,15 @@ export function isItemUnlocked({
     lockedCodingIds = [],
     lockedAssessIds = [],
     lockedMaterialIds = [],
-    groupDayAccess = []
+    groupDayAccess = [],
+    earlyUnlockedIds = []
 }) {
     if (!item) return { isLocked: false };
+
+    // Early unlock by student via coins
+    if (item.id && earlyUnlockedIds.includes(item.id)) {
+        return { isLocked: false, isEarlyUnlocked: true };
+    }
 
     // 1. Live classes with direct join links are always unlocked
     if (type === 'live') {
@@ -143,4 +161,16 @@ export function isItemUnlocked({
 
     // All items within an unlocked day (Day <= accessibleDay) are freely accessible
     return { isLocked: false };
+}
+
+/**
+ * Returns the exact Date (at 12:00:00 AM) when a given item unlocks naturally.
+ */
+export function getItemUnlockTargetDate(item, enrolledAt) {
+    const itemDay = getItemAbsoluteDay(item);
+    const effectiveStart = getEffectiveStartDate(enrolledAt);
+    const targetDate = new Date(effectiveStart.getTime());
+    targetDate.setDate(targetDate.getDate() + (itemDay - 1));
+    targetDate.setHours(0, 0, 0, 0);
+    return targetDate;
 }

@@ -15,7 +15,7 @@ import { calculateAccessibleDay, isItemUnlocked } from '../../utils/dayAccessEng
 const MAX_ATTEMPTS = 1
 const ASSESS_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
 
-const checkItemLocked = (item, type, { lockedCodingIds, lockedAssessIds, lockedMaterialIds, groupDayAccess, accessibleDay }) => {
+const checkItemLocked = (item, type, { lockedCodingIds, lockedAssessIds, lockedMaterialIds, groupDayAccess, accessibleDay, earlyUnlockedIds }) => {
     return isItemUnlocked({
         item,
         type,
@@ -23,7 +23,8 @@ const checkItemLocked = (item, type, { lockedCodingIds, lockedAssessIds, lockedM
         lockedCodingIds,
         lockedAssessIds,
         lockedMaterialIds,
-        groupDayAccess
+        groupDayAccess,
+        earlyUnlockedIds
     }).isLocked
 }
 
@@ -89,7 +90,7 @@ NoteCard.propTypes = {
 
 export default function CourseDetail() {
     const { courseId } = useParams()
-    const { profile } = useAuth()
+    const { profile, stats, refreshStats } = useAuth()
     const navigate = useNavigate()
 
     // Helper utilities
@@ -125,6 +126,7 @@ export default function CourseDetail() {
     const [completedWeekInfo, setCompletedWeekInfo] = useState(null)
     const [enrollmentDate, setEnrollmentDate] = useState(null)
     const [accessibleDay, setAccessibleDay] = useState(1)
+    const [earlyUnlockedIds, setEarlyUnlockedIds] = useState([])
 
     // Journey Engine hooks
     const {
@@ -149,7 +151,8 @@ export default function CourseDetail() {
                 { data: vpData },
                 { data: initialNotes },
                 { data: codingSubsData },
-                { data: enrollData }
+                { data: enrollData },
+                { data: earlyUnlocksData }
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
                 supabase.from('videos').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }),
@@ -164,7 +167,8 @@ export default function CourseDetail() {
                 supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
                 supabase.from('student_notes').select('*').eq('student_id', profile.id).eq('course_id', courseId).order('created_at', { ascending: false }),
                 supabase.from('coding_submissions').select('*').eq('student_id', profile.id),
-                supabase.from('enrollments').select('enrolled_at').eq('student_id', profile.id).eq('course_id', courseId).maybeSingle()
+                supabase.from('enrollments').select('enrolled_at').eq('student_id', profile.id).eq('course_id', courseId).maybeSingle(),
+                supabase.from('xp_events').select('reference_id').eq('student_id', profile.id).eq('event_type', 'early_unlock')
             ])
 
             // No need for setMaxDay state if we just use it to build the day list, but let's see
@@ -184,12 +188,16 @@ export default function CourseDetail() {
             const currentAccessibleDay = calculateAccessibleDay(enrollTimestamp)
             setAccessibleDay(currentAccessibleDay)
 
+            const earlyIds = (earlyUnlocksData || []).map(e => e.reference_id).filter(Boolean)
+            setEarlyUnlockedIds(earlyIds)
+
             const lockCtx = { 
                 lockedCodingIds, 
                 lockedAssessIds, 
                 lockedMaterialIds, 
                 groupDayAccess, 
-                accessibleDay: currentAccessibleDay 
+                accessibleDay: currentAccessibleDay,
+                earlyUnlockedIds: earlyIds
             }
 
             setSessions((vids || []).map(v => ({ ...v, isLocked: checkItemLocked(v, 'video', lockCtx) })))
@@ -973,6 +981,22 @@ export default function CourseDetail() {
                         accessibleDay={accessibleDay}
                         getScheduleDate={getScheduleDate}
                         isWeekLocked={isWeekLocked}
+                        earlyUnlockedIds={earlyUnlockedIds}
+                        userCoins={stats?.coins ?? profile?.coins ?? 0}
+                        onEarlyUnlockSuccess={(unlockedItemId) => {
+                            setEarlyUnlockedIds(prev => [...prev, unlockedItemId]);
+                            setSessions(prev => prev.map(s => s.id === unlockedItemId ? { ...s, isLocked: false } : s));
+                            setChallenges(prev => prev.map(c => c.id === unlockedItemId ? { ...c, isLocked: false } : c));
+                            setAssessments(prev => {
+                                const next = { ...prev };
+                                Object.keys(next).forEach(k => {
+                                    next[k] = next[k].map(a => a.id === unlockedItemId ? { ...a, isLocked: false } : a);
+                                });
+                                return next;
+                            });
+                            setCourseResources(prev => prev.map(r => r.id === unlockedItemId ? { ...r, isLocked: false } : r));
+                            if (refreshStats) refreshStats();
+                        }}
                         onModuleAction={(type, module) => {
                             const content = module._content;
                             if (!content) return;

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot, Lock } from 'lucide-react'
 import { calculateAccessibleDay, getItemAbsoluteDay } from '../../utils/dayAccessEngine'
+import LockedModuleModal from './LockedModuleModal'
 
 const STATUS_ORDER = {
     'current': 0,
@@ -11,11 +12,14 @@ const STATUS_ORDER = {
     'completed': 4
 };
 
-function CourseJourneyItem({ item, onModuleAction }) {
+function CourseJourneyItem({ item, onModuleAction, onLockedItemClick }) {
     const isLocked = item.status === 'locked' || item.status === 'upcoming'
     
     const handleAction = () => {
-        if (isLocked) return
+        if (isLocked) {
+            if (onLockedItemClick) onLockedItemClick(item)
+            return
+        }
         if (onModuleAction) {
             onModuleAction(item.type, { _content: item })
         }
@@ -47,7 +51,7 @@ function CourseJourneyItem({ item, onModuleAction }) {
         padding: 'clamp(0.8rem, 3vw, 1.1rem) clamp(1rem, 4vw, 1.5rem)',
         borderRadius: '12px',
         transition: 'all 0.25s ease',
-        cursor: isLocked ? 'not-allowed' : 'pointer',
+        cursor: 'pointer',
         background: 'white',
         marginBottom: '0.5rem'
     };
@@ -145,10 +149,14 @@ export default function CourseJourneyTimeline({
     accessibleDay: propAccessibleDay,
     getScheduleDate, 
     onModuleAction, 
-    isWeekLocked 
+    isWeekLocked,
+    earlyUnlockedIds = [],
+    userCoins = 0,
+    onEarlyUnlockSuccess
 }) {
     const [expandedWeek, setExpandedWeek] = useState(1)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+    const [lockedModalItem, setLockedModalItem] = useState(null)
     
     // Calculate Drip Day Limit based on student enrollment date & 6:00 PM cutoff rule
     const currentAccessibleAbsoluteDay = useMemo(() => {
@@ -235,8 +243,11 @@ export default function CourseJourneyTimeline({
             }
             let isLocked = item.isLocked || false;
 
-            // Live classes should NEVER be locked for students
-            if (actualType === 'live') {
+            // Early unlock by student via coins
+            if (item.id && earlyUnlockedIds.includes(item.id)) {
+                isLocked = false;
+            } else if (actualType === 'live') {
+                // Live classes should NEVER be locked for students
                 isLocked = false;
             } else {
                 if (isWeekLocked && isWeekLocked(weekNum)) {
@@ -297,7 +308,7 @@ export default function CourseJourneyTimeline({
                     // Live classes are ALWAYS unlocked and directly accessible!
                     status = 'available';
                 } else if (item.isLocked) {
-                    const itemAbsoluteDay = getItemAbsoluteDay(item);
+                    const itemAbsoluteDay = getItemAbsoluteDay({ ...item, week_number: weekNum });
                     if (currentAccessibleAbsoluteDay === 0 || itemAbsoluteDay === currentAccessibleAbsoluteDay + 1) {
                         status = 'upcoming'; // Next day / tomorrow
                     } else {
@@ -515,7 +526,12 @@ export default function CourseJourneyTimeline({
                                             {/* Topic Items */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                 {items.map((item, idx) => (
-                                                    <CourseJourneyItem key={item.id || idx} item={item} onModuleAction={onModuleAction} />
+                                                    <CourseJourneyItem 
+                                                        key={item.id || idx} 
+                                                        item={item} 
+                                                        onModuleAction={onModuleAction} 
+                                                        onLockedItemClick={setLockedModalItem}
+                                                    />
                                                 ))}
                                             </div>
 
@@ -529,6 +545,21 @@ export default function CourseJourneyTimeline({
                 </div>
 
             </div>
+
+            {/* Unlock Countdown & Coin Early Unlock Modal */}
+            <LockedModuleModal 
+                isOpen={!!lockedModalItem}
+                onClose={() => setLockedModalItem(null)}
+                item={lockedModalItem}
+                courseId={course?.id}
+                enrolledAt={enrollmentDate}
+                userCoins={userCoins}
+                onUnlockSuccess={(unlockedItemId, remainingCoins) => {
+                    if (onEarlyUnlockSuccess) {
+                        onEarlyUnlockSuccess(unlockedItemId, remainingCoins)
+                    }
+                }}
+            />
         </div>
     )
 }
