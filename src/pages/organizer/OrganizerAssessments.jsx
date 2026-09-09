@@ -35,7 +35,7 @@ export default function OrganizerAssessments() {
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
     const [editingId, setEditingId] = useState(null)
-    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', due_date: '', description: '', week_number: 1, day_of_week: 1, duration: 30, open_time: getDefaultUnlockTime(), close_time: '' })
+    const [formData, setFormData] = useState({ title: '', course_id: '', type: 'daily', description: '', week_number: 1, day_of_week: 1, duration: 30, open_time: getDefaultUnlockTime() })
     const [viewingMarks, setViewingMarks] = useState(null)
     const [marksData, setMarksData] = useState([])
     const [marksLoading, setMarksLoading] = useState(false)
@@ -140,7 +140,6 @@ export default function OrganizerAssessments() {
         e.preventDefault()
         if (!formData.title?.trim()) { setError('Please enter an assessment title'); return }
         if (!formData.course_id) { setError('Please select a course'); return }
-        if (!formData.due_date) { setError('Please specify a due date deadline for this assessment'); return }
 
         setSaving(true)
         setError('')
@@ -150,13 +149,13 @@ export default function OrganizerAssessments() {
                 title: formData.title,
                 course_id: formData.course_id,
                 type: formData.type,
-                due_date: formData.due_date || null,
+                due_date: null,
                 description: formData.description,
                 week_number: Number.parseInt(formData.week_number) || 1,
                 day_of_week: Number.parseInt(formData.day_of_week) || 1,
                 duration: Number.parseInt(formData.duration) || 30,
                 open_time: toISOWithOffset(formData.open_time),
-                close_time: toISOWithOffset(formData.close_time)
+                close_time: null
             }
 
             if (editingId) {
@@ -193,19 +192,17 @@ export default function OrganizerAssessments() {
             title: a.title,
             course_id: a.course_id,
             type: a.type,
-            due_date: a.due_date ? a.due_date.split('T')[0] : '',
             description: a.description || '',
             week_number: a.week_number || 1,
             day_of_week: a.day_of_week || 1,
             duration: a.duration || 30,
-            open_time: toLocalInput(a.open_time),
-            close_time: toLocalInput(a.close_time)
+            open_time: toLocalInput(a.open_time)
         })
         setShowModal(true)
     }
 
     function resetForm() {
-        setFormData({ title: '', course_id: '', type: 'daily', due_date: '', description: '', week_number: 1, day_of_week: 1, duration: 30, open_time: getDefaultUnlockTime(), close_time: '' })
+        setFormData({ title: '', course_id: '', type: 'daily', description: '', week_number: 1, day_of_week: 1, duration: 30, open_time: getDefaultUnlockTime() })
         setEditingId(null)
         setError('')
     }
@@ -385,7 +382,7 @@ export default function OrganizerAssessments() {
                         </div>
                         <div style={{ padding: '0.85rem 1.5rem', borderTop: '1px solid var(--card-border)', background: 'var(--bg-base)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <Calendar size={12} /> {a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No due date'}
+                                <Clock size={12} /> {a.open_time ? `Opens ${new Date(a.open_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : `${a.duration || 30} mins`}
                             </span>
                             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6366f1' }}>Quiz</span>
                         </div>
@@ -684,17 +681,6 @@ export default function OrganizerAssessments() {
                                         <option value="final">Final</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label htmlFor="due-date-input" className="form-label">Due Date (optional)</label>
-                                    <input
-                                        id="due-date-input"
-                                        name="due_date"
-                                        type="date"
-                                        className="form-input"
-                                        value={formData.due_date}
-                                        onChange={e => setFormData(p => ({ ...p, due_date: e.target.value }))}
-                                    />
-                                </div>
                             </div>
 
                             <div style={{ marginBottom: '1.25rem' }}>
@@ -712,28 +698,14 @@ export default function OrganizerAssessments() {
                                 />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                                <div>
-                                    <label htmlFor="assess-open-time" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} /> Open Time</label>
-                                    <input id="assess-open-time" name="open_time" type="datetime-local" className="form-input"
-                                        value={formData.open_time}
-                                        onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="assess-close-time" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} /> Close Time</label>
-                                    <input id="assess-close-time" name="close_time" type="datetime-local" className="form-input"
-                                        value={formData.close_time}
-                                        onChange={e => setFormData(p => ({ ...p, close_time: e.target.value }))}
-                                        min={formData.open_time || undefined}
-                                    />
-                                </div>
+                            <div style={{ marginBottom: '1.25rem' }}>
+                                <label htmlFor="assess-open-time" className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} /> Open Time</label>
+                                <input id="assess-open-time" name="open_time" type="datetime-local" className="form-input"
+                                    value={formData.open_time}
+                                    onChange={e => setFormData(p => ({ ...p, open_time: e.target.value }))}
+                                />
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'block' }}>When this assessment unlocks for students. Once open, it remains available with no due date or expiration.</span>
                             </div>
-                            {formData.open_time && formData.close_time && (() => {
-                                const mins = Math.round((new Date(formData.close_time) - new Date(formData.open_time)) / 60000)
-                                if (mins > 0) return <div style={{ fontSize: '0.8rem', color: '#6366f1', marginBottom: '1rem', fontWeight: 600 }}>⏱ Window: {mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`}</div>
-                                return null
-                            })()}
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label htmlFor="assessment-desc" className="form-label">Instructions / Description</label>

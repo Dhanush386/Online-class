@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { ClipboardList, Calendar, ChevronRight, Eye, Lock, Monitor } from 'lucide-react'
+import { ClipboardList, Calendar, ChevronRight, Eye, Lock, Monitor, Clock } from 'lucide-react'
 import { useDeviceType } from '../../hooks/useDeviceType'
 import { calculateAccessibleDay, isItemUnlocked } from '../../utils/dayAccessEngine'
 
@@ -13,7 +13,7 @@ const TAB_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
 const MAX_ATTEMPTS = 1
 
 function AssessmentCard({ a, tab, submissions, navigate }) {
-    const isOverdue = a.due_date && new Date(a.due_date) < new Date()
+    const isNotOpenYet = a.open_time && new Date(a.open_time) > new Date()
     const color = TAB_COLORS[tab]
     const attemptCount = (submissions[a.id] || []).length
     const isExhausted = attemptCount >= MAX_ATTEMPTS
@@ -26,8 +26,8 @@ function AssessmentCard({ a, tab, submissions, navigate }) {
         statusBadge = <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4 }}><Lock size={10} /> No Attempts Left</span>
     } else if (a.isLocked) {
         statusBadge = <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4 }}><Lock size={10} /> Locked</span>
-    } else if (isOverdue) {
-        statusBadge = <span className="badge badge-danger">Overdue</span>
+    } else if (isNotOpenYet) {
+        statusBadge = <span className="badge" style={{ background: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={10} /> Opens Soon</span>
     } else {
         statusBadge = <span className="badge badge-success">Active</span>
     }
@@ -53,14 +53,14 @@ function AssessmentCard({ a, tab, submissions, navigate }) {
                 <Lock size={15} /> Locked
             </button>
         )
-    } else if (isOverdue) {
+    } else if (isNotOpenYet) {
         ctaButton = (
             <button
                 disabled
                 className="btn-secondary"
-                style={{ width: '100%', justifyContent: 'center', opacity: 0.6, cursor: 'not-allowed', gap: '0.5rem' }}
+                style={{ width: '100%', justifyContent: 'center', opacity: 0.7, cursor: 'not-allowed', gap: '0.5rem' }}
             >
-                <Lock size={15} /> Deadline Passed
+                <Clock size={15} /> Opens {new Date(a.open_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </button>
         )
     } else {
@@ -93,15 +93,20 @@ function AssessmentCard({ a, tab, submissions, navigate }) {
             {a.description && <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1rem' }}>{a.description}</p>}
 
             {/* Meta */}
-            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
                 {a.courses?.title && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                         <ClipboardList size={11} /> {a.courses.title}
                     </span>
                 )}
-                {a.due_date && (
+                {a.duration && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                        <Calendar size={11} /> Due {new Date(a.due_date).toLocaleDateString()}
+                        <Clock size={11} /> {a.duration} mins
+                    </span>
+                )}
+                {a.open_time && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Calendar size={11} /> Opens {new Date(a.open_time).toLocaleDateString()}
                     </span>
                 )}
             </div>
@@ -129,7 +134,8 @@ function AssessmentCard({ a, tab, submissions, navigate }) {
 AssessmentCard.propTypes = {
     a: PropTypes.shape({
         id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-        due_date: PropTypes.string,
+        open_time: PropTypes.string,
+        duration: PropTypes.number,
         title: PropTypes.string.isRequired,
         description: PropTypes.string,
         isLocked: PropTypes.bool,
@@ -182,7 +188,7 @@ export default function Assessments() {
                 supabase.from('assessments')
                     .select('*, courses(title, start_date)')
                     .in('course_id', enrolledIds)
-                    .order('due_date', { ascending: true }),
+                    .order('created_at', { ascending: false }),
                 supabase.from('assessment_submissions').select('*').eq('student_id', profile.id),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
                 supabase.from('resource_access').select('*').eq('resource_type', 'assessment').eq('is_locked', true),

@@ -55,12 +55,6 @@ export function isAssessmentTimeOpen(assessment, now = new Date()) {
       return false; // Too early
     }
   }
-  if (assessment.due_date) {
-    const dueDate = new Date(assessment.due_date).getTime();
-    if (now.getTime() > dueDate) {
-      return false; // Closed / Expired
-    }
-  }
   return true;
 }
 
@@ -84,16 +78,16 @@ describe('Exam Integrity & Server-Side Grading Engine', () => {
     expect(result.percentage).toBe(67);
   });
 
-  it('enforces both start and closing boundaries for exam access', () => {
+  it('enforces open time start boundary without closing deadlines', () => {
     const now = new Date('2026-08-20T10:00:00Z');
 
     // Future exam (should be blocked)
-    expect(isAssessmentTimeOpen({ open_time: '2026-08-20T12:00:00Z', due_date: '2026-08-20T14:00:00Z' }, now)).toBe(false);
+    expect(isAssessmentTimeOpen({ open_time: '2026-08-20T12:00:00Z' }, now)).toBe(false);
 
     // Active exam (within window)
-    expect(isAssessmentTimeOpen({ open_time: '2026-08-20T09:00:00Z', due_date: '2026-08-20T11:00:00Z' }, now)).toBe(true);
+    expect(isAssessmentTimeOpen({ open_time: '2026-08-20T09:00:00Z' }, now)).toBe(true);
 
-    // Expired exam (should be blocked at closing boundary)
-    expect(isAssessmentTimeOpen({ open_time: '2026-08-20T08:00:00Z', due_date: '2026-08-20T09:30:00Z' }, now)).toBe(false);
+    // Exam opened in the past remains open (no expiration / deadline)
+    expect(isAssessmentTimeOpen({ open_time: '2026-08-01T08:00:00Z' }, now)).toBe(true);
   });
 });
