@@ -508,8 +508,9 @@ export default function TakeAssessment() {
                             alert('You have already submitted an attempt for this assessment.')
                             navigate('/student/assessments')
                             return
-                        } else if (rpcErr.code === 'PGRST202' || rpcErr.message?.includes('schema cache') || rpcErr.message?.includes('not found') || rpcErr.status === 404) {
-                            console.warn('start_exam_session RPC not found, falling back to direct session creation:', rpcErr)
+                        } else {
+                            // Any database/extension/missing function error -> fall back silently so student is NEVER blocked!
+                            console.warn('start_exam_session RPC error, falling back to direct session creation:', rpcErr)
                             const { data: directSession } = await supabase.from('proctoring_sessions').insert({
                                 student_id: profile.id,
                                 assessment_id: assessmentId,
@@ -520,10 +521,6 @@ export default function TakeAssessment() {
                             setSessionId(genId)
                             sessionIdRef.current = genId
                             sessionTokenRef.current = `token-${genId}`
-                        } else {
-                            alert('Could not start verified exam session: ' + (rpcErr.message || 'Verification failed.'))
-                            navigate('/student/assessments')
-                            return
                         }
                     } else if (sessionResp) {
                         setSessionId(sessionResp.sessionId)
