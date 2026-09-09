@@ -293,16 +293,16 @@ export default function LiveProctoring() {
     const getNetworkStatus = (quality) => {
         switch (quality?.toLowerCase()) {
             case 'excellent':
-                return { label: 'Excellent Connection', color: '#10b981', bg: '#ecfdf5' };
+                return { label: 'Excellent Connection', color: '#047857', bg: '#d1fae5', border: '#6ee7b7' };
             case 'good':
-                return { label: 'Good Connection', color: '#3b82f6', bg: '#eff6ff' };
+                return { label: 'Good Connection', color: '#1d4ed8', bg: '#dbeafe', border: '#93c5fd' };
             case 'poor':
-                return { label: 'Poor Connection', color: '#f97316', bg: '#fff7ed' };
+                return { label: 'Poor Connection', color: '#c2410c', bg: '#ffedd5', border: '#fdba74' };
             case 'lost':
             case 'disconnected':
-                return { label: 'Disconnected', color: '#ef4444', bg: '#fef2f2' };
+                return { label: 'Disconnected', color: '#b91c1c', bg: '#fee2e2', border: '#fca5a5' };
             default:
-                return { label: 'Excellent Connection', color: '#10b981', bg: '#ecfdf5' };
+                return { label: 'Excellent Connection', color: '#047857', bg: '#d1fae5', border: '#6ee7b7' };
         }
     };
 
@@ -462,21 +462,21 @@ export default function LiveProctoring() {
             {/* Summary Banner */}
             {studentsList.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                    <div style={{ background: 'white', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>🟢 SAFE</div>
-                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981', marginTop: '0.25rem' }}>{safeCount}</div>
+                    <div style={{ background: 'white', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>🟢 SAFE</div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#059669', marginTop: '0.25rem' }}>{safeCount}</div>
                     </div>
-                    <div style={{ background: 'white', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>🟡 WARNING</div>
-                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#eab308', marginTop: '0.25rem' }}>{warningCount}</div>
+                    <div style={{ background: 'white', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>🟡 WARNING</div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#d97706', marginTop: '0.25rem' }}>{warningCount}</div>
                     </div>
-                    <div style={{ background: 'white', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>🟠 HIGH RISK</div>
-                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f97316', marginTop: '0.25rem' }}>{highRiskCount}</div>
+                    <div style={{ background: 'white', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>🟠 HIGH RISK</div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ea580c', marginTop: '0.25rem' }}>{highRiskCount}</div>
                     </div>
-                    <div style={{ background: 'white', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>🔴 CRITICAL</div>
-                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ef4444', marginTop: '0.25rem' }}>{criticalCount}</div>
+                    <div style={{ background: 'white', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>🔴 CRITICAL</div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#dc2626', marginTop: '0.25rem' }}>{criticalCount}</div>
                     </div>
                     {highestRiskStudent && highestRiskStudent.riskScore > 0 && (
                         <div style={{ background: '#fef2f2', padding: '1rem 1.5rem', borderRadius: 12, border: '1px solid #fee2e2', gridColumn: isMobile ? 'auto' : 'span 2' }}>
@@ -519,27 +519,28 @@ export default function LiveProctoring() {
                                         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: watchingLive[id] ? 0.2 : 1 }} 
                                     />
                                 ) : (
-                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                                        Loading feed...
+                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
+                                        <div style={{ width: 26, height: 26, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #818cf8', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                        <span style={{ color: '#f8fafc', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '0.02em' }}>Loading feed...</span>
                                     </div>
                                 )}
-                                <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 8px', borderRadius: 4, fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 6 }}>
-                                    <div style={{ width: 6, height: 6, background: watchingLive[id] ? '#ef4444' : '#10b981', borderRadius: '50%' }}></div> 
+                                <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.75)', color: '#ffffff', padding: '4px 10px', borderRadius: 6, fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 6, border: '1px solid rgba(255,255,255,0.15)' }}>
+                                    <div style={{ width: 7, height: 7, background: watchingLive[id] ? '#ef4444' : '#10b981', borderRadius: '50%' }}></div> 
                                     {watchingLive[id] ? 'LIVE STREAM' : 'SNAPSHOT'}
                                 </div>
                             </div>
                             
-                            <div style={{ padding: '1rem' }}>
+                            <div style={{ padding: '1.1rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                     <div>
-                                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{student.name}</h3>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{student.type === 'assessment' ? 'Assessment' : 'Coding Challenge'}</div>
+                                        <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>{student.name}</h3>
+                                        <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600, marginTop: '0.25rem' }}>{student.type === 'assessment' ? 'Assessment' : 'Coding Challenge'}</div>
                                         
                                         {/* Network Quality Badge */}
                                         {(() => {
                                             const net = getNetworkStatus(student.connectionQuality);
                                             return (
-                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: net.color, background: net.bg, padding: '2px 6px', borderRadius: 4, fontWeight: 600, marginTop: '0.5rem' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.72rem', color: net.color, background: net.bg, border: `1px solid ${net.border || net.color}`, padding: '2px 8px', borderRadius: 6, fontWeight: 700, marginTop: '0.5rem' }}>
                                                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: net.color }}></div>
                                                     {net.label}
                                                 </div>
@@ -549,7 +550,7 @@ export default function LiveProctoring() {
                                     {(() => {
                                         const risk = getRiskStatus(student.riskScore || 0);
                                         return (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: risk.color, background: risk.bg, border: `1px solid ${risk.border}`, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: risk.color, background: risk.bg, border: `1.5px solid ${risk.border}`, padding: '3px 8px', borderRadius: 6, fontWeight: 800 }}>
                                                 {risk.label} ({student.riskScore || 0})
                                             </div>
                                         );
@@ -560,43 +561,100 @@ export default function LiveProctoring() {
                                     {!watchingLive[id] && (
                                         <button 
                                             onClick={() => startLiveStream(id, student.challengeId)}
-                                            style={{ flex: 1, padding: '0.6rem', background: '#f8fafc', border: '1px solid #cbd5e1', color: 'var(--card-border)', borderRadius: 6, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s' }}
-                                            onMouseOver={(e) => e.target.style.background = '#f1f5f9'}
-                                            onMouseOut={(e) => e.target.style.background = '#f8fafc'}
-                                            onFocus={(e) => e.target.style.background = '#f1f5f9'}
-                                            onBlur={(e) => e.target.style.background = '#f8fafc'}
+                                            style={{ 
+                                                flex: 1, 
+                                                padding: '0.65rem', 
+                                                background: '#f8fafc', 
+                                                border: '1.5px solid #94a3b8', 
+                                                color: '#0f172a', 
+                                                borderRadius: 8, 
+                                                fontWeight: 700, 
+                                                fontSize: '0.85rem', 
+                                                cursor: 'pointer', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center', 
+                                                gap: '0.45rem', 
+                                                transition: 'all 0.2s' 
+                                            }}
+                                            onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.borderColor = '#64748b'; }}
+                                            onMouseOut={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; }}
                                         >
-                                            <PlayCircle size={16} /> Watch Live
+                                            <PlayCircle size={16} color="#0f172a" /> Watch Live
                                         </button>
                                     )}
                                     <button 
                                         onClick={() => sendWarning(student.studentId, student.name)}
-                                        style={{ flex: watchingLive[id] ? '1 1 100%' : 1, padding: '0.6rem', background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 6, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s' }}
-                                        onMouseOver={(e) => e.target.style.background = '#fee2e2'}
-                                        onMouseOut={(e) => e.target.style.background = '#fef2f2'}
-                                        onFocus={(e) => e.target.style.background = '#fee2e2'}
-                                        onBlur={(e) => e.target.style.background = '#fef2f2'}
+                                        style={{ 
+                                            flex: watchingLive[id] ? '1 1 100%' : 1, 
+                                            padding: '0.65rem', 
+                                            background: '#fef2f2', 
+                                            border: '1.5px solid #f87171', 
+                                            color: '#b91c1c', 
+                                            borderRadius: 8, 
+                                            fontWeight: 700, 
+                                            fontSize: '0.85rem', 
+                                            cursor: 'pointer', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center', 
+                                            gap: '0.45rem', 
+                                            transition: 'all 0.2s' 
+                                        }}
+                                        onMouseOver={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.borderColor = '#ef4444'; }}
+                                        onMouseOut={(e) => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#f87171'; }}
                                     >
-                                        <AlertTriangle size={16} /> Send Warning
+                                        <AlertTriangle size={16} color="#b91c1c" /> Send Warning
                                     </button>
                                     <button 
                                         onClick={() => setReportSession({ studentId: student.studentId, challengeId: student.challengeId, type: student.type })}
-                                        style={{ flex: '1 1 100%', marginTop: '0.5rem', padding: '0.6rem', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af', borderRadius: 6, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s' }}
-                                        onMouseOver={(e) => e.target.style.background = '#dbeafe'}
-                                        onMouseOut={(e) => e.target.style.background = '#eff6ff'}
-                                        onFocus={(e) => e.target.style.background = '#dbeafe'}
-                                        onBlur={(e) => e.target.style.background = '#eff6ff'}
+                                        style={{ 
+                                            flex: '1 1 100%', 
+                                            marginTop: '0.5rem', 
+                                            padding: '0.65rem', 
+                                            background: '#eff6ff', 
+                                            border: '1.5px solid #60a5fa', 
+                                            color: '#1d4ed8', 
+                                            borderRadius: 8, 
+                                            fontWeight: 700, 
+                                            fontSize: '0.85rem', 
+                                            cursor: 'pointer', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center', 
+                                            gap: '0.45rem', 
+                                            transition: 'all 0.2s' 
+                                        }}
+                                        onMouseOver={(e) => { e.currentTarget.style.background = '#dbeafe'; e.currentTarget.style.borderColor = '#3b82f6'; }}
+                                        onMouseOut={(e) => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#60a5fa'; }}
                                     >
-                                        <ShieldAlert size={16} /> Review Report
+                                        <ShieldAlert size={16} color="#1d4ed8" /> Review Report
                                     </button>
                                 </div>
                             </div>
 
                             {/* Expandable Violation Timeline Panel */}
-                            <div style={{ padding: '1rem', borderTop: '1px solid #f1f5f9' }}>
+                            <div style={{ padding: '0.85rem 1.1rem 1.1rem', borderTop: '1px solid #f1f5f9' }}>
                                 <button 
                                     onClick={() => toggleTimeline(id)}
-                                    style={{ width: '100%', padding: '0.5rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                    style={{ 
+                                        width: '100%', 
+                                        padding: '0.6rem', 
+                                        background: '#f8fafc', 
+                                        border: '1.5px solid #cbd5e1', 
+                                        borderRadius: 8, 
+                                        fontSize: '0.82rem', 
+                                        fontWeight: 700, 
+                                        color: '#334155', 
+                                        cursor: 'pointer', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center', 
+                                        gap: '6px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
                                 >
                                     {expandedTimeline[id] ? 'Hide Violation Timeline' : `Show Violation Timeline (${student.violations?.length || 0})`}
                                 </button>
