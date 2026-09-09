@@ -11,6 +11,7 @@ import CourseJourneyTimeline from '../../components/student/CourseJourneyTimelin
 import useWeeklyCourse from '../../hooks/useWeeklyCourse'
 import useXpAward from '../../hooks/useXpAward'
 import { calculateAccessibleDay, isItemUnlocked } from '../../utils/dayAccessEngine'
+import { calculateCourseProgress, saveProgressRecord } from '../../utils/progressSync'
 
 const MAX_ATTEMPTS = 1
 const ASSESS_COLORS = { daily: '#6366f1', weekly: '#f59e0b', final: '#10b981' }
@@ -179,7 +180,7 @@ export default function CourseDetail() {
                 supabase.from('day_access').select('*').eq('course_id', courseId),
                 supabase.from('resource_access').select('*').eq('is_locked', true),
                 supabase.from('course_resources').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }).order('created_at', { ascending: true }),
-                supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
+                supabase.from('video_progress').select('video_id').eq('student_id', profile.id),
                 supabase.from('student_notes').select('*').eq('student_id', profile.id).eq('course_id', courseId).order('created_at', { ascending: false }),
                 supabase.from('coding_submissions').select('*').eq('student_id', profile.id),
                 supabase.from('enrollments').select('enrolled_at').eq('student_id', profile.id).eq('course_id', courseId).maybeSingle(),
@@ -215,11 +216,30 @@ export default function CourseDetail() {
                 earlyUnlockedIds: earlyIds
             }
 
+            // Calculate dynamic, accurate course progress immediately
+            const courseProgress = calculateCourseProgress(
+                vids,
+                chls,
+                assessData,
+                vpData,
+                codingSubsData,
+                subData
+            )
+
             setSessions((vids || []).map(v => ({ ...v, isLocked: checkItemLocked(v, 'video', lockCtx) })))
-            setProgress({ ...prog, video_progress: vpData || [] })
+            setProgress({ 
+                ...prog, 
+                completion_percentage: courseProgress.percentage,
+                video_progress: vpData || [] 
+            })
             setChallenges((chls || []).map(c => ({ ...c, isLocked: checkItemLocked(c, 'coding', lockCtx) })))
             setCodingSubmissions(codingSubsData || [])
             setCourseResources((resData || []).map(r => ({ ...r, isLocked: checkItemLocked(r, 'resource', lockCtx) })))
+
+            // If stored database completion percentage differs from actual calculation, sync it
+            if (prog?.completion_percentage !== courseProgress.percentage) {
+                saveProgressRecord(profile.id, courseId, courseProgress.percentage)
+            }
 
             const grouped = { daily: [], weekly: [], final: [] }
                 ; (assessData || [])
@@ -302,7 +322,7 @@ export default function CourseDetail() {
             supabase.from('videos').select('id').eq('course_id', courseId),
             supabase.from('coding_challenges').select('id').eq('course_id', courseId),
             supabase.from('assessments').select('id').eq('course_id', courseId),
-            supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
+            supabase.from('video_progress').select('video_id').eq('student_id', profile.id),
             supabase.from('coding_submissions').select('challenge_id, status').eq('student_id', profile.id)
         ])
 
@@ -313,32 +333,19 @@ export default function CourseDetail() {
         const { data: allAssessSubs, error: ase } = await supabase.from('assessment_submissions').select('assessment_id').eq('student_id', profile.id)
         if (ase) console.error('Assessment subs fetch error:', ase)
 
-        const totalSessions = (vids || []).length
-        const totalCoding = (chls || []).length
-        const totalAssessments = (assessData || []).length
+        const courseProgress = calculateCourseProgress(
+            vids,
+            chls,
+            assessData,
+            vpData,
+            subData,
+            allAssessSubs
+        )
 
-        const completedSessions = (vids || []).filter(v => (vpData || []).some(vp => vp.video_id === v.id)).length
-        const completedCoding = (chls || []).filter(c => (subData || []).some(s => s.challenge_id === c.id && s.status === 'accepted')).length
-        const completedAssess = (assessData || []).filter(a => (allAssessSubs || []).some(s => s.assessment_id === a.id)).length
+        console.log(`Progress Update [${courseId}]: ${courseProgress.percentage}% (V:${courseProgress.completedSessions}/${courseProgress.totalSessions}, C:${courseProgress.completedCoding}/${courseProgress.totalCoding}, A:${courseProgress.completedAssess}/${courseProgress.totalAssessments})`)
 
-        const totalTopics = totalSessions + totalCoding + totalAssessments
-        const completedTopics = completedSessions + completedCoding + completedAssess
-
-        const finalPct = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0
-        console.log(`Progress Update [${courseId}]: ${finalPct}% (V:${completedSessions}/${totalSessions}, C:${completedCoding}/${totalCoding}, A:${completedAssess}/${totalAssessments})`)
-
-        const { error: upError } = await supabase.from('progress').upsert({
-            student_id: profile.id,
-            course_id: courseId,
-            completion_percentage: finalPct,
-            last_updated: new Date().toISOString()
-        }, { onConflict: 'student_id,course_id' })
-
-        if (upError) {
-            console.error('Progress upsert error:', upError)
-        }
-
-        setProgress(p => ({ ...p, completion_percentage: finalPct }))
+        setProgress(p => ({ ...p, completion_percentage: courseProgress.percentage }))
+        await saveProgressRecord(profile.id, courseId, courseProgress.percentage)
     }
 
 
@@ -823,10 +830,10 @@ export default function CourseDetail() {
                     <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                             <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Your Progress</span>
-                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-light)' }}>{progress.completion_percentage}%</span>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-light)' }}>{progress.completion_percentage || 0}%</span>
                         </div>
                         <div className="progress-bar-track">
-                            <div className="progress-bar-fill" style={{ width: `${progress.completion_percentage}%` }} />
+                            <div className="progress-bar-fill" style={{ width: `${progress.completion_percentage || 0}%` }} />
                         </div>
                     </div>
                 </div>

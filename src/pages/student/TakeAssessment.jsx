@@ -11,6 +11,7 @@ import useXpAward from '../../hooks/useXpAward'
 import { getQuizEventType } from '../../constants/xpRewards'
 import useTheme from '../../hooks/useTheme'
 import { calculateAccessibleDay, isItemUnlocked } from '../../utils/dayAccessEngine'
+import { calculateCourseProgress, saveProgressRecord } from '../../utils/progressSync'
 
 const MAX_ATTEMPTS = 1
 const BYPASS_PROCTORING = false // Set to false to enable AI proctoring violations in production
@@ -627,7 +628,7 @@ export default function TakeAssessment() {
             supabase.from('videos').select('id').eq('course_id', courseId),
             supabase.from('coding_challenges').select('id').eq('course_id', courseId),
             supabase.from('assessments').select('id').eq('course_id', courseId),
-            supabase.from('video_progress').select('video_id').eq('student_id', profile.id).eq('course_id', courseId),
+            supabase.from('video_progress').select('video_id').eq('student_id', profile.id),
             supabase.from('coding_submissions').select('challenge_id, status').eq('student_id', profile.id)
         ])
 
@@ -638,37 +639,18 @@ export default function TakeAssessment() {
         const { data: allAssessSubs, error: ase } = await supabase.from('assessment_submissions').select('assessment_id').eq('student_id', profile.id)
         if (ase) console.error('Assessment subs fetch error:', ase)
 
-        const totalSessions = (vids || []).length
-        const totalCoding = (chls || []).length
-        const totalAssessments = (assessData || []).length
+        const courseProgress = calculateCourseProgress(
+            vids,
+            chls,
+            assessData,
+            vpData,
+            subData,
+            allAssessSubs
+        )
 
-        const completedSessions = (vids || []).filter(v => (vpData || []).some(vp => vp.video_id === v.id)).length
-        const completedCoding = (chls || []).filter(c => (subData || []).some(s => s.challenge_id === c.id && s.status === 'accepted')).length
-        const completedAssess = (assessData || []).filter(a => (allAssessSubs || []).some(s => s.assessment_id === a.id)).length
+        console.log(`Progress Update [${courseId}]: ${courseProgress.percentage}% (V:${courseProgress.completedSessions}/${courseProgress.totalSessions}, C:${courseProgress.completedCoding}/${courseProgress.totalCoding}, A:${courseProgress.completedAssess}/${courseProgress.totalAssessments})`)
 
-        const sessionPct = totalSessions > 0 ? (completedSessions / totalSessions) : 0
-        const codingPct = totalCoding > 0 ? (completedCoding / totalCoding) : 0
-        const assessPct = totalAssessments > 0 ? (completedAssess / totalAssessments) : 0
-
-        let activeCategories = 0
-        let sumPct = 0
-        if (totalSessions > 0) { activeCategories++; sumPct += sessionPct }
-        if (totalCoding > 0) { activeCategories++; sumPct += codingPct }
-        if (totalAssessments > 0) { activeCategories++; sumPct += assessPct }
-
-        const finalPct = activeCategories > 0 ? Math.round((sumPct / activeCategories) * 100) : 0
-        console.log(`Progress Update [${courseId}]: ${finalPct}% (V:${completedSessions}/${totalSessions}, C:${completedCoding}/${totalCoding}, A:${completedAssess}/${totalAssessments})`)
-
-        const { error: upError } = await supabase.from('progress').upsert({
-            student_id: profile.id,
-            course_id: courseId,
-            completion_percentage: finalPct,
-            last_updated: new Date().toISOString()
-        }, { onConflict: 'student_id,course_id' })
-
-        if (upError) {
-            console.error('Progress upsert error:', upError)
-        }
+        await saveProgressRecord(profile.id, courseId, courseProgress.percentage)
     }
 
     async function handleSubmit(isAuto = false) {
