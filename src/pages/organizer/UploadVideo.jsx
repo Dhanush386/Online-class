@@ -18,6 +18,7 @@ export default function ScheduleLiveClass() {
         week_number: 1, day_of_week: 1, slide_url: ''
     })
     const [selectedFile, setSelectedFile] = useState(null)
+    const [fileDurationSecs, setFileDurationSecs] = useState(null)
     const [selectedSlideFile, setSelectedSlideFile] = useState(null)
     const [saving, setSaving] = useState(false)
     const [success, setSuccess] = useState(false)
@@ -111,6 +112,7 @@ export default function ScheduleLiveClass() {
                 video_url: finalUrl,
                 scheduled_time: form.scheduled_time ? toISOWithOffset(form.scheduled_time) : null,
                 duration_minutes: durationMins,
+                duration_seconds: fileDurationSecs || (durationMins ? durationMins * 60 : null),
                 week_number: Number.parseInt(form.week_number) || 1,
                 day_of_week: Number.parseInt(form.day_of_week) || 1,
                 slide_url: finalSlideUrl || null
@@ -120,6 +122,7 @@ export default function ScheduleLiveClass() {
             setSuccess(true)
             setForm({ course_id: '', title: '', description: '', meeting_url: '', scheduled_time: '', end_time: '', duration_minutes: '', week_number: 1, day_of_week: 1, slide_url: '' })
             setSelectedFile(null)
+            setFileDurationSecs(null)
             setSelectedSlideFile(null)
             setTimeout(() => setSuccess(false), 4000)
         } catch (err) {
@@ -246,10 +249,37 @@ export default function ScheduleLiveClass() {
                 <div>
                     <label htmlFor="file-upload" className="form-label">Video File (Supabase Storage)</label>
                     <button type="button" style={{ width: '100%', border: '2px dashed var(--card-border)', borderRadius: 12, padding: '2rem', textAlign: 'center', cursor: 'pointer', background: '#f8fafc', display: 'block' }} onClick={() => document.getElementById('file-upload').click()}>
-                        <input id="file-upload" type="file" accept="video/*" onChange={e => setSelectedFile(e.target.files[0])} style={{ display: 'none' }} />
+                        <input 
+                            id="file-upload" 
+                            type="file" 
+                            accept="video/*" 
+                            onChange={e => {
+                                const file = e.target.files?.[0]
+                                if (!file) return
+                                setSelectedFile(file)
+                                try {
+                                    const tempVideo = document.createElement('video')
+                                    tempVideo.preload = 'metadata'
+                                    tempVideo.src = URL.createObjectURL(file)
+                                    tempVideo.onloadedmetadata = () => {
+                                        URL.revokeObjectURL(tempVideo.src)
+                                        if (tempVideo.duration && !Number.isNaN(tempVideo.duration)) {
+                                            const secs = Math.round(tempVideo.duration)
+                                            setFileDurationSecs(secs)
+                                            setForm(p => ({ ...p, duration_minutes: p.duration_minutes || Math.max(1, Math.round(secs / 60)) }))
+                                        }
+                                    }
+                                } catch (err) {
+                                    console.warn('Could not read video metadata:', err)
+                                }
+                            }} 
+                            style={{ display: 'none' }} 
+                        />
                         <PlayCircle size={32} color="#6366f1" style={{ margin: '0 auto 1rem', opacity: 0.6 }} />
                         <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{selectedFile ? selectedFile.name : 'Click to select or drag video file'}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Recommended: MP4, Max: 100MB</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                            {fileDurationSecs ? `Recorded Duration: ${Math.floor(fileDurationSecs / 60)}m ${fileDurationSecs % 60}s` : 'Recommended: MP4, Max: 100MB'}
+                        </div>
                     </button>
                 </div>
             )

@@ -158,7 +158,7 @@ function CourseJourneyItem({ item, onModuleAction, onLockedItemClick }) {
                         {item.title}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', fontWeight: 600 }}>
-                        <span style={{ color: '#64748b' }}>{item.duration} Mins</span>
+                        <span style={{ color: '#64748b' }}>{item.durationLabel || `${item.duration} Mins`}</span>
                         <span style={{ color: '#cbd5e1' }}>•</span>
                         <span style={{ color: typeColor }}>{typeLabel}</span>
                         {item.xp && (
@@ -276,7 +276,6 @@ export default function CourseJourneyTimeline({
             if (!topicsMap[topic]) topicsMap[topic] = []
             
             let xp = item.xp_reward || item.points || 10
-            let duration = item.duration_minutes || item.estimated_minutes || item.time_limit || 30
             if (type === 'resource') { xp = null }
 
             let actualType = type;
@@ -288,6 +287,33 @@ export default function CourseJourneyTimeline({
                 )
                 if (!recorded) actualType = 'live';
             }
+
+            let duration
+            let durationLabel
+            if (actualType === 'video') {
+                // For recorded lessons, strictly prioritize actual recorded duration over the organizer's scheduled duration
+                if (item.duration_seconds && item.duration_seconds > 0) {
+                    const totalSecs = item.duration_seconds
+                    duration = Math.max(1, Math.round(totalSecs / 60))
+                    if (totalSecs >= 3600) {
+                        const hrs = Math.floor(totalSecs / 3600)
+                        const mins = Math.round((totalSecs % 3600) / 60)
+                        durationLabel = mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`
+                    } else {
+                        durationLabel = `${duration} Mins`
+                    }
+                } else if (item.duration_minutes) {
+                    duration = item.duration_minutes
+                    durationLabel = `${duration} Mins`
+                } else {
+                    duration = 30
+                    durationLabel = `30 Mins`
+                }
+            } else {
+                duration = item.duration_minutes || item.estimated_minutes || item.time_limit || item.duration || 30
+                durationLabel = `${duration} Mins`
+            }
+
             let isLocked = item.isLocked || false;
 
             // Early unlock by student via coins
@@ -313,6 +339,7 @@ export default function CourseJourneyTimeline({
                 type: actualType, 
                 xp, 
                 duration,
+                durationLabel,
                 isLocked
             })
         }
@@ -343,7 +370,7 @@ export default function CourseJourneyTimeline({
         let activeFocusItem = null;
 
         sortedTopicKeys.forEach(topic => {
-            // Sort items chronologically, then by explicit order, then by type
+            // Sort items chronologically, then by explicit order, then by type, then natural title, then created_at
             let sortedItems = topicsMap[topic].sort((a, b) => {
                 const dayA = a.day_of_week || a.day_number || a.day || 0;
                 const dayB = b.day_of_week || b.day_number || b.day || 0;
@@ -356,7 +383,16 @@ export default function CourseJourneyTimeline({
                 const TYPE_ORDER = { 'live': 0, 'video': 1, 'resource': 2, 'coding': 3, 'assessment': 4 };
                 const typeA = TYPE_ORDER[a.type] ?? 99;
                 const typeB = TYPE_ORDER[b.type] ?? 99;
-                return typeA - typeB;
+                if (typeA !== typeB) return typeA - typeB;
+
+                // Natural alphanumeric title sorting (e.g. Practise-3 before Practise-4, Part 1 before Part 2)
+                const titleComp = (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' });
+                if (titleComp !== 0) return titleComp;
+
+                // Fallback to chronological creation date
+                const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return timeA - timeB;
             });
 
             topicsMap[topic] = sortedItems.map(item => {
