@@ -450,7 +450,44 @@ export default function CourseJourneyTimeline({
                     activeFocusTitle: activeFocusItem.title
                 };
             });
-            // Keep items strictly in sequential pedagogical order (no STATUS_ORDER shuffling)
+
+            // Completed sessions go to the bottom; active / incomplete sessions stay at the top
+            topicsMap[topic] = topicsMap[topic].sort((a, b) => {
+                // 1. Completed items sink to the bottom
+                const isACompleted = a.status === 'completed' ? 1 : 0;
+                const isBCompleted = b.status === 'completed' ? 1 : 0;
+                if (isACompleted !== isBCompleted) {
+                    return isACompleted - isBCompleted;
+                }
+
+                // 2. Active Focus item is placed first among incomplete items
+                const isACurrent = a.status === 'current' ? 0 : 1;
+                const isBCurrent = b.status === 'current' ? 0 : 1;
+                if (isACurrent !== isBCurrent) {
+                    return isACurrent - isBCurrent;
+                }
+
+                // 3. Preserve chronological / day sequence
+                const dayA = a.day_of_week || a.day_number || a.day || 0;
+                const dayB = b.day_of_week || b.day_number || b.day || 0;
+                if (dayA !== dayB) return dayA - dayB;
+
+                const orderA = a.order_index ?? a.order ?? a.sort_order ?? 99;
+                const orderB = b.order_index ?? b.order ?? b.sort_order ?? 99;
+                if (orderA !== orderB) return orderA - orderB;
+
+                const TYPE_ORDER = { 'live': 0, 'video': 1, 'resource': 2, 'coding': 3, 'assessment': 4 };
+                const typeA = TYPE_ORDER[a.type] ?? 99;
+                const typeB = TYPE_ORDER[b.type] ?? 99;
+                if (typeA !== typeB) return typeA - typeB;
+
+                const titleComp = (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' });
+                if (titleComp !== 0) return titleComp;
+
+                const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return timeA - timeB;
+            });
         });
 
         return { topicsMap, topicKeys: sortedTopicKeys }
