@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -8,14 +10,17 @@ const corsHeaders = {
 async function fetchGeminiSummary(apiKey: string | undefined, payload: any): Promise<string> {
     if (!apiKey) return "";
     const { studentName, assessmentTitle, riskScore, violations, durationMinutes } = payload;
-    const prompt = `Analyze the following proctoring metrics for student "${studentName || 'Student'}" during the assessment "${assessmentTitle || 'Assessment'}":
-- Total Risk Score: ${riskScore || 0}
-- Duration: ${durationMinutes || 0} minutes
+    const sanitizedStudent = String(studentName || 'Student').replace(/[^\w\s-]/g, '').slice(0, 50);
+    const sanitizedTitle = String(assessmentTitle || 'Assessment').replace(/[^\w\s-]/g, '').slice(0, 100);
+
+    const prompt = `Analyze the following proctoring metrics for student "${sanitizedStudent}" during the assessment "${sanitizedTitle}":
+- Total Risk Score: ${Number(riskScore) || 0}
+- Duration: ${Number(durationMinutes) || 0} minutes
 - Violations counts:
-  * Tab Switch / Focus Lost: ${violations?.tabSwitch || 0}
-  * Phone Detected: ${violations?.phoneDetected || 0}
-  * Multiple Faces: ${violations?.multipleFaces || 0}
-  * Face Lost: ${violations?.faceLost || 0}
+  * Tab Switch / Focus Lost: ${Number(violations?.tabSwitch) || 0}
+  * Phone Detected: ${Number(violations?.phoneDetected) || 0}
+  * Multiple Faces: ${Number(violations?.multipleFaces) || 0}
+  * Face Lost: ${Number(violations?.faceLost) || 0}
 
 Please write a professional, concise 2-3 sentence AI summary of the student's behavior and state if they should pass the security check or require manual review. Keep it direct and authoritative. Do not include markdown formatting or labels.`;
 
@@ -64,13 +69,39 @@ serve(async (req) => {
     }
 
     try {
-        const apiKey = Deno.env.get('GEMINI_API_KEY')
+        const authHeader = req.headers.get('Authorization')
+        if (!authHeader) {
+            return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 401,
+            })
+        }
+
+        const supabase = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            {
+                global: { headers: { Authorization: authHeader } },
+                auth: { persistSession: false }
+            }
+        )
+
+        const jwtToken = authHeader.replace(/^Bearer\s+/i, '').trim()
+        const { data: { user }, error: authError } = await supabase.auth.getUser(jwtToken)
+        if (authError || !user) {
+            return new Response(JSON.stringify({ error: 'Unauthorized user session' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 401,
+            })
+        }
+
         const payload = await req.json()
+        const apiKey = Deno.env.get('GEMINI_API_KEY')
         
         let summary = await fetchGeminiSummary(apiKey, payload)
         
         if (!summary) {
-            summary = generateFallbackSummary(payload.riskScore, payload.violations, payload.durationMinutes)
+            summary = generateFallbackSummary(Number(payload.riskScore) || 0, payload.violations, Number(payload.durationMinutes) || 0)
         }
 
         return new Response(JSON.stringify({ summary }), {
@@ -79,9 +110,9 @@ serve(async (req) => {
         })
     } catch (error) {
         console.error('AI summary function error:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({ error: error?.message || 'Server error' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
+            status: 500,
         })
     }
 })

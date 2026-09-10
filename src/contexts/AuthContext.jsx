@@ -1,10 +1,14 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import PropTypes from 'prop-types'
 import { supabase } from '../lib/supabase'
 import { getTierForXP, getRankName } from '../constants/ranks'
 import { loadXpConfig } from '../constants/xpRewards'
+import { validatePassword, validateEmail, sanitizeEmail } from '../utils/security'
 
 const AuthContext = createContext({})
+
+// Session idle timeout: 30 minutes of inactivity forces automatic logout
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 
 function calculateCodingXp(codingSubs) {
     let xp = 0;
@@ -46,42 +50,112 @@ function calculateStreak(sortedDates) {
     return streakCount;
 }
 
-async function signUp({ email, password, name, role }) {
+async function signUp({ email, password, name, role = 'student' }) {
+    const cleanEmail = sanitizeEmail(email);
+    if (!validateEmail(cleanEmail)) {
+        throw new Error('Please provide a valid email address.');
+    }
+
+    const passCheck = validatePassword(password);
+    if (!passCheck.isValid) {
+        throw new Error(passCheck.message);
+    }
+
+    // Rate-limit account registration attempts
+    try {
+        const { data: limitCheck } = await supabase.rpc('check_rate_limit', {
+            p_identifier: cleanEmail,
+            p_action: 'register',
+            p_max_attempts: 5,
+            p_window_seconds: 3600
+        });
+        if (limitCheck && !limitCheck.allowed) {
+            throw new Error(limitCheck.message || 'Too many registration requests. Please wait.');
+        }
+    } catch (limErr) {
+        if (limErr.message?.includes('Too many')) throw limErr;
+    }
+
+    // Server-side invite verification for administrative roles
     if (['organizer', 'main_admin', 'sub_admin'].includes(role)) {
-        const { data: invite } = await supabase.from('organizer_invites').select('*').eq('email', email.toLowerCase()).single()
-        if (!invite) throw new Error('Not authorized as organizer.')
+        const { data: inviteCheck } = await supabase.rpc('check_organizer_invite', { p_email: cleanEmail });
+        if (!inviteCheck?.valid) {
+            throw new Error('Not authorized: A valid administrator invitation is required to register for this role.');
+        }
     }
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name, role } } })
-    if (error) throw error
-    if (data.user && ['organizer', 'main_admin', 'sub_admin'].includes(role)) {
-        await supabase.from('organizer_invites').delete().eq('email', email.toLowerCase())
-    }
-    return data
+
+    const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: { data: { name: (name || '').trim(), role } }
+    });
+
+    if (error) throw error;
+    return data;
 }
 
 async function verifyOtp({ email, token, type = 'signup' }) {
+    const cleanEmail = sanitizeEmail(email);
     const { data, error } = await supabase.auth.verifyOtp({
-        email: (email || '').trim().toLowerCase(),
+        email: cleanEmail,
         token: (token || '').trim(),
         type
-    })
-    if (error) throw error
-    return data
+    });
+    if (error) throw error;
+    return data;
 }
 
 async function resendOtp({ email, type = 'signup' }) {
+    const cleanEmail = sanitizeEmail(email);
     const { data, error } = await supabase.auth.resend({
-        email: (email || '').trim().toLowerCase(),
+        email: cleanEmail,
         type
-    })
-    if (error) throw error
-    return data
+    });
+    if (error) throw error;
+    return data;
 }
 
 async function signIn({ email, password }) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email: (email || '').trim().toLowerCase(), password })
-    if (error) throw error
-    return data
+    const cleanEmail = sanitizeEmail(email);
+    if (!cleanEmail) {
+        throw new Error('Email is required.');
+    }
+
+    // Check login rate limiting / lockouts
+    const { data: limitCheck } = await supabase.rpc('check_rate_limit', {
+        p_identifier: cleanEmail,
+        p_action: 'login',
+        p_max_attempts: 5,
+        p_window_seconds: 900,
+        p_lockout_seconds: 900
+    });
+
+    if (limitCheck && !limitCheck.allowed) {
+        throw new Error(limitCheck.message || 'Too many failed login attempts. Access is locked for 15 minutes.');
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password
+    });
+
+    if (error) {
+        // Record failed attempt in audit log
+        supabase.rpc('log_security_event', {
+            p_event_type: 'login_failure',
+            p_severity: 'warn',
+            p_details: { email: cleanEmail, error: error.message }
+        }).catch(() => {});
+        throw error;
+    }
+
+    // Reset rate limiter on successful authentication
+    supabase.rpc('record_successful_auth', {
+        p_identifier: cleanEmail,
+        p_action: 'login'
+    }).catch(() => {});
+
+    return data;
 }
 
 export function AuthProvider({ children }) {
@@ -91,8 +165,9 @@ export function AuthProvider({ children }) {
     const [stats, setStats] = useState({ xp: 0, coins: 0, solved: 0, streak: 0, completedCourses: [] })
     const [loading, setLoading] = useState(true)
     const [isExpired, setIsExpired] = useState(false)
+    const idleTimerRef = useRef(null)
 
-    const clearAuthStorage = () => {
+    const clearAuthStorage = useCallback(() => {
         try {
             localStorage.removeItem('learnova-auth-token')
             localStorage.removeItem('supabase.auth.token')
@@ -102,21 +177,64 @@ export function AuthProvider({ children }) {
                 }
             })
             sessionStorage.clear()
-        } catch (e) {
+        } catch {
             // Ignore storage errors
         }
-    }
+    }, [])
+
+    const signOut = useCallback(async () => {
+        try {
+            await supabase.auth.signOut()
+        } catch {}
+        clearAuthStorage()
+        setUser(null)
+        setProfile(null)
+        setStats({ xp: 0, coins: 0, solved: 0, streak: 0, completedCourses: [] })
+        window.location.replace('/login')
+    }, [clearAuthStorage])
+
+    // Idle session timeout: Reset timer on user interaction
+    const resetIdleTimer = useCallback(() => {
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+        if (user) {
+            idleTimerRef.current = setTimeout(() => {
+                console.warn('Session expired due to 30 minutes of user inactivity.')
+                signOut()
+            }, IDLE_TIMEOUT_MS)
+        }
+    }, [user, signOut])
 
     useEffect(() => {
-        // Robust initial check with graceful handling of expired refresh tokens
+        const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
+        const handleActivity = () => resetIdleTimer()
+
+        events.forEach(evt => window.addEventListener(evt, handleActivity, { passive: true }))
+        resetIdleTimer()
+
+        return () => {
+            events.forEach(evt => window.removeEventListener(evt, handleActivity))
+            if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+        }
+    }, [resetIdleTimer])
+
+    useEffect(() => {
         async function initAuth() {
             try {
                 const { data: { session }, error } = await supabase.auth.getSession()
                 
                 if (error) {
-                    // Stale or invalid refresh token found in storage
                     clearAuthStorage()
                     await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+                    setUser(null)
+                    setProfile(null)
+                    setLoading(false)
+                    return
+                }
+
+                // Check server-side token expiry timestamp
+                if (session?.expires_at && session.expires_at * 1000 < Date.now()) {
+                    console.warn('Session token expired server-side.')
+                    clearAuthStorage()
                     setUser(null)
                     setProfile(null)
                     setLoading(false)
@@ -131,8 +249,7 @@ export function AuthProvider({ children }) {
                     setProfile(null)
                     setLoading(false)
                 }
-            } catch (err) {
-                // Clear any stale local auth tokens on failure
+            } catch {
                 clearAuthStorage()
                 await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
                 setUser(null)
@@ -149,12 +266,7 @@ export function AuthProvider({ children }) {
                 setProfile(null)
                 setLoading(false)
             } else if (session?.user) {
-                // When switching tabs, Supabase automatically fires TOKEN_REFRESHED.
-                // Do NOT touch user, profile, stats, or loading on TOKEN_REFRESHED.
-                // Touching any of them causes pages (Dashboard, Course viewing, Profile, etc.)
-                // to re-trigger useEffect hooks and refresh.
                 if (event === 'TOKEN_REFRESHED') {
-                    // Only if profile was never loaded, fetch it silently
                     setProfile(curr => {
                         if (!curr) fetchProfile(session.user.id, false)
                         return curr
@@ -176,7 +288,7 @@ export function AuthProvider({ children }) {
         })
 
         return () => subscription.unsubscribe()
-    }, [])
+    }, [clearAuthStorage])
 
     const checkExpiry = (prof) => {
         if (prof?.role !== 'student' || !prof?.access_expires_at) {
@@ -217,7 +329,6 @@ export function AuthProvider({ children }) {
                 })
                 checkExpiry(data)
                 
-                // Check if student profile is complete
                 if (data.role === 'student') {
                     const { data: spData } = await supabase
                         .from('student_profiles')
@@ -231,27 +342,21 @@ export function AuthProvider({ children }) {
                 }
                 return data
             } else {
-                // Fallback profile if public.users row is not yet initialized
+                // SECURITY FIX: If public profile does not exist, NEVER perform client-side upsert
+                // with arbitrary user metadata roles! Rely exclusively on database triggers.
                 const authUser = (await supabase.auth.getUser())?.data?.user
-                const fallbackRole = authUser?.user_metadata?.role || 'student'
-                const fallbackName = authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'User'
-                
-                const fallbackProfile = {
+                const safeReadOnlyProfile = {
                     id: userId,
                     email: authUser?.email,
-                    name: fallbackName,
-                    role: fallbackRole,
-                    status: 'active',
+                    name: authUser?.user_metadata?.name || 'User',
+                    role: 'student', // default to least privilege
+                    status: 'pending',
                     xp: 0,
                     coins: 0
                 }
-                
-                // Ensure profile is written to public.users
-                const { data: insertedUser } = await supabase.from('users').upsert(fallbackProfile).select().maybeSingle()
-                const finalProfile = insertedUser || fallbackProfile
-                setProfile(finalProfile)
-                setIsProfileComplete(fallbackRole !== 'student')
-                return finalProfile
+                setProfile(safeReadOnlyProfile)
+                setIsProfileComplete(false)
+                return safeReadOnlyProfile
             }
         } catch (err) {
             console.error('fetchProfile error:', err)
@@ -269,24 +374,18 @@ export function AuthProvider({ children }) {
             let totalXp = userProfile?.xp || 0
             const coins = userProfile?.coins || 0
 
-            // Pre-load XP config for hooks
             loadXpConfig().catch(() => {})
 
             const { data: codingSubs } = await supabase.from('coding_submissions').select('challenge_id, score, status, created_at').eq('student_id', userId)
-            
-            // Calculate dynamic XP from coding submissions as a fallback for RLS issues
             const calculatedCodingXp = calculateCodingXp(codingSubs);
 
             const { data: assessSubs } = await supabase.from('assessment_submissions').select('created_at').eq('student_id', userId)
-
             const { data: progress } = await supabase.from('progress').select('completed, courses(title)').eq('student_id', userId).eq('completed', true)
             const completedCourseTitles = progress?.map(p => p.courses?.title?.toLowerCase() || '') || []
 
             const { data: watchedProgs } = await supabase.from('video_progress').select('watched_at').eq('student_id', userId)
-
             const { data: liveAtt } = await supabase.from('live_attendance').select('joined_at').eq('student_id', userId).eq('attendance_status', 'present')
 
-            // Add 20 XP for every live classroom attendance (fallback for RLS)
             let dynamicTotalXp = calculatedCodingXp + (liveAtt ? liveAtt.length * 20 : 0);
             if (dynamicTotalXp > totalXp) {
                 totalXp = dynamicTotalXp;
@@ -302,10 +401,8 @@ export function AuthProvider({ children }) {
             const sortedDates = Array.from(activityDates).sort((a, b) => a.localeCompare(b)).reverse()
             const streakCount = calculateStreak(sortedDates)
 
-            // Use shared rank constants — single source of truth
             const currentTier = getTierForXP(totalXp)
             const rankName    = getRankName(totalXp)
-
             const solvedCount = codingSubs?.filter(s => s.status === 'accepted').length || 0
 
             setStats(prev => {
@@ -325,15 +422,6 @@ export function AuthProvider({ children }) {
             })
         } catch (err) { console.error(err) }
     }
-
-    const signOut = useCallback(async () => {
-        await supabase.auth.signOut()
-        setUser(null)
-        setProfile(null)
-        setStats({ xp: 0, coins: 0, solved: 0, streak: 0, completedCourses: [] })
-        sessionStorage.clear()
-        window.location.replace('/login')
-    }, [])
 
     const value = useMemo(() => ({
         user, profile, role: profile?.role, loading, signUp, verifyOtp, resendOtp, signIn, signOut,

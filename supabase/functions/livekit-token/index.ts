@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0"
 import { SignJWT, decodeJwt } from "https://deno.land/x/jose@v4.15.4/index.ts"
@@ -126,9 +127,9 @@ serve(async (req) => {
         })
     } catch (error) {
         console.error('Token generation error:', error)
-        return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
+        return new Response(JSON.stringify({ error: error?.message || 'Failed to mint LiveKit token' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
+            status: 400,
         })
     }
 })

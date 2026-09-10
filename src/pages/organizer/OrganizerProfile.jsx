@@ -8,6 +8,7 @@ import {
     CheckCircle2, AlertCircle, Loader2, BookOpen, Users,
     ClipboardList, Code, Shield
 } from 'lucide-react'
+import { validateFileUpload } from '../../utils/security'
 
 export default function OrganizerProfile() {
     const { profile, user, refreshProfileStatus } = useAuth()
@@ -137,12 +138,18 @@ export default function OrganizerProfile() {
     const handleAvatarUpload = async (e) => {
         const file = e.target.files[0]
         if (!file) return
+
+        const valResult = validateFileUpload(file, { type: 'image' })
+        if (!valResult.isValid) {
+            setToast({ type: 'error', message: valResult.error })
+            return
+        }
+
         try {
-            const fileExt = file.name.split('.').pop()
-            const filePath = `${profile.id}/avatar_${Date.now()}.${fileExt}`
+            const filePath = `${profile.id}/avatar_${Date.now()}.${valResult.sanitizedExt}`
             const { error: uploadErr } = await supabase.storage
                 .from('profiles')
-                .upload(filePath, file, { upsert: true })
+                .upload(filePath, file, { upsert: true, contentType: file.type })
             if (uploadErr) throw uploadErr
 
             const { data: { publicUrl } } = supabase.storage
@@ -152,7 +159,7 @@ export default function OrganizerProfile() {
             setFormData(prev => ({ ...prev, avatar_url: publicUrl }))
             setToast({ type: 'success', message: 'Avatar uploaded!' })
         } catch (err) {
-            setToast({ type: 'error', message: 'Upload failed: ' + err.message })
+            setToast({ type: 'error', message: 'Upload failed: ' + (err.message || 'Please try again') })
         }
     }
 

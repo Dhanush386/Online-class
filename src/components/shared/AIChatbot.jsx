@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { sendChatMessageToAI } from '../../services/aiService'
 
 export default function AIChatbot() {
     const { profile } = useAuth()
@@ -224,58 +225,19 @@ export default function AIChatbot() {
         setInput('')
         setIsLoading(true)
 
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-        const modelsToTry = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemma-3-27b-it']
-
+        const promptText = input.trim()
         try {
-            if (apiKey) {
-                let lastError = null
-                let success = false
-
-                for (const model of modelsToTry) {
-                    const controller = new AbortController()
-                    const timeoutId = setTimeout(() => controller.abort(), 15000) 
-
-                    try {
-                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            signal: controller.signal,
-                            body: JSON.stringify({
-                                contents: [{
-                                    parts: [{ text: `You are Learnova Assistant. Help the user with: ${input.trim()}. Platform Info: Learnova is an e-learning platform. Be concise and friendly.` }]
-                                }]
-                            })
-                        })
-
-                        clearTimeout(timeoutId)
-
-                        if (response.ok) {
-                            const data = await response.json()
-                            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that response."
-                            setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: aiText }])
-                            success = true
-                            break 
-                        } else {
-                            const errorData = await response.json()
-                            lastError = errorData.error?.message || `Error ${response.status}`
-                        }
-                    } catch (err) {
-                        clearTimeout(timeoutId)
-                        lastError = err.message
-                    }
-                }
-                if (!success) throw new Error(lastError || "All models busy.")
-            } else {
-                setTimeout(() => {
-                    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
-                }, 1000)
-            }
+            const aiText = await sendChatMessageToAI(promptText)
+            setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: aiText }])
         } catch (error) {
-            console.error('Chat API Error:', error)
-            setTimeout(() => {
-                setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: getMockResponse(input.trim().toLowerCase()) }])
-            }, 500)
+            console.warn('Chat AI Service note:', error)
+            setMessages(prev => [...prev, { 
+                id: crypto.randomUUID(), 
+                role: 'assistant', 
+                content: error.message?.includes('Rate limit') 
+                    ? error.message 
+                    : getMockResponse(promptText.toLowerCase()) 
+            }])
         } finally {
             setIsLoading(false)
         }

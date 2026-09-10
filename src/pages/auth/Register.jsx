@@ -5,10 +5,11 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import {
     Mail, Lock, User, Eye, EyeOff, AlertCircle,
-    BookOpen, Users, ArrowRight, Sparkles, CheckCircle2
+    BookOpen, Users, ArrowRight, Sparkles, CheckCircle2, Shield
 } from 'lucide-react'
 import AnimatedBackground from '../../components/background/AnimatedBackground'
 import learnovaLogo from '../../assets/learnova-logo.png'
+import { validatePassword, validateEmail, sanitizeEmail } from '../../utils/security'
 
 export default function Register() {
     const { signIn } = useAuth()
@@ -18,25 +19,26 @@ export default function Register() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [isInvited, setIsInvited] = useState(false)
+    const [botField, setBotField] = useState('')
 
-    // Invite check for organizer / admin roles
+    // Server-side invite check via secure RPC for organizer / admin roles
     useEffect(() => {
-        const cleanEmail = form.email.trim().toLowerCase()
+        const cleanEmail = sanitizeEmail(form.email)
         const checkInvite = async () => {
-            if (cleanEmail.includes('@')) {
-                const { data, error: err } = await supabase
-                    .from('organizer_invites')
-                    .select('role')
-                    .eq('email', cleanEmail)
-                    .maybeSingle()
-                if (data && !err) {
-                    setIsInvited(true)
-                    setForm(p => ({ ...p, role: data.role || 'organizer' }))
-                } else {
-                    setIsInvited(false)
-                    if (['organizer', 'sub_admin', 'main_admin'].includes(form.role)) {
-                        setForm(p => ({ ...p, role: 'student' }))
+            if (validateEmail(cleanEmail)) {
+                try {
+                    const { data } = await supabase.rpc('check_organizer_invite', { p_email: cleanEmail })
+                    if (data?.valid) {
+                        setIsInvited(true)
+                        setForm(p => ({ ...p, role: data.role || 'organizer' }))
+                    } else {
+                        setIsInvited(false)
+                        if (['organizer', 'sub_admin', 'main_admin'].includes(form.role)) {
+                            setForm(p => ({ ...p, role: 'student' }))
+                        }
                     }
+                } catch {
+                    setIsInvited(false)
                 }
             } else {
                 setIsInvited(false)
@@ -45,25 +47,51 @@ export default function Register() {
                 }
             }
         }
-        const timer = setTimeout(checkInvite, 500)
+        const timer = setTimeout(checkInvite, 400)
         return () => clearTimeout(timer)
     }, [form.email, form.role])
 
-    // Direct Form Submit (No email OTP required)
     async function handleSubmit(e) {
         e.preventDefault()
-        const cleanEmail = form.email.trim().toLowerCase()
+        if (botField) {
+            // Silently drop bot submission
+            setLoading(false)
+            return
+        }
+
+        const cleanEmail = sanitizeEmail(form.email)
         const cleanName = form.name.trim()
 
         if (!cleanName) { setError('Please enter your full name'); return }
-        if (!cleanEmail || !cleanEmail.includes('@')) { setError('Please enter a valid email address'); return }
-        if (form.password.length < 6) { setError('Password must be at least 6 characters'); return }
+        if (!validateEmail(cleanEmail)) { setError('Please enter a valid email address'); return }
+
+        // Strict password complexity enforcement
+        const passCheck = validatePassword(form.password)
+        if (!passCheck.isValid) {
+            setError(passCheck.message)
+            return
+        }
 
         setLoading(true)
         setError('')
 
         try {
-            // 1. Sign up user directly in Supabase
+            // 1. Rate-limit account registration
+            try {
+                const { data: limitCheck } = await supabase.rpc('check_rate_limit', {
+                    p_identifier: cleanEmail,
+                    p_action: 'register',
+                    p_max_attempts: 5,
+                    p_window_seconds: 3600
+                })
+                if (limitCheck && !limitCheck.allowed) {
+                    throw new Error(limitCheck.message || 'Too many registration requests. Please wait.')
+                }
+            } catch (limErr) {
+                if (limErr.message?.includes('Too many')) throw limErr
+            }
+
+            // 2. Sign up user via Supabase
             const { data, error: err } = await supabase.auth.signUp({
                 email: cleanEmail,
                 password: form.password,
@@ -77,18 +105,12 @@ export default function Register() {
 
             if (err) throw err
 
-            // 2. Clean up invite if organizer/admin
-            if (['organizer', 'sub_admin', 'main_admin'].includes(form.role)) {
-                await supabase.from('organizer_invites').delete().eq('email', cleanEmail).catch(() => {})
-            }
-
-            // 3. Establish active session if not auto-signed in
+            // 3. Establish active session if email confirmation is not strictly blocking
             if (!data?.session) {
                 try {
                     await signIn({ email: cleanEmail, password: form.password })
                 } catch {
-                    // If email confirmation is strictly enforced in Supabase settings
-                    // we show informative fallback
+                    // Handled if email confirmation is required
                 }
             }
 
@@ -163,40 +185,35 @@ export default function Register() {
                     }}>
                         <img
                             src={learnovaLogo}
-                            alt="Learnova Logo"
+                            alt="Learnova"
                             style={{
-                                width: 56,
-                                height: 56,
-                                borderRadius: 16,
-                                objectFit: 'cover',
-                                boxShadow: '0 8px 24px rgba(99,102,241,0.3)',
+                                width: 44,
+                                height: 44,
+                                borderRadius: 12,
+                                objectFit: 'cover'
                             }}
                         />
                     </div>
                     <h1 style={{
+                        fontFamily: 'var(--font-display)',
                         fontSize: '1.75rem',
-                        fontWeight: 900,
-                        letterSpacing: '-0.025em',
+                        fontWeight: 800,
                         color: 'var(--text-primary)',
-                        margin: 0
+                        letterSpacing: '-0.03em',
+                        marginBottom: '0.25rem'
                     }}>
-                        Create Account
+                        Create your account
                     </h1>
                     <p style={{
                         color: 'var(--text-muted)',
-                        fontSize: '0.875rem',
-                        marginTop: '0.25rem'
+                        fontSize: '0.875rem'
                     }}>
-                        Join Learnova to accelerate your learning journey
+                        Join Learnova to start your interactive learning path
                     </p>
                 </div>
 
-                {/* Main Card */}
-                <div style={{
-                    background: 'var(--card-bg)',
-                    backdropFilter: 'blur(16px)',
-                    border: '1px solid var(--card-border)',
-                    borderRadius: 20,
+                {/* Form Card */}
+                <div className="glass-card" style={{
                     padding: '2rem',
                     boxShadow: 'var(--card-shadow)'
                 }}>
@@ -219,6 +236,18 @@ export default function Register() {
                     )}
 
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                        {/* Honeypot field for bot deterrence */}
+                        <input
+                            type="text"
+                            name="website_url_hp"
+                            value={botField}
+                            onChange={e => setBotField(e.target.value)}
+                            style={{ display: 'none', position: 'absolute', opacity: 0, height: 0, pointerEvents: 'none' }}
+                            tabIndex="-1"
+                            autoComplete="off"
+                            aria-hidden="true"
+                        />
+
                         {/* Full Name */}
                         <div className="form-group">
                             <label className="form-label" htmlFor="reg-name">Full Name</label>
@@ -226,7 +255,7 @@ export default function Register() {
                                 <User size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                                 <input
                                     id="reg-name" type="text" autoComplete="name" className="form-input"
-                                    placeholder="John Doe" value={form.name}
+                                    placeholder="Jane Doe" value={form.name}
                                     onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                                     style={{ paddingLeft: '2.5rem' }} required
                                 />
@@ -254,79 +283,99 @@ export default function Register() {
                                 <Lock size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                                 <input
                                     id="reg-pass" type={showPassword ? 'text' : 'password'} autoComplete="new-password" className="form-input"
-                                    placeholder="Min. 6 characters" value={form.password}
+                                    placeholder="At least 8 chars, uppercase, digit & symbol" value={form.password}
                                     onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                                     style={{ paddingLeft: '2.5rem', paddingRight: '2.75rem' }} required
                                 />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.2rem', display: 'flex' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    style={{
+                                        position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)',
+                                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                                        color: 'var(--text-muted)', display: 'flex', alignItems: 'center'
+                                    }}
+                                    tabIndex="-1"
+                                >
                                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                             </div>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'block' }}>
+                                Must be ≥ 8 chars with uppercase, lowercase, number, and special character.
+                            </span>
                         </div>
 
-                        {/* Role selection indicator if invited */}
-                        {isInvited && (
+                        {/* Role selection / Verified invite notice */}
+                        {isInvited ? (
                             <div style={{
-                                padding: '0.75rem 1rem',
-                                background: 'rgba(99, 102, 241, 0.1)',
-                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                padding: '0.875rem 1rem',
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
                                 borderRadius: 10,
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.5rem',
-                                color: 'var(--primary-400)',
-                                fontSize: '0.82rem',
-                                fontWeight: 600
+                                gap: '0.75rem'
                             }}>
-                                <CheckCircle2 size={16} color="#10b981" />
-                                <span>Invited Role: <strong>{form.role.toUpperCase()}</strong></span>
+                                <CheckCircle2 size={20} color="#10b981" />
+                                <div>
+                                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#10b981' }}>
+                                        Verified Staff Invitation
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                        Registering with verified role: <strong>{form.role}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.625rem 0.75rem',
+                                background: 'rgba(99, 102, 241, 0.05)',
+                                borderRadius: 8,
+                                border: '1px solid rgba(99, 102, 241, 0.15)',
+                                fontSize: '0.75rem',
+                                color: 'var(--text-muted)'
+                            }}>
+                                <Shield size={14} color="var(--primary-400)" />
+                                <span>Standard Student Account. Staff roles require an official invitation.</span>
                             </div>
                         )}
 
-                        {/* Submit Button */}
                         <button
                             type="submit"
+                            className="btn btn-primary"
                             disabled={loading}
                             style={{
                                 marginTop: '0.5rem',
-                                width: '100%',
-                                padding: '0.875rem',
-                                borderRadius: 12,
-                                background: 'linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%)',
-                                color: '#ffffff',
-                                border: 'none',
-                                fontWeight: 700,
+                                height: 44,
                                 fontSize: '0.95rem',
-                                cursor: loading ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '0.5rem',
-                                boxShadow: '0 4px 14px rgba(99,102,241,0.3)',
-                                transition: 'all 0.2s ease',
-                                opacity: loading ? 0.8 : 1
+                                width: '100%'
                             }}
                         >
-                            {loading ? (
-                                <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'white', animation: 'spin 0.7s linear infinite' }} />
-                            ) : (
+                            {loading ? 'Creating account...' : (
                                 <>
-                                    <span>Create Account</span>
-                                    <ArrowRight size={16} />
+                                    <span>Get Started</span>
+                                    <ArrowRight size={18} />
                                 </>
                             )}
                         </button>
                     </form>
+                </div>
 
-                    {/* Bottom Sign In Link */}
-                    <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--card-border)' }}>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                            Already have an account?{' '}
-                        </span>
-                        <Link to="/login" style={{ color: 'var(--primary-400)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>
+                {/* Footer Link */}
+                <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                        Already have an account?{' '}
+                        <Link to="/login" style={{ color: 'var(--primary-400)', fontWeight: 600, textDecoration: 'none' }}>
                             Sign in
                         </Link>
-                    </div>
+                    </p>
                 </div>
             </motion.div>
         </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { countries, indiaDistricts } from '../../data/locationData'
+import { validateFileUpload, sanitizeFileName } from '../../utils/security'
 import { 
     Briefcase, GraduationCap, Linkedin, Trophy, 
     Camera, Upload, Trash2, Plus, ChevronDown, ChevronRight,
@@ -226,14 +227,20 @@ export default function Profile() {
         const file = e.target.files[0]
         if (!file) return
 
+        // Strict security validation
+        const valResult = validateFileUpload(file, { type: type === 'photo' ? 'image' : 'document' })
+        if (!valResult.isValid) {
+            setToast({ type: 'error', message: valResult.error })
+            return
+        }
+
         try {
-            const fileExt = file.name.split('.').pop()
-            const fileName = `${user.id}/${type}_${crypto.randomUUID()}.${fileExt}`
+            const fileName = `${user.id}/${type}_${crypto.randomUUID()}.${valResult.sanitizedExt}`
             const filePath = `${fileName}`
 
             const { error: uploadError } = await supabase.storage
                 .from('profiles')
-                .upload(filePath, file, { upsert: true })
+                .upload(filePath, file, { upsert: true, contentType: file.type })
 
             if (uploadError) throw uploadError
 
@@ -248,7 +255,7 @@ export default function Profile() {
             setToast({ type: 'success', message: `${type === 'photo' ? 'Photo' : 'Resume'} uploaded!` })
         } catch (err) {
             console.error('Error uploading file:', err)
-            setToast({ type: 'error', message: 'Upload failed' })
+            setToast({ type: 'error', message: 'Upload failed: ' + (err.message || 'Please try again') })
         }
     }
 

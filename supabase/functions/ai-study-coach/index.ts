@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -11,14 +13,59 @@ serve(async (req) => {
     }
 
     try {
+        const authHeader = req.headers.get('Authorization')
+        if (!authHeader) {
+            return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 401,
+            })
+        }
+
+        const supabase = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            {
+                global: { headers: { Authorization: authHeader } },
+                auth: { persistSession: false }
+            }
+        )
+
+        const jwtToken = authHeader.replace(/^Bearer\s+/i, '').trim()
+        const { data: { user }, error: authError } = await supabase.auth.getUser(jwtToken)
+        if (authError || !user) {
+            return new Response(JSON.stringify({ error: 'Unauthorized user session' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 401,
+            })
+        }
+
+        const body = await req.json()
+        const { studentId, studentName, metrics, rawSubmissions } = body
+
+        // IDOR Prevention: Ensure requesting user owns this student data or has staff role
+        if (studentId && studentId !== user.id) {
+            const { data: requesterProfile } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', user.id)
+                .single()
+
+            const isStaff = ['organizer', 'main_admin', 'sub_admin'].includes(requesterProfile?.role)
+            if (!isStaff) {
+                return new Response(JSON.stringify({ error: 'Forbidden: Cannot access another student learning data' }), {
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                    status: 403,
+                })
+            }
+        }
+
         const apiKey = Deno.env.get('GEMINI_API_KEY')
-        const { studentName, metrics, rawSubmissions } = await req.json()
 
         // 1. Deterministic Health Score Calculation
-        const attendance = metrics?.attendance || 0;
-        const assessments = metrics?.assessments || 0;
-        const coding = metrics?.coding || 0;
-        const progress = metrics?.progress || 0;
+        const attendance = Math.min(100, Math.max(0, Number(metrics?.attendance) || 0));
+        const assessments = Math.min(100, Math.max(0, Number(metrics?.assessments) || 0));
+        const coding = Math.min(100, Math.max(0, Number(metrics?.coding) || 0));
+        const progress = Math.min(100, Math.max(0, Number(metrics?.progress) || 0));
 
         const healthScore = Math.round(
             (attendance * 0.25) +
@@ -30,14 +77,18 @@ serve(async (req) => {
         let aiResponse = null;
 
         if (apiKey) {
+            // Sanitize student name and prompt context
+            const sanitizedName = String(studentName || 'Student').replace(/[^\w\s-]/g, '').slice(0, 50);
+            const sanitizedSubmissions = String(rawSubmissions || 'No recent activity data provided.').slice(0, 1000);
+
             const prompt = `You are the AI Learning Coach for an e-learning platform called Learnova.
 Analyze this student's data and return a JSON object with weak/strong topics and recommendations.
 
-Student Name: ${studentName || 'Student'}
+Student Name: ${sanitizedName}
 Health Score: ${healthScore}/100
 Metrics: Attendance=${attendance}%, Assessments=${assessments}%, Coding=${coding}%, Course Progress=${progress}%
 Recent Submissions / Activity:
-${rawSubmissions || 'No recent activity data provided.'}
+${sanitizedSubmissions}
 
 Provide your response strictly in the following JSON format:
 {
@@ -113,7 +164,7 @@ Guidelines:
         })
     } catch (error) {
         console.error('ai-study-coach function error:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({ error: error?.message || 'Internal error' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500,
         })

@@ -39,7 +39,7 @@ serve(async (req: Request) => {
       )
     }
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('VITE_GEMINI_API_KEY')
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
     if (!geminiApiKey) {
       return new Response(
         JSON.stringify({ error: 'GEMINI_API_KEY secret is not configured in Supabase' }),

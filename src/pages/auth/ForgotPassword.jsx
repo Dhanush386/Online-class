@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Key, Mail, Lock, CheckCircle, ArrowLeft, Send } from 'lucide-react'
 
 import AnimatedBackground from '../../components/background/AnimatedBackground'
+import { validatePassword, sanitizeEmail, validateEmail } from '../../utils/security'
 
 export default function ForgotPassword() {
     const navigate = useNavigate()
@@ -87,14 +88,21 @@ export default function ForgotPassword() {
 
     const handleResetPassword = async (e) => {
         e.preventDefault()
+        const passCheck = validatePassword(newPassword)
+        if (!passCheck.isValid) {
+            setError(passCheck.message)
+            return
+        }
+
         setLoading(true)
         setError(null)
         setSuccess(false)
 
         try {
+            const cleanEmail = sanitizeEmail(email)
             // Verify the OTP
             const { error: verifyError } = await supabase.auth.verifyOtp({
-                email: email.trim().toLowerCase(),
+                email: cleanEmail,
                 token: resetCode.trim(),
                 type: 'recovery'
             })

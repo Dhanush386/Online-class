@@ -23,26 +23,26 @@ export default function GlobalSignOutModal() {
     const isAuthRoute = location.pathname.startsWith('/organizer') || location.pathname.startsWith('/student')
     if (!isAuthRoute) return
 
-    // Push dummy state so browser back button triggers popstate instead of exiting
-    try {
-      window.history.pushState({ ...window.history.state, __appActive: true }, '', location.pathname)
-    } catch (e) {
-      console.warn("History push failed:", e)
+    // Ensure a trap state exists on the history stack
+    if (!window.history.state?.__backTrap) {
+      window.history.pushState({ ...window.history.state, __backTrap: true }, '')
     }
 
     const handlePopState = (e) => {
-      e.preventDefault()
-      try {
-        window.history.pushState({ ...window.history.state, __appActive: true }, '', location.pathname)
-      } catch (err) {
-        console.warn("History push failed:", err)
-      }
+      // Re-push trap state immediately to prevent exiting the current page
+      window.history.pushState({ ...window.history.state, __backTrap: true }, '')
+      setIsOpen(true)
+    }
+
+    const handleOpenModal = () => {
       setIsOpen(true)
     }
 
     window.addEventListener('popstate', handlePopState)
+    window.addEventListener('open-signout-modal', handleOpenModal)
     return () => {
       window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('open-signout-modal', handleOpenModal)
     }
   }, [user, location.pathname])
 
@@ -56,10 +56,9 @@ export default function GlobalSignOutModal() {
     setIsOpen(false)
   }, [])
 
-  if (!isOpen) return null
-
   return (
     <AnimatePresence>
+      {isOpen && (
       <div style={{
         position: 'fixed', inset: 0, zIndex: 999999,
         background: 'rgba(15, 23, 42, 0.75)',
@@ -72,43 +71,59 @@ export default function GlobalSignOutModal() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           style={{
-            width: '100%', maxWidth: '400px',
-            background: 'var(--bg-overlay, #0f172a)',
-            border: '1px solid var(--sidebar-border, rgba(255,255,255,0.12))',
+            width: '100%', maxWidth: '420px',
+            background: 'var(--bg-surface, #ffffff)',
+            border: '1px solid var(--card-border, rgba(0,0,0,0.12))',
             borderRadius: '20px',
-            padding: '1.75rem',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            padding: '2rem 1.75rem',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
             textAlign: 'center',
-            color: '#ffffff'
+            color: 'var(--text-primary, #0f172a)'
           }}
         >
           <div style={{
-            width: 56, height: 56, borderRadius: '50%',
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#ef4444',
+            width: 60, height: 60, borderRadius: '50%',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            color: '#dc2626',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 1rem'
+            margin: '0 auto 1.25rem'
           }}>
             <LogOut size={28} />
           </div>
 
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#ffffff' }}>
+          <h3 style={{ 
+            fontSize: '1.35rem', 
+            fontWeight: 800, 
+            marginBottom: '0.6rem', 
+            color: 'var(--text-primary, #0f172a)',
+            fontFamily: 'var(--font-display, inherit)'
+          }}>
             Sign Out Confirmation
           </h3>
-          <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-            Are you sure you want to sign out of your {roleName} account? You will need your password to log back in.
+          <p style={{ 
+            fontSize: '0.925rem', 
+            color: 'var(--text-secondary, #475569)', 
+            marginBottom: '1.75rem', 
+            lineHeight: 1.55 
+          }}>
+            Are you sure you want to sign out of your <strong style={{ color: 'var(--text-primary, #0f172a)' }}>{roleName}</strong> account? You will need your password to log back in.
           </p>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.85rem' }}>
             <button
               type="button"
               onClick={handleCancel}
               style={{
-                flex: 1, padding: '0.75rem', borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#ffffff', fontWeight: 600, cursor: 'pointer',
+                flex: 1, 
+                padding: '0.75rem 1rem', 
+                borderRadius: '12px',
+                background: 'var(--bg-elevated, #f1f5f9)',
+                border: '1px solid var(--sidebar-border, #cbd5e1)',
+                color: 'var(--text-primary, #1e293b)', 
+                fontWeight: 600, 
+                fontSize: '0.9rem',
+                cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
             >
@@ -118,10 +133,16 @@ export default function GlobalSignOutModal() {
               type="button"
               onClick={handleConfirmSignOut}
               style={{
-                flex: 1, padding: '0.75rem', borderRadius: '12px',
-                background: '#ef4444', border: 'none',
-                color: '#ffffff', fontWeight: 700, cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+                flex: 1, 
+                padding: '0.75rem 1rem', 
+                borderRadius: '12px',
+                background: '#dc2626', 
+                border: 'none',
+                color: '#ffffff', 
+                fontWeight: 700, 
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35)',
                 transition: 'all 0.2s'
               }}
             >
@@ -130,6 +151,7 @@ export default function GlobalSignOutModal() {
           </div>
         </motion.div>
       </div>
+      )}
     </AnimatePresence>
   )
 }

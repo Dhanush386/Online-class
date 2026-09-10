@@ -9,6 +9,7 @@ import ProctoringReportModal from '../../components/organizer/ProctoringReportMo
 import OrganizerCodingDiscussions from '../../components/OrganizerCodingDiscussions'
 import { toLocalInput, toISOWithOffset, getDefaultUnlockTime } from '../../lib/dateUtils'
 import ReactMarkdown from 'react-markdown'
+import { generateCodingChallengesWithAI } from '../../services/aiService'
 
 const LANGUAGES = [
     { id: 'html', name: 'HTML/CSS/JS (Web)', icon: '🌐' },
@@ -973,46 +974,7 @@ export default function CodingManagement() {
         setGeneratedChallenges([]);
 
         try {
-            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-            if (!apiKey) throw new Error("Gemini API key is not configured.");
-
-            const prompt = `You are an expert computer science educator. Create coding challenges based on the following topic or text: "${aiPrompt}". 
-            Output the response strictly as a JSON array of objects. Do not include any markdown formatting like \`\`\`json.
-            Each object must follow this exact structure:
-            {
-                "title": "Challenge Title",
-                "problem_statement": "Detailed markdown description of the problem",
-                "language": "python",
-                "difficulty": "easy",
-                "starter_code": "def solution():\\n  pass",
-                "solution_code": "def solution():\\n  return True",
-                "constraints": "1 <= N <= 10^5",
-                "test_cases": [
-                    { "input": "...", "expected_output": "..." }
-                ]
-            }
-            Valid languages: html, python, python_ml, java, cpp, c, sql. Valid difficulties: easy, medium, hard.`;
-
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.7 }
-                })
-            });
-
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error?.message || 'Failed to generate challenges');
-
-            let responseText = data.candidates[0].content.parts[0].text;
-            
-            // Clean up possible markdown wrappers
-            responseText = responseText.replaceAll('```json', '').replaceAll('```', '').trim();
-            
-            const parsed = JSON.parse(responseText);
-            if (!Array.isArray(parsed)) throw new Error("AI did not return an array.");
-            
+            const parsed = await generateCodingChallengesWithAI(aiPrompt);
             setGeneratedChallenges(parsed);
         } catch (err) {
             console.error(err);

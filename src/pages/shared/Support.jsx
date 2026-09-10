@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { Send, User as UserIcon, Clock, CheckCheck, MessageSquare, Search, Paperclip, File, X, Image as ImageIcon, Plus } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { validateFileUpload, sanitizeFileName } from '../../utils/security'
 
 function TicketList({ filteredTickets, selectedTicket, setSelectedTicket, fetchMessages }) {
     return (
@@ -430,8 +431,17 @@ export default function Support() {
 
             if (attachment) {
                 setUploading(true)
-                const fileExt = attachment.name.split('.').pop()
-                const fileName = `${crypto.randomUUID()}.${fileExt}`
+                const validation = validateFileUpload(attachment, { 
+                    type: attachment.type?.startsWith('image/') ? 'image' : 'document',
+                    maxSizeBytes: 5 * 1024 * 1024
+                })
+                if (!validation.isValid) {
+                    throw new Error(validation.error || 'Invalid attachment file')
+                }
+
+                const fileExt = validation.sanitizedExt
+                const cleanBase = sanitizeFileName(attachment.name.replace(/\.[^/.]+$/, ""))
+                const fileName = `${crypto.randomUUID()}_${cleanBase}.${fileExt}`
                 const filePath = `${profile.id}/${fileName}`
 
                 const { error: uploadError } = await supabase.storage
@@ -445,7 +455,7 @@ export default function Support() {
                     .getPublicUrl(filePath)
                 
                 attachmentUrl = publicUrl
-                attachmentName = attachment.name
+                attachmentName = sanitizeFileName(attachment.name)
             }
 
             const { error } = await supabase
@@ -474,8 +484,13 @@ export default function Support() {
     const handleFileChange = (e) => {
         const file = e.target.files[0]
         if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                globalThis.alert('File size too large (max 5MB)')
+            const isImage = file.type?.startsWith('image/')
+            const validation = validateFileUpload(file, {
+                type: isImage ? 'image' : 'document',
+                maxSizeBytes: 5 * 1024 * 1024
+            })
+            if (!validation.isValid) {
+                globalThis.alert(validation.error || 'Invalid file format or size (max 5MB, JPG/PNG/WebP/PDF only)')
                 return
             }
             setAttachment(file)

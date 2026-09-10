@@ -179,10 +179,9 @@ export default function StudentLayout() {
     } catch (err) { console.error(err) }
   }
 
-  async function handleSignOut() { 
+  function handleSignOut() { 
     if (requestNavigation('/login')) { return; }
-    await signOut()
-    navigate('/login', { replace: true }) 
+    window.dispatchEvent(new CustomEvent('open-signout-modal'))
   }
 
   const inClassroomOnMobile = isMobile && location.pathname.includes('/classroom/')

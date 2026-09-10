@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Video, Link, Calendar, Clock, FolderOpen, CheckCircle, AlertCircle, Plus, Upload, PlayCircle, Radio, ArrowLeft, X, Sparkles } from 'lucide-react'
 import { toISOWithOffset } from '../../lib/dateUtils'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { validateFileUpload, sanitizeFileName } from '../../utils/security'
 
 export default function ScheduleLiveClass() {
     const { profile } = useAuth()
@@ -60,8 +61,13 @@ export default function ScheduleLiveClass() {
 
     async function uploadVideoFile(file) {
         if (!file) throw new Error('Please select a video file')
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${crypto.randomUUID().split("-")[0]}.${fileExt}`
+        const validation = validateFileUpload(file, { type: 'video', maxSizeBytes: 250 * 1024 * 1024 })
+        if (!validation.isValid) {
+            throw new Error(validation.error || 'Invalid video file')
+        }
+        const fileExt = validation.sanitizedExt
+        const cleanBase = sanitizeFileName(file.name.replace(/\.[^/.]+$/, ""))
+        const fileName = `${crypto.randomUUID().split("-")[0]}_${cleanBase}.${fileExt}`
         const filePath = `${profile.id}/${fileName}`
         const { error } = await supabase.storage.from('videos').upload(filePath, file, { cacheControl: '3600', upsert: false })
         if (error) throw error
@@ -70,8 +76,14 @@ export default function ScheduleLiveClass() {
     }
 
     async function uploadSlideFile(file) {
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${crypto.randomUUID().split("-")[0]}.${fileExt}`
+        if (!file) throw new Error('Please select a slide file')
+        const validation = validateFileUpload(file, { type: 'document', maxSizeBytes: 50 * 1024 * 1024 })
+        if (!validation.isValid) {
+            throw new Error(validation.error || 'Invalid slide file')
+        }
+        const fileExt = validation.sanitizedExt
+        const cleanBase = sanitizeFileName(file.name.replace(/\.[^/.]+$/, ""))
+        const fileName = `${crypto.randomUUID().split("-")[0]}_${cleanBase}.${fileExt}`
         const filePath = `${profile.id}/slides/${fileName}`
         const { error } = await supabase.storage.from('study-materials').upload(filePath, file, { cacheControl: '3600', upsert: false })
         if (error) throw new Error(`Slide upload failed: ${error.message}`)
@@ -256,6 +268,12 @@ export default function ScheduleLiveClass() {
                             onChange={e => {
                                 const file = e.target.files?.[0]
                                 if (!file) return
+                                const validation = validateFileUpload(file, { type: 'video', maxSizeBytes: 250 * 1024 * 1024 })
+                                if (!validation.isValid) {
+                                    globalThis.alert(validation.error || 'Invalid video file (MP4/WebM, max 250MB)')
+                                    e.target.value = ''
+                                    return
+                                }
                                 setSelectedFile(file)
                                 try {
                                     const tempVideo = document.createElement('video')
@@ -457,9 +475,16 @@ export default function ScheduleLiveClass() {
                                 type="file"
                                 accept=".ppt,.pptx,.pdf"
                                 onChange={e => {
-                                    if(e.target.files[0]) {
-                                        setSelectedSlideFile(e.target.files[0]);
-                                        setForm(p => ({ ...p, slide_url: '' })); // clear URL if file selected
+                                    const file = e.target.files?.[0]
+                                    if (file) {
+                                        const validation = validateFileUpload(file, { type: 'document', maxSizeBytes: 50 * 1024 * 1024 })
+                                        if (!validation.isValid) {
+                                            globalThis.alert(validation.error || 'Invalid slide file (PDF/PPT/PPTX, max 50MB)')
+                                            e.target.value = ''
+                                            return
+                                        }
+                                        setSelectedSlideFile(file)
+                                        setForm(p => ({ ...p, slide_url: '' })) // clear URL if file selected
                                     }
                                 }}
                                 style={{ display: 'none' }}

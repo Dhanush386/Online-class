@@ -10,6 +10,7 @@ import {
 import AnimatedBackground from '../../components/background/AnimatedBackground'
 import learnovaLogo from '../../assets/learnova-logo.png'
 import { useAuth } from '../../contexts/AuthContext'
+import { validateEmail, sanitizeEmail } from '../../utils/security'
 
 const FEATURES = [
   { icon: BookOpen, title: 'Smart Learning', desc: 'AI-powered course recommendations tailored to your pace.' },
@@ -28,6 +29,7 @@ export default function Login() {
   const [error,       setError]       = useState('')
   const [featureIdx,  setFeatureIdx]  = useState(0)
   const [remember,    setRemember]    = useState(false)
+  const [botField,    setBotField]    = useState('')
 
   // OTP Verification State for unconfirmed users
   const [showOtp,     setShowOtp]     = useState(false)
@@ -73,10 +75,48 @@ export default function Login() {
 
   async function handleLogin(e) {
     e.preventDefault()
+    if (botField) {
+      // Bot honeypot filled: silently discard
+      setLoading(false)
+      return
+    }
+
+    const cleanEmail = sanitizeEmail(email)
+    if (!validateEmail(cleanEmail)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
     setLoading(true)
     setError('')
     try {
-      const { data, error: err } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+      // 1. Check rate limit & lockout before authentication attempt
+      try {
+        const { data: limitCheck } = await supabase.rpc('check_rate_limit', {
+          p_identifier: cleanEmail,
+          p_action: 'login',
+          p_max_attempts: 5,
+          p_window_seconds: 900,
+          p_lockout_seconds: 900
+        })
+
+        if (limitCheck && !limitCheck.allowed) {
+          setError(limitCheck.message || 'Too many failed login attempts. Access is locked for 15 minutes.')
+          setPassword('')
+          setLoading(false)
+          return
+        }
+      } catch (limErr) {
+        // Continue if rate limiter RPC is temporarily unavailable
+        console.warn('Rate limiter check note:', limErr)
+      }
+
+      // 2. Perform authentication
+      const { data, error: err } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password
+      })
+
       if (err) {
         if (err.message && err.message.toLowerCase().includes('email not confirmed')) {
           setShowOtp(true)
@@ -87,8 +127,24 @@ export default function Login() {
           setTimeout(() => inputRefs.current[0]?.focus(), 100)
           return
         }
+
+        // Log failed attempt
+        supabase.rpc('log_security_event', {
+          p_event_type: 'login_failure',
+          p_severity: 'warn',
+          p_details: { email: cleanEmail, message: err.message }
+        }).catch(() => {})
+
+        setPassword('')
         throw err
       }
+
+      // 3. Reset rate limiter upon success
+      supabase.rpc('record_successful_auth', {
+        p_identifier: cleanEmail,
+        p_action: 'login'
+      }).catch(() => {})
+
       if (data?.user?.id) {
         const prof = await fetchProfile(data.user.id)
         const role = prof?.role || data.user.user_metadata?.role || 'student'
@@ -98,7 +154,7 @@ export default function Login() {
         navigate('/student', { replace: true })
       }
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.')
+      setError(err.message || 'Login failed. Please verify your credentials and try again.')
     } finally {
       setLoading(false)
     }
@@ -315,6 +371,18 @@ export default function Login() {
               </div>
 
               <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Bot protection honeypot (hidden from human users) */}
+                <input
+                  type="text"
+                  name="confirm_user_hp"
+                  value={botField}
+                  onChange={e => setBotField(e.target.value)}
+                  style={{ display: 'none', position: 'absolute', opacity: 0, height: 0, pointerEvents: 'none' }}
+                  tabIndex="-1"
+                  autoComplete="off"
+                  aria-hidden="true"
+                />
+
                 {/* Email */}
                 <div className="form-group">
                   <label className="form-label" htmlFor="login-email">Email Address</label>

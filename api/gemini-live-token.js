@@ -1,30 +1,57 @@
+// Simple in-memory rate limiter per IP
+const rateLimits = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const record = rateLimits.get(ip);
+  if (!record || now - record.start > RATE_LIMIT_WINDOW_MS) {
+    rateLimits.set(ip, { count: 1, start: now });
+    return false;
+  }
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return true;
+  }
+  record.count++;
+  return false;
+}
+
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+  // Restrict CORS: Disallow wildcard credentials
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET,OPTIONS,PATCH,DELETE,POST,PUT",
-  );
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
-  );
+  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  if (req.method !== "POST" && req.method !== "GET") {
+  if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const geminiApiKey =
-    process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  // Server-side IP extraction (cannot be spoofed from client JSON payload)
+  const clientIp =
+    req.headers["x-real-ip"] ||
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "unknown";
 
+  if (isRateLimited(clientIp)) {
+    return res.status(429).json({ error: "Too many token requests. Please wait." });
+  }
+
+  // Enforce authentication header
+  const authHeader = req.headers["authorization"];
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Missing or invalid authorization token" });
+  }
+
+  const geminiApiKey = process.env.GEMINI_API_KEY;
   if (!geminiApiKey) {
     return res.status(500).json({
-      error: "GEMINI_API_KEY is not configured in Vercel environment variables",
+      error: "GEMINI_API_KEY is not configured on server",
     });
   }
 
@@ -43,10 +70,8 @@ export default async function handler(req, res) {
     );
 
     if (!googleRes.ok) {
-      const errText = await googleRes.text();
       return res.status(googleRes.status).json({
         error: "Failed to mint token from Google",
-        details: errText,
       });
     }
 
@@ -55,6 +80,6 @@ export default async function handler(req, res) {
   } catch (err) {
     return res
       .status(500)
-      .json({ error: err?.message || "Internal server error" });
+      .json({ error: "Internal server error" });
   }
 }

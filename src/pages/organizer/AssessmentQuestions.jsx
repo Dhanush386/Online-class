@@ -5,6 +5,7 @@ import { Plus, Trash2, Edit2, X, Save, AlertCircle, ChevronLeft, HelpCircle, Che
 import CodeEditor from '../../components/CodeEditor'
 import { getStarterQuestionsForAssessment } from '../../services/assessmentTemplates'
 import useTheme from '../../hooks/useTheme'
+import { generateMCQsWithAI } from '../../services/aiService'
 
 export default function AssessmentQuestions() {
     const { assessmentId } = useParams()
@@ -193,38 +194,7 @@ export default function AssessmentQuestions() {
         setGeneratedQuestions([]);
 
         try {
-            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-            if (!apiKey) throw new Error("Gemini API key is not configured.");
-
-            const prompt = `You are an expert educator. Create multiple-choice questions based on the following topic or text: "${aiPrompt}". 
-            Output the response strictly as a JSON array of objects. Do not include any markdown formatting like \`\`\`json.
-            Each object must follow this exact structure:
-            {
-                "question_text": "The question here",
-                "options": ["Option A", "Option B", "Option C", "Option D"],
-                "correct_answer": ["Option A"]
-            }`;
-
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.7 }
-                })
-            });
-
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error?.message || 'Failed to generate questions');
-
-            let responseText = data.candidates[0].content.parts[0].text;
-            
-            // Clean up possible markdown wrappers
-            responseText = responseText.replaceAll('```json', '').replaceAll('```', '').trim();
-            
-            const parsedQuestions = JSON.parse(responseText);
-            if (!Array.isArray(parsedQuestions)) throw new Error("AI did not return an array.");
-            
+            const parsedQuestions = await generateMCQsWithAI(aiPrompt);
             setGeneratedQuestions(parsedQuestions);
         } catch (err) {
             console.error(err);

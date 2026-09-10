@@ -1,52 +1,22 @@
 import { supabase } from '../lib/supabase'
-
-function getGeminiApiKey() {
-  return import.meta.env.VITE_GEMINI_API_KEY?.trim() || ''
-}
-
-const GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-flash-latest',
-  'gemini-2.5-pro',
-  'gemini-2.5-flash-lite'
-]
+import { invokeAiProxy } from './aiService'
 
 /**
- * Call Gemini AI Flash model with resilient model fallback
+ * Call Gemini AI securely via server AI proxy without exposing API keys
  */
 async function callGemini(prompt, isJson = false) {
-  const apiKey = getGeminiApiKey()
-  if (!apiKey) {
+  try {
+    const text = await invokeAiProxy({
+      action: 'mock_interview',
+      prompt,
+      responseMimeType: isJson ? 'application/json' : undefined,
+      temperature: 0.7
+    })
+    return text || null
+  } catch (err) {
+    console.warn('AI mock interview proxy notice:', err)
     return null
   }
-
-  for (const model of GEMINI_MODELS) {
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            ...(isJson ? { responseMimeType: 'application/json' } : {})
-          }
-        })
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-        if (text) return text
-      } else {
-        console.warn(`Gemini model ${model} returned status: ${res.status}, trying next model...`)
-      }
-    } catch (err) {
-      console.warn(`Gemini model ${model} fetch error:`, err)
-    }
-  }
-
-  return null
 }
 
 // ─────────────────────────────────────────────────────────────
