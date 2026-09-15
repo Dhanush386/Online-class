@@ -74,6 +74,23 @@ export default async function handler(req, res) {
     req.socket?.remoteAddress ||
     "unknown";
 
+  // Parse request body safely
+  let body = req.body;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      body = {};
+    }
+  } else if (Buffer.isBuffer(body)) {
+    try {
+      body = JSON.parse(body.toString("utf-8"));
+    } catch {
+      body = {};
+    }
+  }
+  body = body || {};
+
   // Authorization check
   const authHeader = req.headers["authorization"];
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -90,12 +107,12 @@ export default async function handler(req, res) {
     process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   let userId = clientIp;
-  let userProfile = null;
 
   if (supabaseUrl && supabaseAnonKey) {
     try {
       const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         auth: { persistSession: false },
+        global: { headers: { Authorization: `Bearer ${token}` } },
       });
       const {
         data: { user },
@@ -109,10 +126,6 @@ export default async function handler(req, res) {
       userId = user.id;
 
       // Check user role if privileged action requested
-      const body =
-        typeof req.body === "string"
-          ? JSON.parse(req.body || "{}")
-          : req.body || {};
       const { action } = body;
       if (["generate_questions", "generate_challenges"].includes(action)) {
         const { data: profile } = await supabase
@@ -121,7 +134,6 @@ export default async function handler(req, res) {
           .eq("id", user.id)
           .single();
 
-        userProfile = profile;
         const isStaff = ["organizer", "main_admin", "sub_admin"].includes(
           profile?.role,
         );
@@ -146,18 +158,16 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: limitCheck.reason });
   }
 
-  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const geminiApiKey =
+    process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
   if (!geminiApiKey) {
-    return res
-      .status(500)
-      .json({ error: "GEMINI_API_KEY is not configured on server" });
+    return res.status(500).json({
+      error:
+        "GEMINI_API_KEY is not configured in Vercel environment variables. Please add GEMINI_API_KEY in Vercel Project Settings > Environment Variables.",
+    });
   }
 
   try {
-    const body =
-      typeof req.body === "string"
-        ? JSON.parse(req.body || "{}")
-        : req.body || {};
     const {
       action = "chat",
       prompt,
@@ -200,8 +210,15 @@ export default async function handler(req, res) {
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
       console.error("Gemini API error:", geminiRes.status, errText);
+      let parsedErr = "";
+      try {
+        const errObj = JSON.parse(errText);
+        parsedErr = errObj?.error?.message || "";
+      } catch {}
       return res.status(geminiRes.status >= 500 ? 502 : geminiRes.status).json({
-        error: "AI generation service error. Please try again.",
+        error: parsedErr
+          ? `AI service error: ${parsedErr}`
+          : "AI generation service error. Please try again.",
       });
     }
 

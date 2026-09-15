@@ -29,6 +29,7 @@ export async function invokeAiProxy({
   const token = session?.access_token;
 
   // 1. First try same-origin endpoint /api/ai-proxy (Vercel serverless function in prod, Vite dev middleware in local)
+  let apiProxyStatus = null;
   try {
     const res = await fetch("/api/ai-proxy", {
       method: "POST",
@@ -45,45 +46,32 @@ export async function invokeAiProxy({
       }),
     });
 
+    apiProxyStatus = res.status;
+
     if (res.ok) {
       const data = await res.json();
       if (data?.text) return data.text;
       if (data?.error) throw new Error(data.error);
     } else {
       const errData = await res.json().catch(() => null);
-      if (
-        res.status === 429 ||
-        errData?.error?.includes("Rate limit") ||
-        errData?.error?.includes("capacity")
-      ) {
-        throw new Error(
-          errData?.error ||
-            "AI generation rate limit exceeded. Please wait a few minutes before trying again.",
-        );
-      }
-      if (res.status === 403) {
-        throw new Error(
-          errData?.error ||
-            "Unauthorized: Only instructors and administrators may generate curriculum content.",
-        );
-      }
-      // If not 404, throw the server's specific error; if 404, fall through to Edge Function
+      const errMsg =
+        errData?.error || `AI service returned error (${res.status})`;
+
+      // If the backend exists and responded with an error (e.g. 500 missing key, 429 rate limit, 403, 400),
+      // throw that specific error message so the user / developer knows exactly what failed!
       if (res.status !== 404) {
-        throw new Error(
-          errData?.error || `AI service returned error (${res.status})`,
-        );
+        throw new Error(errMsg);
       }
     }
   } catch (apiErr) {
-    if (
-      apiErr.message?.includes("Rate limit") ||
-      apiErr.message?.includes("capacity") ||
-      apiErr.message?.includes("Unauthorized") ||
-      apiErr.message?.includes("Forbidden")
-    ) {
+    // If the server responded with any error other than 404, don't hide it behind Edge Function fallback
+    if (apiProxyStatus && apiProxyStatus !== 404) {
       throw apiErr;
     }
-    // Fall back to Supabase Edge function
+    console.warn(
+      "Same-origin /api/ai-proxy endpoint unavailable (404), falling back to Supabase Edge Function...",
+      apiErr.message,
+    );
   }
 
   // 2. Fallback to Supabase Edge Function ai-proxy
@@ -126,6 +114,18 @@ export async function invokeAiProxy({
     ) {
       throw edgeErr;
     }
+
+    // Check if Edge Function failed because it is not deployed on Supabase (CORS / preflight 404 error)
+    if (
+      edgeErr.name === "FunctionsFetchError" ||
+      edgeErr.message?.includes("Failed to send a request") ||
+      edgeErr.message?.includes("ERR_FAILED")
+    ) {
+      throw new Error(
+        "AI proxy service is not configured. Please ensure GEMINI_API_KEY is configured in Vercel Project Settings > Environment Variables, or deploy the Supabase ai-proxy edge function.",
+      );
+    }
+
     throw new Error(
       edgeErr.message ||
         "AI service currently unavailable. Please try again later.",

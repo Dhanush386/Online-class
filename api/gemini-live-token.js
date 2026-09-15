@@ -48,10 +48,12 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Missing or invalid authorization token" });
   }
 
-  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const geminiApiKey =
+    process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
   if (!geminiApiKey) {
     return res.status(500).json({
-      error: "GEMINI_API_KEY is not configured on server",
+      error:
+        "GEMINI_API_KEY is not configured in Vercel environment variables. Please add GEMINI_API_KEY in Vercel Project Settings > Environment Variables.",
     });
   }
 

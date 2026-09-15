@@ -142,8 +142,13 @@ function serverSecurityAndAiPlugin(geminiApiKey) {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  // Server-only key: checks process.env.GEMINI_API_KEY first
-  const geminiApiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || "";
+  // Server-only key: checks process.env.GEMINI_API_KEY first, with fallbacks
+  const geminiApiKey =
+    process.env.GEMINI_API_KEY ||
+    env.GEMINI_API_KEY ||
+    process.env.VITE_GEMINI_API_KEY ||
+    env.VITE_GEMINI_API_KEY ||
+    "";
 
   return {
     plugins: [react(), tailwindcss(), serverSecurityAndAiPlugin(geminiApiKey)],
