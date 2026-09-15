@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { getEffectiveStartDate, getCourseWeekScheduleDate } from '../utils/dayAccessEngine'
 
 const GRADE_THRESHOLDS = { 95: 'A+', 85: 'A', 70: 'B', 55: 'C', 40: 'D' }
 
@@ -105,18 +106,51 @@ function fillMissingDays(weeksMap) {
   }
 }
 
+function ensureTwelveWeeks(weeksMap, totalWeeks = 12) {
+  for (let w = 1; w <= totalWeeks; w++) {
+    if (!weeksMap[w]) {
+      weeksMap[w] = { weekNum: w, days: {} }
+    }
+    for (let d = 1; d <= 7; d++) {
+      if (!weeksMap[w].days[d]) {
+        weeksMap[w].days[d] = {
+          dayOfWeek: d,
+          scheduleId: null,
+          scheduleDate: null,
+          startTime: null,
+          endTime: null,
+          title: null,
+          description: null,
+          isLive: false,
+          isRevision: d === 7,
+          unlockDate: null,
+          estimatedMinutes: 0,
+          modules: [],
+        }
+      }
+    }
+  }
+}
+
 function getSessionType(s) {
   if (s.is_recorded) return 'video'
   if (s.video_url) return 'video'
   return 'live_class'
 }
 
-export default function useWeeklyCourse(courseId) {
+export default function useWeeklyCourse(courseId, initialEnrollmentDate = null) {
   const { profile } = useAuth()
   const [weeks, setWeeks] = useState([])
   const [weekProgress, setWeekProgress] = useState({})
   const [courseSettings, setCourseSettings] = useState({ sequential_unlock: true })
+  const [enrolledDate, setEnrolledDate] = useState(initialEnrollmentDate || null)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (initialEnrollmentDate) {
+      setEnrolledDate(initialEnrollmentDate)
+    }
+  }, [initialEnrollmentDate])
 
   // Load course structure + progress
   const loadCourse = useCallback(async () => {
@@ -124,7 +158,7 @@ export default function useWeeklyCourse(courseId) {
     setLoading(true)
 
     try {
-      // Parallel fetch: schedule, modules, progress, course settings, content
+      // Parallel fetch: schedule, modules, progress, course settings, content, enrollment
       const [
         { data: scheduleData },
         { data: modulesData },
@@ -134,6 +168,7 @@ export default function useWeeklyCourse(courseId) {
         { data: challenges },
         { data: assessments },
         { data: resources },
+        { data: enrollData },
       ] = await Promise.all([
         supabase
           .from('weekly_schedule')
@@ -153,7 +188,7 @@ export default function useWeeklyCourse(courseId) {
           .eq('course_id', courseId),
         supabase
           .from('courses')
-          .select('sequential_unlock, start_date, end_date')
+          .select('sequential_unlock, start_date, end_date, duration_weeks')
           .eq('id', courseId)
           .single(),
         supabase
@@ -180,7 +215,17 @@ export default function useWeeklyCourse(courseId) {
           .eq('course_id', courseId)
           .order('week_number', { ascending: true })
           .order('day_of_week', { ascending: true }),
+        supabase
+          .from('enrollments')
+          .select('enrolled_at')
+          .eq('student_id', profile.id)
+          .eq('course_id', courseId)
+          .maybeSingle(),
       ])
+
+      if (enrollData?.enrolled_at) {
+        setEnrolledDate(enrollData.enrolled_at)
+      }
 
       setCourseSettings({
         sequential_unlock: courseData?.sequential_unlock ?? true,
@@ -220,6 +265,7 @@ export default function useWeeklyCourse(courseId) {
 
       buildWeeksFromContent(weeksMap, allContent)
       fillMissingDays(weeksMap)
+      ensureTwelveWeeks(weeksMap, courseData?.duration_weeks || 12)
 
       // Convert to sorted array
       const weeksArr = Object.values(weeksMap)
@@ -241,14 +287,15 @@ export default function useWeeklyCourse(courseId) {
     loadCourse()
   }, [loadCourse])
 
-  // Determine current week based on start date and completed progress (highest completed + 1)
+  // Determine current week based on 6 PM joining cutoff and completed progress (highest completed + 1)
   const currentWeek = (() => {
     let dateWeek = 1
-    if (courseSettings.start_date) {
-      const start = new Date(courseSettings.start_date)
+    const baseDate = courseSettings.start_date || enrolledDate || initialEnrollmentDate || profile?.created_at
+    if (baseDate) {
+      const effectiveStart = getEffectiveStartDate(baseDate)
       const now = new Date()
-      const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24))
-      dateWeek = Math.max(1, Math.ceil((diffDays + 1) / 7))
+      const diffDays = Math.floor((now - effectiveStart) / (1000 * 60 * 60 * 24))
+      dateWeek = Math.max(1, Math.min(12, Math.ceil((diffDays + 1) / 7)))
     }
 
     let highestCompleted = 0
@@ -296,20 +343,11 @@ export default function useWeeklyCourse(courseId) {
     return progress.grade || calculateGrade(progress.completion_percentage)
   }, [weekProgress])
 
-  // Calculate schedule date for a week+day based on course start
+  // Calculate schedule date for a week+day continuing for 12 weeks with 6 PM joining rule
   const getScheduleDate = useCallback((weekNum, dayOfWeek) => {
-    if (!courseSettings.start_date) return null
-    const start = new Date(courseSettings.start_date)
-    // Find the Monday of week 1 (if start isn't Monday, adjust)
-    const startDay = start.getDay() // 0=Sun, 1=Mon...
-    const mondayOffset = startDay === 0 ? -6 : 1 - startDay
-    const week1Monday = new Date(start)
-    week1Monday.setDate(start.getDate() + mondayOffset)
-
-    const targetDate = new Date(week1Monday)
-    targetDate.setDate(week1Monday.getDate() + (weekNum - 1) * 7 + (dayOfWeek - 1))
-    return targetDate
-  }, [courseSettings.start_date])
+    const baseDate = courseSettings.start_date || enrolledDate || initialEnrollmentDate || profile?.created_at || new Date()
+    return getCourseWeekScheduleDate(baseDate, weekNum, dayOfWeek)
+  }, [courseSettings.start_date, enrolledDate, initialEnrollmentDate, profile?.created_at])
 
   return {
     weeks,

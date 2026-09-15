@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot, Lock } from 'lucide-react'
-import { calculateAccessibleDay, getItemAbsoluteDay } from '../../utils/dayAccessEngine'
+import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot } from 'lucide-react'
+import { calculateAccessibleDay, getItemAbsoluteDay, getCourseWeekScheduleDate } from '../../utils/dayAccessEngine'
 import LockedModuleModal from './LockedModuleModal'
 
 const STATUS_ORDER = {
@@ -229,16 +229,30 @@ export default function CourseJourneyTimeline({
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [lockedModalItem, setLockedModalItem] = useState(null)
     
+    const enrolledTimestamp = useMemo(() => {
+        return enrollmentDate || progress?.created_at || course?.start_date || new Date();
+    }, [enrollmentDate, progress?.created_at, course?.start_date]);
+
     // Calculate Drip Day Limit based on student enrollment date & 6:00 PM cutoff rule
     const currentAccessibleAbsoluteDay = useMemo(() => {
         if (propAccessibleDay !== undefined && propAccessibleDay !== null) {
             return propAccessibleDay;
         }
-        const enrolledTimestamp = enrollmentDate || progress?.created_at || course?.start_date || new Date();
         return calculateAccessibleDay(enrolledTimestamp);
-    }, [propAccessibleDay, enrollmentDate, progress?.created_at, course?.start_date]);
+    }, [propAccessibleDay, enrolledTimestamp]);
 
     const totalWeeks = course?.duration_weeks || 12
+
+    // Resolves continuous week dates starting from student's effective start date (6 PM cutoff rule)
+    const resolveScheduleDate = useCallback((weekNum, dayOfWeek) => {
+        if (typeof getScheduleDate === 'function') {
+            const d = getScheduleDate(weekNum, dayOfWeek);
+            if (d && d instanceof Date && !Number.isNaN(d.getTime())) {
+                return d;
+            }
+        }
+        return getCourseWeekScheduleDate(enrolledTimestamp, weekNum, dayOfWeek);
+    }, [getScheduleDate, enrolledTimestamp]);
 
     const flatAssessments = useMemo(() => [
         ...(assessments?.daily || []),
@@ -527,15 +541,10 @@ export default function CourseJourneyTimeline({
 
     const { topicsMap, topicKeys } = organizeWeekData(expandedWeek)
 
-    let dateLabel = "Dates TBD"
-    if (getScheduleDate) {
-        const start = getScheduleDate(expandedWeek, 1)
-        const end = getScheduleDate(expandedWeek, 7)
-        if (start && end) {
-            const formatOptions = { day: 'numeric', month: 'short' }
-            dateLabel = `${start.toLocaleDateString('en-GB', formatOptions)} - ${end.toLocaleDateString('en-GB', formatOptions)}`
-        }
-    }
+    const weekStart = resolveScheduleDate(expandedWeek, 1)
+    const weekEnd = resolveScheduleDate(expandedWeek, 7)
+    const formatOptions = { day: 'numeric', month: 'short' }
+    const dateLabel = `${weekStart.toLocaleDateString('en-GB', formatOptions)} - ${weekEnd.toLocaleDateString('en-GB', formatOptions)}`
     
     return (
         <div style={{ background: '#f8fafc', borderRadius: '16px', padding: 'clamp(1rem, 5vw, 2rem)' }}>
@@ -549,22 +558,19 @@ export default function CourseJourneyTimeline({
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', position: 'relative' }}>
                     {(() => {
                         const now = new Date();
-                        const startDateStr = getScheduleDate ? getScheduleDate(expandedWeek, 'start') : null;
-                        const endDateStr = getScheduleDate ? getScheduleDate(expandedWeek, 'end') : null;
+                        const startDate = resolveScheduleDate(expandedWeek, 1);
+                        const endDate = new Date(resolveScheduleDate(expandedWeek, 7));
+                        endDate.setHours(23, 59, 59, 999);
                         
                         let statusColor = '#3b82f6';
                         let Icon = CircleDot;
                         
-                        if (startDateStr && endDateStr) {
-                            const startDate = new Date(startDateStr);
-                            const endDate = new Date(endDateStr);
-                            if (now < startDate) {
-                                statusColor = '#94a3b8';
-                                Icon = Clock;
-                            } else if (now > endDate) {
-                                statusColor = '#10b981';
-                                Icon = Check;
-                            }
+                        if (now < startDate) {
+                            statusColor = '#94a3b8';
+                            Icon = Clock;
+                        } else if (now > endDate) {
+                            statusColor = '#10b981';
+                            Icon = Check;
                         }
 
                         return (
@@ -592,17 +598,14 @@ export default function CourseJourneyTimeline({
                             position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', 
                             background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', 
                             boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50, 
-                            maxHeight: '250px', overflowY: 'auto', minWidth: '150px' 
+                            maxHeight: '250px', overflowY: 'auto', minWidth: '220px' 
                         }}>
                             {Array.from({ length: totalWeeks }, (_, i) => i + 1).map(week => {
-                                let label = `Week ${week}`
-                                if (getScheduleDate) {
-                                    const ws = getScheduleDate(week, 1)
-                                    const we = getScheduleDate(week, 7)
-                                    if (ws && we) {
-                                        label = `Week ${week} (${ws.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })})`
-                                    }
-                                }
+                                const ws = resolveScheduleDate(week, 1);
+                                const we = resolveScheduleDate(week, 7);
+                                const wsStr = ws.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                                const weStr = we.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                                const label = `Week ${week} (${wsStr} - ${weStr})`;
                                 return (
                                     <button 
                                         key={week}
@@ -675,7 +678,7 @@ export default function CourseJourneyTimeline({
                                     width: '2px', background: '#e2e8f0', zIndex: 0 
                                 }} />
 
-                                {topicKeys.map((topic, topicIdx) => {
+                                {topicKeys.map((topic) => {
                                     const items = topicsMap[topic] || []
                                     const totalItems = items.length
                                     const completedItems = items.filter(i => i.status === 'completed').length

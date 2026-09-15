@@ -148,7 +148,7 @@ export default function CourseDetail() {
     // Journey Engine hooks
     const {
         weeks, getScheduleDate, refreshProgress, isWeekLocked
-    } = useWeeklyCourse(courseId)
+    } = useWeeklyCourse(courseId, enrollmentDate)
     const { awardXp, toastMessage } = useXpAward()
 
     useEffect(() => {

@@ -64,6 +64,83 @@ export function calculateAccessibleDay(enrolledAt, currentDate = new Date()) {
 }
 
 /**
+ * Calculates the schedule Date for a specific week and day,
+ * continuing continuously from the effective start date for all 12 weeks.
+ * 
+ * Rules:
+ * - Start date is based on the student's date of joining / registration:
+ *   - Joined before 6:00 PM (18:00) -> start date is the same date.
+ *   - Registered at or after 6:00 PM (18:00) -> starting date is tomorrow.
+ * - Continuing 12-week schedule:
+ *   - Week 1: Day 1 (start) to Day 7 (start + 6 days)
+ *   - Week 2: Day 8 (start + 7 days) to Day 14 (start + 13 days)
+ *   ...
+ *   - Week 12: Day 78 (start + 77 days) to Day 84 (start + 83 days)
+ */
+export function getCourseWeekScheduleDate(enrolledAt, weekNum = 1, dayOfWeek = 1) {
+    const effectiveStart = getEffectiveStartDate(enrolledAt);
+    const targetDate = new Date(effectiveStart.getTime());
+
+    let dayIndex = 1;
+    if (dayOfWeek === 'end') {
+        dayIndex = 7;
+    } else if (dayOfWeek === 'start' || dayOfWeek === undefined || dayOfWeek === null) {
+        dayIndex = 1;
+    } else {
+        const parsed = Number(dayOfWeek);
+        dayIndex = Number.isNaN(parsed) || parsed < 1 ? 1 : Math.min(7, Math.max(1, parsed));
+    }
+
+    const w = Math.max(1, Number(weekNum) || 1);
+    const offsetDays = (w - 1) * 7 + (dayIndex - 1);
+    targetDate.setDate(targetDate.getDate() + offsetDays);
+    return targetDate;
+}
+
+/**
+ * Returns the formatted date range for a specific week:
+ * e.g. { start: Date, end: Date, label: '15 Sep - 21 Sep' }
+ */
+export function getWeekDateRange(enrolledAt, weekNum = 1, locale = 'en-GB') {
+    const start = getCourseWeekScheduleDate(enrolledAt, weekNum, 1);
+    const end = getCourseWeekScheduleDate(enrolledAt, weekNum, 7);
+    const formatOptions = { day: 'numeric', month: 'short' };
+    const label = `${start.toLocaleDateString(locale, formatOptions)} - ${end.toLocaleDateString(locale, formatOptions)}`;
+    return { start, end, label };
+}
+
+/**
+ * Returns a 12-week continuous schedule list
+ */
+export function getTwelveWeeksSchedule(enrolledAt, totalWeeks = 12, currentDate = new Date(), locale = 'en-GB') {
+    const now = toCalendarDay(currentDate);
+    const weeks = [];
+    for (let w = 1; w <= totalWeeks; w++) {
+        const { start, end, label } = getWeekDateRange(enrolledAt, w, locale);
+        const startTime = start.getTime();
+        const endTime = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999).getTime();
+        const nowTime = now.getTime();
+
+        let status = 'in-progress';
+        if (nowTime < startTime) {
+            status = 'upcoming';
+        } else if (nowTime > endTime) {
+            status = 'completed';
+        }
+
+        weeks.push({
+            weekNum: w,
+            start,
+            end,
+            label,
+            status,
+            isCurrent: status === 'in-progress'
+        });
+    }
+    return weeks;
+}
+
+/**
  * Normalizes an item's day number across course structures.
  */
 export function getItemAbsoluteDay(item) {

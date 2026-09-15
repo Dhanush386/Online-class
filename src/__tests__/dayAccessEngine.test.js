@@ -5,7 +5,10 @@ import {
     calculateAccessibleDay,
     getItemAbsoluteDay,
     isItemUnlocked,
-    getItemUnlockTargetDate
+    getItemUnlockTargetDate,
+    getCourseWeekScheduleDate,
+    getWeekDateRange,
+    getTwelveWeeksSchedule
 } from '../utils/dayAccessEngine'
 
 describe('dayAccessEngine — 6:00 PM Cutoff & Calendar Day Logic', () => {
@@ -174,6 +177,64 @@ describe('dayAccessEngine — 6:00 PM Cutoff & Calendar Day Logic', () => {
             expect(getItemAbsoluteDay({ week_number: 1, day_of_week: 6, day_number: 1 })).toBe(6)
             // Week 1 Day 1 -> should be 1
             expect(getItemAbsoluteDay({ week_number: 1, day_of_week: 1, day_number: 1 })).toBe(1)
+        })
+    })
+
+    describe('12 Weeks Continuous Schedule & 6:00 PM Cutoff', () => {
+        it('joined before 6:00 PM (e.g. 2:00 PM) -> starts on date of joining and continues for 12 weeks', () => {
+            const joinedAt = new Date(2026, 8, 15, 14, 0, 0) // Sep 15, 2026 2:00 PM
+            
+            // Week 1: Sep 15 to Sep 21
+            const w1Start = getCourseWeekScheduleDate(joinedAt, 1, 1)
+            const w1End = getCourseWeekScheduleDate(joinedAt, 1, 7)
+            expect(w1Start.getDate()).toBe(15)
+            expect(w1Start.getMonth()).toBe(8)
+            expect(w1End.getDate()).toBe(21)
+            expect(w1End.getMonth()).toBe(8)
+
+            // Week 2: Sep 22 to Sep 28 (continuous with week 1)
+            const w2Start = getCourseWeekScheduleDate(joinedAt, 2, 1)
+            const w2End = getCourseWeekScheduleDate(joinedAt, 2, 7)
+            expect(w2Start.getDate()).toBe(22)
+            expect(w2End.getDate()).toBe(28)
+
+            // Week 12: Dec 1 to Dec 7
+            const w12Start = getCourseWeekScheduleDate(joinedAt, 12, 1)
+            const w12End = getCourseWeekScheduleDate(joinedAt, 12, 7)
+            expect(w12Start.getDate()).toBe(1)
+            expect(w12Start.getMonth()).toBe(11) // Dec
+            expect(w12End.getDate()).toBe(7)
+            expect(w12End.getMonth()).toBe(11) // Dec
+
+            // Difference between Week 1 Day 1 and Week 12 Day 7 is exactly 83 days (84 total continuous days)
+            const totalDiffDays = Math.round((w12End.getTime() - w1Start.getTime()) / (1000 * 60 * 60 * 24))
+            expect(totalDiffDays).toBe(83)
+        })
+
+        it('registered after 6:00 PM (e.g. 6:30 PM) -> starts tomorrow and continues for 12 weeks', () => {
+            const registeredAt = new Date(2026, 8, 15, 18, 30, 0) // Sep 15, 2026 6:30 PM
+
+            // Week 1 starts tomorrow (Sep 16) to Sep 22
+            const w1Start = getCourseWeekScheduleDate(registeredAt, 1, 'start')
+            const w1End = getCourseWeekScheduleDate(registeredAt, 1, 'end')
+            expect(w1Start.getDate()).toBe(16)
+            expect(w1Start.getMonth()).toBe(8)
+            expect(w1End.getDate()).toBe(22)
+            expect(w1End.getMonth()).toBe(8)
+
+            // Week 2: Sep 23 to Sep 29
+            const w2Range = getWeekDateRange(registeredAt, 2)
+            expect(w2Range.start.getDate()).toBe(23)
+            expect(w2Range.end.getDate()).toBe(29)
+
+            // 12 Weeks schedule produces exactly 12 continuous weeks
+            const schedule = getTwelveWeeksSchedule(registeredAt, 12)
+            expect(schedule.length).toBe(12)
+            expect(schedule[0].weekNum).toBe(1)
+            expect(schedule[11].weekNum).toBe(12)
+            expect(schedule[0].start.getDate()).toBe(16)
+            expect(schedule[11].end.getDate()).toBe(8) // Dec 8
+            expect(schedule[11].end.getMonth()).toBe(11) // Dec
         })
     })
 })
