@@ -28,6 +28,34 @@ export default function AIChatbot() {
     const [screenshot, setScreenshot] = useState(null)
     const fileInputRef = useRef(null)
     const scrollRef = useRef(null)
+    const chatbotRef = useRef(null)
+
+    // Close chatbot when clicking anywhere outside or pressing Escape
+    useEffect(() => {
+        if (!isOpen) return
+
+        const handleClickOutside = (e) => {
+            if (chatbotRef.current && !chatbotRef.current.contains(e.target)) {
+                setIsOpen(false)
+            }
+        }
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                setIsOpen(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        document.addEventListener('touchstart', handleClickOutside)
+        document.addEventListener('keydown', handleKeyDown)
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+            document.removeEventListener('touchstart', handleClickOutside)
+            document.removeEventListener('keydown', handleKeyDown)
+        }
+    }, [isOpen])
 
     // Storage Key
     const storageKey = profile?.id ? `learnova_sessions_${profile.id}` : 'learnova_sessions_guest'
@@ -588,7 +616,7 @@ export default function AIChatbot() {
     }
 
     return (
-        <div className="ai-chatbot-wrapper">
+        <div ref={chatbotRef} className="ai-chatbot-wrapper">
             {!isOpen && (
                 <button 
                     onClick={() => setIsOpen(true)}
