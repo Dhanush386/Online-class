@@ -7,7 +7,8 @@
    Version 2.0 — Glassmorphism + Soft 3D
    ═══════════════════════════════════════════════════════════════ */
 
-:root {
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
   /* ── Brand Colors ── */
   --primary-50:  #eef2ff;
@@ -999,4 +1000,195 @@ h1, h2, h3, h4, h5, h6 {
   background: #f87171;
   border-radius: 50%;
   animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* Cheat Sheet Inline Code Badge */
+.cs-inline-code {
+  display: inline-block;
+  background: var(--bg-elevated, #161b28);
+  color: var(--text-primary, #f8fafc);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  font-family: Consolas, "Fira Code", Monaco, "Courier New", monospace;
+  font-size: 0.88em;
+  font-weight: 600;
+  vertical-align: baseline;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FORM CONTROLS & THEME ADAPTATION
+   ═══════════════════════════════════════════════════════════════ */
+
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+  font-family: var(--font-body);
+}
+
+.form-input {
+  width: 100%;
+  background: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  border: 1.5px solid var(--card-border, rgba(255, 255, 255, 0.12)) !important;
+  border-radius: var(--radius-sm, 8px);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  transition: border-color var(--dur-fast) var(--ease-smooth),
+              box-shadow var(--dur-fast) var(--ease-smooth);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.form-input::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.75;
+}
+
+.form-input:focus {
+  border-color: var(--primary-500, #6366f1) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+}
+
+.form-input option {
+  background: var(--bg-elevated, #161b28);
+  color: var(--text-primary, #f8fafc);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHEAT SHEET SYSTEM & CONTENT PROTECTION
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Copy protection: Strict no-copying policy across instructional reading & code blocks */
+.cs-protected-reading,
+.cs-protected-reading pre,
+.cs-protected-reading code,
+.cs-protected-reading .cs-inline-code,
+.cs-protected-reading span,
+pre,
+code {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Only interactive textareas and inputs for active typing in playground allow text input */
+.code-editor-textarea,
+textarea,
+input {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* Neat styling for inline code pills */
+.cs-inline-code {
+  display: inline-block;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.88em;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  vertical-align: baseline;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.cs-inline-code:hover {
+  background: rgba(99, 102, 241, 0.22);
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Section Card */
+.cs-section-card {
+  background: var(--bg-surface, #111522);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cs-section-card:hover {
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+/* Organizer Sheet Manager Modern Styles */
+.cs-organizer-card {
+  background: var(--bg-surface, #111522);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cs-organizer-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+.cs-stat-card {
+  background: var(--bg-surface, #111522);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  padding: 1.15rem 1.35rem;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.cs-stat-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+
+.cs-editor-input {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  background: var(--bg-elevated, #161b28);
+  color: var(--text-primary, #f8fafc);
+  font-size: 0.88rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.cs-editor-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.cs-editor-section-box {
+  background: var(--bg-elevated, #161b28);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.09));
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  transition: border-color 0.2s;
+}
+
+.cs-editor-section-box:hover {
+  border-color: rgba(99, 102, 241, 0.28);
 }

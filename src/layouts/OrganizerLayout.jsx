@@ -38,6 +38,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/organizer/assessments',    icon: ClipboardList, label: 'Assessments' },
       { to: '/organizer/coding',         icon: Code,          label: 'Coding Practice' },
+      { to: '/organizer/cheatsheets',    icon: BookOpen,      label: 'Cheat Sheets' },
       { to: '/organizer/mock-interviews',icon: Bot,           label: 'Mock Interviews' },
       { to: '/organizer/upload',         icon: Radio,         label: 'Live Class' },
       { to: '/organizer/recordings',     icon: FolderOpen,    label: 'Recording History' },

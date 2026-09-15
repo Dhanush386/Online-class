@@ -381,6 +381,7 @@ export default function CodePlayground() {
     }
 
     const [hasRunWeb, setHasRunWeb] = useState(false)
+    const [webOutputCode, setWebOutputCode] = useState('')
 
     const handleLanguageChange = (newLang) => {
         setLanguage(newLang)
@@ -398,6 +399,7 @@ export default function CodePlayground() {
     const handleReset = () => {
         if (globalThis.confirm('Reset current code to starter template?')) {
             setHasRunWeb(false)
+            setWebOutputCode('')
             if (language === 'html') {
                 setHtmlCode(STARTER_CODE.html)
                 setCssCode(STARTER_CODE.css)
@@ -430,23 +432,10 @@ export default function CodePlayground() {
         return finalHtml
     }, [htmlCode, cssCode, jsCode])
 
-    const updatePreview = useCallback(() => {
-        if (iframeRef.current) {
-            const doc = iframeRef.current.contentDocument
-            if (doc) {
-                doc.open()
-                doc.write(getCombinedWebCode())
-                doc.close()
-            }
-        }
-    }, [getCombinedWebCode])
-
     const runCode = async () => {
         if (language === 'html') {
             setHasRunWeb(true)
-            setTimeout(() => {
-                updatePreview()
-            }, 50)
+            setWebOutputCode(getCombinedWebCode())
             return
         }
 
@@ -843,8 +832,9 @@ export default function CodePlayground() {
                     {language === 'html' ? (
                         hasRunWeb ? (
                             <iframe
-                                ref={iframeRef}
                                 title="live-preview"
+                                sandbox="allow-scripts"
+                                srcDoc={webOutputCode}
                                 style={{
                                     width: '100%',
                                     height: '100%',

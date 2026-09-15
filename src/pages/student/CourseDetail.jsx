@@ -103,6 +103,7 @@ export default function CourseDetail() {
     const [progress, setProgress] = useState(null)
     const [codingSubmissions, setCodingSubmissions] = useState([])
     const [courseResources, setCourseResources] = useState([])
+    const [cheatSheets, setCheatSheets] = useState([])
 
     const [selectedDay] = useState(1)
     const [loading, setLoading] = useState(true)
@@ -168,7 +169,8 @@ export default function CourseDetail() {
                 { data: initialNotes },
                 { data: codingSubsData },
                 { data: enrollData },
-                { data: earlyUnlocksData }
+                { data: earlyUnlocksData },
+                { data: cheatSheetsData }
             ] = await Promise.all([
                 supabase.from('courses').select('*').eq('id', courseId).single(),
                 supabase.from('videos').select('*').eq('course_id', courseId).order('week_number', { ascending: true }).order('day_of_week', { ascending: true }).order('created_at', { ascending: true }),
@@ -184,8 +186,10 @@ export default function CourseDetail() {
                 supabase.from('student_notes').select('*').eq('student_id', profile.id).eq('course_id', courseId).order('created_at', { ascending: false }),
                 supabase.from('coding_submissions').select('*').eq('student_id', profile.id),
                 supabase.from('enrollments').select('enrolled_at').eq('student_id', profile.id).eq('course_id', courseId).maybeSingle(),
-                supabase.from('xp_events').select('reference_id').eq('student_id', profile.id).eq('event_type', 'early_unlock')
+                supabase.from('xp_events').select('reference_id').eq('student_id', profile.id).eq('event_type', 'early_unlock'),
+                supabase.from('cheat_sheets').select('*').eq('course_id', courseId).eq('status', 'published').order('week_number', { ascending: true }).order('day_number', { ascending: true })
             ])
+            setCheatSheets(cheatSheetsData || [])
 
             // No need for setMaxDay state if we just use it to build the day list, but let's see
 
@@ -993,6 +997,7 @@ export default function CourseDetail() {
                         challenges={challenges}
                         courseResources={courseResources}
                         assessments={assessments}
+                        cheatSheets={cheatSheets}
                         progress={{
                             ...progress,
                             video_progress: progress?.video_progress || [],
@@ -1031,6 +1036,8 @@ export default function CourseDetail() {
                                 navigate(`/student/coding/${content.id}`)
                             } else if (type === 'assessment') {
                                 navigate(`/student/assessments/${content.id}/take`)
+                            } else if (type === 'cheatsheet') {
+                                navigate(`/student/cheatsheet/${content.slug || content.id}`)
                             } else if (type === 'resource') {
                                 if (content.url) globalThis.open(content.url, '_blank')
                             }

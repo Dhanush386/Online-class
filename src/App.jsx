@@ -64,6 +64,7 @@ const LiveClassroom         = lazy(() => import('./pages/organizer/LiveClassroom
 const OrganizerRecordings   = lazy(() => import('./pages/organizer/OrganizerRecordings'))
 const OrganizerAnalytics    = lazy(() => import('./pages/organizer/OrganizerAnalytics'))
 const OrganizerMockInterviews = lazy(() => import('./pages/organizer/OrganizerMockInterviews'))
+const CheatSheetManager     = lazy(() => import('./pages/organizer/CheatSheetManager'))
 const CodePlayground        = lazy(() => import('./pages/shared/CodePlayground'))
 const Support               = lazy(() => import('./pages/shared/Support'))
 
@@ -71,6 +72,7 @@ const Support               = lazy(() => import('./pages/shared/Support'))
 const StudentDashboard  = lazy(() => import('./pages/student/StudentDashboard'))
 const MyCourses         = lazy(() => import('./pages/student/MyCourses'))
 const CourseDetail      = lazy(() => import('./pages/student/CourseDetail'))
+const CheatSheetViewer  = lazy(() => import('./pages/student/CheatSheetViewer'))
 const Assessments       = lazy(() => import('./pages/student/Assessments'))
 const TakeAssessment    = lazy(() => import('./pages/student/TakeAssessment'))
 const AssessmentReview  = lazy(() => import('./pages/student/AssessmentReview'))
@@ -83,6 +85,14 @@ const RenewAccess       = lazy(() => import('./pages/student/RenewAccess'))
 const AIStudyAssistant    = lazy(() => import('./pages/student/AIStudyAssistant'))
 const MockInterviewHub    = lazy(() => import('./pages/student/MockInterviewHub'))
 const MockInterviewSession = lazy(() => import('./pages/student/MockInterviewSession'))
+
+// Helper redirect to ensure /student/cheatsheets/:id resolves to /student/cheatsheet/:id
+import { useParams as useRouterParams } from 'react-router-dom'
+function CheatSheetRedirect() {
+  const { id } = useRouterParams()
+  return <Navigate to={`/student/cheatsheet/${id || 'css-part-3'}`} replace />
+}
+
 
 // ── Home redirect based on role ───────────────────────────────────────────────
 function HomeRedirect() {
@@ -170,6 +180,7 @@ function AppInner() {
             <Route path="leaderboard"                       element={<Leaderboard />} />
             <Route path="notifications"                     element={<Notifications />} />
             <Route path="playground"                        element={<CodePlayground />} />
+            <Route path="cheatsheets"                       element={<CheatSheetManager />} />
             <Route path="support"                           element={<Support />} />
             <Route path="profile"                           element={<OrganizerProfile />} />
             <Route path="renewals"                          element={<RenewalManagement />} />
@@ -185,6 +196,10 @@ function AppInner() {
             <Route index                                    element={<StudentDashboard />} />
             <Route path="courses"                           element={<MyCourses />} />
             <Route path="courses/:courseId"                 element={<CourseDetail />} />
+            <Route path="cheatsheet/:id"                    element={<CheatSheetViewer />} />
+            <Route path="cheatsheet"                        element={<CheatSheetViewer />} />
+            <Route path="cheatsheets/:id"                   element={<CheatSheetRedirect />} />
+            <Route path="cheatsheets"                       element={<CheatSheetRedirect />} />
             <Route path="assessments"                       element={<Assessments />} />
             <Route path="assessments/:assessmentId/take"   element={<TakeAssessment />} />
             <Route path="assessments/:assessmentId"        element={<TakeAssessment />} />
@@ -203,6 +218,7 @@ function AppInner() {
             <Route path="renew"                             element={<RenewAccess />} />
             <Route path="classroom/:videoId"               element={<LiveClassroom />} />
           </Route>
+
 
           {/* Fallback */}
           <Route path="/"  element={<HomeRedirect />} />

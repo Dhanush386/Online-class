@@ -31,6 +31,7 @@ function CourseJourneyItem({ item, onModuleAction, onLockedItemClick }) {
         case 'coding': icon = <Code size={20} />; typeColor = '#f59e0b'; typeLabel = 'Exercise'; break
         case 'video': icon = <Play size={20} />; typeColor = '#9333ea'; typeLabel = 'Recorded Lesson'; break
         case 'live': icon = <Zap size={20} />; typeColor = '#ef4444'; typeLabel = 'Live Class'; break
+        case 'cheatsheet': icon = <BookOpen size={20} />; typeColor = '#0052cc'; typeLabel = 'Cheat Sheet'; break
         case 'resource': icon = <BookOpen size={20} />; typeColor = '#9333ea'; typeLabel = 'Material'; break
         default: icon = <BookOpen size={20} />; typeColor = '#10b981'; typeLabel = 'Lesson'; break
     }
@@ -158,6 +159,28 @@ function CourseJourneyItem({ item, onModuleAction, onLockedItemClick }) {
                         {item.title}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', fontWeight: 600 }}>
+                        {(() => {
+                            const rawDay = item.day_of_week || (item.day_number && item.day_number <= 7 ? item.day_number : null) || item.day;
+                            if (!rawDay && !item.day_name) return null;
+                            const dayMap = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' };
+                            const dayName = item.day_name || dayMap[rawDay] || (typeof rawDay === 'string' ? rawDay : `Day ${rawDay}`);
+                            return (
+                                <>
+                                    <span style={{ 
+                                        padding: '0.12rem 0.5rem', 
+                                        background: '#eff6ff', 
+                                        color: '#1d4ed8', 
+                                        border: '1px solid #dbeafe',
+                                        borderRadius: '6px', 
+                                        fontSize: '0.72rem', 
+                                        fontWeight: 700 
+                                    }}>
+                                        {dayName}
+                                    </span>
+                                    <span style={{ color: '#cbd5e1' }}>•</span>
+                                </>
+                            );
+                        })()}
                         <span style={{ color: '#64748b' }}>{item.durationLabel || `${item.duration} Mins`}</span>
                         <span style={{ color: '#cbd5e1' }}>•</span>
                         <span style={{ color: typeColor }}>{typeLabel}</span>
@@ -191,6 +214,7 @@ export default function CourseJourneyTimeline({
     challenges, 
     courseResources, 
     assessments, 
+    cheatSheets = [],
     progress, 
     enrollmentDate,
     accessibleDay: propAccessibleDay,
@@ -232,6 +256,9 @@ export default function CourseJourneyTimeline({
         if (type === 'assessment') {
             return progress?.assessment_submissions?.some(asub => asub.assessment_id === id) || false
         }
+        if (type === 'cheatsheet') {
+            return progress?.cheat_sheet_completions?.some(cc => cc.cheat_sheet_id === id) || false
+        }
         return false
     }, [progress])
 
@@ -246,9 +273,10 @@ export default function CourseJourneyTimeline({
             const weekVideos = (sessions || []).filter(v => (v.week_number || 1) === w);
             const weekAssessments = flatAssessments.filter(a => (a.week_number || 1) === w);
             const weekChallenges = (challenges || []).filter(c => (c.week_number || 1) === w);
-            // Resources are usually optional, so we focus on videos, assessments, and challenges
+            const weekCheatSheets = (cheatSheets || []).filter(cs => (cs.week_number || 1) === w);
+            // Resources are usually optional, so we focus on videos, cheat sheets, assessments, and challenges
 
-            const totalTasks = weekVideos.length + weekAssessments.length + weekChallenges.length;
+            const totalTasks = weekVideos.length + weekAssessments.length + weekChallenges.length + weekCheatSheets.length;
             
             if (totalTasks === 0) continue; // Skip empty weeks
 
@@ -256,6 +284,7 @@ export default function CourseJourneyTimeline({
             weekVideos.forEach(v => { if (isTaskCompleted('video', v.id)) completedTasks++ });
             weekAssessments.forEach(a => { if (isTaskCompleted('assessment', a.id)) completedTasks++ });
             weekChallenges.forEach(c => { if (isTaskCompleted('coding', c.id)) completedTasks++ });
+            weekCheatSheets.forEach(cs => { if (isTaskCompleted('cheatsheet', cs.id)) completedTasks++ });
 
             if (completedTasks < totalTasks) {
                 firstIncompleteWeek = w;
@@ -264,7 +293,7 @@ export default function CourseJourneyTimeline({
         }
         
         setExpandedWeek(firstIncompleteWeek);
-    }, [course, sessions, flatAssessments, challenges, totalWeeks, isTaskCompleted]);
+    }, [course, sessions, flatAssessments, challenges, cheatSheets, totalWeeks, isTaskCompleted]);
 
 
 
@@ -355,6 +384,9 @@ export default function CourseJourneyTimeline({
         const safeChallenges = challenges || [];
         safeChallenges.filter(c => (c.week_number || 1) === weekNum).forEach(c => addToTopic(c, 'coding'));
 
+        const safeCheatSheets = cheatSheets || [];
+        safeCheatSheets.filter(cs => (cs.week_number || 1) === weekNum).forEach(cs => addToTopic(cs, 'cheatsheet'));
+
         // Sort topics chronologically based on earliest day
         const sortedTopicKeys = Object.keys(topicsMap).sort((topicA, topicB) => {
             const getEarliestDay = (items) => {
@@ -380,7 +412,7 @@ export default function CourseJourneyTimeline({
                 const orderB = b.order_index ?? b.order ?? b.sort_order ?? 99;
                 if (orderA !== orderB) return orderA - orderB;
 
-                const TYPE_ORDER = { 'live': 0, 'video': 1, 'resource': 2, 'coding': 3, 'assessment': 4 };
+                const TYPE_ORDER = { 'live': 0, 'video': 1, 'cheatsheet': 2, 'resource': 3, 'coding': 4, 'assessment': 5 };
                 const typeA = TYPE_ORDER[a.type] ?? 99;
                 const typeB = TYPE_ORDER[b.type] ?? 99;
                 if (typeA !== typeB) return typeA - typeB;
@@ -476,7 +508,7 @@ export default function CourseJourneyTimeline({
                 const orderB = b.order_index ?? b.order ?? b.sort_order ?? 99;
                 if (orderA !== orderB) return orderA - orderB;
 
-                const TYPE_ORDER = { 'live': 0, 'video': 1, 'resource': 2, 'coding': 3, 'assessment': 4 };
+                const TYPE_ORDER = { 'live': 0, 'video': 1, 'cheatsheet': 2, 'resource': 3, 'coding': 4, 'assessment': 5 };
                 const typeA = TYPE_ORDER[a.type] ?? 99;
                 const typeB = TYPE_ORDER[b.type] ?? 99;
                 if (typeA !== typeB) return typeA - typeB;

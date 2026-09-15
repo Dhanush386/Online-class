@@ -622,19 +622,22 @@ export default function StudentManagement() {
                 { data: vids },
                 { data: cods },
                 { data: asss },
-                { data: ress }
+                { data: ress },
+                { data: csheets }
             ] = await Promise.all([
                 supabase.from('videos').select('day_number').eq('course_id', group.course_id),
                 supabase.from('coding_challenges').select('day_number').eq('course_id', group.course_id),
                 supabase.from('assessments').select('day_number').eq('course_id', group.course_id),
-                supabase.from('course_resources').select('day_number').eq('course_id', group.course_id)
+                supabase.from('course_resources').select('day_number').eq('course_id', group.course_id),
+                supabase.from('cheat_sheets').select('day_number').eq('course_id', group.course_id)
             ])
 
             const allDays = [
                 ...(vids || []).map(v => v.day_number),
                 ...(cods || []).map(c => c.day_number),
                 ...(asss || []).map(a => a.day_number),
-                ...(ress || []).map(r => r.day_number)
+                ...(ress || []).map(r => r.day_number),
+                ...(csheets || []).map(s => s.day_number)
             ]
             const max = Math.max(1, ...allDays.filter(d => d !== null))
             setMaxDay(max)
