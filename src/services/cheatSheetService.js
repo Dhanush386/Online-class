@@ -401,20 +401,27 @@ export const cheatSheetService = {
    * Deletes a cheat sheet (Organizer only)
    */
   async deleteCheatSheet(id) {
+    if (!id) return true
+
     // 1. Permanently blacklist in local storage so it never resurfaces in dashboard or student views
     recordDeletedId(id)
 
-    // 2. Try dedicated delete RPC if available in database
+    // Also check if we can resolve the slug from list cache to blacklist slug as well
     try {
-      const { data: rpcRes, error: rpcErr } = await supabase.rpc('delete_cheat_sheet', {
-        p_sheet_id: id
-      })
-      if (!rpcErr && rpcRes) return true
-    } catch (_rpcErr) {
-      void _rpcErr
+      const cached = localStorage.getItem(LIST_CACHE_KEY)
+      if (cached) {
+        const list = JSON.parse(cached)
+        const match = list.find(s => s.id === id || s.slug === id)
+        if (match) {
+          if (match.id) recordDeletedId(match.id)
+          if (match.slug) recordDeletedId(match.slug)
+        }
+      }
+    } catch {
+      // ignore
     }
 
-    // 3. Delete directly from Supabase
+    // 2. Delete directly from Supabase tables
     try {
       try {
         await supabase.from('cheat_sheet_completions').delete().eq('cheat_sheet_id', id)
@@ -430,10 +437,10 @@ export const cheatSheetService = {
         }
       }
       if (error) {
-        console.warn('Direct delete error from Supabase:', error)
+        console.warn('Direct delete notice from Supabase:', error.message || error)
       }
     } catch (err) {
-      console.warn('Error deleting cheat sheet from Supabase:', err)
+      console.warn('Notice deleting cheat sheet from Supabase:', err)
     }
 
     return true
