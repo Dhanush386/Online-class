@@ -19,7 +19,7 @@ import { formatInlineText } from '../../utils/sanitizeRichText'
 import useGoogleFonts from '../../hooks/useGoogleFonts'
 
 export default function CheatSheetManager() {
-  const { user, profile } = useAuth()
+  const { user: _user, profile: _profile } = useAuth()
   const [sheets, setSheets] = useState([])
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -285,7 +285,27 @@ export default function CheatSheetManager() {
     setEditSheet(prev => {
       const sections = [...prev.sections]
       const sec = { ...sections[secIdx] }
-      sec.quiz = { ...(sec.quiz || {}), [field]: val }
+      const activeQIdx = sec.quiz?.activeQIdx || 0
+      const currentQuestions = (Array.isArray(sec.quiz?.questions) && sec.quiz.questions.length > 0)
+        ? [...sec.quiz.questions]
+        : null
+
+      if (currentQuestions) {
+        currentQuestions[activeQIdx] = {
+          ...currentQuestions[activeQIdx],
+          [field]: val
+        }
+        sec.quiz = {
+          ...(sec.quiz || {}),
+          [field]: val,
+          questions: currentQuestions
+        }
+        if (activeQIdx === 0) {
+          sec.quiz[field] = val
+        }
+      } else {
+        sec.quiz = { ...(sec.quiz || {}), [field]: val }
+      }
       sections[secIdx] = sec
       return { ...prev, sections }
     })
@@ -295,13 +315,36 @@ export default function CheatSheetManager() {
     setEditSheet(prev => {
       const sections = [...prev.sections]
       const sec = { ...sections[secIdx] }
-      const options = [...(sec.quiz?.options || ['', '', '', ''])]
-      const oldVal = options[optIdx]
-      options[optIdx] = val
-      sec.quiz = {
-        ...(sec.quiz || {}),
-        options,
-        correctAnswer: sec.quiz?.correctAnswer === oldVal ? val : (sec.quiz?.correctAnswer || options[0])
+      const activeQIdx = sec.quiz?.activeQIdx || 0
+      const currentQuestions = (Array.isArray(sec.quiz?.questions) && sec.quiz.questions.length > 0)
+        ? [...sec.quiz.questions]
+        : null
+
+      if (currentQuestions) {
+        const targetQ = { ...currentQuestions[activeQIdx] }
+        const options = [...(targetQ.options || ['', '', '', ''])]
+        const oldVal = options[optIdx]
+        options[optIdx] = val
+        targetQ.options = options
+        targetQ.correctAnswer = targetQ.correctAnswer === oldVal ? val : (targetQ.correctAnswer || options[0])
+        currentQuestions[activeQIdx] = targetQ
+        sec.quiz = {
+          ...(sec.quiz || {}),
+          questions: currentQuestions
+        }
+        if (activeQIdx === 0) {
+          sec.quiz.options = options
+          sec.quiz.correctAnswer = targetQ.correctAnswer
+        }
+      } else {
+        const options = [...(sec.quiz?.options || ['', '', '', ''])]
+        const oldVal = options[optIdx]
+        options[optIdx] = val
+        sec.quiz = {
+          ...(sec.quiz || {}),
+          options,
+          correctAnswer: sec.quiz?.correctAnswer === oldVal ? val : (sec.quiz?.correctAnswer || options[0])
+        }
       }
       sections[secIdx] = sec
       return { ...prev, sections }
@@ -312,10 +355,29 @@ export default function CheatSheetManager() {
     setEditSheet(prev => {
       const sections = [...prev.sections]
       const sec = { ...sections[secIdx] }
-      const options = [...(sec.quiz?.options || ['', '', '', ''])]
-      if (options.length >= 6) return prev
-      options.push(`Option ${String.fromCharCode(65 + options.length)}`)
-      sec.quiz = { ...(sec.quiz || {}), options }
+      const activeQIdx = sec.quiz?.activeQIdx || 0
+      const currentQuestions = (Array.isArray(sec.quiz?.questions) && sec.quiz.questions.length > 0)
+        ? [...sec.quiz.questions]
+        : null
+
+      if (currentQuestions) {
+        const targetQ = { ...currentQuestions[activeQIdx] }
+        const options = [...(targetQ.options || ['', '', '', ''])]
+        if (options.length >= 6) return prev
+        options.push(`Option ${String.fromCharCode(65 + options.length)}`)
+        targetQ.options = options
+        currentQuestions[activeQIdx] = targetQ
+        sec.quiz = {
+          ...(sec.quiz || {}),
+          questions: currentQuestions
+        }
+        if (activeQIdx === 0) sec.quiz.options = options
+      } else {
+        const options = [...(sec.quiz?.options || ['', '', '', ''])]
+        if (options.length >= 6) return prev
+        options.push(`Option ${String.fromCharCode(65 + options.length)}`)
+        sec.quiz = { ...(sec.quiz || {}), options }
+      }
       sections[secIdx] = sec
       return { ...prev, sections }
     })
@@ -325,14 +387,106 @@ export default function CheatSheetManager() {
     setEditSheet(prev => {
       const sections = [...prev.sections]
       const sec = { ...sections[secIdx] }
-      const options = [...(sec.quiz?.options || [])]
-      if (options.length <= 2) return prev
-      const removedVal = options[optIdx]
-      options.splice(optIdx, 1)
+      const activeQIdx = sec.quiz?.activeQIdx || 0
+      const currentQuestions = (Array.isArray(sec.quiz?.questions) && sec.quiz.questions.length > 0)
+        ? [...sec.quiz.questions]
+        : null
+
+      if (currentQuestions) {
+        const targetQ = { ...currentQuestions[activeQIdx] }
+        const options = [...(targetQ.options || [])]
+        if (options.length <= 2) return prev
+        const removedVal = options[optIdx]
+        options.splice(optIdx, 1)
+        targetQ.options = options
+        targetQ.correctAnswer = targetQ.correctAnswer === removedVal ? (options[0] || '') : (targetQ.correctAnswer || '')
+        currentQuestions[activeQIdx] = targetQ
+        sec.quiz = {
+          ...(sec.quiz || {}),
+          questions: currentQuestions
+        }
+        if (activeQIdx === 0) {
+          sec.quiz.options = options
+          sec.quiz.correctAnswer = targetQ.correctAnswer
+        }
+      } else {
+        const options = [...(sec.quiz?.options || [])]
+        if (options.length <= 2) return prev
+        const removedVal = options[optIdx]
+        options.splice(optIdx, 1)
+        sec.quiz = {
+          ...(sec.quiz || {}),
+          options,
+          correctAnswer: sec.quiz?.correctAnswer === removedVal ? (options[0] || '') : (sec.quiz?.correctAnswer || '')
+        }
+      }
+      sections[secIdx] = sec
+      return { ...prev, sections }
+    })
+  }
+
+  const handleAddQuizQuestion = (secIdx) => {
+    setEditSheet(prev => {
+      const sections = [...prev.sections]
+      const sec = { ...sections[secIdx] }
+      const currentList = (Array.isArray(sec.quiz?.questions) && sec.quiz.questions.length > 0)
+        ? [...sec.quiz.questions]
+        : [{
+            questionNumber: 'Question 1 of 2',
+            prompt: sec.quiz?.prompt || '',
+            snippet: sec.quiz?.snippet || '',
+            type: sec.quiz?.type || 'mcq',
+            formatAsCode: Boolean(sec.quiz?.formatAsCode),
+            options: [...(sec.quiz?.options || ['Option A', 'Option B', 'Option C', 'Option D'])],
+            correctAnswer: sec.quiz?.correctAnswer || 'Option A',
+            explanation: sec.quiz?.explanation || ''
+          }]
+
+      const total = currentList.length + 1
+      const updated = currentList.map((q, i) => ({
+        ...q,
+        questionNumber: `Question ${i + 1} of ${total}`
+      }))
+
+      updated.push({
+        questionNumber: `Question ${total} of ${total}`,
+        prompt: '',
+        snippet: '',
+        type: 'mcq',
+        formatAsCode: false,
+        options: ['Option A', 'Option B', 'Option C', 'Option D'],
+        correctAnswer: 'Option A',
+        explanation: ''
+      })
+
       sec.quiz = {
         ...(sec.quiz || {}),
-        options,
-        correctAnswer: sec.quiz?.correctAnswer === removedVal ? (options[0] || '') : (sec.quiz?.correctAnswer || '')
+        questions: updated,
+        activeQIdx: updated.length - 1
+      }
+      sections[secIdx] = sec
+      return { ...prev, sections }
+    })
+  }
+
+  const handleRemoveQuizQuestion = (secIdx, qIdx) => {
+    setEditSheet(prev => {
+      const sections = [...prev.sections]
+      const sec = { ...sections[secIdx] }
+      const currentList = [...(sec.quiz?.questions || [])]
+      if (currentList.length <= 1) return prev
+      currentList.splice(qIdx, 1)
+      const total = currentList.length
+      const updated = currentList.map((q, i) => ({
+        ...q,
+        questionNumber: total === 1 ? 'Question 1 of 1' : `Question ${i + 1} of ${total}`
+      }))
+      const nextActive = Math.max(0, Math.min(qIdx, updated.length - 1))
+      sec.quiz = {
+        ...(sec.quiz || {}),
+        ...updated[0],
+        questions: updated,
+        activeQIdx: nextActive
       }
       sections[secIdx] = sec
       return { ...prev, sections }
@@ -1927,332 +2081,403 @@ export default function CheatSheetManager() {
                                 )}
 
                                 {/* 4. Quiz Subblock */}
-                                {sec.quiz && (
-                                  <div style={{ background: 'var(--bg-surface, #111522)', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid rgba(16, 185, 129, 0.35)', boxShadow: '0 4px 18px rgba(0,0,0,0.25)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                          <HelpCircle size={16} />
-                                        </div>
-                                        <div>
-                                          <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#10b981' }}>Practice Quiz Question</span>
-                                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #8e9bb0)', display: 'block' }}>Create multiple-choice or direct code answer challenges for students</span>
-                                        </div>
-                                      </div>
+                                {sec.quiz && (() => {
+                                  const activeQIdx = sec.quiz.activeQIdx || 0
+                                  const questionsList = (Array.isArray(sec.quiz.questions) && sec.quiz.questions.length > 0)
+                                    ? sec.quiz.questions
+                                    : [sec.quiz]
+                                  const activeQ = questionsList[activeQIdx] || questionsList[0] || sec.quiz
+                                  const isMultiQuestion = questionsList.length > 1
 
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        {/* Question Type Switcher */}
-                                        <div style={{ display: 'flex', background: 'var(--bg-elevated, #161b28)', padding: '2px', borderRadius: '8px', border: '1px solid var(--card-border, rgba(255,255,255,0.08))' }}>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleUpdateQuiz(idx, 'type', 'mcq')}
-                                            style={{
-                                              padding: '4px 10px',
-                                              borderRadius: '6px',
-                                              border: 'none',
-                                              fontSize: '0.74rem',
-                                              fontWeight: 700,
-                                              cursor: 'pointer',
-                                              background: (!sec.quiz.type || sec.quiz.type === 'mcq') ? '#10b981' : 'transparent',
-                                              color: (!sec.quiz.type || sec.quiz.type === 'mcq') ? '#ffffff' : 'var(--text-muted, #8e9bb0)',
-                                              transition: 'all 0.15s ease'
-                                            }}
-                                          >
-                                            Multiple Choice
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              handleUpdateQuiz(idx, 'type', 'code_input')
-                                              if (!sec.quiz.matchMode) handleUpdateQuiz(idx, 'matchMode', 'flexible')
-                                              if (!sec.quiz.correctAnswer && sec.quiz.options?.[0]) {
-                                                handleUpdateQuiz(idx, 'correctAnswer', sec.quiz.options[0])
-                                              }
-                                            }}
-                                            style={{
-                                              padding: '4px 10px',
-                                              borderRadius: '6px',
-                                              border: 'none',
-                                              fontSize: '0.74rem',
-                                              fontWeight: 700,
-                                              cursor: 'pointer',
-                                              background: sec.quiz.type === 'code_input' ? '#6366f1' : 'transparent',
-                                              color: sec.quiz.type === 'code_input' ? '#ffffff' : 'var(--text-muted, #8e9bb0)',
-                                              transition: 'all 0.15s ease'
-                                            }}
-                                          >
-                                            Write Code Answer
-                                          </button>
-                                        </div>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => handleToggleSubblock(idx, 'quiz', null)}
-                                          style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#ef4444', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
-                                        >
-                                          Remove Quiz
-                                        </button>
-                                      </div>
-                                    </div>
-
-                                    {/* Question Badge & Prompt */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px', marginBottom: '0.85rem' }}>
-                                      <div>
-                                        <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', marginBottom: '3px', fontWeight: 700 }}>
-                                          Question Badge:
-                                        </label>
-                                        <input
-                                          type="text"
-                                          className="cs-editor-input"
-                                          value={sec.quiz.questionNumber || 'Question 1 of 1'}
-                                          onChange={(e) => handleUpdateQuiz(idx, 'questionNumber', e.target.value)}
-                                          placeholder="e.g. Question 1 of 1"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', marginBottom: '3px', fontWeight: 700 }}>
-                                          Question Prompt:
-                                        </label>
-                                        <input
-                                          type="text"
-                                          className="cs-editor-input"
-                                          value={sec.quiz.prompt || ''}
-                                          onChange={(e) => handleUpdateQuiz(idx, 'prompt', e.target.value)}
-                                          placeholder="e.g. What is the correct Basic Structure of an HTML document?"
-                                        />
-                                      </div>
-                                    </div>
-
-                                    {/* Code Snippet in Question */}
-                                    <div style={{ marginBottom: '0.85rem' }}>
-                                      <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', marginBottom: '3px', fontWeight: 700 }}>
-                                        Code Snippet in Question (Optional):
-                                      </label>
-                                      <textarea
-                                        className="cs-editor-input"
-                                        rows={2}
-                                        value={sec.quiz.snippet || ''}
-                                        onChange={(e) => handleUpdateQuiz(idx, 'snippet', e.target.value)}
-                                        placeholder=".heading { font-style: _______; }"
-                                        style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: '0.85rem' }}
-                                      />
-                                    </div>
-
-                                    {/* BRANCH 1: Multiple Choice Options Mode */}
-                                    {(!sec.quiz.type || sec.quiz.type === 'mcq') && (
-                                      <div style={{ marginBottom: '0.85rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', flexWrap: 'wrap', gap: '8px' }}>
-                                          <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', fontWeight: 700 }}>
-                                            Answer Options (Select the radio to set the correct answer):
-                                          </label>
-
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', color: '#818cf8', cursor: 'pointer', userSelect: 'none' }}>
-                                              <input
-                                                type="checkbox"
-                                                checked={Boolean(sec.quiz.formatAsCode)}
-                                                onChange={(e) => handleUpdateQuiz(idx, 'formatAsCode', e.target.checked)}
-                                                style={{ accentColor: '#6366f1', cursor: 'pointer' }}
-                                              />
-                                              Format options as Code (Monospace & Syntax)
-                                            </label>
-
-                                            {(sec.quiz.options || []).length < 6 && (
-                                              <button
-                                                type="button"
-                                                onClick={() => handleAddQuizOption(idx)}
-                                                style={{
-                                                  padding: '2px 8px',
-                                                  background: 'rgba(16, 185, 129, 0.15)',
-                                                  color: '#10b981',
-                                                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                                                  borderRadius: '4px',
-                                                  fontSize: '0.72rem',
-                                                  fontWeight: 700,
-                                                  cursor: 'pointer'
-                                                }}
-                                              >
-                                                + Add Option
-                                              </button>
-                                            )}
+                                  return (
+                                    <div style={{ background: 'var(--bg-surface, #111522)', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid rgba(16, 185, 129, 0.35)', boxShadow: '0 4px 18px rgba(0,0,0,0.25)' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <HelpCircle size={16} />
+                                          </div>
+                                          <div>
+                                            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#10b981' }}>Practice Quiz Question</span>
+                                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #8e9bb0)', display: 'block' }}>Create multiple-choice or direct code answer challenges for students</span>
                                           </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                          {(sec.quiz.options || ['', '', '', '']).map((opt, optIdx) => {
-                                            const isCorrect = sec.quiz.correctAnswer === opt && opt.trim() !== ''
-                                            const isMultiLine = opt.includes('\n') || (opt.length > 55) || sec.quiz.formatAsCode
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                          {/* Question Type Switcher */}
+                                          <div style={{ display: 'flex', background: 'var(--bg-elevated, #161b28)', padding: '2px', borderRadius: '8px', border: '1px solid var(--card-border, rgba(255,255,255,0.08))' }}>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleUpdateQuiz(idx, 'type', 'mcq')}
+                                              style={{
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                border: 'none',
+                                                fontSize: '0.74rem',
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                background: (!activeQ.type || activeQ.type === 'mcq') ? '#10b981' : 'transparent',
+                                                color: (!activeQ.type || activeQ.type === 'mcq') ? '#ffffff' : 'var(--text-muted, #8e9bb0)',
+                                                transition: 'all 0.15s ease'
+                                              }}
+                                            >
+                                              Multiple Choice
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                handleUpdateQuiz(idx, 'type', 'code_input')
+                                                if (!activeQ.matchMode) handleUpdateQuiz(idx, 'matchMode', 'flexible')
+                                                if (!activeQ.correctAnswer && activeQ.options?.[0]) {
+                                                  handleUpdateQuiz(idx, 'correctAnswer', activeQ.options[0])
+                                                }
+                                              }}
+                                              style={{
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                border: 'none',
+                                                fontSize: '0.74rem',
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                background: activeQ.type === 'code_input' ? '#6366f1' : 'transparent',
+                                                color: activeQ.type === 'code_input' ? '#ffffff' : 'var(--text-muted, #8e9bb0)',
+                                                transition: 'all 0.15s ease'
+                                              }}
+                                            >
+                                              Write Code Answer
+                                            </button>
+                                          </div>
 
-                                            return (
-                                              <div
-                                                key={optIdx}
-                                                style={{
-                                                  display: 'flex',
-                                                  alignItems: isMultiLine ? 'flex-start' : 'center',
-                                                  gap: '10px',
-                                                  background: 'var(--bg-elevated, #161b28)',
-                                                  padding: '8px 12px',
-                                                  borderRadius: '8px',
-                                                  border: isCorrect ? '1.5px solid rgba(16, 185, 129, 0.6)' : '1px solid var(--card-border, rgba(255, 255, 255, 0.08))'
-                                                }}
-                                              >
-                                                <div style={{ paddingTop: isMultiLine ? '6px' : '0' }}>
-                                                  <input
-                                                    type="radio"
-                                                    name={`quiz-correct-${sec.id || idx}`}
-                                                    checked={isCorrect}
-                                                    onChange={() => handleUpdateQuiz(idx, 'correctAnswer', opt)}
-                                                    title="Mark as correct answer"
-                                                    style={{ cursor: 'pointer', accentColor: '#10b981', width: '16px', height: '16px' }}
-                                                  />
-                                                </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleAddQuizQuestion(idx)}
+                                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#818cf8', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                                          >
+                                            <Plus size={12} /> Add Another Question
+                                          </button>
 
-                                                <div style={{ flex: 1 }}>
-                                                  <textarea
-                                                    className="cs-editor-input"
-                                                    rows={isMultiLine ? Math.max(2, (opt.split('\n').length || 1)) : 1}
-                                                    value={opt}
-                                                    onChange={(e) => handleUpdateQuizOption(idx, optIdx, e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                      if (e.key === 'Tab') {
-                                                        e.preventDefault()
-                                                        const { selectionStart, selectionEnd, value } = e.target
-                                                        const newVal = value.substring(0, selectionStart) + '  ' + value.substring(selectionEnd)
-                                                        handleUpdateQuizOption(idx, optIdx, newVal)
-                                                      }
-                                                    }}
-                                                    placeholder={`Option ${optIdx + 1} (paste text or code here)...`}
-                                                    style={{
-                                                      fontFamily: (sec.quiz.formatAsCode || opt.includes('<') || opt.includes('{')) ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' : 'inherit',
-                                                      fontSize: '0.85rem',
-                                                      lineHeight: 1.45,
-                                                      whiteSpace: 'pre',
-                                                      resize: 'vertical'
-                                                    }}
-                                                  />
-                                                </div>
-
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingTop: isMultiLine ? '6px' : '0' }}>
-                                                  {isCorrect && (
-                                                    <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 800, whiteSpace: 'nowrap', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
-                                                      Correct
-                                                    </span>
-                                                  )}
-                                                  {(sec.quiz.options || []).length > 2 && (
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => handleRemoveQuizOption(idx, optIdx)}
-                                                      title="Remove this option"
-                                                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px 4px' }}
-                                                    >
-                                                      <Trash2 size={13} />
-                                                    </button>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            )
-                                          })}
+                                          <button
+                                            type="button"
+                                            onClick={() => handleToggleSubblock(idx, 'quiz', null)}
+                                            style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#ef4444', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                                          >
+                                            Remove Quiz
+                                          </button>
                                         </div>
                                       </div>
-                                    )}
 
-                                    {/* BRANCH 2: Direct Code Input Mode */}
-                                    {sec.quiz.type === 'code_input' && (
-                                      <div style={{ marginBottom: '0.85rem' }}>
-                                        {/* Match Sensitivity */}
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-                                          <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', fontWeight: 700 }}>
-                                            Correct Code Solution (What student must write):
-                                          </label>
-
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #8e9bb0)' }}>Match Rule:</span>
-                                            <select
-                                              value={sec.quiz.matchMode || 'flexible'}
-                                              onChange={(e) => handleUpdateQuiz(idx, 'matchMode', e.target.value)}
+                                      {/* Multi-Question Selector Tabs */}
+                                      {isMultiQuestion && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--card-border, rgba(255,255,255,0.08))', flexWrap: 'wrap' }}>
+                                          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted, #8e9bb0)', fontWeight: 700 }}>
+                                            Questions in this Quiz ({questionsList.length}):
+                                          </span>
+                                          {questionsList.map((q, qIdx) => (
+                                            <button
+                                              key={qIdx}
+                                              type="button"
+                                              onClick={() => {
+                                                setEditSheet(prev => {
+                                                  const sections = [...prev.sections]
+                                                  const s = { ...sections[idx] }
+                                                  s.quiz = { ...(s.quiz || {}), activeQIdx: qIdx }
+                                                  sections[idx] = s
+                                                  return { ...prev, sections }
+                                                })
+                                              }}
                                               style={{
-                                                background: 'var(--bg-elevated, #161b28)',
-                                                color: '#818cf8',
-                                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                padding: '4px 10px',
                                                 borderRadius: '6px',
-                                                padding: '2px 8px',
-                                                fontSize: '0.72rem',
+                                                border: activeQIdx === qIdx ? '1.5px solid #10b981' : '1px solid rgba(255,255,255,0.08)',
+                                                background: activeQIdx === qIdx ? 'rgba(16, 185, 129, 0.2)' : 'var(--bg-elevated, #161b28)',
+                                                color: activeQIdx === qIdx ? '#34d399' : '#cbd5e1',
+                                                fontSize: '0.74rem',
                                                 fontWeight: 700,
-                                                outline: 'none',
                                                 cursor: 'pointer'
                                               }}
                                             >
-                                              <option value="flexible">Flexible (Ignores whitespace & quotes)</option>
-                                              <option value="exact">Exact Code Match</option>
-                                              <option value="contains">Contains Required Code</option>
-                                            </select>
-                                          </div>
-                                        </div>
+                                              Question {qIdx + 1}
+                                            </button>
+                                          ))}
 
-                                        {/* Correct Code Solution Textarea */}
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveQuizQuestion(idx, activeQIdx)}
+                                            style={{
+                                              marginLeft: 'auto',
+                                              padding: '3px 8px',
+                                              background: 'rgba(239, 68, 68, 0.1)',
+                                              color: '#ef4444',
+                                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                                              borderRadius: '6px',
+                                              fontSize: '0.72rem',
+                                              fontWeight: 600,
+                                              cursor: 'pointer'
+                                            }}
+                                          >
+                                            Delete Question {activeQIdx + 1}
+                                          </button>
+                                        </div>
+                                      )}
+
+                                      {/* Question Badge & Prompt */}
+                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px', marginBottom: '0.85rem' }}>
+                                        <div>
+                                          <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', marginBottom: '3px', fontWeight: 700 }}>
+                                            Question Badge:
+                                          </label>
+                                          <input
+                                            type="text"
+                                            className="cs-editor-input"
+                                            value={activeQ.questionNumber || `Question ${activeQIdx + 1} of ${questionsList.length}`}
+                                            onChange={(e) => handleUpdateQuiz(idx, 'questionNumber', e.target.value)}
+                                            placeholder="e.g. Question 1 of 1"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', marginBottom: '3px', fontWeight: 700 }}>
+                                            Question Prompt:
+                                          </label>
+                                          <input
+                                            type="text"
+                                            className="cs-editor-input"
+                                            value={activeQ.prompt || ''}
+                                            onChange={(e) => handleUpdateQuiz(idx, 'prompt', e.target.value)}
+                                            placeholder="e.g. What is the correct Basic Structure of an HTML document?"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Code Snippet in Question */}
+                                      <div style={{ marginBottom: '0.85rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', marginBottom: '3px', fontWeight: 700 }}>
+                                          Code Snippet in Question (Optional):
+                                        </label>
                                         <textarea
                                           className="cs-editor-input"
-                                          rows={4}
-                                          value={sec.quiz.correctAnswer || ''}
-                                          onChange={(e) => handleUpdateQuiz(idx, 'correctAnswer', e.target.value)}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Tab') {
-                                              e.preventDefault()
-                                              const { selectionStart, selectionEnd, value } = e.target
-                                              const newVal = value.substring(0, selectionStart) + '  ' + value.substring(selectionEnd)
-                                              handleUpdateQuiz(idx, 'correctAnswer', newVal)
-                                            }
-                                          }}
-                                          placeholder={`<!DOCTYPE html>\n<html>\n  <head></head>\n  <body>\n    Your code goes here\n  </body>\n</html>`}
-                                          style={{
-                                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                                            fontSize: '0.86rem',
-                                            lineHeight: 1.5,
-                                            border: '1.5px solid rgba(16, 185, 129, 0.4)',
-                                            background: 'rgba(16, 185, 129, 0.03)'
-                                          }}
+                                          rows={2}
+                                          value={activeQ.snippet || ''}
+                                          onChange={(e) => handleUpdateQuiz(idx, 'snippet', e.target.value)}
+                                          placeholder=".heading { font-style: _______; }"
+                                          style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: '0.85rem' }}
                                         />
+                                      </div>
 
-                                        {/* Starter Code for student (optional) */}
-                                        <div style={{ marginTop: '8px' }}>
-                                          <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted, #8e9bb0)', marginBottom: '3px' }}>
-                                            Starter / Skeleton Code for Student (Optional):
-                                          </label>
+                                      {/* BRANCH 1: Multiple Choice Options Mode */}
+                                      {(!activeQ.type || activeQ.type === 'mcq') && (
+                                        <div style={{ marginBottom: '0.85rem' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', flexWrap: 'wrap', gap: '8px' }}>
+                                            <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', fontWeight: 700 }}>
+                                              Answer Options (Select the radio to set the correct answer):
+                                            </label>
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', color: '#818cf8', cursor: 'pointer', userSelect: 'none' }}>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={Boolean(activeQ.formatAsCode)}
+                                                  onChange={(e) => handleUpdateQuiz(idx, 'formatAsCode', e.target.checked)}
+                                                  style={{ accentColor: '#6366f1', cursor: 'pointer' }}
+                                                />
+                                                Format options as Code (Monospace & Syntax)
+                                              </label>
+
+                                              {(activeQ.options || []).length < 6 && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleAddQuizOption(idx)}
+                                                  style={{
+                                                    padding: '2px 8px',
+                                                    background: 'rgba(16, 185, 129, 0.15)',
+                                                    color: '#10b981',
+                                                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.72rem',
+                                                    fontWeight: 700,
+                                                    cursor: 'pointer'
+                                                  }}
+                                                >
+                                                  + Add Option
+                                                </button>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {(activeQ.options || ['', '', '', '']).map((opt, optIdx) => {
+                                              const isCorrect = activeQ.correctAnswer === opt && opt.trim() !== ''
+                                              const isMultiLine = opt.includes('\n') || (opt.length > 55) || activeQ.formatAsCode
+
+                                              return (
+                                                <div
+                                                  key={optIdx}
+                                                  style={{
+                                                    display: 'flex',
+                                                    alignItems: isMultiLine ? 'flex-start' : 'center',
+                                                    gap: '10px',
+                                                    background: 'var(--bg-elevated, #161b28)',
+                                                    padding: '8px 12px',
+                                                    borderRadius: '8px',
+                                                    border: isCorrect ? '1.5px solid rgba(16, 185, 129, 0.6)' : '1px solid var(--card-border, rgba(255, 255, 255, 0.08))'
+                                                  }}
+                                                >
+                                                  <div style={{ paddingTop: isMultiLine ? '6px' : '0' }}>
+                                                    <input
+                                                      type="radio"
+                                                      name={`quiz-correct-${sec.id || idx}-${activeQIdx}`}
+                                                      checked={isCorrect}
+                                                      onChange={() => handleUpdateQuiz(idx, 'correctAnswer', opt)}
+                                                      title="Mark as correct answer"
+                                                      style={{ cursor: 'pointer', accentColor: '#10b981', width: '16px', height: '16px' }}
+                                                    />
+                                                  </div>
+
+                                                  <div style={{ flex: 1 }}>
+                                                    <textarea
+                                                      className="cs-editor-input"
+                                                      rows={isMultiLine ? Math.max(2, (opt.split('\n').length || 1)) : 1}
+                                                      value={opt}
+                                                      onChange={(e) => handleUpdateQuizOption(idx, optIdx, e.target.value)}
+                                                      onKeyDown={(e) => {
+                                                        if (e.key === 'Tab') {
+                                                          e.preventDefault()
+                                                          const { selectionStart, selectionEnd, value } = e.target
+                                                          const newVal = value.substring(0, selectionStart) + '  ' + value.substring(selectionEnd)
+                                                          handleUpdateQuizOption(idx, optIdx, newVal)
+                                                        }
+                                                      }}
+                                                      placeholder={`Option ${optIdx + 1} (paste text or code here)...`}
+                                                      style={{
+                                                        fontFamily: (activeQ.formatAsCode || opt.includes('<') || opt.includes('{')) ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' : 'inherit',
+                                                        fontSize: '0.85rem',
+                                                        lineHeight: 1.45,
+                                                        whiteSpace: 'pre',
+                                                        resize: 'vertical'
+                                                      }}
+                                                    />
+                                                  </div>
+
+                                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingTop: isMultiLine ? '6px' : '0' }}>
+                                                    {isCorrect && (
+                                                      <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 800, whiteSpace: 'nowrap', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                                                        Correct
+                                                      </span>
+                                                    )}
+                                                    {(activeQ.options || []).length > 2 && (
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveQuizOption(idx, optIdx)}
+                                                        title="Remove this option"
+                                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px 4px' }}
+                                                      >
+                                                        <Trash2 size={13} />
+                                                      </button>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* BRANCH 2: Direct Code Input Mode */}
+                                      {activeQ.type === 'code_input' && (
+                                        <div style={{ marginBottom: '0.85rem' }}>
+                                          {/* Match Sensitivity */}
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                                            <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', fontWeight: 700 }}>
+                                              Correct Code Solution (What student must write):
+                                            </label>
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #8e9bb0)' }}>Match Rule:</span>
+                                              <select
+                                                value={activeQ.matchMode || 'flexible'}
+                                                onChange={(e) => handleUpdateQuiz(idx, 'matchMode', e.target.value)}
+                                                style={{
+                                                  background: 'var(--bg-elevated, #161b28)',
+                                                  color: '#818cf8',
+                                                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                  borderRadius: '6px',
+                                                  padding: '2px 8px',
+                                                  fontSize: '0.72rem',
+                                                  fontWeight: 700,
+                                                  outline: 'none',
+                                                  cursor: 'pointer'
+                                                }}
+                                              >
+                                                <option value="flexible">Flexible (Ignores whitespace & quotes)</option>
+                                                <option value="exact">Exact Code Match</option>
+                                                <option value="contains">Contains Required Code</option>
+                                              </select>
+                                            </div>
+                                          </div>
+
+                                          {/* Correct Code Solution Textarea */}
                                           <textarea
                                             className="cs-editor-input"
-                                            rows={2}
-                                            value={sec.quiz.starterCode || ''}
-                                            onChange={(e) => handleUpdateQuiz(idx, 'starterCode', e.target.value)}
+                                            rows={4}
+                                            value={activeQ.correctAnswer || ''}
+                                            onChange={(e) => handleUpdateQuiz(idx, 'correctAnswer', e.target.value)}
                                             onKeyDown={(e) => {
                                               if (e.key === 'Tab') {
                                                 e.preventDefault()
                                                 const { selectionStart, selectionEnd, value } = e.target
                                                 const newVal = value.substring(0, selectionStart) + '  ' + value.substring(selectionEnd)
-                                                handleUpdateQuiz(idx, 'starterCode', newVal)
+                                                handleUpdateQuiz(idx, 'correctAnswer', newVal)
                                               }
                                             }}
-                                            placeholder="// Students will start with this template..."
-                                            style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: '0.84rem' }}
+                                            placeholder={`<!DOCTYPE html>\n<html>\n  <head></head>\n  <body>\n    Your code goes here\n  </body>\n</html>`}
+                                            style={{
+                                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                                              fontSize: '0.86rem',
+                                              lineHeight: 1.5,
+                                              border: '1.5px solid rgba(16, 185, 129, 0.4)',
+                                              background: 'rgba(16, 185, 129, 0.03)'
+                                            }}
                                           />
-                                        </div>
-                                      </div>
-                                    )}
 
-                                    {/* Explanation Rationale */}
-                                    <div>
-                                      <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', marginBottom: '3px', fontWeight: 700 }}>
-                                        Explanation Rationale (Shown upon review):
-                                      </label>
-                                      <textarea
-                                        className="cs-editor-input"
-                                        rows={2}
-                                        value={sec.quiz.explanation || ''}
-                                        onChange={(e) => handleUpdateQuiz(idx, 'explanation', e.target.value)}
-                                        placeholder="Explain why this answer or code is correct..."
-                                      />
+                                          {/* Starter Code for student (optional) */}
+                                          <div style={{ marginTop: '8px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted, #8e9bb0)', marginBottom: '3px' }}>
+                                              Starter / Skeleton Code for Student (Optional):
+                                            </label>
+                                            <textarea
+                                              className="cs-editor-input"
+                                              rows={2}
+                                              value={activeQ.starterCode || ''}
+                                              onChange={(e) => handleUpdateQuiz(idx, 'starterCode', e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Tab') {
+                                                  e.preventDefault()
+                                                  const { selectionStart, selectionEnd, value } = e.target
+                                                  const newVal = value.substring(0, selectionStart) + '  ' + value.substring(selectionEnd)
+                                                  handleUpdateQuiz(idx, 'starterCode', newVal)
+                                                }
+                                              }}
+                                              placeholder="// Students will start with this template..."
+                                              style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: '0.84rem' }}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Explanation Rationale */}
+                                      <div>
+                                        <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary, #cbd5e1)', marginBottom: '3px', fontWeight: 700 }}>
+                                          Explanation Rationale (Shown upon review):
+                                        </label>
+                                        <textarea
+                                          className="cs-editor-input"
+                                          rows={2}
+                                          value={activeQ.explanation || ''}
+                                          onChange={(e) => handleUpdateQuiz(idx, 'explanation', e.target.value)}
+                                          placeholder="Explain why this answer or code is correct..."
+                                        />
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )
+                                })()}
 
                                 {/* 5. Live Practice Playground Subblock */}
                                 {sec.playground && (

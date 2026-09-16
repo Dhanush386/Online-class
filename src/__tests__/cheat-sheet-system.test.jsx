@@ -73,7 +73,7 @@ describe('Cheat Sheet Security: Sandboxed Code Playground', () => {
   })
 
   it('renders coding practice challenge briefing with tasks and hint toggle for students', () => {
-    const { container } = render(
+    render(
       <CheatSheetPlayground
         starterData={{
           title: 'Practice Challenge: Typography & Google Fonts',
@@ -331,6 +331,123 @@ describe('Cheat Sheet Student Experience: Copy Protection & Neat UI', () => {
     expect(getByText('Solved')).toBeDefined()
     expect(getByText('Next Section Unlocked')).toBeDefined()
     expect(getByText('Great job! Your code solution matches.')).toBeDefined()
+  })
+
+  it('locks question options, textarea, and submit button when Show Answer is clicked', () => {
+    const onAttend = vi.fn()
+    const { getByText, queryByText } = render(
+      <CheatSheetQuiz
+        quiz={{
+          type: 'mcq',
+          questionNumber: 'Question 1 of 1',
+          prompt: 'What tag is used for paragraph text?',
+          options: ['<p>', '<div>', '<span>'],
+          correctAnswer: '<p>',
+          explanation: '<p> defines a paragraph.'
+        }}
+        onAttend={onAttend}
+      />
+    )
+
+    const showAnswerBtn = getByText('Show Answer')
+    const checkAnswerBtn = getByText('Check Answer')
+
+    // Click Show Answer
+    fireEvent.click(showAnswerBtn)
+
+    // Opening Show Answer must NOT artificially mark quiz as attended/unlocked
+    expect(onAttend).not.toHaveBeenCalled()
+    expect(queryByText('Next Section Unlocked')).toBeNull()
+
+    // Submit button must be disabled
+    expect(checkAnswerBtn.disabled).toBe(true)
+
+    // Explanation and lock notification banner must be visible
+    expect(getByText(/Answering is locked while viewing this answer/i)).toBeDefined()
+    expect(getByText('<p> defines a paragraph.')).toBeDefined()
+
+    // Attempting to select an option while Show Answer is active should NOT change the selection or allow submission
+    const optionP = getByText('<p>')
+    fireEvent.click(optionP)
+
+    // Check Answer should remain disabled
+    expect(checkAnswerBtn.disabled).toBe(true)
+
+    // Clicking Hide Explanation re-enables interaction
+    fireEvent.click(getByText('Hide Explanation'))
+    expect(queryByText(/Answering is locked while viewing this answer/i)).toBeNull()
+
+    // Now selecting and submitting works
+    fireEvent.click(getByText('<p>'))
+    expect(checkAnswerBtn.disabled).toBe(false)
+    fireEvent.click(checkAnswerBtn)
+    expect(onAttend).toHaveBeenCalledWith('<p>')
+    expect(getByText('Next Section Unlocked')).toBeDefined()
+  })
+
+  it('locks code editor and submit button when Show Code Solution is clicked', () => {
+    const onAttend = vi.fn()
+    const { getByText, getByPlaceholderText } = render(
+      <CheatSheetQuiz
+        quiz={{
+          type: 'code_input',
+          questionNumber: 'Question 1 of 1',
+          prompt: 'Write a bold tag.',
+          correctAnswer: '<b>text</b>',
+          explanation: '<b> makes text bold.'
+        }}
+        onAttend={onAttend}
+      />
+    )
+
+    const showCodeBtn = getByText('Show Code Solution')
+    const checkCodeBtn = getByText('Check Code')
+    const textarea = getByPlaceholderText(/Type or paste your code solution here/i)
+
+    // Click Show Code Solution
+    fireEvent.click(showCodeBtn)
+
+    expect(onAttend).not.toHaveBeenCalled()
+    expect(textarea.disabled).toBe(true)
+    expect(checkCodeBtn.disabled).toBe(true)
+    expect(getByText(/Answering is locked while viewing this answer/i)).toBeDefined()
+
+    // Hide solution re-enables textarea
+    fireEvent.click(getByText('Hide Explanation'))
+    expect(textarea.disabled).toBe(false)
+  })
+
+  it('supports multi-question quiz array with question navigation tabs', () => {
+    const onAttend = vi.fn()
+    const { getByText } = render(
+      <CheatSheetQuiz
+        quiz={{
+          questions: [
+            {
+              prompt: 'First question prompt?',
+              options: ['Ans 1A', 'Ans 1B'],
+              correctAnswer: 'Ans 1A',
+              explanation: 'Exp 1'
+            },
+            {
+              prompt: 'Second question prompt?',
+              options: ['Ans 2A', 'Ans 2B'],
+              correctAnswer: 'Ans 2B',
+              explanation: 'Exp 2'
+            }
+          ]
+        }}
+        onAttend={onAttend}
+      />
+    )
+
+    expect(getByText('Question 1 of 2')).toBeDefined()
+    expect(getByText('First question prompt?')).toBeDefined()
+
+    // Switch to Question 2 via tab
+    fireEvent.click(getByText(/Question 2/i))
+    expect(getByText('Question 2 of 2')).toBeDefined()
+    expect(getByText('Second question prompt?')).toBeDefined()
   })
 })
 

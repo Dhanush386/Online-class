@@ -28,6 +28,7 @@ export function normalizeCheatSheet(sheet) {
   if (!sheet) return sheet
   try {
     const cloned = JSON.parse(JSON.stringify(sheet))
+    cloned.day_name = formatDayName(cloned.day_of_week || cloned.day_number || 1)
     if (Array.isArray(cloned.sections)) {
       cloned.sections = cloned.sections.map(sec => {
         if (sec && sec.quiz) {
@@ -269,7 +270,9 @@ export const cheatSheetService = {
       if (data) {
         try {
           localStorage.setItem(LIST_CACHE_KEY, JSON.stringify(data))
-        } catch {}
+        } catch (_storageErr) {
+          void _storageErr
+        }
         return { data: (data || []).map(normalizeCheatSheet) }
       }
     } catch (err) {
@@ -277,7 +280,9 @@ export const cheatSheetService = {
       try {
         const cached = localStorage.getItem(LIST_CACHE_KEY)
         if (cached) return { data: (JSON.parse(cached) || []).map(normalizeCheatSheet), isCached: true }
-      } catch {}
+      } catch (_cacheErr) {
+        void _cacheErr
+      }
     }
 
     // Fallback list
@@ -299,7 +304,6 @@ export const cheatSheetService = {
       week_number: Number(sheet.week_number) || 1,
       day_number: Number(sheet.day_number) || Number(sheet.day_of_week) || 1,
       day_of_week: Number(sheet.day_of_week) || Number(sheet.day_number) || 1,
-      day_name: formatDayName(sheet.day_of_week || sheet.day_number || 1),
       estimated_minutes: Number(sheet.estimated_minutes) || 10,
       xp_reward: Number(sheet.xp_reward) || 10,
       status: sheet.status || 'published',
