@@ -255,5 +255,82 @@ describe('Cheat Sheet Student Experience: Copy Protection & Neat UI', () => {
     expect(onAttend).toHaveBeenCalledWith('font-family')
     expect(getByText('Next Section Unlocked')).toBeDefined()
   })
+
+  it('renders multi-line code snippet options inside code blocks and validates answers correctly', () => {
+    const onAttend = vi.fn()
+    const htmlCodeOption = '<!DOCTYPE html>\n<html>\n  <head></head>\n  <body>Your code goes here</body>\n</html>'
+    const wrongOption = '<html><body>Incomplete</body></html>'
+
+    const { getByText, container } = render(
+      <CheatSheetQuiz
+        quiz={{
+          type: 'mcq',
+          formatAsCode: true,
+          questionNumber: 'Question 1 of 1',
+          prompt: 'What is the correct Basic Structure of an HTML document?',
+          options: [htmlCodeOption, wrongOption],
+          correctAnswer: htmlCodeOption,
+          explanation: 'HTML documents require DOCTYPE, html, head, and body tags.'
+        }}
+        onAttend={onAttend}
+      />
+    )
+
+    // Verify option text is rendered inside code element
+    const codeElement = container.querySelector('code')
+    expect(codeElement).toBeDefined()
+    expect(codeElement.textContent).toContain('Your code goes here')
+
+    // Click to select the code option
+    fireEvent.click(codeElement)
+
+    // Submit answer
+    fireEvent.click(getByText('Check Answer'))
+
+    expect(onAttend).toHaveBeenCalledWith(htmlCodeOption)
+    expect(getByText('Solved')).toBeDefined()
+    expect(getByText('Next Section Unlocked')).toBeDefined()
+  })
+
+  it('supports interactive write-code questions with smart normalization and next section unlock', () => {
+    const onAttend = vi.fn()
+    const correctSolution = '<!DOCTYPE html>\n<html>\n  <head></head>\n  <body>\n    Your code goes here\n  </body>\n</html>'
+
+    const { getByText, getByPlaceholderText } = render(
+      <CheatSheetQuiz
+        quiz={{
+          type: 'code_input',
+          matchMode: 'flexible',
+          questionNumber: 'Question 1 of 1',
+          prompt: 'Write the basic boilerplate structure of an HTML document.',
+          starterCode: '<!-- Write your HTML structure here -->\n',
+          correctAnswer: correctSolution,
+          explanation: 'Standard HTML5 documents require the DOCTYPE declaration followed by html, head, and body tags.'
+        }}
+        onAttend={onAttend}
+      />
+    )
+
+    expect(getByText('Coding Quiz Challenge')).toBeDefined()
+    expect(getByText('Write Your Code Answer')).toBeDefined()
+
+    const textarea = getByPlaceholderText(/Type or paste your code solution here/i)
+    expect(textarea.value).toContain('<!-- Write your HTML structure here -->')
+
+    // Student types code with slightly different indentation/spacing (flexible match should accept it!)
+    fireEvent.change(textarea, {
+      target: {
+        value: '<!DOCTYPE html> <html> <head> </head> <body> Your code goes here </body> </html>'
+      }
+    })
+
+    // Click Check Code
+    fireEvent.click(getByText('Check Code'))
+
+    expect(onAttend).toHaveBeenCalled()
+    expect(getByText('Solved')).toBeDefined()
+    expect(getByText('Next Section Unlocked')).toBeDefined()
+    expect(getByText('Great job! Your code solution matches.')).toBeDefined()
+  })
 })
 

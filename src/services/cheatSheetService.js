@@ -34,6 +34,12 @@ export function normalizeCheatSheet(sheet) {
           if (!sec.quiz.questionNumber || sec.quiz.questionNumber === 'Question 1 of 3' || sec.quiz.questionNumber === 'Question 1 of 2') {
             sec.quiz.questionNumber = 'Question 1 of 1'
           }
+          if (!sec.quiz.type) {
+            sec.quiz.type = Array.isArray(sec.quiz.options) ? 'mcq' : 'code_input'
+          }
+          if (sec.quiz.type === 'code_input' && !sec.quiz.matchMode) {
+            sec.quiz.matchMode = 'flexible'
+          }
         }
         return sec
       })
