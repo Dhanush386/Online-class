@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
-import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, BookOpen, ClipboardList, Code, Play, Zap, Clock, CircleDot, Lock } from 'lucide-react'
 import { calculateAccessibleDay, getItemAbsoluteDay, getCourseWeekScheduleDate } from '../../utils/dayAccessEngine'
 import LockedModuleModal from './LockedModuleModal'
 
