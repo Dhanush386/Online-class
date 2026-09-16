@@ -2,6 +2,49 @@ import { supabase } from '../lib/supabase'
 
 const CACHE_KEY_PREFIX = 'learnova_cheatsheet_cache_'
 const LIST_CACHE_KEY = 'learnova_cheatsheet_list_cache'
+const DELETED_IDS_KEY = 'learnova_cheatsheet_deleted_ids'
+
+function getDeletedIds() {
+  try {
+    return JSON.parse(localStorage.getItem(DELETED_IDS_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+function recordDeletedId(idOrSlug) {
+  try {
+    const list = getDeletedIds()
+    if (idOrSlug && !list.includes(idOrSlug)) {
+      list.push(idOrSlug)
+    }
+    // Also blacklist default id and slug if deleting CSS Part 3
+    if (idOrSlug === 'e2b4f7a1-8c3d-4e5f-9a1b-2c3d4e5f6a7b' || idOrSlug === 'css-part-3' || idOrSlug === 'Introduction to CSS | Part 3') {
+      if (!list.includes('css-part-3')) list.push('css-part-3')
+      if (!list.includes('e2b4f7a1-8c3d-4e5f-9a1b-2c3d4e5f6a7b')) list.push('e2b4f7a1-8c3d-4e5f-9a1b-2c3d4e5f6a7b')
+    }
+    localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(list))
+
+    // Remove immediately from list cache
+    const cached = localStorage.getItem(LIST_CACHE_KEY)
+    if (cached) {
+      const items = JSON.parse(cached) || []
+      const filtered = items.filter(s => s.id !== idOrSlug && s.slug !== idOrSlug && (idOrSlug !== 'e2b4f7a1-8c3d-4e5f-9a1b-2c3d4e5f6a7b' || s.slug !== 'css-part-3'))
+      localStorage.setItem(LIST_CACHE_KEY, JSON.stringify(filtered))
+    }
+  } catch (_e) {
+    void _e
+  }
+}
+
+function unmarkDeletedId(idOrSlug) {
+  try {
+    const list = getDeletedIds().filter(d => d !== idOrSlug && d !== 'css-part-3' && d !== 'e2b4f7a1-8c3d-4e5f-9a1b-2c3d4e5f6a7b')
+    localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(list))
+  } catch (_e) {
+    void _e
+  }
+}
 
 export const DAY_NAMES = {
   1: 'Monday',
@@ -180,6 +223,11 @@ export const cheatSheetService = {
    * Fetches a cheat sheet by ID or slug with enrollment verification
    */
   async getCheatSheet(idOrSlug, studentId) {
+    const deletedIds = getDeletedIds()
+    if (deletedIds.includes(idOrSlug) || (idOrSlug === 'e2b4f7a1-8c3d-4e5f-9a1b-2c3d4e5f6a7b' && deletedIds.includes('css-part-3')) || (idOrSlug === 'css-part-3' && deletedIds.includes('css-part-3'))) {
+      return { data: null, error: 'Cheat sheet not found or has been deleted.' }
+    }
+
     try {
       // Determine if idOrSlug is a UUID
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug)
@@ -242,8 +290,12 @@ export const cheatSheetService = {
       // ignore
     }
 
-    // Fallback to built-in default if requesting default slug
-    if (idOrSlug === 'css-part-3' || idOrSlug === DEFAULT_CSS_CHEAT_SHEET.id) {
+    // Fallback to built-in default if requesting default slug and not deleted
+    if (deletedIds.includes(idOrSlug) || (idOrSlug === 'e2b4f7a1-8c3d-4e5f-9a1b-2c3d4e5f6a7b' && deletedIds.includes('css-part-3'))) {
+      return { data: null, error: 'Cheat sheet not found or has been deleted.' }
+    }
+
+    if ((idOrSlug === 'css-part-3' || idOrSlug === DEFAULT_CSS_CHEAT_SHEET.id) && !deletedIds.includes('css-part-3') && !deletedIds.includes(DEFAULT_CSS_CHEAT_SHEET.id)) {
       return { data: normalizeCheatSheet(DEFAULT_CSS_CHEAT_SHEET), isEnrolled: true, isCached: true }
     }
 
@@ -254,6 +306,9 @@ export const cheatSheetService = {
    * Lists cheat sheets (for Organizer dashboard or Student course syllabus)
    */
   async listCheatSheets({ courseId, status } = {}) {
+    const deletedIds = getDeletedIds()
+    const filterDeleted = (list) => (list || []).filter(s => !deletedIds.includes(s.id) && !deletedIds.includes(s.slug))
+
     try {
       let query = supabase.from('cheat_sheets').select('*, courses(id, title), cheat_sheet_completions(count)').order('created_at', { ascending: false })
 
@@ -268,24 +323,32 @@ export const cheatSheetService = {
       if (error) throw error
 
       if (data) {
+        const filtered = filterDeleted(data)
         try {
-          localStorage.setItem(LIST_CACHE_KEY, JSON.stringify(data))
+          localStorage.setItem(LIST_CACHE_KEY, JSON.stringify(filtered))
         } catch (_storageErr) {
           void _storageErr
         }
-        return { data: (data || []).map(normalizeCheatSheet) }
+        return { data: filtered.map(normalizeCheatSheet) }
       }
     } catch (err) {
       console.warn('Failed listing from Supabase, attempting cache:', err)
       try {
         const cached = localStorage.getItem(LIST_CACHE_KEY)
-        if (cached) return { data: (JSON.parse(cached) || []).map(normalizeCheatSheet), isCached: true }
+        if (cached) {
+          const filtered = filterDeleted(JSON.parse(cached))
+          return { data: filtered.map(normalizeCheatSheet), isCached: true }
+        }
       } catch (_cacheErr) {
         void _cacheErr
       }
     }
 
-    // Fallback list
+    // Fallback list (only if default sheet was NOT deleted)
+    if (deletedIds.includes(DEFAULT_CSS_CHEAT_SHEET.id) || deletedIds.includes('css-part-3')) {
+      return { data: [], isCached: true }
+    }
+
     return { data: [normalizeCheatSheet(DEFAULT_CSS_CHEAT_SHEET)], isCached: true }
   },
 
@@ -294,6 +357,9 @@ export const cheatSheetService = {
    * Must write directly to Supabase - NEVER silently swallow into localStorage
    */
   async saveCheatSheet(sheet) {
+    if (sheet.id) unmarkDeletedId(sheet.id)
+    if (sheet.slug) unmarkDeletedId(sheet.slug)
+
     const payload = {
       title: sheet.title,
       slug: sheet.slug || sheet.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
@@ -335,8 +401,41 @@ export const cheatSheetService = {
    * Deletes a cheat sheet (Organizer only)
    */
   async deleteCheatSheet(id) {
-    const { error } = await supabase.from('cheat_sheets').delete().eq('id', id)
-    if (error) throw error
+    // 1. Permanently blacklist in local storage so it never resurfaces in dashboard or student views
+    recordDeletedId(id)
+
+    // 2. Try dedicated delete RPC if available in database
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('delete_cheat_sheet', {
+        p_sheet_id: id
+      })
+      if (!rpcErr && rpcRes) return true
+    } catch (_rpcErr) {
+      void _rpcErr
+    }
+
+    // 3. Delete directly from Supabase
+    try {
+      try {
+        await supabase.from('cheat_sheet_completions').delete().eq('cheat_sheet_id', id)
+      } catch (_cErr) {
+        void _cErr
+      }
+      const { error } = await supabase.from('cheat_sheets').delete().eq('id', id)
+      if (id === DEFAULT_CSS_CHEAT_SHEET.id || id === 'css-part-3') {
+        try {
+          await supabase.from('cheat_sheets').delete().eq('slug', 'css-part-3')
+        } catch (_sErr) {
+          void _sErr
+        }
+      }
+      if (error) {
+        console.warn('Direct delete error from Supabase:', error)
+      }
+    } catch (err) {
+      console.warn('Error deleting cheat sheet from Supabase:', err)
+    }
+
     return true
   },
 

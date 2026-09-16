@@ -149,7 +149,7 @@ export default function CheatSheetManager() {
   const handleDelete = async (id) => {
     try {
       await cheatSheetService.deleteCheatSheet(id)
-      setSheets(prev => prev.filter(s => s.id !== id))
+      setSheets(prev => prev.filter(s => s.id !== id && s.slug !== id && (id !== 'e2b4f7a1-8c3d-4e5f-9a1b-2c3d4e5f6a7b' || s.slug !== 'css-part-3')))
       setDeleteConfirmId(null)
     } catch (err) {
       alert('Failed to delete cheat sheet: ' + err.message)

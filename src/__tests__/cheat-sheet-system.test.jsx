@@ -461,5 +461,19 @@ describe('Cheat Sheet Student Experience: Copy Protection & Neat UI', () => {
     expect(onAttend).toHaveBeenCalledWith('Ans 2B')
     expect(getByText('Next Section Unlocked')).toBeDefined()
   })
+
+  it('permanently removes deleted cheat sheet from lists and prevents fallback resurrection', async () => {
+    const listBefore = await cheatSheetService.listCheatSheets()
+    expect(listBefore.data.length).toBeGreaterThanOrEqual(1)
+    const targetId = listBefore.data[0].id
+
+    await cheatSheetService.deleteCheatSheet(targetId)
+
+    const listAfter = await cheatSheetService.listCheatSheets()
+    expect(listAfter.data.some(s => s.id === targetId)).toBe(false)
+
+    const getRes = await cheatSheetService.getCheatSheet(targetId)
+    expect(getRes.data).toBeNull()
+  })
 })
 
