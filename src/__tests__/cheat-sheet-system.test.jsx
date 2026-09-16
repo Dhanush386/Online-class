@@ -46,7 +46,7 @@ describe('Cheat Sheet Security: Rich Text & Markdown Sanitizer', () => {
 })
 
 describe('Cheat Sheet Security: Sandboxed Code Playground', () => {
-  it('renders iframe with sandbox="allow-scripts" and strictly OMITS allow-same-origin', () => {
+  it('hides output preview until Run Code is clicked, then renders sandboxed iframe without allow-same-origin', () => {
     const { container } = render(
       <CheatSheetPlayground
         starterData={{
@@ -56,6 +56,15 @@ describe('Cheat Sheet Security: Sandboxed Code Playground', () => {
         }}
       />
     )
+
+    // Initially before clicking Run Code, iframe is NOT rendered
+    expect(container.querySelector('iframe')).toBeNull()
+    expect(screen.getByText('Live Output Preview')).toBeDefined()
+    expect(container.textContent).toContain('Live Output Preview')
+    expect(container.textContent).toContain('Click Run Code to execute your code')
+
+    // Click Run Code
+    fireEvent.click(screen.getByRole('button', { name: /Run Code/i }))
 
     const iframe = container.querySelector('iframe')
     expect(iframe).not.toBeNull()
@@ -183,6 +192,27 @@ describe('Cheat Sheet Student Experience: Copy Protection & Neat UI', () => {
     const code = container.querySelector('code')
     expect(code).not.toBeNull()
     expect(code.style.userSelect).toBe('none')
+  })
+
+  it('renders HTML code blocks with escaped tags so doctype and tags are visibly rendered rather than invisible DOM nodes', () => {
+    const htmlCode = `<!DOCTYPE html>\n<html>\n  <head></head>\n  <body>\n    Your code goes here\n  </body>\n</html>`
+    const { container } = render(
+      <CheatSheetCodeBlock
+        code={htmlCode}
+        language="HTML"
+      />
+    )
+
+    // Check that DOCTYPE and HTML tags are visibly rendered as text in the snippet
+    expect(container.textContent).toContain('<!DOCTYPE html>')
+    expect(container.textContent).toContain('html')
+    expect(container.textContent).toContain('head')
+    expect(container.textContent).toContain('body')
+    expect(container.textContent).toContain('Your code goes here')
+
+    // Verify there is NO unescaped <head> or <body> node injected directly into the DOM container
+    expect(container.querySelector('code head')).toBeNull()
+    expect(container.querySelector('code body')).toBeNull()
   })
 
   it('prevents right-click context menu on instructional text and code blocks', () => {

@@ -54,12 +54,13 @@ function JsBadge() {
   )
 }
 
-export default function CheatSheetPlayground({ starterData }) {
+export default function CheatSheetPlayground({ starterData, initialRun = false }) {
   const [activeTab, setActiveTab] = useState('html') // 'html' | 'css' | 'js'
   const [htmlCode, setHtmlCode] = useState(starterData?.starterHtml || '<!DOCTYPE html>\n<html>\n  <body>\n    <h1 class="main-heading">Tourism</h1>\n    <hr />\n    <p class="paragraph">Plan your trip wherever you want to go</p>\n  </body>\n</html>')
   const [cssCode, setCssCode] = useState(starterData?.starterCss || '@import url("https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Roboto:wght@400;700&display=swap");\n\n.main-heading {\n  font-family: "Caveat", cursive;\n  font-size: 36px;\n  font-style: italic;\n  color: #1e293b;\n  margin-bottom: 0.25rem;\n}\n\n.paragraph {\n  font-family: "Roboto", sans-serif;\n  font-size: 18px;\n  color: #334155;\n}')
   const [jsCode, setJsCode] = useState(starterData?.starterJs || '// JavaScript ready')
   const [runTimestamp, setRunTimestamp] = useState(Date.now())
+  const [hasRun, setHasRun] = useState(initialRun)
   const [copied, setCopied] = useState(false)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const [feedbackText, setFeedbackText] = useState('')
@@ -92,6 +93,7 @@ export default function CheatSheetPlayground({ starterData }) {
     setHtmlCode(starterData?.starterHtml || '')
     setCssCode(starterData?.starterCss || '')
     setJsCode(starterData?.starterJs || '')
+    setHasRun(false)
     setRunTimestamp(Date.now())
   }
 
@@ -469,7 +471,10 @@ export default function CheatSheetPlayground({ starterData }) {
           >
             <button
               type="button"
-              onClick={() => setRunTimestamp(Date.now())}
+              onClick={() => {
+                setHasRun(true)
+                setRunTimestamp(Date.now())
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -498,22 +503,64 @@ export default function CheatSheetPlayground({ starterData }) {
             display: 'flex',
             flexDirection: 'column',
             background: '#ffffff',
-            position: 'relative'
+            position: 'relative',
+            minHeight: '340px'
           }}
         >
-          <iframe
-            key={runTimestamp}
-            sandbox="allow-scripts"
-            srcDoc={sandboxedDoc}
-            title="Interactive Code Preview"
-            style={{
-              width: '100%',
-              height: '100%',
-              minHeight: '340px',
-              border: 'none',
-              background: '#ffffff'
-            }}
-          />
+          {!hasRun ? (
+            <div
+              style={{
+                flex: 1,
+                minHeight: '340px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '2rem 1.5rem',
+                textAlign: 'center',
+                background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+                color: '#64748b'
+              }}
+            >
+              <div
+                style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '16px',
+                  background: 'rgba(0, 82, 204, 0.08)',
+                  border: '1.5px solid rgba(0, 82, 204, 0.2)',
+                  color: '#0052cc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1rem',
+                  boxShadow: '0 4px 12px rgba(0, 82, 204, 0.1)'
+                }}
+              >
+                <Play size={22} fill="#0052cc" />
+              </div>
+              <h4 style={{ margin: '0 0 0.4rem 0', color: '#0f172a', fontSize: '1.05rem', fontWeight: 800 }}>
+                Live Output Preview
+              </h4>
+              <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748b', maxWidth: '280px', lineHeight: 1.55 }}>
+                Click <strong style={{ color: '#0052cc' }}>Run Code</strong> to execute your code and preview the live output.
+              </p>
+            </div>
+          ) : (
+            <iframe
+              key={runTimestamp}
+              sandbox="allow-scripts"
+              srcDoc={sandboxedDoc}
+              title="Interactive Code Preview"
+              style={{
+                width: '100%',
+                height: '100%',
+                minHeight: '340px',
+                border: 'none',
+                background: '#ffffff'
+              }}
+            />
+          )}
         </div>
       </div>
 

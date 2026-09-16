@@ -1,15 +1,109 @@
 import PropTypes from 'prop-types'
 
+function escapeHtml(str) {
+  if (!str) return ''
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function highlightHtmlLine(line) {
+  if (!line) return ''
+
+  // 1. HTML comments: <!-- ... -->
+  if (/<!--.*?-->/.test(line)) {
+    return line.replace(/<!--(.*?)-->/g, (_, comment) => {
+      return `<span style="color:#64748b;font-style:italic;">&lt;!--${escapeHtml(comment)}--&gt;</span>`
+    })
+  }
+
+  // 2. DOCTYPE: <!DOCTYPE html>
+  if (/<!DOCTYPE\s+[^>]+>/i.test(line)) {
+    return line.replace(/<!DOCTYPE\s+([^>]+)>/i, (_, dt) => {
+      return `<span style="color:#c084fc;font-weight:700;">&lt;!DOCTYPE ${escapeHtml(dt)}&gt;</span>`
+    })
+  }
+
+  // 3. HTML tags: <tag attr="val"> or </tag> or <tag/>
+  const tagRegex = /(<\/?[a-zA-Z0-9_-]+)([^>]*?)(\/?>)/g
+  let lastIndex = 0
+  let result = ''
+  let match
+
+  while ((match = tagRegex.exec(line)) !== null) {
+    if (match.index > lastIndex) {
+      result += escapeHtml(line.slice(lastIndex, match.index))
+    }
+
+    const tagStart = match[1]
+    const attrsStr = match[2]
+    const tagEnd = match[3]
+
+    const isClosing = tagStart.startsWith('</')
+    const tagName = tagStart.replace(/^<\/?/, '')
+    const bracketStart = isClosing ? '&lt;/' : '&lt;'
+    const bracketEnd = tagEnd === '/>' ? ' /&gt;' : '&gt;'
+
+    let formattedTag = `<span style="color:#94a3b8;">${bracketStart}</span><span style="color:#f43f5e;font-weight:600;">${tagName}</span>`
+
+    if (attrsStr && attrsStr.trim()) {
+      const attrRegex = /([a-zA-Z0-9_-]+)(?:(=)("[^"]*"|'[^']*'|[^\s>]+))?/g
+      const formattedAttrs = attrsStr.replace(attrRegex, (m, attrName, eq, val) => {
+        let attrFormatted = ` <span style="color:#38bdf8;font-style:italic;">${attrName}</span>`
+        if (eq) {
+          attrFormatted += `<span style="color:#94a3b8;">=</span>`
+        }
+        if (val) {
+          attrFormatted += `<span style="color:#fde047;">${escapeHtml(val)}</span>`
+        }
+        return attrFormatted
+      })
+      formattedTag += formattedAttrs
+    }
+
+    formattedTag += `<span style="color:#94a3b8;">${bracketEnd}</span>`
+    result += formattedTag
+    lastIndex = tagRegex.lastIndex
+  }
+
+  if (lastIndex < line.length) {
+    result += escapeHtml(line.slice(lastIndex))
+  }
+
+  return result
+}
+
+function highlightJsLine(line) {
+  if (!line) return ''
+  const escaped = escapeHtml(line)
+  const tokenRegex = /(\/\/[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|import|export|from|default|class|extends|new|this|async|await|try|catch|finally|throw)\b)|(\b\d+\b)|(\b(?:true|false|null|undefined|NaN)\b)|([{}();[\],.])/g
+
+  return escaped.replace(tokenRegex, (match, comment, str, kw, num, bool, punct) => {
+    if (comment) return `<span style="color:#64748b;font-style:italic;">${comment}</span>`
+    if (str) return `<span style="color:#fde047;">${str}</span>`
+    if (kw) return `<span style="color:#c084fc;font-weight:600;">${kw}</span>`
+    if (num) return `<span style="color:#38bdf8;">${num}</span>`
+    if (bool) return `<span style="color:#f43f5e;font-weight:600;">${bool}</span>`
+    if (punct) return `<span style="color:#94a3b8;">${punct}</span>`
+    return match
+  })
+}
+
 /**
- * Enhanced syntax highlighter for CSS & HTML snippets
+ * Enhanced syntax highlighter for CSS, HTML & JS snippets
  * Uses single-pass token matching to prevent nested tag replacement collisions
  */
-function highlightCode(rawCode, language) {
+function highlightCode(rawCode, language = 'CSS') {
   if (!rawCode) return []
 
+  const lang = (language || 'CSS').toUpperCase()
   const lines = rawCode.split('\n')
+
   return lines.map((line, idx) => {
-    if (language.toUpperCase() === 'CSS') {
+    if (lang === 'CSS') {
       const tokenRegex = /(@[a-zA-Z-]+)|url\(([^)]*)\)|(\.[a-zA-Z0-9_-]+)|([a-z-]+)(?=\s*:)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b\d+(?:px|em|rem|%)?\b)|(\b(?:normal|italic|oblique|bold|bolder|lighter|sans-serif|serif|cursive|monospace)\b)|([{}();])/g
 
       const formatted = line.replace(tokenRegex, (match, atRule, urlArg, cls, prop, str, num, kw, punct) => {
@@ -27,7 +121,15 @@ function highlightCode(rawCode, language) {
       return { lineNumber: idx + 1, html: formatted }
     }
 
-    return { lineNumber: idx + 1, html: line }
+    if (lang === 'HTML') {
+      return { lineNumber: idx + 1, html: highlightHtmlLine(line) }
+    }
+
+    if (lang === 'JS' || lang === 'JAVASCRIPT') {
+      return { lineNumber: idx + 1, html: highlightJsLine(line) }
+    }
+
+    return { lineNumber: idx + 1, html: escapeHtml(line) }
   })
 }
 

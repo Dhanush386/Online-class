@@ -1048,7 +1048,7 @@ export default function CheatSheetManager() {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '5px',
-                      color: '#818cf8',
+                      color: '#4f46e5',
                       fontSize: '0.84rem',
                       fontWeight: 700,
                       textDecoration: 'none',
@@ -1059,9 +1059,9 @@ export default function CheatSheetManager() {
                     onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.12)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
-                    <Eye size={14} />
-                    <span>Student View</span>
-                    <ExternalLink size={12} />
+                    <Eye size={14} style={{ color: '#4f46e5' }} />
+                    <span style={{ color: '#4f46e5', fontWeight: 700 }}>Student View</span>
+                    <ExternalLink size={12} style={{ color: '#4f46e5' }} />
                   </a>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1069,24 +1069,30 @@ export default function CheatSheetManager() {
                       onClick={() => handleOpenEdit(sheet)}
                       title="Edit Cheat Sheet"
                       style={{
-                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15))',
-                        border: '1px solid rgba(99, 102, 241, 0.35)',
+                        background: 'rgba(99, 102, 241, 0.12)',
+                        border: '1.5px solid rgba(99, 102, 241, 0.35)',
                         padding: '6px 12px',
                         borderRadius: '8px',
                         cursor: 'pointer',
-                        color: '#f8fafc',
+                        color: '#4f46e5',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
-                        fontSize: '0.82rem',
+                        fontSize: '0.84rem',
                         fontWeight: 700,
                         transition: 'all 0.15s'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#6366f1'}
-                      onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)'}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(99, 102, 241, 0.22)'
+                        e.currentTarget.style.borderColor = '#4f46e5'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(99, 102, 241, 0.12)'
+                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)'
+                      }}
                     >
-                      <Edit2 size={13} style={{ color: '#818cf8' }} />
-                      <span>Edit</span>
+                      <Edit2 size={13} style={{ color: '#4f46e5' }} />
+                      <span style={{ color: '#4f46e5', fontWeight: 700 }}>Edit</span>
                     </button>
 
                     <button
@@ -1094,11 +1100,14 @@ export default function CheatSheetManager() {
                       title="Delete Cheat Sheet"
                       style={{
                         background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
                         padding: '6px 8px',
                         borderRadius: '8px',
                         cursor: 'pointer',
-                        color: '#ef4444',
+                        color: '#dc2626',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         transition: 'all 0.15s'
                       }}
                       onMouseEnter={(e) => {
@@ -1107,10 +1116,10 @@ export default function CheatSheetManager() {
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'
-                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)'
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)'
                       }}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={14} style={{ color: '#dc2626' }} />
                     </button>
                   </div>
                 </div>
