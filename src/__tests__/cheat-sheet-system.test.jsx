@@ -107,6 +107,33 @@ describe('Cheat Sheet Security: Sandboxed Code Playground', () => {
     fireEvent.click(hintButton)
     expect(screen.getByText(/Use @import url/)).toBeDefined()
   })
+
+  it('does not inject unwanted fallback CSS when organizer explicitly sets starterCss to empty', () => {
+    const { container } = render(
+      <CheatSheetPlayground
+        starterData={{
+          starterHtml: '<h1>Only HTML</h1>',
+          starterCss: '',
+          starterJs: ''
+        }}
+      />
+    )
+
+    // Switch to CSS tab
+    const cssTab = screen.getByRole('tab', { name: /CSS/i })
+    fireEvent.click(cssTab)
+
+    const textarea = container.querySelector('textarea')
+    expect(textarea.value).toBe('')
+    expect(textarea.value).not.toContain('Caveat')
+    expect(textarea.value).not.toContain('main-heading')
+
+    // Click Run Code
+    fireEvent.click(screen.getByRole('button', { name: /Run Code/i }))
+    const iframe = container.querySelector('iframe')
+    const srcDoc = iframe.getAttribute('srcdoc')
+    expect(srcDoc).not.toContain('font-family: "Caveat"')
+  })
 })
 
 describe('Cheat Sheet Organizer: Live Coding Practice Suite', () => {

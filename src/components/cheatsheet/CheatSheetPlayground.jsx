@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import {
   Play, RotateCcw, Copy, Check, MessageSquare,
@@ -56,9 +56,22 @@ function JsBadge() {
 
 export default function CheatSheetPlayground({ starterData, initialRun = false }) {
   const [activeTab, setActiveTab] = useState('html') // 'html' | 'css' | 'js'
-  const [htmlCode, setHtmlCode] = useState(starterData?.starterHtml || '<!DOCTYPE html>\n<html>\n  <body>\n    <h1 class="main-heading">Tourism</h1>\n    <hr />\n    <p class="paragraph">Plan your trip wherever you want to go</p>\n  </body>\n</html>')
-  const [cssCode, setCssCode] = useState(starterData?.starterCss || '@import url("https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Roboto:wght@400;700&display=swap");\n\n.main-heading {\n  font-family: "Caveat", cursive;\n  font-size: 36px;\n  font-style: italic;\n  color: #1e293b;\n  margin-bottom: 0.25rem;\n}\n\n.paragraph {\n  font-family: "Roboto", sans-serif;\n  font-size: 18px;\n  color: #334155;\n}')
-  const [jsCode, setJsCode] = useState(starterData?.starterJs || '// JavaScript ready')
+
+  const getInitialCode = (val, fallback = '') => {
+    if (typeof val === 'string') return val
+    if (starterData) return '' // If starterData was provided, do not inject unasked fallback code
+    return fallback
+  }
+
+  const [htmlCode, setHtmlCode] = useState(() =>
+    getInitialCode(starterData?.starterHtml, '<!DOCTYPE html>\n<html>\n  <body>\n    <h1 class="main-heading">Tourism</h1>\n    <hr />\n    <p class="paragraph">Plan your trip wherever you want to go</p>\n  </body>\n</html>')
+  )
+  const [cssCode, setCssCode] = useState(() =>
+    getInitialCode(starterData?.starterCss, '')
+  )
+  const [jsCode, setJsCode] = useState(() =>
+    getInitialCode(starterData?.starterJs, '')
+  )
   const [runTimestamp, setRunTimestamp] = useState(Date.now())
   const [hasRun, setHasRun] = useState(initialRun)
   const [copied, setCopied] = useState(false)
@@ -66,11 +79,22 @@ export default function CheatSheetPlayground({ starterData, initialRun = false }
   const [feedbackText, setFeedbackText] = useState('')
   const [feedbackSent, setFeedbackSent] = useState(false)
 
+  // Sync state whenever starterData updates (e.g. from organizer changes or navigation)
+  useEffect(() => {
+    if (starterData) {
+      setHtmlCode(typeof starterData.starterHtml === 'string' ? starterData.starterHtml : '')
+      setCssCode(typeof starterData.starterCss === 'string' ? starterData.starterCss : '')
+      setJsCode(typeof starterData.starterJs === 'string' ? starterData.starterJs : '')
+      setHasRun(false)
+      setRunTimestamp(Date.now())
+    }
+  }, [starterData?.starterHtml, starterData?.starterCss, starterData?.starterJs])
+
   // Construct securely bundled HTML document for srcDoc
   const sandboxedDoc = useMemo(() => {
     let finalHtml = htmlCode || ''
-    const cssInject = `<style>\n${cssCode || ''}\n</style>`
-    const jsInject = `<script>\n${jsCode || ''}\n</script>`
+    const cssInject = cssCode ? `<style>\n${cssCode}\n</style>` : ''
+    const jsInject = jsCode ? `<script>\n${jsCode}\n</script>` : ''
 
     if (finalHtml.includes('</head>')) {
       finalHtml = finalHtml.replace('</head>', `${cssInject}</head>`)
@@ -90,9 +114,9 @@ export default function CheatSheetPlayground({ starterData, initialRun = false }
   }, [htmlCode, cssCode, jsCode, runTimestamp])
 
   const handleReset = () => {
-    setHtmlCode(starterData?.starterHtml || '')
-    setCssCode(starterData?.starterCss || '')
-    setJsCode(starterData?.starterJs || '')
+    setHtmlCode(typeof starterData?.starterHtml === 'string' ? starterData.starterHtml : '')
+    setCssCode(typeof starterData?.starterCss === 'string' ? starterData.starterCss : '')
+    setJsCode(typeof starterData?.starterJs === 'string' ? starterData.starterJs : '')
     setHasRun(false)
     setRunTimestamp(Date.now())
   }
