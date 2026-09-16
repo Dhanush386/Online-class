@@ -139,11 +139,16 @@ export default function CheatSheetPlayground({ starterData, initialRun = false }
   const lineNumbers = currentCode.split('\n').map((_, i) => i + 1)
   const [showHint, setShowHint] = useState(false)
 
-  const practiceTitle = starterData?.title || 'Practice Challenge: Interactive Playground'
+  const practiceTitle = typeof starterData?.title === 'string'
+    ? starterData.title
+    : (starterData ? '' : 'Practice Challenge: Interactive Playground')
   const practiceDifficulty = starterData?.difficulty || 'Beginner'
-  const practiceInstructions = starterData?.instructions || '1. Inspect the starter HTML structure\n2. Modify styles and properties in the CSS tab\n3. Click "Run Code" to preview the live rendering in the sandbox'
-  const practiceHints = starterData?.hints || 'Tweak the values in the CSS tab and click "Run Code" to observe the immediate effect on the rendered layout.'
-  const hasPracticeChallenge = true
+  const practiceInstructions = typeof starterData?.instructions === 'string'
+    ? starterData.instructions
+    : (starterData ? '' : '1. Inspect the starter HTML structure\n2. Modify styles and properties in the CSS tab\n3. Click "Run Code" to preview the live rendering in the sandbox')
+  const practiceHints = typeof starterData?.hints === 'string'
+    ? starterData.hints
+    : (starterData ? '' : 'Tweak the values in the CSS tab and click "Run Code" to observe the immediate effect on the rendered layout.')
 
   const taskList = useMemo(() => {
     if (!practiceInstructions) return []
@@ -153,6 +158,8 @@ export default function CheatSheetPlayground({ starterData, initialRun = false }
       .filter(Boolean)
       .map(line => line.replace(/^\d+[\.\)]\s*/, ''))
   }, [practiceInstructions])
+
+  const hasPracticeChallenge = Boolean(practiceTitle || taskList.length > 0 || practiceHints)
 
   return (
     <div style={{ margin: '2rem 0' }}>

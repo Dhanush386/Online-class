@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import {
   Play, RotateCcw, Copy, Check, Code2, Sparkles,
   Lightbulb, CheckCircle2, Maximize2, Minimize2,
-  Trash2, ChevronDown, BookOpen, AlertCircle
+  Trash2, ChevronDown, BookOpen, AlertCircle, Plus
 } from 'lucide-react'
 
 export const PRACTICE_TEMPLATES = [
@@ -311,13 +311,41 @@ export default function OrganizerPlaygroundEditor({
   const templateMenuRef = useRef(null)
 
   const data = playgroundData || {}
-  const html = data.starterHtml || ''
-  const css = data.starterCss || ''
-  const js = data.starterJs || ''
-  const title = data.title || 'Practice Challenge'
+  const html = typeof data.starterHtml === 'string' ? data.starterHtml : ''
+  const css = typeof data.starterCss === 'string' ? data.starterCss : ''
+  const js = typeof data.starterJs === 'string' ? data.starterJs : ''
+  const title = typeof data.title === 'string' ? data.title : ''
   const difficulty = data.difficulty || 'Beginner'
-  const instructions = data.instructions || ''
-  const hints = data.hints || ''
+  const instructions = typeof data.instructions === 'string' ? data.instructions : ''
+  const hints = typeof data.hints === 'string' ? data.hints : ''
+
+  const taskList = useMemo(() => {
+    if (!instructions) return []
+    return instructions.split('\n').map(t => t.trim()).filter(Boolean)
+  }, [instructions])
+
+  const handleAddTask = () => {
+    const nextNum = taskList.length + 1
+    const newTasks = [...taskList, `${nextNum}. New practice requirement`]
+    onChange({ ...data, instructions: newTasks.join('\n') })
+  }
+
+  const handleUpdateTask = (idx, text) => {
+    const updated = [...taskList]
+    updated[idx] = text
+    onChange({ ...data, instructions: updated.join('\n') })
+  }
+
+  const handleDeleteTask = (idx) => {
+    const updated = taskList.filter((_, i) => i !== idx)
+    // Renumber remaining tasks
+    const renumbered = updated.map((task, i) => `${i + 1}. ${task.replace(/^\d+[\.\)]\s*/, '')}`)
+    onChange({ ...data, instructions: renumbered.join('\n') })
+  }
+
+  const handleClearAllTasks = () => {
+    onChange({ ...data, instructions: '' })
+  }
 
   // Build sandboxed HTML document for live preview runner
   const sandboxedDoc = useMemo(() => {
@@ -600,36 +628,179 @@ export default function OrganizerPlaygroundEditor({
 
         {/* Task Instructions */}
         <div style={{ marginBottom: '0.75rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
             <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary, #cbd5e1)', display: 'flex', alignItems: 'center', gap: '5px' }}>
               <CheckCircle2 size={13} style={{ color: '#10b981' }} />
-              <span>Practice Objectives / Task Requirements (One task per line)</span>
+              <span>Practice Objectives / Task Requirements</span>
+              <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                {taskList.length} {taskList.length === 1 ? 'task' : 'tasks'}
+              </span>
             </label>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted, #8e9bb0)' }}>
-              Numbered lists render as actionable task checklists for students
-            </span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={handleAddTask}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  color: '#10b981',
+                  padding: '2px 8px',
+                  borderRadius: '5px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                <Plus size={12} /> Add Task
+              </button>
+
+              {taskList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAllTasks}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    color: '#ef4444',
+                    padding: '2px 8px',
+                    borderRadius: '5px',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                  title="Clear all tasks"
+                >
+                  <Trash2 size={11} /> Clear All
+                </button>
+              )}
+            </div>
           </div>
-          <textarea
-            className="form-input"
-            value={instructions}
-            onChange={(e) => onChange({ ...data, instructions: e.target.value })}
-            placeholder="1. Change the font-family of .main-heading&#10;2. Set the font-size of .paragraph to 18px&#10;3. Add a smooth box-shadow to .card"
-            style={{ width: '100%', height: '70px', fontSize: '0.82rem', padding: '0.5rem', resize: 'vertical' }}
-          />
+
+          {/* Structured Task List with Individual Delete Buttons */}
+          {taskList.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '6px' }}>
+              {taskList.map((task, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    background: 'rgba(99, 102, 241, 0.15)',
+                    color: '#818cf8',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {i + 1}
+                  </span>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={task.replace(/^\d+[\.\)]\s*/, '')}
+                    onChange={(e) => handleUpdateTask(i, `${i + 1}. ${e.target.value}`)}
+                    placeholder="Describe requirement for students..."
+                    style={{ flex: 1, fontSize: '0.82rem', padding: '0.35rem 0.55rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTask(i)}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      color: '#ef4444',
+                      padding: '4px 6px',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                    title={`Delete task ${i + 1}`}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              padding: '0.65rem 0.85rem',
+              borderRadius: '6px',
+              border: '1px dashed var(--card-border, rgba(255, 255, 255, 0.15))',
+              background: 'rgba(255, 255, 255, 0.02)',
+              fontSize: '0.78rem',
+              color: 'var(--text-muted, #8e9bb0)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '6px'
+            }}>
+              <span>No task requirements added. Students will see an open sandbox.</span>
+              <button
+                type="button"
+                onClick={handleAddTask}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#6366f1',
+                  fontWeight: 700,
+                  fontSize: '0.76rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  padding: 0
+                }}
+              >
+                <Plus size={12} /> Add First Task
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Optional Hint */}
         <div>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary, #cbd5e1)', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
-            <Lightbulb size={13} style={{ color: '#f59e0b' }} />
-            <span>Helpful Hint (Revealed when student clicks "Need a Hint?")</span>
-          </label>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary, #cbd5e1)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Lightbulb size={13} style={{ color: '#f59e0b' }} />
+              <span>Helpful Hint (Revealed when student clicks &quot;Need a Hint?&quot;)</span>
+            </label>
+            {hints && (
+              <button
+                type="button"
+                onClick={() => onChange({ ...data, hints: '' })}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#ef4444',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+                title="Remove hint"
+              >
+                Clear Hint
+              </button>
+            )}
+          </div>
           <input
             type="text"
             className="form-input"
             value={hints}
             onChange={(e) => onChange({ ...data, hints: e.target.value })}
-            placeholder="e.g. Remember to use @import url(...) at the top of the CSS file to load the Google Font."
+            placeholder="Optional: Enter a hint to help students (or leave empty)"
             style={{ width: '100%', fontSize: '0.82rem', padding: '0.45rem 0.65rem' }}
           />
         </div>
