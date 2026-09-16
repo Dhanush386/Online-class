@@ -335,7 +335,7 @@ describe('Cheat Sheet Student Experience: Copy Protection & Neat UI', () => {
 
   it('locks question options, textarea, and submit button when Show Answer is clicked', () => {
     const onAttend = vi.fn()
-    const { getByText, queryByText } = render(
+    const { getByText } = render(
       <CheatSheetQuiz
         quiz={{
           type: 'mcq',
@@ -355,34 +355,23 @@ describe('Cheat Sheet Student Experience: Copy Protection & Neat UI', () => {
     // Click Show Answer
     fireEvent.click(showAnswerBtn)
 
-    // Opening Show Answer must NOT artificially mark quiz as attended/unlocked
-    expect(onAttend).not.toHaveBeenCalled()
-    expect(queryByText('Next Section Unlocked')).toBeNull()
-
-    // Submit button must be disabled
+    // Submit button must be locked and disabled
     expect(checkAnswerBtn.disabled).toBe(true)
+    expect(getByText(/Answer Revealed \(Locked\)/i)).toBeDefined()
 
     // Explanation and lock notification banner must be visible
-    expect(getByText(/Answering is locked while viewing this answer/i)).toBeDefined()
+    expect(getByText(/Answer revealed for Question 1. You cannot answer this question/i)).toBeDefined()
     expect(getByText('<p> defines a paragraph.')).toBeDefined()
 
-    // Attempting to select an option while Show Answer is active should NOT change the selection or allow submission
+    // Attempting to select an option while Show Answer is active should NOT allow answering
     const optionP = getByText('<p>')
     fireEvent.click(optionP)
-
-    // Check Answer should remain disabled
     expect(checkAnswerBtn.disabled).toBe(true)
 
-    // Clicking Hide Explanation re-enables interaction
+    // Even if student toggles Hide Explanation, this question remains permanently locked
     fireEvent.click(getByText('Hide Explanation'))
-    expect(queryByText(/Answering is locked while viewing this answer/i)).toBeNull()
-
-    // Now selecting and submitting works
-    fireEvent.click(getByText('<p>'))
-    expect(checkAnswerBtn.disabled).toBe(false)
-    fireEvent.click(checkAnswerBtn)
-    expect(onAttend).toHaveBeenCalledWith('<p>')
-    expect(getByText('Next Section Unlocked')).toBeDefined()
+    expect(checkAnswerBtn.disabled).toBe(true)
+    expect(getByText(/Answer Revealed \(Locked\)/i)).toBeDefined()
   })
 
   it('locks code editor and submit button when Show Code Solution is clicked', () => {
@@ -407,19 +396,15 @@ describe('Cheat Sheet Student Experience: Copy Protection & Neat UI', () => {
     // Click Show Code Solution
     fireEvent.click(showCodeBtn)
 
-    expect(onAttend).not.toHaveBeenCalled()
     expect(textarea.disabled).toBe(true)
     expect(checkCodeBtn.disabled).toBe(true)
-    expect(getByText(/Answering is locked while viewing this answer/i)).toBeDefined()
-
-    // Hide solution re-enables textarea
-    fireEvent.click(getByText('Hide Explanation'))
-    expect(textarea.disabled).toBe(false)
+    expect(getByText(/Answer Revealed \(Locked\)/i)).toBeDefined()
+    expect(getByText(/Answer revealed for Question 1. You cannot answer this question/i)).toBeDefined()
   })
 
-  it('supports multi-question quiz array with question navigation tabs', () => {
+  it('locks current question when answer is revealed but allows student to answer the next question', () => {
     const onAttend = vi.fn()
-    const { getByText } = render(
+    const { getByText, queryByText } = render(
       <CheatSheetQuiz
         quiz={{
           questions: [
@@ -444,10 +429,37 @@ describe('Cheat Sheet Student Experience: Copy Protection & Neat UI', () => {
     expect(getByText('Question 1 of 2')).toBeDefined()
     expect(getByText('First question prompt?')).toBeDefined()
 
-    // Switch to Question 2 via tab
-    fireEvent.click(getByText(/Question 2/i))
+    // Reveal answer on Question 1
+    fireEvent.click(getByText('Show Answer'))
+
+    // Question 1 is locked
+    expect(getByText(/Answer Revealed \(Locked\)/i)).toBeDefined()
+    expect(getByText(/Answer revealed for Question 1. You cannot answer this question/i)).toBeDefined()
+
+    // Next Question button is available to advance
+    const nextBtn = getByText(/Next Question \(2\/2\)/i)
+    expect(nextBtn).toBeDefined()
+    fireEvent.click(nextBtn)
+
+    // Now on Question 2!
     expect(getByText('Question 2 of 2')).toBeDefined()
     expect(getByText('Second question prompt?')).toBeDefined()
+
+    // In Question 2, the student CAN answer!
+    expect(queryByText(/Answer Revealed \(Locked\)/i)).toBeNull()
+    const checkAnswerBtnQ2 = getByText('Check Answer')
+    expect(checkAnswerBtnQ2.disabled).toBe(true) // because not selected yet
+
+    // Select correct option for Question 2
+    fireEvent.click(getByText('Ans 2B'))
+    expect(checkAnswerBtnQ2.disabled).toBe(false)
+
+    // Submit Question 2
+    fireEvent.click(checkAnswerBtnQ2)
+
+    // Entire quiz is now finished (Q1 revealed, Q2 solved) -> unlocks next section!
+    expect(onAttend).toHaveBeenCalledWith('Ans 2B')
+    expect(getByText('Next Section Unlocked')).toBeDefined()
   })
 })
 

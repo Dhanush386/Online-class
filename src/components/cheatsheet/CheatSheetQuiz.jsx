@@ -54,15 +54,17 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
   const [activeQIdx, setActiveQIdx] = useState(0)
   const currentQ = questionsList[activeQIdx] || quiz
 
-  // Per-question state map: { [idx]: { selectedOption, codeAnswer, submitted, isCorrect } }
+  // Per-question state map: { [idx]: { selectedOption, codeAnswer, submitted, isCorrect, revealed, showExplanation } }
   const [answersMap, setAnswersMap] = useState({})
-  const [showAnswer, setShowAnswer] = useState(false)
 
   // Current active question state
   const currentAnswerState = answersMap[activeQIdx] || {}
   const selectedOption = currentAnswerState.selectedOption || ''
   const codeAnswer = currentAnswerState.codeAnswer ?? (currentQ?.starterCode || '')
   const submitted = Boolean(currentAnswerState.submitted || initialAttended)
+  const isRevealed = Boolean(currentAnswerState.revealed)
+  const showExplanation = currentAnswerState.showExplanation ?? isRevealed
+  const isQuestionLocked = isRevealed || submitted
 
   if (!quiz || questionsList.length === 0) return null
 
@@ -75,11 +77,11 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
         : normalizeCodeForComparison(codeAnswer, currentQ.matchMode || 'flexible') === normalizeCodeForComparison(currentQ.correctAnswer, currentQ.matchMode || 'flexible'))
     : selectedOption === currentQ.correctAnswer
 
-  // All questions solved?
-  const allSolved = questionsList.every((q, idx) => {
+  // All questions finished? (Each question is either solved correctly OR revealed)
+  const allFinished = questionsList.every((q, idx) => {
     const s = answersMap[idx]
-    if (!s || !s.submitted) return false
-    return s.isCorrect
+    if (!s) return false
+    return Boolean(s.isCorrect || s.revealed)
   })
 
   // Normalize display badge
@@ -90,8 +92,8 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
         : currentQ.questionNumber)
 
   const handleSubmit = () => {
-    // If showAnswer is open, do not allow submitting
-    if (showAnswer) return
+    // If question is locked or answer revealed, do not allow submitting
+    if (isQuestionLocked) return
 
     if (isCodeInput) {
       if (!codeAnswer.trim()) return
@@ -105,18 +107,20 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
         selectedOption,
         codeAnswer,
         submitted: true,
-        isCorrect
+        isCorrect,
+        revealed: false
       }
     }
     setAnswersMap(updatedState)
 
-    // Check if this submission solves all questions (or if single question)
-    const isNowAllSolved = questionsList.every((q, idx) => {
+    // Check if this submission solves all questions (or all finished)
+    const isNowAllDone = questionsList.every((q, idx) => {
       if (idx === activeQIdx) return isCorrect
-      return updatedState[idx]?.isCorrect
+      const s = updatedState[idx]
+      return Boolean(s?.isCorrect || s?.revealed)
     })
 
-    if (isNowAllSolved && onAttend) {
+    if (isNowAllDone && onAttend) {
       onAttend(isCodeInput ? codeAnswer : selectedOption)
     } else if (questionsList.length === 1 && onAttend) {
       onAttend(isCodeInput ? codeAnswer : selectedOption)
@@ -124,12 +128,40 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
   }
 
   const handleToggleAnswer = () => {
-    // Toggling show answer simply reveals the explanation; it does NOT submit/attend the question
-    setShowAnswer(prev => !prev)
+    // Revealing the answer permanently forfeits/locks this question from being answered,
+    // while keeping next questions answerable
+    setAnswersMap(prev => {
+      const existing = prev[activeQIdx] || {}
+      const wasRevealed = Boolean(existing.revealed)
+      const currentShow = existing.showExplanation ?? wasRevealed
+      const newShow = !currentShow
+
+      const updatedState = {
+        ...prev,
+        [activeQIdx]: {
+          ...existing,
+          revealed: true,
+          showExplanation: newShow
+        }
+      }
+
+      // Check if all questions are finished (either submitted or revealed)
+      const allDone = questionsList.every((q, idx) => {
+        if (idx === activeQIdx) return true
+        const s = updatedState[idx]
+        return Boolean(s?.submitted || s?.revealed)
+      })
+
+      if (allDone && onAttend) {
+        onAttend(isCodeInput ? (existing.codeAnswer || '') : (existing.selectedOption || ''))
+      }
+
+      return updatedState
+    })
   }
 
   const handleResetCode = () => {
-    if (showAnswer) return
+    if (isQuestionLocked) return
     setAnswersMap(prev => ({
       ...prev,
       [activeQIdx]: {
@@ -141,7 +173,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
   }
 
   const handleCodeKeyDown = (e) => {
-    if (showAnswer) return
+    if (isQuestionLocked) return
     if (e.key === 'Tab') {
       e.preventDefault()
       const { selectionStart, selectionEnd, value } = e.target
@@ -215,7 +247,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {(allSolved || initialAttended) && (
+          {(allFinished || initialAttended) && (
             <span
               style={{
                 display: 'inline-flex',
@@ -233,9 +265,14 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
               <CheckCircle size={13} /> Next Section Unlocked
             </span>
           )}
-          {submitted && isCorrect && (
+          {submitted && isCorrect && !isRevealed && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#10b981', fontSize: '0.82rem', fontWeight: 700 }}>
               <CheckCircle size={14} /> Solved
+            </span>
+          )}
+          {isRevealed && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontSize: '0.82rem', fontWeight: 700 }}>
+              <Lock size={14} /> Answer Revealed
             </span>
           )}
         </div>
@@ -259,6 +296,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
           </span>
           {questionsList.map((q, idx) => {
             const isQDone = answersMap[idx]?.isCorrect
+            const isQRevealed = answersMap[idx]?.revealed
             const isActive = idx === activeQIdx
 
             return (
@@ -267,7 +305,6 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
                 type="button"
                 onClick={() => {
                   setActiveQIdx(idx)
-                  setShowAnswer(false)
                 }}
                 style={{
                   display: 'inline-flex',
@@ -277,7 +314,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
                   borderRadius: '6px',
                   border: isActive ? '1.5px solid #6366f1' : '1px solid var(--card-border, rgba(255, 255, 255, 0.08))',
                   background: isActive ? 'rgba(99, 102, 241, 0.2)' : 'var(--bg-elevated, #161b28)',
-                  color: isQDone ? '#34d399' : (isActive ? '#ffffff' : 'var(--text-muted, #8e9bb0)'),
+                  color: isQDone ? '#34d399' : (isQRevealed ? '#fbbf24' : (isActive ? '#ffffff' : 'var(--text-muted, #8e9bb0)')),
                   fontSize: '0.78rem',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -285,6 +322,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
                 }}
               >
                 {isQDone && <CheckCircle size={12} color="#10b981" />}
+                {isQRevealed && !isQDone && <Lock size={12} color="#fbbf24" />}
                 <span>Question {idx + 1}</span>
               </button>
             )
@@ -311,8 +349,8 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
         </div>
       )}
 
-      {/* Notice Banner when Show Answer is active */}
-      {showAnswer && !submitted && (
+      {/* Notice Banner when Answer has been revealed */}
+      {isRevealed && (
         <div
           style={{
             padding: '8px 14px',
@@ -320,16 +358,47 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
             background: 'rgba(245, 158, 11, 0.12)',
             border: '1px solid rgba(245, 158, 11, 0.3)',
             color: '#f59e0b',
-            fontSize: '0.82rem',
+            fontSize: '0.84rem',
             fontWeight: 600,
             marginBottom: '1.25rem',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
             gap: '8px'
           }}
         >
-          <Lock size={15} style={{ flexShrink: 0 }} />
-          <span>Answer explanation is visible. Click &ldquo;Hide Explanation&rdquo; to select and submit your answer.</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Lock size={15} style={{ flexShrink: 0 }} />
+            <span>
+              Answer revealed for Question {activeQIdx + 1}. You cannot answer this question.
+              {questionsList.length > 1 && activeQIdx < questionsList.length - 1
+                ? ' You can proceed to answer the next question.'
+                : ''}
+            </span>
+          </div>
+          {questionsList.length > 1 && activeQIdx < questionsList.length - 1 && (
+            <button
+              type="button"
+              onClick={() => setActiveQIdx(prev => prev + 1)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                background: '#6366f1',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              <span>Go to Question {activeQIdx + 2}</span>
+              <ChevronRight size={13} />
+            </button>
+          )}
         </div>
       )}
 
@@ -343,7 +412,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
               borderRadius: '12px',
               overflow: 'hidden',
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-              opacity: showAnswer ? 0.65 : 1
+              opacity: isRevealed ? 0.65 : 1
             }}
           >
             {/* Editor Header Bar */}
@@ -366,7 +435,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
               <button
                 type="button"
                 onClick={handleResetCode}
-                disabled={showAnswer}
+                disabled={isQuestionLocked}
                 title="Reset code to starter template"
                 style={{
                   display: 'inline-flex',
@@ -374,9 +443,9 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
                   gap: '4px',
                   background: 'none',
                   border: 'none',
-                  color: showAnswer ? 'var(--text-muted, #475569)' : 'var(--text-muted, #94a3b8)',
+                  color: isQuestionLocked ? 'var(--text-muted, #475569)' : 'var(--text-muted, #94a3b8)',
                   fontSize: '0.72rem',
-                  cursor: showAnswer ? 'not-allowed' : 'pointer',
+                  cursor: isQuestionLocked ? 'not-allowed' : 'pointer',
                   padding: '2px 6px',
                   borderRadius: '4px'
                 }}
@@ -387,10 +456,10 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
 
             {/* Code Input Area */}
             <textarea
-              disabled={showAnswer}
+              disabled={isQuestionLocked}
               value={codeAnswer}
               onChange={(e) => {
-                if (showAnswer) return
+                if (isQuestionLocked) return
                 setAnswersMap(prev => ({
                   ...prev,
                   [activeQIdx]: {
@@ -401,21 +470,21 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
                 }))
               }}
               onKeyDown={handleCodeKeyDown}
-              placeholder="Type or paste your code solution here... (Press Ctrl+Enter to submit)"
+              placeholder={isRevealed ? 'Answer revealed for this question (locked).' : 'Type or paste your code solution here... (Press Ctrl+Enter to submit)'}
               rows={Math.max(4, (codeAnswer.split('\n').length || 1) + 1)}
               style={{
                 width: '100%',
                 background: 'transparent',
                 border: 'none',
                 padding: '14px',
-                color: '#f8fafc',
+                color: isQuestionLocked ? 'var(--text-muted, #8e9bb0)' : '#f8fafc',
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 fontSize: '0.9rem',
                 lineHeight: 1.55,
                 outline: 'none',
                 resize: 'vertical',
                 minHeight: '110px',
-                cursor: showAnswer ? 'not-allowed' : 'text'
+                cursor: isQuestionLocked ? 'not-allowed' : 'text'
               }}
             />
           </div>
@@ -433,7 +502,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
             flexDirection: 'column',
             gap: '0.75rem',
             marginBottom: '1.5rem',
-            opacity: showAnswer ? 0.75 : 1
+            opacity: isRevealed ? 0.75 : 1
           }}
         >
           {(currentQ.options || []).map((option, idx) => {
@@ -454,7 +523,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
               radioBg = '#6366f1'
             }
 
-            if (submitted || showAnswer) {
+            if (submitted || isRevealed) {
               if (isThisCorrect) {
                 optionBg = 'rgba(16, 185, 129, 0.14)'
                 optionBorder = 'rgba(16, 185, 129, 0.5)'
@@ -481,8 +550,8 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
                   borderRadius: '10px',
                   background: optionBg,
                   border: `1.5px solid ${optionBorder}`,
-                  cursor: showAnswer ? 'not-allowed' : 'pointer',
-                  pointerEvents: showAnswer ? 'none' : 'auto',
+                  cursor: isQuestionLocked ? 'not-allowed' : 'pointer',
+                  pointerEvents: isQuestionLocked ? 'none' : 'auto',
                   transition: 'all 0.15s ease',
                   color: optionColor,
                   fontSize: '0.94rem',
@@ -490,9 +559,9 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
                 }}
                 role="radio"
                 aria-checked={isSelected}
-                tabIndex={showAnswer ? -1 : 0}
+                tabIndex={isQuestionLocked ? -1 : 0}
                 onKeyDown={(e) => {
-                  if (showAnswer) return
+                  if (isQuestionLocked) return
                   if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault()
                     setAnswersMap(prev => ({
@@ -508,12 +577,12 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
               >
                 <input
                   type="radio"
-                  disabled={showAnswer}
+                  disabled={isQuestionLocked}
                   name={`quiz-${currentQ.questionNumber || activeQIdx || 'q'}`}
                   value={option}
                   checked={isSelected}
                   onChange={() => {
-                    if (showAnswer) return
+                    if (isQuestionLocked) return
                     setAnswersMap(prev => ({
                       ...prev,
                       [activeQIdx]: {
@@ -592,8 +661,8 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={showAnswer || (isCodeInput ? !codeAnswer.trim() : !selectedOption)}
-          title={showAnswer ? 'Hide answer to submit' : undefined}
+          disabled={isQuestionLocked || (isCodeInput ? !codeAnswer.trim() : !selectedOption)}
+          title={isRevealed ? 'Answer was revealed. This question cannot be submitted.' : undefined}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -601,16 +670,20 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
             padding: '0.6rem 1.6rem',
             borderRadius: '8px',
             border: 'none',
-            background: (!showAnswer && (isCodeInput ? codeAnswer.trim() : selectedOption)) ? '#6366f1' : 'rgba(255,255,255,0.08)',
-            color: (!showAnswer && (isCodeInput ? codeAnswer.trim() : selectedOption)) ? '#ffffff' : 'var(--text-muted, #64748b)',
+            background: (!isQuestionLocked && (isCodeInput ? codeAnswer.trim() : selectedOption)) ? '#6366f1' : 'rgba(255,255,255,0.08)',
+            color: (!isQuestionLocked && (isCodeInput ? codeAnswer.trim() : selectedOption)) ? '#ffffff' : 'var(--text-muted, #64748b)',
             fontSize: '0.88rem',
             fontWeight: 700,
-            cursor: (!showAnswer && (isCodeInput ? codeAnswer.trim() : selectedOption)) ? 'pointer' : 'not-allowed',
+            cursor: (!isQuestionLocked && (isCodeInput ? codeAnswer.trim() : selectedOption)) ? 'pointer' : 'not-allowed',
             transition: 'all 0.15s ease',
-            boxShadow: (!showAnswer && (isCodeInput ? codeAnswer.trim() : selectedOption)) ? '0 4px 14px rgba(99,102,241,0.35)' : 'none'
+            boxShadow: (!isQuestionLocked && (isCodeInput ? codeAnswer.trim() : selectedOption)) ? '0 4px 14px rgba(99,102,241,0.35)' : 'none'
           }}
         >
-          {isCodeInput ? (
+          {isRevealed ? (
+            <>
+              <Lock size={14} /> Answer Revealed (Locked)
+            </>
+          ) : isCodeInput ? (
             <>
               <Send size={14} /> Check Code
             </>
@@ -626,7 +699,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
             padding: '0.6rem 1.4rem',
             borderRadius: '8px',
             border: '1.5px solid rgba(99, 102, 241, 0.35)',
-            background: showAnswer ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
+            background: showExplanation ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
             color: '#818cf8',
             fontSize: '0.88rem',
             fontWeight: 700,
@@ -634,16 +707,15 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
             transition: 'all 0.15s ease'
           }}
         >
-          {showAnswer ? 'Hide Explanation' : (isCodeInput ? 'Show Code Solution' : 'Show Answer')}
+          {showExplanation ? 'Hide Explanation' : (isRevealed ? 'View Solution' : (isCodeInput ? 'Show Code Solution' : 'Show Answer'))}
         </button>
 
         {/* Next Question Navigation button if multiple questions */}
-        {questionsList.length > 1 && submitted && isCorrect && activeQIdx < questionsList.length - 1 && (
+        {questionsList.length > 1 && ((submitted && isCorrect) || isRevealed) && activeQIdx < questionsList.length - 1 && (
           <button
             type="button"
             onClick={() => {
               setActiveQIdx(prev => prev + 1)
-              setShowAnswer(false)
             }}
             style={{
               display: 'inline-flex',
@@ -651,14 +723,15 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
               gap: '6px',
               padding: '0.6rem 1.2rem',
               borderRadius: '8px',
-              background: 'rgba(16, 185, 129, 0.15)',
-              color: '#34d399',
-              border: '1px solid rgba(16, 185, 129, 0.35)',
+              background: isRevealed ? '#6366f1' : 'rgba(16, 185, 129, 0.15)',
+              color: '#ffffff',
+              border: isRevealed ? 'none' : '1px solid rgba(16, 185, 129, 0.35)',
               fontSize: '0.88rem',
               fontWeight: 700,
               cursor: 'pointer',
               transition: 'all 0.15s ease',
-              marginLeft: 'auto'
+              marginLeft: 'auto',
+              boxShadow: isRevealed ? '0 4px 14px rgba(99,102,241,0.3)' : 'none'
             }}
           >
             <span>Next Question ({activeQIdx + 2}/{questionsList.length})</span>
@@ -668,7 +741,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
       </div>
 
       {/* Feedback Message */}
-      {submitted && (
+      {submitted && !isRevealed && (
         <div
           style={{
             marginTop: '1.25rem',
@@ -702,7 +775,7 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
       )}
 
       {/* Rationale Reveal */}
-      {showAnswer && (
+      {showExplanation && (
         <div
           style={{
             marginTop: '1rem',
@@ -718,25 +791,6 @@ export default function CheatSheetQuiz({ quiz, onAttend, initialAttended = false
           <div style={{ fontWeight: 700, color: '#10b981', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <HelpCircle size={16} />
             <span>{isCodeInput ? 'Expected Code Solution:' : 'Correct Answer:'}</span>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 10px',
-              borderRadius: '6px',
-              background: 'rgba(245, 158, 11, 0.12)',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
-              color: '#fbbf24',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              marginBottom: '0.75rem'
-            }}
-          >
-            <Lock size={13} style={{ flexShrink: 0 }} />
-            <span>Answering is locked while viewing this answer. Click &ldquo;Hide Explanation&rdquo; above to answer and submit.</span>
           </div>
 
           {/* Render code block for answer if code input or code option */}
