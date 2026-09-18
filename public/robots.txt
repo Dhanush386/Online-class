@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Disallow private user/admin dashboards from being indexed in search results
+Disallow: /organizer/
+Disallow: /admin/
+Disallow: /student/profile
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://www.learnovas.in/sitemap.xml
