@@ -815,7 +815,7 @@ function ReactionOverlay({ reactions }) {
     return (
         <>
             <style>{REACTION_KEYFRAMES}</style>
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30, overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 60, overflow: 'hidden' }}>
                 {reactions.map(r => (
                     <div key={r.id} style={{
                         position: 'absolute',
@@ -827,8 +827,9 @@ function ReactionOverlay({ reactions }) {
                         <span style={{ fontSize: '2.5rem' }}>{r.emoji}</span>
                         <span style={{
                             fontSize: '0.85rem', color: 'white', fontWeight: 600,
-                            background: 'rgba(0,0,0,0.5)', padding: '1px 6px', borderRadius: 4,
-                            whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                            background: 'rgba(0,0,0,0.65)', padding: '2px 8px', borderRadius: 6,
+                            whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                            backdropFilter: 'blur(4px)'
                         }}>{r.senderName}</span>
                     </div>
                 ))}
@@ -851,25 +852,33 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '👏', '😮']
 
 function ReactionPicker({ onSelect, onClose }) {
     return (
-        <div style={{
-            position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-            marginBottom: 8, background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 16, padding: '8px 12px', display: 'flex', gap: 4,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)',
-            animation: 'fadeIn 0.15s ease-out',
-        }}>
-            {REACTION_EMOJIS.map(emoji => (
-                <button key={emoji} onClick={() => { onSelect(emoji); onClose() }} style={{
-                    width: 44, height: 44, fontSize: '1.5rem', background: 'transparent',
-                    border: 'none', borderRadius: 12, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.15s ease',
-                }} onMouseEnter={e => { e.target.style.background = 'rgba(255,255,255,0.1)'; e.target.style.transform = 'scale(1.3)' }}
-                    onMouseLeave={e => { e.target.style.background = 'transparent'; e.target.style.transform = 'scale(1)' }}>
-                    {emoji}
-                </button>
-            ))}
-        </div>
+        <>
+            <div 
+                style={{ position: 'fixed', inset: 0, zIndex: 9998 }} 
+                onClick={onClose} 
+            />
+            <div style={{
+                position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+                marginBottom: 12, background: 'rgba(15,23,42,0.96)', border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 16, padding: '8px 12px', display: 'flex', gap: 6,
+                boxShadow: '0 12px 36px rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)',
+                animation: 'fadeIn 0.15s ease-out',
+                zIndex: 9999,
+                whiteSpace: 'nowrap'
+            }}>
+                {REACTION_EMOJIS.map(emoji => (
+                    <button key={emoji} onClick={() => { onSelect(emoji); onClose() }} style={{
+                        width: 44, height: 44, fontSize: '1.5rem', background: 'transparent',
+                        border: 'none', borderRadius: 12, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s ease',
+                    }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'scale(1.25)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'scale(1)' }}>
+                        {emoji}
+                    </button>
+                ))}
+            </div>
+        </>
     )
 }
 
@@ -1589,7 +1598,7 @@ function ReactionsButton({ isOrganizer, reactionsDisabled, showReactionPicker, s
     const iconColor = isReactionsBlocked ? 'var(--text-muted)' : (showReactionPicker ? 'var(--primary-600)' : 'var(--text-primary)')
 
     return (
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', zIndex: 50 }}>
             <button 
                 onClick={() => {
                     if (isReactionsBlocked) {
@@ -1806,6 +1815,8 @@ function MeetControlBar({ onLeave, onMinimize, isOrganizer, handRaised, raisedHa
             padding: isMobile ? '0.85rem 1rem' : '1rem 2rem',
             background: 'var(--card-bg)',
             borderTop: '1px solid var(--sidebar-border)',
+            position: 'relative',
+            zIndex: 40,
         }}>
             {/* Recording Controls (Organizer Only) */}
             <RecordingControls isOrganizer={isOrganizer} isMobile={isMobile} />
@@ -3453,14 +3464,15 @@ export default function LiveClassroom() {
                 })
 
                 if (token) {
+                    await startMeeting({ token, videoId, videoData, isOrganizer })
                     setLivekitToken(token)
-                    startMeeting({ token, videoId, videoData, isOrganizer })
                 } else {
                     throw new Error('No token returned')
                 }
             } catch (err) {
-                console.error('Failed to get LiveKit token:', err)
-                setTokenError(err.message)
+                console.error('Failed to get LiveKit token or connect to room:', err)
+                setLivekitToken(null)
+                setTokenError(err.message || 'Failed to connect to LiveKit')
             }
         }
 
