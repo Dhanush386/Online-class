@@ -77,7 +77,7 @@ serve(async (req) => {
         if (!apiKey || !apiSecret) throw new Error("Missing LiveKit credentials in environment")
 
         const userName = profile.name || user.email?.split("@")[0] || (isOrganizer ? "Instructor" : "Student")
-        const proctoringMode = body?.proctoringMode === true
+        const proctoringMode = Boolean(assessmentMatch)
         const videoPermissions: Record<string, unknown> = {
             roomJoin: true, room: roomName, canPublish: true, canSubscribe: true,
             canPublishData: true, canUpdateOwnMetadata: true,
