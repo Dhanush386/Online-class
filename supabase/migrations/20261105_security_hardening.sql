@@ -16,6 +16,7 @@ AS $$
 DECLARE
   v_course_id uuid;
   v_is_staff boolean := public.is_staff();
+  v_has_submission boolean := false;
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
@@ -33,7 +34,13 @@ BEGIN
     IF NOT public.is_enrolled(v_course_id) THEN
       RAISE EXCEPTION 'You are not enrolled in this course' USING ERRCODE = '42501';
     END IF;
-    IF NOT public.is_assessment_time_open(p_assessment_id) THEN
+
+    SELECT EXISTS (
+      SELECT 1 FROM public.assessment_submissions s
+      WHERE s.assessment_id = p_assessment_id AND s.student_id = auth.uid()
+    ) INTO v_has_submission;
+
+    IF NOT v_has_submission AND NOT public.is_assessment_time_open(p_assessment_id) THEN
       RAISE EXCEPTION 'Assessment is not currently open' USING ERRCODE = '42501';
     END IF;
   END IF;
@@ -48,6 +55,7 @@ BEGIN
     'code_snippet', q.code_snippet,
     'code_language', q.code_language,
     'snippet_title', q.snippet_title,
+    'correct_answer', CASE WHEN v_is_staff OR v_has_submission THEN q.correct_answer ELSE NULL END,
     'is_multi_select',
       CASE
         WHEN left(ltrim(COALESCE(q.correct_answer, '')), 1) = '['
