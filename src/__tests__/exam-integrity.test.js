@@ -97,12 +97,16 @@ describe('Exam Integrity & Server-Side Grading Engine', () => {
   });
 
   it('rejects duplicate, incomplete, and single-choice submissions for multi-select questions', () => {
-    const result = evaluateAssessmentSubmission(mockQuestions, [
-      { question_id: 'q2', selected_option: ['Opt 1', 'Opt 1'] },
-      { question_id: 'q2', selected_option: ['Opt 1'] },
-      { question_id: 'q2', selected_option: 'Opt 1' }
-    ]);
-    expect(result.score).toBe(0);
+    for (const selected_option of [
+      ['Opt 1', 'Opt 1'],
+      ['Opt 1'],
+      'Opt 1'
+    ]) {
+      const result = evaluateAssessmentSubmission(mockQuestions, [
+        { question_id: 'q2', selected_option }
+      ]);
+      expect(result.answers[1].is_correct).toBe(false);
+    }
   });
 
   it('enforces both start and closing boundaries for exam access', () => {
