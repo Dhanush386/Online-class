@@ -198,7 +198,7 @@ export function AuthProvider({ children }) {
             } else {
                 // Fallback profile if public.users row is not yet initialized
                 const authUser = (await supabase.auth.getUser())?.data?.user
-                const fallbackRole = authUser?.user_metadata?.role || 'student'
+                const fallbackRole = 'student'
                 const fallbackName = authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'User'
                 
                 const fallbackProfile = {
@@ -206,7 +206,7 @@ export function AuthProvider({ children }) {
                     email: authUser?.email,
                     name: fallbackName,
                     role: fallbackRole,
-                    status: 'active',
+                    status: 'pending',
                     xp: 0,
                     coins: 0
                 }

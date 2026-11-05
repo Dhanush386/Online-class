@@ -1,134 +1,119 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0"
-import { SignJWT, decodeJwt } from "https://deno.land/x/jose@v4.15.4/index.ts"
+import { SignJWT } from "https://deno.land/x/jose@v4.15.4/index.ts"
 
 const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+}
+
+function jsonResponse(body: Record<string, unknown>, status: number) {
+    return new Response(JSON.stringify(body), {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    })
 }
 
 serve(async (req) => {
-    if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
-    }
+    if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
+    if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405)
 
     try {
-        // Verify the user is authenticated via Supabase
-        const authHeader = req.headers.get('Authorization')
-        if (!authHeader) {
-            throw new Error('Missing authorization header')
-        }
+        const authHeader = req.headers.get("Authorization")
+        const jwtToken = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1]
+        if (!authHeader || !jwtToken) return jsonResponse({ error: "Authentication required" }, 401)
 
-        const supabase = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-            { 
-                global: { headers: { Authorization: authHeader } },
-                auth: { persistSession: false }
-            }
-        )
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")
+        const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")
+        if (!supabaseUrl || !supabaseAnonKey) throw new Error("Supabase environment is not configured")
 
-        const jwtToken = authHeader.replace(/^Bearer\s+/i, '').trim()
-        if (!jwtToken) {
-            throw new Error(`Unauthorized: Empty token | Header: ${authHeader}`)
-        }
-        
-        console.log(`Auth Header: ${authHeader.substring(0, 15)}...`)
-        console.log(`JWT Token: ${jwtToken.substring(0, 10)}...`)
-
-        // Decode claims locally for debug logging
-        try {
-            const decoded = decodeJwt(jwtToken)
-            console.log('Decoded claims:', JSON.stringify(decoded))
-        } catch (jwtErr) {
-            console.error('Failed to decode JWT locally:', jwtErr)
-        }
-
+        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+            global: { headers: { Authorization: authHeader } },
+            auth: { persistSession: false, autoRefreshToken: false },
+        })
         const { data: { user }, error: authError } = await supabase.auth.getUser(jwtToken)
-        if (authError || !user) {
-            console.error('Auth Error Details:', authError)
-            throw new Error(`Unauthorized: ${authError?.message || 'No user found'} | Header: present | TokenLength: ${jwtToken.length}`)
+        if (authError || !user) return jsonResponse({ error: "Invalid or expired session" }, 401)
+
+        const { data: profile, error: profileError } = await supabase
+            .from("users").select("name, role, email, status").eq("id", user.id).single()
+        if (profileError || !profile) return jsonResponse({ error: "User profile not found" }, 403)
+        if (["pending", "declined", "blocked"].includes(profile.status)) {
+            return jsonResponse({ error: "Account is not authorized to join live classes" }, 403)
         }
 
-        // Get user profile
-        const { data: profile } = await supabase
-            .from('users')
-            .select('name, role, email')
-            .eq('id', user.id)
-            .single()
+        const body = await req.json()
+        const roomName = typeof body?.roomName === "string" ? body.roomName.trim() : ""
+        const classMatch = roomName.match(/^learnova-class-([0-9a-f-]{36})$/i)
+        const assessmentMatch = roomName.match(/^assessment-([0-9a-f-]{36})$/i)
+        if (!classMatch && !assessmentMatch) return jsonResponse({ error: "Invalid classroom roomName" }, 400)
 
-        const { roomName, proctoringMode } = await req.json()
-        if (!roomName) throw new Error('roomName is required')
+        const isOrganizer = ["organizer", "main_admin", "sub_admin"].includes(profile.role)
+        let courseId: string | null = null
 
-        const apiKey = Deno.env.get('LIVEKIT_API_KEY')
-        const apiSecret = Deno.env.get('LIVEKIT_API_SECRET')
-
-        if (!apiKey || !apiSecret) {
-            throw new Error('Missing LiveKit credentials in environment')
+        if (classMatch) {
+            const { data: video, error } = await supabase
+                .from("videos").select("id, course_id").eq("id", classMatch[1]).maybeSingle()
+            if (error || !video) return jsonResponse({ error: "Classroom not found" }, 404)
+            courseId = video.course_id
+        } else {
+            const { data: assessment, error } = await supabase
+                .from("assessments").select("id, course_id").eq("id", assessmentMatch![1]).maybeSingle()
+            if (error || !assessment) return jsonResponse({ error: "Assessment room not found" }, 404)
+            courseId = assessment.course_id
         }
 
-        const isOrganizer = ['organizer', 'main_admin', 'sub_admin'].includes(profile?.role)
-        const userName = profile?.name || (isOrganizer ? 'Instructor' : 'Student')
+        if (!isOrganizer) {
+            const { data: enrollment, error } = await supabase
+                .from("enrollments").select("id")
+                .eq("course_id", courseId).eq("student_id", user.id).maybeSingle()
+            if (error || !enrollment) {
+                return jsonResponse({ error: "You are not enrolled in this course" }, 403)
+            }
+        }
+
+        const apiKey = Deno.env.get("LIVEKIT_API_KEY")
+        const apiSecret = Deno.env.get("LIVEKIT_API_SECRET")
+        if (!apiKey || !apiSecret) throw new Error("Missing LiveKit credentials in environment")
+
+        const userName = profile.name || user.email?.split("@")[0] || (isOrganizer ? "Instructor" : "Student")
+        const proctoringMode = Boolean(assessmentMatch)
+        const videoPermissions: Record<string, unknown> = {
+            roomJoin: true, room: roomName, canPublish: true, canSubscribe: true,
+            canPublishData: true, canUpdateOwnMetadata: true,
+        }
+        if (proctoringMode && isOrganizer) {
+            videoPermissions.canPublish = false
+        } else if (proctoringMode && !isOrganizer) {
+            videoPermissions.canSubscribe = false
+        }
+        if (isOrganizer) {
+            videoPermissions.roomAdmin = true
+            videoPermissions.roomCreate = true
+        }
 
         const now = Math.floor(Date.now() / 1000)
-
-        // Build LiveKit Access Token (JWT)
-        const payload = {
+        const token = await new SignJWT({
             name: userName,
-            video: {
-                roomJoin: true,
-                room: roomName,
-                canPublish: true,
-                canSubscribe: true,
-                canPublishData: true,
-                canUpdateOwnMetadata: true,
-            },
+            video: videoPermissions,
             metadata: JSON.stringify({
-                userId: user.id,
-                name: userName,
-                role: profile?.role || 'student',
-                email: profile?.email || user.email || ''
-            })
-        }
-
-        // Apply strict permissions for Proctoring Mode
-        if (proctoringMode) {
-            if (isOrganizer) {
-                // Organizers can watch, but don't need to publish their own video to students
-                payload.video.canPublish = false;
-                payload.video.canSubscribe = true;
-            } else {
-                // Students can publish their video, but cannot watch other students
-                payload.video.canPublish = true;
-                payload.video.canSubscribe = false;
-            }
-        }
-
-        // Organizers get admin permissions
-        if (isOrganizer) {
-            payload.video.roomAdmin = true
-            payload.video.roomCreate = true
-        }
-
-        const secret = new TextEncoder().encode(apiSecret)
-
-        const token = await new SignJWT(payload)
-            .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+                userId: user.id, name: userName, role: profile.role,
+                email: profile.email || user.email || "",
+            }),
+        })
+            .setProtectedHeader({ alg: "HS256", typ: "JWT" })
             .setIssuer(apiKey)
             .setSubject(user.id)
             .setNotBefore(now)
-            .setExpirationTime(now + 21600) // 6 hours
-            .sign(secret)
+            .setExpirationTime(now + 21600)
+            .sign(new TextEncoder().encode(apiSecret))
 
-        return new Response(JSON.stringify({ token }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-        })
+        return jsonResponse({ token }, 200)
     } catch (error) {
-        console.error('Token generation error:', error)
-        return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-        })
+        console.error("LiveKit token generation failed:", error)
+        return jsonResponse(
+            { error: error instanceof Error ? error.message : "Unable to generate classroom token" },
+            500,
+        )
     }
 })

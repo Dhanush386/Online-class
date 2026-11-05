@@ -16,18 +16,7 @@ const BYPASS_PROCTORING = false // Set to false to enable AI proctoring violatio
 import { useDeviceType } from '../../hooks/useDeviceType'
 import MobileBlocker from '../../components/MobileBlocker'
 
-const isMulti = (q) => {
-    if (!q?.correct_answer) return false
-    if (q.correct_answer.startsWith('[') && q.correct_answer.endsWith(']')) {
-        try {
-            const arr = JSON.parse(q.correct_answer)
-            return Array.isArray(arr) && arr.length > 1
-        } catch {
-            return false
-        }
-    }
-    return false
-}
+const isMulti = (q) => q?.is_multi_select === true
 
 export default function TakeAssessment() {
     const { assessmentId } = useParams()
@@ -486,7 +475,7 @@ export default function TakeAssessment() {
             ] = await Promise.all([
                 supabase.from('assessment_submissions').select('id').eq('assessment_id', assessmentId).eq('student_id', profile.id),
                 supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
-                supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true }),
+                supabase.rpc('get_assessment_questions', { p_assessment_id: assessmentId }),
                 supabase.from('group_members').select('group_id').eq('student_id', profile.id),
                 supabase.from('resource_access').select('*').eq('resource_id', assessmentId).eq('resource_type', 'assessment').eq('is_locked', true),
                 supabase.from('day_access').select('*') // although we use course_id and day_number mostly

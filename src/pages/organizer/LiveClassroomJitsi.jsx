@@ -177,10 +177,7 @@ export default function LiveClassroom() {
         try {
             const { data: funcData, error } = await supabase.functions.invoke('jaas-token', {
                 body: {
-                    roomName: `Learnova_LiveClass_${data.id}`,
-                    userName: profile?.name || (isOrganizer ? 'Instructor' : 'Student'),
-                    userEmail: profile?.email || '',
-                    isModerator: isOrganizer
+                    roomName: `Learnova_LiveClass_${data.id}`
                 }
             })
             if (error) throw error

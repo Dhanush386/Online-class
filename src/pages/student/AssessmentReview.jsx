@@ -23,7 +23,7 @@ export default function AssessmentReview() {
             setLoading(true)
             const [{ data: assess }, { data: qData }, { data: subData }] = await Promise.all([
                 supabase.from('assessments').select('*, courses(title)').eq('id', assessmentId).single(),
-                supabase.from('questions').select('*').eq('assessment_id', assessmentId).order('created_at', { ascending: true }),
+                supabase.rpc('get_assessment_questions', { p_assessment_id: assessmentId }),
                 supabase.from('assessment_submissions').select('*')
                     .eq('assessment_id', assessmentId)
                     .eq('student_id', profile.id)

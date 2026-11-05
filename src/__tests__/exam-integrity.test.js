@@ -22,10 +22,14 @@ export function evaluateAssessmentSubmission(questions, studentAnswers) {
       }
 
       if (Array.isArray(answerObj.selected_option)) {
-        isCorrect = correctArr.length === answerObj.selected_option.length &&
-                    correctArr.every(opt => answerObj.selected_option.includes(opt));
+        const selected = answerObj.selected_option;
+        const selectedSet = new Set(selected);
+        isCorrect = selected.length === selectedSet.size &&
+                    correctArr.length === selected.length &&
+                    correctArr.every(opt => selectedSet.has(opt)) &&
+                    selected.every(opt => correctArr.includes(opt));
       } else {
-        isCorrect = correctArr.includes(answerObj.selected_option);
+        isCorrect = correctArr.length === 1 && correctArr[0] === answerObj.selected_option;
       }
     }
 
@@ -82,6 +86,27 @@ describe('Exam Integrity & Server-Side Grading Engine', () => {
     expect(result.score).toBe(2);
     expect(result.total).toBe(3);
     expect(result.percentage).toBe(67);
+  });
+
+  it('grades multi-select answers independent of selection order', () => {
+    const result = evaluateAssessmentSubmission(mockQuestions, [
+      { question_id: 'q2', selected_option: ['Opt 2', 'Opt 1'] }
+    ]);
+    expect(result.score).toBe(1);
+    expect(result.answers[1].is_correct).toBe(true);
+  });
+
+  it('rejects duplicate, incomplete, and single-choice submissions for multi-select questions', () => {
+    for (const selected_option of [
+      ['Opt 1', 'Opt 1'],
+      ['Opt 1'],
+      'Opt 1'
+    ]) {
+      const result = evaluateAssessmentSubmission(mockQuestions, [
+        { question_id: 'q2', selected_option }
+      ]);
+      expect(result.answers[1].is_correct).toBe(false);
+    }
   });
 
   it('enforces both start and closing boundaries for exam access', () => {
