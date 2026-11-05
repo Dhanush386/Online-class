@@ -61,8 +61,21 @@ serve(async (req) => {
 
         const body = await req.json()
         const roomName = typeof body?.roomName === "string" ? body.roomName.trim() : ""
-        if (!roomName || roomName.length > 128 || !/^[A-Za-z0-9_-]+$/.test(roomName)) {
-            return jsonResponse({ error: "A valid roomName is required" }, 400)
+        const roomMatch = roomName.match(/^Learnova_LiveClass_([0-9a-f-]{36})$/i)
+        if (!roomMatch) return jsonResponse({ error: "Invalid classroom roomName" }, 400)
+
+        const isModerator = ["organizer", "main_admin", "sub_admin"].includes(profile.role)
+        const { data: video, error: videoError } = await supabase
+            .from("videos").select("id, course_id").eq("id", roomMatch[1]).maybeSingle()
+        if (videoError || !video) return jsonResponse({ error: "Classroom not found" }, 404)
+
+        if (!isModerator) {
+            const { data: enrollment, error: enrollmentError } = await supabase
+                .from("enrollments").select("id")
+                .eq("course_id", video.course_id).eq("student_id", user.id).maybeSingle()
+            if (enrollmentError || !enrollment) {
+                return jsonResponse({ error: "You are not enrolled in this course" }, 403)
+            }
         }
 
         const appId = Deno.env.get("JAAS_APP_ID")
@@ -73,7 +86,6 @@ serve(async (req) => {
         }
 
         // Never trust a moderator flag, display name, or email supplied by the browser.
-        const isModerator = ["organizer", "main_admin", "sub_admin"].includes(profile.role)
         const now = Math.floor(Date.now() / 1000)
         const payload: Record<string, any> = {
             aud: "jitsi",
