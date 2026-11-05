@@ -161,7 +161,7 @@ BEGIN
         END IF;
       ELSE
         v_student_selected := v_student_answer->>'selected_option';
-        IF jsonb_typeof(v_correct_arr) = 'array' AND v_correct_arr ? v_student_selected THEN
+        IF jsonb_array_length(v_correct_arr) = 1 AND v_correct_arr ? v_student_selected THEN
           v_is_correct := true;
         END IF;
       END IF;
@@ -204,3 +204,42 @@ $$;
 REVOKE ALL ON FUNCTION public.submit_assessment_with_token(uuid, uuid, text, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.submit_assessment_with_token(uuid, uuid, text, jsonb) FROM anon;
 GRANT EXECUTE ON FUNCTION public.submit_assessment_with_token(uuid, uuid, text, jsonb) TO authenticated;
+
+
+-- Prevent public signup metadata from assigning privileged roles or bypassing
+-- the student approval workflow. Privileged roles are granted only when a
+-- matching, pre-created organizer_invites record exists.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_invited_role text;
+  v_role text := 'student';
+  v_status text := 'pending';
+BEGIN
+  SELECT role INTO v_invited_role
+  FROM public.organizer_invites
+  WHERE lower(email) = lower(NEW.email)
+  LIMIT 1;
+
+  IF v_invited_role IN ('organizer', 'main_admin', 'sub_admin') THEN
+    v_role := v_invited_role;
+    v_status := 'approved';
+  END IF;
+
+  INSERT INTO public.users (id, name, email, role, status)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'name', 'New User'),
+    NEW.email,
+    v_role,
+    v_status
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  RETURN NEW;
+END;
+$$;
